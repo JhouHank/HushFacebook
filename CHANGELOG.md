@@ -30,7 +30,7 @@ Every Hushfacebook release, newest first.
 * **Facebook:** With `Material You theme` in dark mode, the card at the top of Menu with your name and picture takes your palette, and so does the strip behind Log out at the bottom (issue #37). Facebook's server sends the card's gray along with the Menu's layout, and the strip loads the gray Facebook keeps for cards as a picture, two paths the theme didn't reach.
 * **Facebook:** With `Material You theme` in dark mode, the Create story tile at the start of the stories tray takes your palette under your picture (issue #37). Facebook writes that gray straight into its code for dark mode.
 * **Facebook:** With `Material You theme` in dark mode, the box under a link post's picture takes your palette in the feed as well (issue #37). The 0.10.0 fix waited for Facebook to say dark mode was on, and Facebook lays out the first posts of a cold start before it says so, so those boxes could stay gray.
-* **Translations:** In Indonesian and Turkish, the Following feed on Home summary and the Feeds header call the Feeds tab by the same name as the rest of those settings ("Feed" and "Akışlar"). They said "Feeds".
+* **Facebook:** In Indonesian and Turkish, the Following feed on Home summary and the Feeds header call the Feeds tab by the same name as the rest of those settings ("Feed" and "Akışlar"). They said "Feeds".
 
 ### Changed
 
