@@ -434,6 +434,30 @@ Invoke-HeavyJob -Label 'receipt' -ScriptBlock {
             if (-not $validation.Valid) { throw "$label did not patch cleanly: $($validation.Reason)" }
             if ($cliExitCode -ne 0) { throw "The desktop CLI exited with $cliExitCode on $label." }
 
+            # A phone with 16 KB pages maps a stored native library straight out of the APK only
+            # from a 16 KB boundary, and Android 17's linker stops there instead of falling back.
+            # The patcher aligns them on repack (1.15.1); this checks it did, every stored library
+            # and every other stored entry's 4 bytes. A release doesn't go out on a miss.
+            $zipalign = Join-Path (Split-Path -Parent $Aapt2) ('zipalign' + [IO.Path]::GetExtension($Aapt2))
+            if (-not (Test-Path -LiteralPath $zipalign -PathType Leaf)) {
+                throw "No zipalign beside $Aapt2 for the 16 KB alignment check."
+            }
+            $preference = $ErrorActionPreference
+            try {
+                $ErrorActionPreference = 'Continue'
+                $global:LASTEXITCODE = -1
+                $alignment = @(& $zipalign '-c' '-P' '16' '-v' '4' $out 2>&1 | ForEach-Object { "$_" })
+                $alignExitCode = $LASTEXITCODE
+            } finally {
+                $ErrorActionPreference = $preference
+            }
+            $libraries = @($alignment | Where-Object { $_ -match '\.so\b' }).Count
+            if ($alignExitCode -ne 0) {
+                $misses = @($alignment | Where-Object { $_ -match '\(BAD' } | Select-Object -First 5) -join '; '
+                throw "$label is not 16 KB aligned (zipalign exit $alignExitCode): $misses"
+            }
+            Write-Host "[receipt] $label`: $libraries native libraries checked, 16 KB aligned"
+
             $patched = Get-ApkManifestFacts -Apk $out -Aapt2 $Aapt2
             # The manifest the patches started from is the APK the CLI patched, the merge for a split
             # bundle, not the base APK's: the merge rewrites the manifest itself, and a delta against
@@ -456,6 +480,7 @@ Invoke-HeavyJob -Label 'receipt' -ScriptBlock {
                     forced      = $forced
                 }
                 patches       = $verdicts
+                nativeAlignment = [ordered]@{ pageSizeKb = 16; libraries = $libraries; aligned = $true }
                 manifestDelta = [ordered]@{
                     permissionsAdded          = @($delta.permissionsAdded)
                     permissionsRemoved        = @($delta.permissionsRemoved)
