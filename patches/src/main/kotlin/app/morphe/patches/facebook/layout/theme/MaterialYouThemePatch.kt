@@ -5,6 +5,7 @@
 package app.morphe.patches.facebook.layout.theme
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
@@ -21,9 +22,11 @@ import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.SwitchPayload
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.WideLiteralInstruction
 import java.io.File
@@ -383,7 +386,7 @@ val materialYouThemePatch = bytecodePatch(
         }
 
         // The box under a link post's picture (issue #37), whose dark-mode colour MobileConfig sends.
-        check(hookLinkBoxColour() > 0) { "No parse of the link box's colour found, so link posts would keep a grey box" }
+        check(hookLinkBoxColour(darkCheck) > 0) { "No parse of the link box's colour found, so link posts would keep a grey box" }
 
         // The comment list's rows (issue #37): a theme attribute resolved into a TypedValue and read as
         // its `data`, which SURFACE_BACKGROUND's night item (#252728) reaches without a colour call.
@@ -393,6 +396,12 @@ val materialYouThemePatch = bytecodePatch(
         // finding none is fine then.
         val read = readSurfaceLiterals()
         check(read > 0 || amoledParsers > 0) { "No dark surface written in code, so the chrome would stay grey" }
+
+        // Route three for the colours written right after Facebook's own dark check says yes, like
+        // the Menu's profile card (issue #37). After the surfaces, so a surface there is a field read.
+        check(readDarkBranchLiterals(darkCheck) > 0) {
+            "No colour written on Facebook's dark branch found, so the Menu's profile card would stay grey"
+        }
 
         // React Native screens such as Marketplace home. With AMOLED in the build its call put
         // the hooks in already, and ReactColours runs both themes.
@@ -422,9 +431,11 @@ internal fun readsLinkBoxColour(method: Method): Boolean =
  * In each method that reads [LINK_BOX_COLOUR_CONFIG], sends its one call to route four's parser to
  * [PARSE_LINK_BOX] on the same register. Runs after route four, so the call is already Material
  * You's stand-in, AMOLED's included. Answers how many it changed. A method that reads the config
- * with no parser call, or more than one, is refused: the parse to change would be a guess.
+ * with no parser call, or more than one, is refused: the parse to change would be a guess. So is
+ * one that never asks [darkCheck], Facebook's own dark check: the extension takes the parse for a
+ * dark-mode colour from before Facebook's first answer on, which only that check makes true.
  */
-internal fun BytecodePatchContext.hookLinkBoxColour(): Int {
+internal fun BytecodePatchContext.hookLinkBoxColour(darkCheck: String): Int {
     val parser = standIn(MATERIAL_YOU, PARSE_COLOR)
     val owners = mutableSetOf<String>()
     classDefForEach { classDef ->
@@ -434,6 +445,9 @@ internal fun BytecodePatchContext.hookLinkBoxColour(): Int {
     var changed = 0
     for (type in owners) {
         for (method in mutableClassDefBy(type).methods.filter(::readsLinkBoxColour)) {
+            check(method.implementation!!.instructions.any { it.referenceText() == darkCheck }) {
+                "${method.definingClass}->${method.name} reads the link box's colour without asking $darkCheck"
+            }
             val parses = method.implementation!!.instructions.withIndex().filter { it.value.referenceText() == parser }
             check(parses.size == 1) {
                 "${method.definingClass}->${method.name} reads the link box's colour with ${parses.size} calls to $parser"
@@ -473,6 +487,79 @@ internal fun BytecodePatchContext.readSurfaceLiterals(): Int {
     return owners.sumOf { type ->
         mutableClassDefByOrNull(type)?.methods?.sumOf { if (handsToBar(it)) 0 else it.readSurfaceFields() } ?: 0
     }
+}
+
+/** Where route three sends a colour Facebook writes on its own dark branch (issue #37). */
+internal const val DARK_BRANCH = "$MATERIAL_YOU->darkBranch(I)I"
+
+/**
+ * Route three for the colours Facebook writes into its code for its dark theme only (issue #37): an
+ * opaque colour `const` that is the first instruction once [darkCheck] has said yes, as in
+ * `invoke-static {..}, darkCheck; move-result vR; if-eqz vR, :light; const vX, colour`. Each goes
+ * through [DARK_BRANCH] into the same register right after the `const`. The light branch jumps past
+ * it, and so does any jump to what follows the `const`, since a label stays on the instruction it
+ * was on. A `const` something else jumps to is left, as it doesn't only run on the dark branch. On
+ * 582 the Menu's profile card is two of these, #333334, which isn't one of [SURFACE_FIELDS]. Answers
+ * how many it changed.
+ */
+internal fun BytecodePatchContext.readDarkBranchLiterals(darkCheck: String): Int {
+    val owners = mutableSetOf<String>()
+    classDefForEach { classDef ->
+        if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEach
+        if (classDef.methods.any { it.darkBranchLiterals(darkCheck).isNotEmpty() }) owners += classDef.type
+    }
+    return owners.sumOf { type -> mutableClassDefBy(type).methods.sumOf { it.readDarkBranchLiterals(darkCheck) } }
+}
+
+/** The indexes of this method's colour `const`s on [darkCheck]'s dark branch, for [readDarkBranchLiterals]. */
+internal fun Method.darkBranchLiterals(darkCheck: String): List<Int> {
+    val instructions = implementation?.instructions?.toList() ?: return emptyList()
+    if (instructions.none { it.referenceText() == darkCheck }) return emptyList()
+    val targets = branchTargets(instructions)
+    return (0 until instructions.size - 3).filter { index ->
+        val result = instructions[index + 1]
+        val branch = instructions[index + 2]
+        val literal = instructions[index + 3]
+        instructions[index].referenceText() == darkCheck &&
+            result.opcode == Opcode.MOVE_RESULT && branch.opcode == Opcode.IF_EQZ &&
+            (result as OneRegisterInstruction).registerA == (branch as OneRegisterInstruction).registerA &&
+            literal.opcode == Opcode.CONST && ((literal as NarrowLiteralInstruction).narrowLiteral ushr 24) == 0xFF &&
+            index + 3 !in targets
+    }.map { it + 3 }
+}
+
+/** [readDarkBranchLiterals] for one method. `move-result` takes any register a `const` does. */
+internal fun MutableMethod.readDarkBranchLiterals(darkCheck: String): Int {
+    val sites = darkBranchLiterals(darkCheck)
+    sites.asReversed().forEach { index ->
+        val register = getInstruction<OneRegisterInstruction>(index).registerA
+        addInstructions(
+            index + 1,
+            """
+                invoke-static/range { v$register .. v$register }, $DARK_BRANCH
+                move-result v$register
+            """,
+        )
+    }
+    return sites.size
+}
+
+/** The indexes some branch or switch case of a method jumps to. */
+private fun branchTargets(instructions: List<Instruction>): Set<Int> {
+    val addresses = instructions.runningFold(0) { address, it -> address + it.codeUnits }
+    val indexOfAddress = addresses.withIndex().associate { (index, address) -> address to index }
+    val targets = mutableSetOf<Int>()
+    instructions.forEachIndexed { index, instruction ->
+        if (instruction !is OffsetInstruction) return@forEachIndexed
+        val target = addresses[index] + instruction.codeOffset
+        if (instruction.opcode == Opcode.PACKED_SWITCH || instruction.opcode == Opcode.SPARSE_SWITCH) {
+            val payload = instructions[indexOfAddress.getValue(target)] as SwitchPayload
+            payload.switchElements.forEach { element -> indexOfAddress[addresses[index] + element.offset]?.let(targets::add) }
+        } else {
+            indexOfAddress[target]?.let(targets::add)
+        }
+    }
+    return targets
 }
 
 /**

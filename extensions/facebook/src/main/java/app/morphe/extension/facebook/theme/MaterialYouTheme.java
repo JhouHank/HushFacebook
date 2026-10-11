@@ -278,13 +278,29 @@ public final class MaterialYouTheme {
      * Facebook's dark mode each kind of link attachment picks that colour by parsing one MobileConfig
      * sends before it looks at a token, and the box came out #333334, CARD_BACKGROUND's dark grey.
      * That grey is no {@link #SURFACES} colour, light mode drawing it too, so {@link #parseColor}
-     * alone leaves it. The patch sends only those parses here, and the box is a background like a
-     * React card's ({@link #reactBackground}): once Facebook has said dark mode is on, a grey
-     * {@link #FDS_DARK} lists takes the palette's neutral at the same lightness. With AMOLED in the
-     * build its near black stays.
+     * alone leaves it. The patch sends only those parses here, and only from a method that asks
+     * Facebook's own dark check first, so the parse is always on its dark branch: a grey
+     * {@link #FDS_DARK} lists takes the palette's neutral at the same lightness unless Facebook has
+     * said light ({@link #darkSiteGrey}). It doesn't wait for Facebook's first answer, which the box
+     * did in 0.10.0: feed units render on a background thread at a cold start, before that answer,
+     * and a box rendered then stayed grey. With AMOLED in the build its near black stays.
      */
     public static int parseLinkBox(String text) {
-        return darkBackground(parseColor(text));
+        return darkSiteGrey(parseColor(text));
+    }
+
+    /**
+     * Route three for a colour Facebook writes into its code for its dark theme only: the patch
+     * sends here each colour {@code const} that is the first thing Facebook does once its own dark
+     * check said yes (issue #37). On 582 the Menu's profile card at the top, with the account's name
+     * and picture, is #333334 written this way, twice. That grey is no {@link #SURFACES} colour, light
+     * mode drawing it elsewhere, so route three's fields leave it. Here the code around it has already
+     * said dark, so a grey {@link #FDS_DARK} lists takes the palette's neutral at the same lightness
+     * unless Facebook has said light, and any other colour goes the way {@link #withoutToken} sends it.
+     */
+    public static int darkBranch(int color) {
+        HookStatus.invoked(FamilyNames.MATERIAL_YOU_THEME);
+        return darkSiteGrey(color);
     }
 
     /**
@@ -666,8 +682,17 @@ public final class MaterialYouTheme {
      * same lightness for any grey {@link #FDS_DARK} lists.
      */
     private static int darkBackground(int color) {
+        return DarkMode.saidOn() ? darkSiteGrey(color) : withoutToken(color);
+    }
+
+    /**
+     * {@link #withoutToken}, and in dark mode the palette's neutral at the same lightness for any grey
+     * {@link #FDS_DARK} lists. For a colour Facebook only picks once its own check has said dark, so
+     * the time before its first answer counts as dark, as {@link DarkMode#on} has it.
+     */
+    private static int darkSiteGrey(int color) {
         int themed = withoutToken(color);
-        if (themed != color || !DarkMode.saidOn() || Arrays.binarySearch(DARK_GREYS, color) < 0) return themed;
+        if (themed != color || !DarkMode.on() || Arrays.binarySearch(DARK_GREYS, color) < 0) return themed;
         return palette().sameLightness(TonePalette.NEUTRAL, color);
     }
 

@@ -399,12 +399,13 @@ public class MaterialYouThemeTest {
 
     /**
      * Issue #37: the box under a link post's picture is #333334 from a colour MobileConfig sends in
-     * dark mode. Its own parse takes the palette's neutral once Facebook says dark mode is on, as a
-     * grey the dark theme lists. Light mode, the time before Facebook answers, and a colour that
-     * isn't one of those greys keep what they parse to.
+     * dark mode. Its own parse, which runs on Facebook's dark branch only, takes the palette's neutral
+     * as a grey the dark theme lists, from before Facebook's first answer on: feed units render at a
+     * cold start before it, and a box rendered then kept its grey in 0.10.0. Light mode and a colour
+     * that isn't one of those greys keep what they parse to.
      */
     @Test
-    public void theLinkBoxsGreyTakesThePaletteOnceFacebookSaysDark() {
+    public void theLinkBoxsGreyTakesThePaletteUnlessFacebookSaysLight() {
         DarkMode.answer(true);
         assertEquals(palette.sameLightness(TonePalette.NEUTRAL, 0xFF333334), MaterialYouTheme.parseLinkBox("#333334"));
         assertEquals("the other grey a config can pick", palette.sameLightness(TonePalette.NEUTRAL, 0xFF3B3C3E),
@@ -417,7 +418,31 @@ public class MaterialYouThemeTest {
         DarkMode.answer(false);
         assertEquals("light mode", 0xFF333334, MaterialYouTheme.parseLinkBox("#333334"));
         DarkMode.forget();
-        assertEquals("before Facebook answers", 0xFF333334, MaterialYouTheme.parseLinkBox("#333334"));
+        assertEquals("before Facebook answers", palette.sameLightness(TonePalette.NEUTRAL, 0xFF333334),
+                MaterialYouTheme.parseLinkBox("#333334"));
+        assertEquals("a React card still waits for the answer", 0xFF333334, MaterialYouTheme.reactBackground(0xFF333334));
+    }
+
+    /**
+     * Issue #37: the Menu's profile card is #333334 that Facebook writes into its code right after
+     * its own dark check says yes. The patch sends that colour here: a grey the dark theme lists takes
+     * the palette's neutral, before Facebook's first answer too, and light mode, AMOLED's black and a
+     * colour that isn't one of those greys stay.
+     */
+    @Test
+    public void aGreyOnFacebooksDarkBranchTakesThePalette() {
+        DarkMode.answer(true);
+        assertEquals(palette.sameLightness(TonePalette.NEUTRAL, 0xFF333334), MaterialYouTheme.darkBranch(0xFF333334));
+        assertEquals("a dark surface", palette.sameLightness(TonePalette.NEUTRAL, 0xFF252728),
+                MaterialYouTheme.darkBranch(0xFF252728));
+        assertEquals("a colour that isn't Facebook's grey", 0xFF2B3036, MaterialYouTheme.darkBranch(0xFF2B3036));
+        assertEquals("AMOLED's black", 0xFF000000, MaterialYouTheme.darkBranch(0xFF000000));
+
+        DarkMode.forget();
+        assertEquals("before Facebook answers", palette.sameLightness(TonePalette.NEUTRAL, 0xFF333334),
+                MaterialYouTheme.darkBranch(0xFF333334));
+        DarkMode.answer(false);
+        assertEquals("light mode", 0xFF333334, MaterialYouTheme.darkBranch(0xFF333334));
     }
 
     /**
