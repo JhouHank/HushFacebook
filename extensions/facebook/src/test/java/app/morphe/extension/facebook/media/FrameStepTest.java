@@ -7,7 +7,9 @@ package app.morphe.extension.facebook.media;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.robolectric.Shadows.shadowOf;
 
+import android.os.Looper;
 import android.os.SystemClock;
 import android.view.MotionEvent;
 import android.view.ViewConfiguration;
@@ -22,6 +24,7 @@ import org.robolectric.annotation.Config;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
 import app.morphe.extension.facebook.media.FrameStepForTests.OnScreen;
 import app.morphe.extension.facebook.media.FrameStepForTests.Player;
@@ -71,6 +74,11 @@ public class FrameStepTest {
         return String.join("\n", FeedFilterCounters.report());
     }
 
+    /** Runs what the main thread has due in the next [ms]. */
+    private static void later(long ms) {
+        shadowOf(Looper.getMainLooper()).idleFor(ms, TimeUnit.MILLISECONDS);
+    }
+
     @Test
     public void theSwitchStartsOffAndAFrameIsAThirtiethOfASecond() {
         assertFalse("the switch starts off", Settings.FRAME_STEP.defaultValue);
@@ -110,6 +118,77 @@ public class FrameStepTest {
         FrameStep.seeking(Trigger.BY_SEEKBAR_CONTROLLER, player, 60_000);
         FrameStepForTests.tap(screen, 800, 800);
         assertEquals("BY_USER@60033", player.seeks.get(3));
+    }
+
+    /** A 582 reel lands two seconds early: the step is asked again, and later steps allow for it. */
+    @Test
+    public void aStepThatLandsOffIsAskedAgainAndLaterStepsAllowForIt() {
+        player.landsOff = -2_000;
+        FrameStep.stopped(player, Trigger.BY_USER);
+        FrameStepForTests.tap(screen, 800, 800);
+        assertEquals(Collections.singletonList("BY_USER@10033"), player.seeks);
+        later(FrameStep.FIRST_CHECK_MS + 1);
+        assertEquals(Arrays.asList("BY_USER@10033", "BY_USER@12033"), player.seeks);
+        assertEquals("the frame wanted", 10_033, player.position);
+        assertEquals("the small-seek check heard the second ask too", Arrays.asList(true, true), player.steppingInSeek);
+
+        FrameStepForTests.tap(screen, 100, 800);
+        assertEquals("BY_USER@12000", player.seeks.get(2));
+        assertEquals(10_000, player.position);
+        later(5_000);
+        assertEquals("a step that lands on its frame is left alone", 3, player.seeks.size());
+        assertTrue(report(), report().contains(FrameStep.ASKED_AGAIN + " 1"));
+    }
+
+    /** Right after a seek the player answers with the place it was asked for, which says nothing yet. */
+    @Test
+    public void anAnswerThatSaysNothingYetIsReadAgain() {
+        player.landsOff = -2_000;
+        player.echoes = 2;
+        FrameStep.stopped(player, Trigger.BY_USER);
+        FrameStepForTests.tap(screen, 800, 800);
+        later(FrameStep.FIRST_CHECK_MS + FrameStep.NEXT_CHECK_MS + 1);
+        assertEquals("two answers that say nothing", 1, player.seeks.size());
+        later(FrameStep.NEXT_CHECK_MS);
+        assertEquals(Arrays.asList("BY_USER@10033", "BY_USER@12033"), player.seeks);
+    }
+
+    @Test
+    public void aPlayerThatKeepsReadingTheOldPlaceIsLeftAlone() {
+        FrameStep.stopped(player, Trigger.BY_USER);
+        FrameStepForTests.tap(screen, 800, 800);
+        later(5_000);
+        assertEquals(Collections.singletonList("BY_USER@10033"), player.seeks);
+    }
+
+    /** A step asked again that still lands off is asked no more, and the player's offset is forgotten. */
+    @Test
+    public void aStepThatLandsOffAgainIsAskedNoMore() {
+        player.landsOff = -2_000;
+        FrameStep.stopped(player, Trigger.BY_USER);
+        FrameStepForTests.tap(screen, 800, 800);
+        player.landsOff = -500;
+        later(5_000);
+        assertEquals(Arrays.asList("BY_USER@10033", "BY_USER@12033"), player.seeks);
+
+        FrameStepForTests.tap(screen, 800, 800);
+        assertEquals("asked with nothing taken off", "BY_USER@10066", player.seeks.get(2));
+    }
+
+    @Test
+    public void aPlayerThatPlaysOrIsSeekedBeforeTheCheckIsLeftAlone() {
+        player.landsOff = -2_000;
+        FrameStep.stopped(player, Trigger.BY_USER);
+        FrameStepForTests.tap(screen, 800, 800);
+        player.playing = true;
+        later(5_000);
+        assertEquals(1, player.seeks.size());
+
+        player.playing = false;
+        FrameStepForTests.tap(screen, 800, 800);
+        FrameStep.seeking(Trigger.BY_SEEKBAR_CONTROLLER, player, 60_000);
+        later(5_000);
+        assertEquals("your drag of the bar since", 2, player.seeks.size());
     }
 
     @Test

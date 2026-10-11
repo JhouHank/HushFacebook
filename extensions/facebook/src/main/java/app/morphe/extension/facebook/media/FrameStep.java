@@ -6,7 +6,6 @@ package app.morphe.extension.facebook.media;
 
 import android.os.Handler;
 import android.os.Looper;
-import android.os.SystemClock;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -21,6 +20,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
@@ -29,7 +29,6 @@ import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.DiagnosticCategory;
 import app.morphe.extension.shared.diagnostics.FeedFilterCounters;
 import app.morphe.extension.shared.diagnostics.HookStatus;
-import app.morphe.extension.shared.settings.BaseSettings;
 
 /**
  * Frame step: with a reel or video paused, a tap on its right third moves it one frame forward and
@@ -51,10 +50,19 @@ import app.morphe.extension.shared.settings.BaseSettings;
  * tap. A seek this small is one Facebook's player can drop as too close to where the video is, so
  * {@link #stepping} answers that check no for the step's own seek alone.
  *
+ * <p>Some players don't land where they're asked: on Facebook 582 a paused reel asked for 4.328 s
+ * showed the frame at 2.328 s, the place it reads after a seek a whole two seconds off from the place
+ * it reads before. So a moment after each step this class reads where the player says it is. A
+ * landing more than {@link #OFF_BY} away from the frame wanted teaches it how far off that player
+ * lands, the step is asked again with that taken off, and the player's later steps are asked that
+ * way straight off. A player that lands somewhere else again is asked no more and its offset is
+ * forgotten. Right after a seek the player answers with the place it was asked for, which says
+ * nothing, so that answer and the one it gave before the seek mean read again, a few times.
+ *
  * <p>Facebook's player names no frame rate, so a frame is 1/30 second, the rate nearly every
  * Facebook video has. Off, paused, before the settings are ready, or when anything here throws, every
- * tap goes to Facebook as it was. The report counts the steps each way, and Debug logging writes the
- * positions before and after, never which video.
+ * tap goes to Facebook as it was. The report counts the steps each way and the ones asked again, and
+ * Debug logging writes the positions before and after, never which video.
  */
 public final class FrameStep {
     /** One frame at 30 frames a second, in milliseconds. */
@@ -69,12 +77,25 @@ public final class FrameStep {
     // What the report counts, by kind. None of them says which video.
     static final String FORWARD = "a frame forward";
     static final String BACK = "a frame back";
+    static final String ASKED_AGAIN = "a step asked again";
 
     /** What {@link #position} answers until the patch fills it in. */
     static final int NOT_PATCHED_TIME = Integer.MIN_VALUE;
 
     /** At most this many paused players are kept in mind; the oldest goes first. */
     static final int MAX_PAUSED = 8;
+
+    /** How long after a seek the player is first asked where it is, in milliseconds. */
+    static final int FIRST_CHECK_MS = 300;
+
+    /** How long after an answer that says nothing it's asked again, in milliseconds. */
+    static final int NEXT_CHECK_MS = 200;
+
+    /** How many times a seek's landing is read before this class stops asking. */
+    static final int CHECKS = 4;
+
+    /** A landing further than this from the frame wanted, in milliseconds, is one to correct. */
+    static final int OFF_BY = 120;
 
     private static final String SOURCE = "FrameStep";
     private static final String FAMILY = FamilyNames.FRAME_STEP;
@@ -122,6 +143,9 @@ public final class FrameStep {
     /** The paused players, oldest first. */
     private static final List<Paused> PAUSED = new ArrayList<>();
     private static final Map<Class<?>, Object> STEP_TRIGGERS = new HashMap<>();
+
+    /** How far each player was seen landing from where it was asked, kept while the player lives. */
+    private static final Map<Object, Integer> OFFSETS = new WeakHashMap<>();
 
     /** The thread a step is seeking on, while it is. */
     @Nullable
@@ -199,6 +223,9 @@ public final class FrameStep {
             HookStatus.invoked(FAMILY);
             if (player == null) return;
             forget(player);
+            synchronized (OFFSETS) {
+                OFFSETS.remove(player);
+            }
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "player release", failure);
         }
@@ -326,42 +353,118 @@ public final class FrameStep {
         Object held = paused.player.get();
         if (held == null) return false;
         Player player = access;
-        int from = paused.sought >= 0 ? paused.sought : player.position(held);
+        int before = player.position(held);
+        int from = paused.sought >= 0 ? paused.sought : before;
         if (from == NOT_PATCHED_TIME || from < 0) return false;
         Object trigger = stepTrigger(paused.triggers);
         if (trigger == null) return false;
         int to = Math.max(0, from + direction * FRAME_MS);
         if (to == from) return false;
-        boolean sought;
-        stepping = Thread.currentThread();
-        try {
-            sought = player.seek(held, trigger, to);
-        } finally {
-            stepping = null;
-        }
-        if (!sought) return false;
+        int ask = Math.max(0, to - landsBy(held));
+        if (!seek(player, held, trigger, ask)) return false;
         paused.sought = to;
         String kind = direction > 0 ? FORWARD : BACK;
         FeedFilterCounters.sawKind(ROUTE, kind);
-        int read = player.position(held);
-        log(() -> "Frame step: " + kind + ", " + millis(from) + " to " + millis(to) + ", the player reads "
-                + millis(read) + " straight after");
-        logLater(held, to);
+        log(() -> "Frame step: " + kind + ", " + millis(from) + " to " + millis(to) + ", asked the player for "
+                + millis(ask));
+        check(new Landing(paused, trigger, to, ask, before, false), FIRST_CHECK_MS, CHECKS);
         return true;
     }
 
-    /** Debug logging only: where the player says it is a moment after a step, to see the step land. */
-    private static void logLater(Object held, int to) {
-        if (!BaseSettings.DEBUG.get()) return;
-        Looper looper = Looper.myLooper();
-        if (looper == null) return;
-        WeakReference<Object> later = new WeakReference<>(held);
-        new Handler(looper).postDelayed(() -> {
-            Object still = later.get();
-            if (still == null) return;
-            int read = access.position(still);
-            log(() -> "Frame step: asked for " + millis(to) + ", the player reads " + millis(read) + " 300 ms later");
-        }, 300);
+    /** Seeks with the small-seek check answering no. True once the seek was made. */
+    private static boolean seek(Player player, Object held, Object trigger, int positionMs) {
+        stepping = Thread.currentThread();
+        try {
+            return player.seek(held, trigger, positionMs);
+        } finally {
+            stepping = null;
+        }
+    }
+
+    /** How far [held] was seen landing from where it was asked, 0 until it's been seen. */
+    private static int landsBy(Object held) {
+        synchronized (OFFSETS) {
+            Integer lands = OFFSETS.get(held);
+            return lands == null ? 0 : lands;
+        }
+    }
+
+    /** One seek of a step and what's known about it, for reading where it landed. */
+    private static final class Landing {
+        final Paused paused;
+        final Object trigger;
+        /** The frame wanted. */
+        final int to;
+        /** What the player was asked for. */
+        final int ask;
+        /** What the player read before this seek. */
+        final int before;
+        /** Whether this seek is the step asked again. */
+        final boolean again;
+
+        Landing(Paused paused, Object trigger, int to, int ask, int before, boolean again) {
+            this.paused = paused;
+            this.trigger = trigger;
+            this.to = to;
+            this.ask = ask;
+            this.before = before;
+            this.again = again;
+        }
+    }
+
+    /** Reads where [landing]'s player is after [delayMs], [left] times at most. */
+    private static void check(Landing landing, int delayMs, int left) {
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            try {
+                landed(landing, left - 1);
+            } catch (Throwable failure) {
+                HookStatus.threw(FAMILY, "step landing", failure);
+            }
+        }, delayMs);
+    }
+
+    /** Leaves a step that landed on its frame, and asks again for one that landed off. */
+    private static void landed(Landing landing, int left) {
+        Paused paused = landing.paused;
+        Object held = paused.player.get();
+        if (held == null || !on()) return;
+        synchronized (PAUSED) {
+            // Started, released or stopped again since, or seeked by Facebook, your drag or a newer step.
+            if (!PAUSED.contains(paused) || paused.sought != landing.to) return;
+        }
+        Player player = access;
+        if (player.playing(held)) return;
+        int read = player.position(held);
+        if (read == NOT_PATCHED_TIME) return;
+        if (read == landing.ask || read == landing.before) {
+            // The place it was asked for, or the one from before the seek: it hasn't said yet.
+            if (left > 0) check(landing, NEXT_CHECK_MS, left);
+            else log(() -> "Frame step: asked for " + millis(landing.ask) + ", the player kept reading " + millis(read));
+            return;
+        }
+        if (Math.abs(read - landing.to) <= OFF_BY) {
+            log(() -> "Frame step: wanted " + millis(landing.to) + ", the player reads " + millis(read));
+            return;
+        }
+        if (landing.again) {
+            synchronized (OFFSETS) {
+                OFFSETS.remove(held);
+            }
+            log(() -> "Frame step: wanted " + millis(landing.to) + ", asked again and the player reads "
+                    + millis(read) + ", so it's asked no more");
+            return;
+        }
+        int lands = read - landing.ask;
+        synchronized (OFFSETS) {
+            OFFSETS.put(held, lands);
+        }
+        int ask = Math.max(0, landing.to - lands);
+        if (!seek(player, held, landing.trigger, ask)) return;
+        paused.sought = landing.to;
+        FeedFilterCounters.sawKind(ROUTE, ASKED_AGAIN);
+        log(() -> "Frame step: wanted " + millis(landing.to) + ", the player reads " + millis(read)
+                + ", so it's asked for " + millis(ask));
+        check(new Landing(paused, landing.trigger, landing.to, ask, read, true), FIRST_CHECK_MS, CHECKS);
     }
 
     /** The constant of the stop's own trigger enum a step seeks with, or null when there's none. */
@@ -440,6 +543,9 @@ public final class FrameStep {
         }
         synchronized (STEP_TRIGGERS) {
             STEP_TRIGGERS.clear();
+        }
+        synchronized (OFFSETS) {
+            OFFSETS.clear();
         }
         downTime = -1;
         manyFingers = false;

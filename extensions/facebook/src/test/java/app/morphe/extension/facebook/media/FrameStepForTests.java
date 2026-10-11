@@ -59,6 +59,14 @@ public final class FrameStepForTests {
         public final List<String> seeks = new ArrayList<>();
         /** What the small-seek check heard inside each seek. */
         public final List<Boolean> steppingInSeek = new ArrayList<>();
+        /** Once set, a seek lands this far from where it asked, as a 582 reel's lands two seconds early. */
+        public Integer landsOff;
+        /** Once set, every seek lands here, as one snapping to a keyframe would. */
+        public Integer landsAt;
+        /** How many reads after a seek answer with the place asked for, as Facebook's player does for a moment. */
+        public int echoes;
+        private int asked;
+        private int echoesLeft;
 
         public Player(View view, int position) {
             this.view = view;
@@ -66,11 +74,19 @@ public final class FrameStepForTests {
         }
     }
 
-    /** What the patched stubs do, on {@link Player}s. The position stays where it was, as a real player's does for a moment. */
+    /**
+     * What the patched stubs do, on {@link Player}s. Unless a test says where seeks land, the
+     * position stays where it was, as a real player's does for a moment.
+     */
     static final FrameStep.Player ACCESS = new FrameStep.Player() {
         @Override
         public int position(Object player) {
-            return ((Player) player).position;
+            Player reading = (Player) player;
+            if (reading.echoesLeft > 0) {
+                reading.echoesLeft--;
+                return reading.asked;
+            }
+            return reading.position;
         }
 
         @Override
@@ -90,6 +106,10 @@ public final class FrameStepForTests {
             FrameStep.seeking(trigger, player, positionMs);
             seeking.steppingInSeek.add(FrameStep.stepping());
             seeking.seeks.add(((Enum<?>) trigger).name() + "@" + positionMs);
+            seeking.asked = positionMs;
+            seeking.echoesLeft = seeking.echoes;
+            if (seeking.landsAt != null) seeking.position = seeking.landsAt;
+            else if (seeking.landsOff != null) seeking.position = Math.max(0, positionMs + seeking.landsOff);
             return true;
         }
     };
