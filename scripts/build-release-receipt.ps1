@@ -453,8 +453,14 @@ Invoke-HeavyJob -Label 'receipt' -ScriptBlock {
             }
             $libraries = @($alignment | Where-Object { $_ -match '\.so\b' }).Count
             if ($alignExitCode -ne 0) {
-                $misses = @($alignment | Where-Object { $_ -match '\(BAD' } | Select-Object -First 5) -join '; '
-                throw "$label is not 16 KB aligned (zipalign exit $alignExitCode): $misses"
+                $misses = @($alignment | Where-Object { $_ -match '\(BAD' } | Select-Object -First 5)
+                if ($misses.Count -eq 0) {
+                    # No entry was named, so zipalign itself refused the run. One older than build-tools 35
+                    # doesn't know -P, and its own words are the only clue.
+                    throw ("zipalign exited $alignExitCode on $label without naming an entry, so the 16 KB check " +
+                        "didn't run. It said: " + (@($alignment | Select-Object -Last 5) -join '; '))
+                }
+                throw "$label is not 16 KB aligned (zipalign exit $alignExitCode): $($misses -join '; ')"
             }
             Write-Host "[receipt] $label`: $libraries native libraries checked, 16 KB aligned"
 
