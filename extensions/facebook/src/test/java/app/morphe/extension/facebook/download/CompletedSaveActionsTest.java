@@ -349,6 +349,31 @@ public class CompletedSaveActionsTest {
     }
 
     /**
+     * A picked app icon turns Facebook's launcher entry off and the icon's alias on, so a button
+     * naming the entry started nothing (#119). Both buttons name the entry that's on.
+     */
+    @Test public void buttonsAfterAnIconChangeNameThePickedIconsEntry() throws Exception {
+        android.content.ComponentName entry = new android.content.ComponentName(context.getPackageName(),
+                app.morphe.extension.facebook.misc.AppIcons.LAUNCHER);
+        android.content.ComponentName icon = new android.content.ComponentName(context.getPackageName(),
+                app.morphe.extension.facebook.misc.AppIcons.LAUNCHER + ".blue_fb");
+        android.content.IntentFilter main = new android.content.IntentFilter(Intent.ACTION_MAIN);
+        main.addCategory(Intent.CATEGORY_LAUNCHER);
+        for (android.content.ComponentName launcher : new android.content.ComponentName[] {entry, icon}) {
+            shadowOf(context.getPackageManager()).addActivityIfNotPresent(launcher);
+            shadowOf(context.getPackageManager()).addIntentFilterForActivity(launcher, main);
+        }
+        context.getPackageManager().setComponentEnabledSetting(entry,
+                android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                android.content.pm.PackageManager.DONT_KILL_APP);
+        Uri uri = Uri.parse("content://media/external/video/media/73");
+        for (boolean share : new boolean[]{false, true}) {
+            Intent button = shadowOf(SavedFileActions.button(context, uri, "video/mp4", share)).getSavedIntent();
+            assertEquals(icon, button.getComponent());
+        }
+    }
+
+    /**
      * After a run of saves nobody cleared, the oldest cards go, so Android's limit on an app's
      * notifications never swallows the next save's own progress card.
      */

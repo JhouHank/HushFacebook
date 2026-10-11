@@ -22,6 +22,7 @@ Every Hushfacebook release, newest first.
 * **Facebook:** Two saves finishing in the same moment keep twenty finished-save cards. Each one trimmed the shade on its own, so they could both let a card go and leave nineteen.
 * **Facebook:** The Messenger link test under Links writes its result into its own row, where it stays readable. It used to show as a long toast that some phones cut short.
 * **Facebook:** With **Keep the progress bar** and **Show a reel's time** on, the first reel's bar no longer jumps back to the start while it plays (issue #120). The time above the bar was refreshed before Facebook had checked that the reel's player was ready, and the code that writes the time moves the bar too, so each refresh could put the bar back at 0:00 until the player caught up. The time is now refreshed only after Facebook has moved the bar itself.
+* **Facebook:** After you pick a different app icon, the **Hushfacebook settings** shortcut on a long press of the icon opens the settings again (issue #119). Picking an icon switches Facebook's usual launcher entry off and the icon's own entry on, and the shortcut still pointed at the one that was off, so tapping it did nothing. It now points at whichever entry is on, and so do the buttons on a notification that open a setting and the Open and Share buttons on a saved file's card. The shortcut catches up the next time Facebook starts.
 
 ### Changed
 

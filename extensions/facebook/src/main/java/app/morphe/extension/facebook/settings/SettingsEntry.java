@@ -10,7 +10,6 @@ import android.app.Activity;
 import android.app.Application;
 import android.app.Fragment;
 import android.app.FragmentManager;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
@@ -46,6 +45,7 @@ import app.morphe.extension.facebook.feed.ReturnRefresh;
 import app.morphe.extension.facebook.media.ResumePlayback;
 import app.morphe.extension.facebook.menu.MenuLayoutDump;
 import app.morphe.extension.facebook.media.TapToPlay;
+import app.morphe.extension.facebook.misc.AppIcons;
 import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.misc.ScreenTransitions;
 import app.morphe.extension.facebook.misc.TextSize;
@@ -73,12 +73,6 @@ public final class SettingsEntry {
     /** With {@link #EXTRA_OPEN_SETTINGS}: the key of the setting whose row the screen opens at. */
     public static final String EXTRA_SHOW_SETTING = "app.morphe.extension.facebook.SHOW_SETTING";
     static final String SHORTCUT_ID = "hushfacebook_settings";
-
-    /**
-     * The manifest's launcher alias. It points at {@code FbMainTabActivity}, and naming the alias
-     * rather than its target keeps the shortcut working if the target is ever renamed.
-     */
-    private static final String LAUNCHER_ALIAS = "com.facebook.katana.LoginActivity";
     private static final String DIALOG_TAG = "hushfacebook_settings";
 
     /** A request older than this is dropped rather than opened over some later screen. */
@@ -185,11 +179,15 @@ public final class SettingsEntry {
             // Set before the attempt, so a shortcut that can't be pushed isn't tried on every screen.
             publishedLabel = longLabel;
             ShortcutInfo existing = ours(manager);
-            // One labelled in another language, or behind Facebook's, is pushed again below.
+            Intent open = openIntent(app);
+            // One labelled in another language, behind Facebook's, or naming a launcher entry an
+            // icon change has turned off (#119), is pushed again below.
             if (existing != null && existing.getRank() == 0
-                    && longLabel.contentEquals(existing.getLongLabel())) return;
+                    && longLabel.contentEquals(existing.getLongLabel())
+                    && existing.getIntent() != null
+                    && open.getComponent().equals(existing.getIntent().getComponent())) return;
             // Evicts the lowest-ranked dynamic shortcut when Facebook's own fill the limit.
-            manager.pushDynamicShortcut(shortcut(app, longLabel));
+            manager.pushDynamicShortcut(shortcut(app, longLabel, open));
             Logger.printInfo(() -> "Settings entry: launcher shortcut published");
         } catch (Exception ex) {
             Logger.printException(() -> "Settings entry: could not publish the shortcut", ex);
@@ -214,7 +212,7 @@ public final class SettingsEntry {
             final int rank = existing.getRank();
             if (rank == 0) return;
             CharSequence label = existing.getLongLabel();
-            manager.pushDynamicShortcut(shortcut(app, label != null ? label : L10n.t(app, "Hushfacebook settings")));
+            manager.pushDynamicShortcut(shortcut(app, label != null ? label : L10n.t(app, "Hushfacebook settings"), openIntent(app)));
             Logger.printInfo(() -> "Settings entry: launcher shortcut moved back in front from rank " + rank);
         } catch (Exception ex) {
             Logger.printException(() -> "Settings entry: could not put the shortcut back in front", ex);
@@ -229,10 +227,13 @@ public final class SettingsEntry {
         return null;
     }
 
-    /** What the launcher shortcut sends: Facebook's launcher entry, asked to show the screen. */
+    /**
+     * What the launcher shortcut sends: Facebook's launcher entry, asked to show the screen. The
+     * entry that's on now, which is the picked icon's after an icon change ({@link AppIcons#launcher}).
+     */
     private static Intent openIntent(Context app) {
         return new Intent(Intent.ACTION_VIEW)
-                .setComponent(new ComponentName(app.getPackageName(), LAUNCHER_ALIAS))
+                .setComponent(AppIcons.launcher(app))
                 .putExtra(EXTRA_OPEN_SETTINGS, true)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
     }
@@ -250,8 +251,7 @@ public final class SettingsEntry {
         return key;
     }
 
-    private static ShortcutInfo shortcut(Context app, CharSequence longLabel) {
-        Intent intent = openIntent(app);
+    private static ShortcutInfo shortcut(Context app, CharSequence longLabel, Intent intent) {
         return new ShortcutInfo.Builder(app, SHORTCUT_ID)
                 .setShortLabel("Hushfacebook")
                 .setLongLabel(longLabel)

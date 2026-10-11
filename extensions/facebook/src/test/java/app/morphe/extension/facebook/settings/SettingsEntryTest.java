@@ -179,6 +179,43 @@ public class SettingsEntryTest {
         org.junit.Assert.assertEquals(0, shortcut(manager, SettingsEntry.SHORTCUT_ID).getRank());
     }
 
+    /**
+     * Picking an app icon turns Facebook's launcher entry off and the icon's alias on. The shortcut
+     * still named the entry, so a tap on it started nothing (#119). The next start pushes it again
+     * naming the icon's alias, and a notification's open-setting intent names it too.
+     */
+    @Test public void anIconChangeMovesTheShortcutToTheLauncherEntryThatsOn() throws Exception {
+        android.content.Context context = RuntimeEnvironment.getApplication();
+        android.content.pm.ShortcutManager manager = context.getSystemService(android.content.pm.ShortcutManager.class);
+        android.content.pm.PackageManager packages = context.getPackageManager();
+        android.content.ComponentName entry = new android.content.ComponentName(context.getPackageName(),
+                app.morphe.extension.facebook.misc.AppIcons.LAUNCHER);
+        android.content.ComponentName icon = new android.content.ComponentName(context.getPackageName(),
+                app.morphe.extension.facebook.misc.AppIcons.LAUNCHER + ".vaporwave_ic");
+        android.content.IntentFilter main = new android.content.IntentFilter(Intent.ACTION_MAIN);
+        main.addCategory(Intent.CATEGORY_LAUNCHER);
+        for (android.content.ComponentName launcher : new android.content.ComponentName[] {entry, icon}) {
+            org.robolectric.Shadows.shadowOf(packages).addActivityIfNotPresent(launcher);
+            org.robolectric.Shadows.shadowOf(packages).addIntentFilterForActivity(launcher, main);
+        }
+        int on = android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED;
+        int off = android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
+        packages.setComponentEnabledSetting(icon, off, android.content.pm.PackageManager.DONT_KILL_APP);
+        SettingsEntry.publishShortcutNow(context);
+        org.junit.Assert.assertEquals(entry, shortcut(manager, SettingsEntry.SHORTCUT_ID).getIntent().getComponent());
+
+        packages.setComponentEnabledSetting(icon, on, android.content.pm.PackageManager.DONT_KILL_APP);
+        packages.setComponentEnabledSetting(entry, off, android.content.pm.PackageManager.DONT_KILL_APP);
+        SettingsEntry.publishShortcutNow(context);
+
+        Intent opens = shortcut(manager, SettingsEntry.SHORTCUT_ID).getIntent();
+        org.junit.Assert.assertEquals("the shortcut still named the entry that's off", icon, opens.getComponent());
+        assertTrue(opens.getBooleanExtra(SettingsEntry.EXTRA_OPEN_SETTINGS, false));
+        org.junit.Assert.assertEquals("one shortcut, pushed again, not two", 1, manager.getDynamicShortcuts().size());
+        org.junit.Assert.assertEquals(icon,
+                SettingsEntry.settingIntent(context, Settings.DOWNLOAD_COMPATIBLE.key).getComponent());
+    }
+
     /** What the platform leaves after Facebook's pushes rank ahead of the Hushfacebook shortcut. */
     private static void demote(android.content.Context context, android.content.pm.ShortcutManager manager,
                                int rank, String label) {
