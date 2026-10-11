@@ -575,9 +575,11 @@ public class PausedHooksTest {
                 TabBarScrollAway::slidesAway));
         // Facebook's dark mode controller answers dark where it answered light.
         probes.put(PatchFamily.FORCE_DARK_MODE, Collections.singletonList(ForceDarkModeForTests::forcesDark));
-        // A request for a post's comments that names no order asks for the chosen one.
-        probes.put(PatchFamily.DEFAULT_COMMENT_ORDER,
-                Collections.singletonList(DefaultCommentOrderForTests::asksForTheChosenOrder));
+        // A request for a post's comments that names no order asks for the chosen one, and with
+        // All comments chosen, the menu its answer draws is picked in.
+        probes.put(PatchFamily.DEFAULT_COMMENT_ORDER, Arrays.asList(
+                DefaultCommentOrderForTests::asksForTheChosenOrder,
+                DefaultCommentOrderForTests::picksInTheMenu));
         // A comment sheet's summary and the one under a post get a no from their sockets' checks.
         probes.put(PatchFamily.META_AI_SUMMARIES, Arrays.asList(
                 () -> MetaAiSummaries.holds(MetaAiSummaries.SHEET_SUMMARY),

@@ -303,6 +303,8 @@ public class ColdStartHooksTest {
         assertFalse("a tab bar built before the context lost the Friends tab", HiddenTabsForTests.hidesTheTab());
         assertFalse("a comment request built before the context was given an order",
                 DefaultCommentOrderForTests.asksForTheChosenOrder());
+        assertFalse("a comment sort menu built before the context was picked in",
+                DefaultCommentOrderForTests.picksInTheMenu());
         assertFalse("a comment summary held before the context said yes",
                 MetaAiSummaries.holds(MetaAiSummaries.SHEET_SUMMARY));
         assertFalse("a comment box drawn before the context lost its GIF button",
