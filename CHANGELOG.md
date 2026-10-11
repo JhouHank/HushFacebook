@@ -29,6 +29,9 @@ Every Hushfacebook release, newest first.
 * **Facebook:** Summaries and toasts call the Marketplace switch's state Marketplace only, like the switch does. Some said "Marketplace mode", which isn't a name you'd find in the settings search.
 * **Facebook:** The seen posts row is called **Keep seen posts hidden for**, so it makes sense on its own in the settings search. While **Hide posts you've already seen** is off, its summary says to turn that on first.
 * **Tooling:** When the release notes check turns down the phrase about which Facebook builds a release was tried on, its error says the word Facebook has to come right after "to". The 0.10.0 notes were refused once for "to both Facebook" with no hint why.
+* **Facebook:** Ready for Android 17, which Samsung phones are getting with One UI 9. The reels filters that drop items from a section no longer treat a list the section's class keeps for itself as the section's items. Writing back into one of those is refused once Facebook targets Android 17, and could change every section at once before that. CONTRIBUTING.md lists what else Android 17 changes and why the rest doesn't touch Hushfacebook, and the settings and pause tests also run on Android 17 now.
+* **Tooling:** The release receipt checks that every patched build keeps its native libraries 16 KB aligned, which Android 17 phones with 16 KB pages need, and records it. A build that isn't stops the release.
+* **Tooling:** CONTRIBUTING.md no longer names an old release and its patch counts, and the release facts check now holds its patcher version and Manager floor to the pins, the way it does the README's.
 
 ## 0.10.0 (2026-10-10)
 
