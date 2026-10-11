@@ -83,11 +83,14 @@ public final class ReelSections {
         int removed = 0;
 
         try {
-            // A section with no list at all is a wrapper the filter can't see into, and the items
+            // A section with no list of its own is a wrapper the filter can't see into, and the items
             // in it reach the screen. Nothing else reads the page at this level, so it is recorded.
+            // A static list is no section's own, the way itemsOf reads it.
             boolean holdsAList = false;
             for (Field field : section.getClass().getDeclaredFields()) {
-                if (List.class.isAssignableFrom(field.getType())) holdsAList = true;
+                if (!Modifier.isStatic(field.getModifiers()) && List.class.isAssignableFrom(field.getType())) {
+                    holdsAList = true;
+                }
                 List<?> items = itemsOf(field, section);
                 if (items == null || items.isEmpty()) continue;
 
