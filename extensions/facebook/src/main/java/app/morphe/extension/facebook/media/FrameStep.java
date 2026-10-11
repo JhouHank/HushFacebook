@@ -44,20 +44,22 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * <p>Taps come from {@link #touch}, first in the touch listener of GestureReactionComponent's view,
  * the layer Facebook lays over nearly every reel and video player. It sees only touches that reach
  * the video. A quick tap with one finger on a side third, over the view of a paused player that
- * isn't playing, seeks that player by {@link #FRAME_MS} with the BY_USER trigger, the one Facebook
- * seeks exactly with instead of to the nearest keyframe. The tap is then handed on as a cancel, so
- * Facebook's gesture detector doesn't also take it as a tap to play or the first half of a double
- * tap. A seek this small is one Facebook's player can drop as too close to where the video is, so
- * {@link #stepping} answers that check no for the step's own seek alone.
+ * isn't playing, seeks that player by {@link #FRAME_MS} with {@link #STEP_TRIGGER}. The tap is then
+ * handed on as a cancel, so Facebook's gesture detector doesn't also take it as a tap to play or the
+ * first half of a double tap. A seek this small is one Facebook's player can drop as too close to
+ * where the video is, so {@link #stepping} answers that check no for the step's own seek alone.
  *
- * <p>Some players don't land where they're asked: on Facebook 582 a paused reel asked for 4.328 s
- * showed the frame at 2.328 s, the place it reads after a seek a whole two seconds off from the place
- * it reads before. So a moment after each step this class reads where the player says it is. A
- * landing more than {@link #OFF_BY} away from the frame wanted teaches it how far off that player
- * lands, the step is asked again with that taken off, and the player's later steps are asked that
- * way straight off. A player that lands somewhere else again is asked no more and its offset is
- * forgotten. Right after a seek the player answers with the place it was asked for, which says
- * nothing, so that answer and the one it gave before the seek mean read again, a few times.
+ * <p>The trigger decides how exact the seek is. Facebook's player seeks fast for BY_USER, with
+ * parameters that let it land up to two seconds before the place asked for: on Facebook 582 a paused
+ * reel stepped with BY_USER landed on a keyframe up to two seconds back, or two seconds early when
+ * none was there. BY_INITIAL_FRAME_PERFECT_SEEK is one it seeks to the exact frame for.
+ *
+ * <p>In case a player still lands off, a moment after each step this class reads where the player
+ * says it is. A landing more than {@link #OFF_BY} away from the frame wanted teaches it how far off
+ * that player lands, the step is asked again with that taken off, and the player's later steps are
+ * asked that way straight off. A player that lands somewhere else again is asked no more and its
+ * offset is forgotten. Right after a seek the player answers with the place it was asked for, which
+ * says nothing, so that answer and the one it gave before the seek mean read again, a few times.
  *
  * <p>Facebook's player names no frame rate, so a frame is 1/30 second, the rate nearly every
  * Facebook video has. Off, paused, before the settings are ready, or when anything here throws, every
@@ -68,8 +70,8 @@ public final class FrameStep {
     /** One frame at 30 frames a second, in milliseconds. */
     static final int FRAME_MS = 33;
 
-    /** The trigger a step seeks with: the one Facebook seeks to the exact position with. */
-    static final String STEP_TRIGGER = "BY_USER";
+    /** The trigger a step seeks with: one Facebook's player seeks to the exact frame for, not a keyframe. */
+    static final String STEP_TRIGGER = "BY_INITIAL_FRAME_PERFECT_SEEK";
 
     /** The report's line. */
     static final String ROUTE = "Frame step";

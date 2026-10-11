@@ -41,8 +41,12 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  * video and passes it to the detector last, so a tap's up turned into a cancel there is no tap to
  * Facebook.
  *
- * The step seeks with BY_USER, which 582's exact-seek check (A0l) answers yes for unless the
- * video's params say otherwise. The others land on a keyframe.
+ * The step seeks with BY_INITIAL_FRAME_PERFECT_SEEK. The static seek asks a per-trigger check (582
+ * A0l) whether to seek fast, and the service player then seeks with its own tolerant parameters
+ * (582 `5CA.A0f`, two seconds before) instead of exact ones (`5CB.A03`, 0 and 0). That check
+ * answers yes for BY_USER (ordinal 3) unless the video's params say no, and on the S22 a BY_USER
+ * step on a paused reel landed on a keyframe up to two seconds back, or two seconds early when none
+ * was there. It answers no for the frame-perfect trigger (ordinal 183), by name and by default.
  */
 
 internal const val PATCH = "Frame step"

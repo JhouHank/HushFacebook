@@ -41,7 +41,7 @@ import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 
 /** The trigger the extension's step seeks with, which the trigger enum has to name. */
-internal const val STEP_TRIGGER = "BY_USER"
+internal const val STEP_TRIGGER = "BY_INITIAL_FRAME_PERFECT_SEEK"
 
 /**
  * FbGrootPlayer's start, stop, release and seek tell the extension about themselves, its check that

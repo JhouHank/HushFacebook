@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import app.morphe.extension.facebook.media.FrameStepForTests.OnScreen;
 import app.morphe.extension.facebook.media.FrameStepForTests.Player;
 import app.morphe.extension.facebook.media.FrameStepForTests.Trigger;
-import app.morphe.extension.facebook.media.FrameStepForTests.TriggerWithoutUser;
+import app.morphe.extension.facebook.media.FrameStepForTests.TriggerWithoutStep;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
@@ -40,7 +40,7 @@ import app.morphe.extension.shared.settings.PauseForTests;
 
 /**
  * Frame step: a quick tap on the right or left third of a paused video seeks it one frame forward
- * or back with BY_USER, past the player's small-seek check, and Facebook's detector gets a cancel
+ * or back with the frame-perfect trigger, past the player's small-seek check, and Facebook's detector gets a cancel
  * instead of the tap. Playing videos, the middle third, holds, drags and every touch while off,
  * paused or before the settings are ready go to Facebook as they were.
  */
@@ -83,14 +83,15 @@ public class FrameStepTest {
     public void theSwitchStartsOffAndAFrameIsAThirtiethOfASecond() {
         assertFalse("the switch starts off", Settings.FRAME_STEP.defaultValue);
         assertEquals(33, FrameStep.FRAME_MS);
-        assertEquals("the trigger 582 seeks exactly with", "BY_USER", FrameStep.STEP_TRIGGER);
+        assertEquals("not BY_USER, which 582 seeks fast and up to two seconds early with", "BY_INITIAL_FRAME_PERFECT_SEEK",
+                FrameStep.STEP_TRIGGER);
     }
 
     @Test
     public void aTapOnTheRightThirdOfAPausedVideoStepsAFrameForward() {
         FrameStep.stopped(player, Trigger.BY_USER);
         assertEquals("Facebook's detector gets a cancel", MotionEvent.ACTION_CANCEL, FrameStepForTests.tap(screen, 800, 800));
-        assertEquals(Collections.singletonList("BY_USER@10033"), player.seeks);
+        assertEquals(Collections.singletonList("BY_INITIAL_FRAME_PERFECT_SEEK@10033"), player.seeks);
         assertEquals("the small-seek check heard the step", Collections.singletonList(true), player.steppingInSeek);
         assertFalse("and nothing else seeks past it", FrameStep.stepping());
         assertTrue(report(), report().contains(FrameStep.FORWARD + " 1"));
@@ -102,7 +103,7 @@ public class FrameStepTest {
     public void aTapOnTheLeftThirdStepsAFrameBack() {
         FrameStep.stopped(player, Trigger.BY_AUTOPLAY);
         assertEquals(MotionEvent.ACTION_CANCEL, FrameStepForTests.tap(screen, 100, 800));
-        assertEquals(Collections.singletonList("BY_USER@9967"), player.seeks);
+        assertEquals(Collections.singletonList("BY_INITIAL_FRAME_PERFECT_SEEK@9967"), player.seeks);
         assertTrue(report(), report().contains(FrameStep.BACK + " 1"));
     }
 
@@ -113,11 +114,11 @@ public class FrameStepTest {
         FrameStepForTests.tap(screen, 800, 800);
         FrameStepForTests.tap(screen, 800, 800);
         FrameStepForTests.tap(screen, 100, 800);
-        assertEquals(Arrays.asList("BY_USER@10033", "BY_USER@10066", "BY_USER@10033"), player.seeks);
+        assertEquals(Arrays.asList("BY_INITIAL_FRAME_PERFECT_SEEK@10033", "BY_INITIAL_FRAME_PERFECT_SEEK@10066", "BY_INITIAL_FRAME_PERFECT_SEEK@10033"), player.seeks);
 
         FrameStep.seeking(Trigger.BY_SEEKBAR_CONTROLLER, player, 60_000);
         FrameStepForTests.tap(screen, 800, 800);
-        assertEquals("BY_USER@60033", player.seeks.get(3));
+        assertEquals("BY_INITIAL_FRAME_PERFECT_SEEK@60033", player.seeks.get(3));
     }
 
     /** A 582 reel lands two seconds early: the step is asked again, and later steps allow for it. */
@@ -126,14 +127,14 @@ public class FrameStepTest {
         player.landsOff = -2_000;
         FrameStep.stopped(player, Trigger.BY_USER);
         FrameStepForTests.tap(screen, 800, 800);
-        assertEquals(Collections.singletonList("BY_USER@10033"), player.seeks);
+        assertEquals(Collections.singletonList("BY_INITIAL_FRAME_PERFECT_SEEK@10033"), player.seeks);
         later(FrameStep.FIRST_CHECK_MS + 1);
-        assertEquals(Arrays.asList("BY_USER@10033", "BY_USER@12033"), player.seeks);
+        assertEquals(Arrays.asList("BY_INITIAL_FRAME_PERFECT_SEEK@10033", "BY_INITIAL_FRAME_PERFECT_SEEK@12033"), player.seeks);
         assertEquals("the frame wanted", 10_033, player.position);
         assertEquals("the small-seek check heard the second ask too", Arrays.asList(true, true), player.steppingInSeek);
 
         FrameStepForTests.tap(screen, 100, 800);
-        assertEquals("BY_USER@12000", player.seeks.get(2));
+        assertEquals("BY_INITIAL_FRAME_PERFECT_SEEK@12000", player.seeks.get(2));
         assertEquals(10_000, player.position);
         later(5_000);
         assertEquals("a step that lands on its frame is left alone", 3, player.seeks.size());
@@ -150,7 +151,7 @@ public class FrameStepTest {
         later(FrameStep.FIRST_CHECK_MS + FrameStep.NEXT_CHECK_MS + 1);
         assertEquals("two answers that say nothing", 1, player.seeks.size());
         later(FrameStep.NEXT_CHECK_MS);
-        assertEquals(Arrays.asList("BY_USER@10033", "BY_USER@12033"), player.seeks);
+        assertEquals(Arrays.asList("BY_INITIAL_FRAME_PERFECT_SEEK@10033", "BY_INITIAL_FRAME_PERFECT_SEEK@12033"), player.seeks);
     }
 
     @Test
@@ -158,7 +159,7 @@ public class FrameStepTest {
         FrameStep.stopped(player, Trigger.BY_USER);
         FrameStepForTests.tap(screen, 800, 800);
         later(5_000);
-        assertEquals(Collections.singletonList("BY_USER@10033"), player.seeks);
+        assertEquals(Collections.singletonList("BY_INITIAL_FRAME_PERFECT_SEEK@10033"), player.seeks);
     }
 
     /** A step asked again that still lands off is asked no more, and the player's offset is forgotten. */
@@ -169,10 +170,10 @@ public class FrameStepTest {
         FrameStepForTests.tap(screen, 800, 800);
         player.landsOff = -500;
         later(5_000);
-        assertEquals(Arrays.asList("BY_USER@10033", "BY_USER@12033"), player.seeks);
+        assertEquals(Arrays.asList("BY_INITIAL_FRAME_PERFECT_SEEK@10033", "BY_INITIAL_FRAME_PERFECT_SEEK@12033"), player.seeks);
 
         FrameStepForTests.tap(screen, 800, 800);
-        assertEquals("asked with nothing taken off", "BY_USER@10066", player.seeks.get(2));
+        assertEquals("asked with nothing taken off", "BY_INITIAL_FRAME_PERFECT_SEEK@10066", player.seeks.get(2));
     }
 
     @Test
@@ -196,7 +197,7 @@ public class FrameStepTest {
         player.position = 20;
         FrameStep.stopped(player, Trigger.BY_USER);
         FrameStepForTests.tap(screen, 100, 800);
-        assertEquals(Collections.singletonList("BY_USER@0"), player.seeks);
+        assertEquals(Collections.singletonList("BY_INITIAL_FRAME_PERFECT_SEEK@0"), player.seeks);
         assertEquals("nothing is left to step back to", MotionEvent.ACTION_UP, FrameStepForTests.tap(screen, 100, 800));
         assertEquals(1, player.seeks.size());
     }
@@ -244,17 +245,17 @@ public class FrameStepTest {
         assertEquals(MotionEvent.ACTION_UP, FrameStepForTests.tap(screen, 800, 300));
         assertTrue(below.seeks.isEmpty());
         assertEquals(MotionEvent.ACTION_CANCEL, FrameStepForTests.tap(screen, 800, 1400));
-        assertEquals(Collections.singletonList("BY_USER@5033"), below.seeks);
+        assertEquals(Collections.singletonList("BY_INITIAL_FRAME_PERFECT_SEEK@5033"), below.seeks);
 
         // Two paused under one tap: the one stopped last.
         FrameStep.stopped(player, Trigger.BY_USER);
         FrameStepForTests.tap(screen, 800, 1400);
-        assertEquals(Collections.singletonList("BY_USER@10033"), player.seeks);
+        assertEquals(Collections.singletonList("BY_INITIAL_FRAME_PERFECT_SEEK@10033"), player.seeks);
         assertEquals(1, below.seeks.size());
 
         player.view = null;
         FrameStepForTests.tap(screen, 100, 1400);
-        assertEquals("a player with no view is left alone", "BY_USER@5000", below.seeks.get(1));
+        assertEquals("a player with no view is left alone", "BY_INITIAL_FRAME_PERFECT_SEEK@5000", below.seeks.get(1));
     }
 
     @Test
@@ -306,7 +307,7 @@ public class FrameStepTest {
 
     @Test
     public void aTriggerEnumWithoutByUserStepsNothingAndSaysSo() {
-        FrameStep.stopped(player, TriggerWithoutUser.BY_PLAYER);
+        FrameStep.stopped(player, TriggerWithoutStep.BY_PLAYER);
         assertEquals(MotionEvent.ACTION_UP, FrameStepForTests.tap(screen, 800, 800));
         assertTrue(player.seeks.isEmpty());
         assertTrue(HookStatus.report("").toString(), HookStatus.anyMissing());

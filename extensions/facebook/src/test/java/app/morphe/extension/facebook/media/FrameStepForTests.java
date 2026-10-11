@@ -21,10 +21,10 @@ import java.util.List;
  */
 public final class FrameStepForTests {
     /** Stands in for Facebook's EventTriggerType: only the constant names matter. */
-    public enum Trigger { BY_USER, BY_PLAYER, BY_AUTOPLAY, BY_SEEKBAR_CONTROLLER }
+    public enum Trigger { BY_USER, BY_PLAYER, BY_AUTOPLAY, BY_SEEKBAR_CONTROLLER, BY_INITIAL_FRAME_PERFECT_SEEK }
 
     /** A trigger enum without the constant a step seeks with. */
-    public enum TriggerWithoutUser { BY_PLAYER, BY_AUTOPLAY }
+    public enum TriggerWithoutStep { BY_USER, BY_PLAYER, BY_AUTOPLAY }
 
     /** A view at a fixed place on screen, shown, of a fixed size. */
     public static final class OnScreen extends FrameLayout {
