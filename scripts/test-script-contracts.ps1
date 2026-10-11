@@ -2583,7 +2583,7 @@ try {
     }
 
     # The control: a file no gate reads runs no gate, so a marker below is the routing talking.
-    Invoke-Hook -Paths @('CONTRIBUTING.md')
+    Invoke-Hook -Paths @('LICENSE')
     Assert-True (-not (Test-Path -LiteralPath $factsMarker)) `
         'The release check ran for a push that changed nothing it reads.'
     Assert-True (-not (Test-Path -LiteralPath $toolingMarker)) `
@@ -2768,6 +2768,10 @@ try {
     Invoke-Hook -Paths @('.github/ISSUE_TEMPLATE/bug_report.yml')
     Assert-True (Test-Path -LiteralPath $factsMarker) `
         'A push that changed only the bug report form ran no release check.'
+
+    Invoke-Hook -Paths @('CONTRIBUTING.md')
+    Assert-True (Test-Path -LiteralPath $factsMarker) `
+        'A push that changed only CONTRIBUTING.md ran no release check, which holds its patcher and Manager floor.'
 
     Invoke-Hook -Paths @('patches-bundle.json')
     Assert-True (Test-Path -LiteralPath $factsMarker) 'An index change ran no release check.'
@@ -3259,7 +3263,7 @@ try {
                 '*GITHUB_ACTOR*' "A push that changed $pin did not reach the build gates."
         }
         # And the control: a file the build branch has no interest in must not reach it.
-        & $prePushScript -Root $hookRoot -ChangedPaths @('CONTRIBUTING.md') 6> $null
+        & $prePushScript -Root $hookRoot -ChangedPaths @('LICENSE') 6> $null
         Assert-True ($LASTEXITCODE -eq 0 -or $null -eq $LASTEXITCODE) `
             'A file no gate reads was routed into the build gates.'
     } finally {
@@ -4317,7 +4321,7 @@ try {
     # release is held to the census, and .gitignore has to let the ledger be committed.
     $releaseFiles = @('patches-list.json', 'patches-bundle.json', 'gradle.properties', 'README.md', 'CHANGELOG.md',
         'gradle/libs.versions.toml', 'gradle/tooling-scopes.txt', '.github/ISSUE_TEMPLATE/bug_report.yml', '.gitignore',
-        'sources/facebook-sources.json', 'NOTICE', 'provenance.json')
+        'sources/facebook-sources.json', 'NOTICE', 'provenance.json', 'CONTRIBUTING.md')
     foreach ($relative in $releaseFiles) {
         $destination = Join-Path $releaseRepo $relative
         New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
@@ -5807,8 +5811,11 @@ try {
     Edit-ReleaseFile '.github/ISSUE_TEMPLATE/bug_report.yml' {
         param($text) $text.Replace("Morphe Manager $releaseFloor", "Morphe Manager $laterFloor")
     }
+    Edit-ReleaseFile 'CONTRIBUTING.md' {
+        param($text) $text.Replace("Morphe Manager $releaseFloor or newer", "Morphe Manager $laterFloor or newer")
+    }
     Invoke-FixtureGit -Root $releaseRepo -Arguments @('add', '--', 'gradle.properties', 'patches-list.json', 'CHANGELOG.md',
-        'gradle/libs.versions.toml', 'README.md', '.github/ISSUE_TEMPLATE/bug_report.yml') | Out-Null
+        'gradle/libs.versions.toml', 'README.md', '.github/ISSUE_TEMPLATE/bug_report.yml', 'CONTRIBUTING.md') | Out-Null
     Invoke-FixtureGit -Root $releaseRepo -Arguments @('commit', '-m', 'next release', '--quiet') | Out-Null
     $laterCommit = "$(Invoke-FixtureGit -Root $releaseRepo -Arguments @('rev-parse', 'HEAD') | Select-Object -First 1)".Trim()
     Invoke-FixtureGit -Root $releaseRepo -Arguments @('tag', "v$laterVersion", $laterCommit) | Out-Null

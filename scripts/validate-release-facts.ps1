@@ -805,7 +805,11 @@ Write-Host "[release] README requires Morphe Manager $managerFloor or newer for 
 # CONTRIBUTING names the patcher and the floor as well, and it still said "the v0.8.0 bundle" with
 # 0.8.0's feature counts two releases later, with nothing to catch it. It's held to the same pins and
 # may not describe the bundle by a release version, which the next release makes wrong.
-$contributing = Get-Content -LiteralPath (Join-Path $rootPath 'CONTRIBUTING.md') -Raw
+$contributingPath = Join-Path $rootPath 'CONTRIBUTING.md'
+if (-not (Test-Path -LiteralPath $contributingPath -PathType Leaf)) {
+    throw "CONTRIBUTING.md is missing: $contributingPath"
+}
+$contributing = Get-Content -LiteralPath $contributingPath -Raw
 $contributingReleases = @([regex]::Matches($contributing, '(?i)\b(?:the|in) v\d+(?:\.\d+)+\b') |
     ForEach-Object { $_.Value } | Select-Object -Unique)
 if ($contributingReleases.Count -gt 0) {

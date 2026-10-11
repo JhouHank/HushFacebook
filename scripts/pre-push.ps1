@@ -597,7 +597,9 @@ try {
         # was renamed away by a post-release commit that no gate read.
         $_ -eq 'CHANGELOG.md' -or
         # Its version placeholders are held to the target and the published index.
-        $_ -eq '.github/ISSUE_TEMPLATE/bug_report.yml'
+        $_ -eq '.github/ISSUE_TEMPLATE/bug_report.yml' -or
+        # It names the pinned patcher and the Manager floor, which the release check holds it to.
+        $_ -eq 'CONTRIBUTING.md'
     }).Count -gt 0
 
     # Every gate below checks the tip of each pushed ref, and checks it in place only when it is HEAD
