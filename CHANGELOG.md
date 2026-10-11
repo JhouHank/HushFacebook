@@ -34,6 +34,7 @@ Every Hushfacebook release, newest first.
 * **Facebook:** Ready for Android 17, which Samsung phones are getting with One UI 9. The reels filters that drop items from a section no longer treat a list the section's class keeps for itself as the section's items. Writing back into one of those is refused once Facebook targets Android 17, and could change every section at once before that. CONTRIBUTING.md lists what else Android 17 changes and why the rest doesn't touch Hushfacebook, and the settings and pause tests also run on Android 17 now.
 * **Tooling:** The release receipt checks that every patched build keeps its native libraries 16 KB aligned, which Android 17 phones with 16 KB pages need, and records it. A build that isn't stops the release.
 * **Tooling:** CONTRIBUTING.md no longer names an old release and its patch counts, and the release facts check now holds its patcher version and Manager floor to the pins, the way it does the README's.
+* **Facebook:** **Unlock app icons** says where to pick an icon (issue #122). The icons are on Facebook's own App icon page, at Menu > Settings and privacy > App icon, and the switch's summary used to say only "its App icon page". Patch descriptions in Morphe Manager say the same now.
 
 ## 0.10.0 (2026-10-10)
 
