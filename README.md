@@ -18,7 +18,7 @@
 
 Hushfacebook is a Morphe patch bundle for Android that takes the clutter out of Facebook and puts useful controls back in your hands.
 
-The latest release is [v0.10.0](https://github.com/SysAdminDoc/Hushfacebook/releases/tag/v0.10.0), with 87 patches. It includes all changes since v0.9.0, among them the new Unlock app icons patch, a Watch history shortcut, a reel's time above its progress bar, and sound most players can play on saves whose only sound is xHE-AAC, as the [changelog](CHANGELOG.md) describes.
+The latest release is [v0.11.0](https://github.com/SysAdminDoc/Hushfacebook/releases/tag/v0.11.0), with 88 patches. It includes all changes since v0.10.0, among them the new Frame step patch, switches that hide comments with shop links or your words, a Home that shows just Friends, Favorites, Groups or Pages, and fixes for the kept reel progress bar and Material You's Menu, as the [changelog](CHANGELOG.md) describes.
 
 [Add to Morphe](https://morphe.software/add-source?github=SysAdminDoc%2FHushfacebook) | [Download a release](https://github.com/SysAdminDoc/Hushfacebook/releases/latest) | [Browse the patches](#patches)
 
