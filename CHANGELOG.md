@@ -42,6 +42,20 @@ Every Hushfacebook release, newest first.
 * **Tooling:** CONTRIBUTING.md no longer names an old release and its patch counts, and the release facts check now holds its patcher version and Manager floor to the pins, the way it does the README's.
 * **Facebook:** **Unlock app icons** says where to pick an icon (issue #122). The icons are on Facebook's own App icon page, at Menu > Settings and privacy > App icon, and the switch's summary used to say only "its App icon page". Patch descriptions in Morphe Manager say the same now.
 
+### Reported issues
+
+* **Facebook:** #120 Progress bar resetting with Keep the progress bar on: the first reel's bar moves on from where the reel is and goes back to the start only when the reel does.
+* **Facebook:** #119 Hushfacebook settings not opening from a long press on the icon: after you pick a different app icon, the shortcut opens the settings again once Facebook has restarted.
+* **Facebook:** #110 Comment sorting: with **Default comment order** on All comments, a friend's post opens with its comments, and All comments is picked in the post's own sort menu where it has one.
+* **Facebook:** #73 Keep the reel progress bar visible: a playing reel's caption stays above the bar and its time, and short reels keep the bar.
+* **Facebook:** #37 Material You in dark mode: the card at the top of Menu, the strip behind Log out, the Create story tile and the link boxes Facebook lays out first on a cold start take your palette.
+* **Facebook:** #122 and #109 Unlocked icons: the **Unlock app icons** switch says where the icons are, Menu > Settings and privacy > App icon.
+* **Facebook:** #90 Elapsed time on a reel before tapping play: a reel waiting for your tap stays out of picture-in-picture, and a reel coming back from the floating player keeps playing.
+* **Facebook:** #93 HDR videos with Turn off HDR brightness on: the switch also asks the phone's video decoder to keep HDR video in the usual range.
+* **Facebook:** #95 Frame mode: the new `Frame step` patch moves a paused reel or video one frame at a time.
+* **Facebook:** #118 Hiding promotional link comments: **Hide comments with shop links** and **Hide comments with your words** under Comments.
+* **Facebook:** #112 Battery drain on a re-signed build: Facebook's push service accepts a patched Facebook instead of stopping and restarting over and over.
+
 ## 0.10.0 (2026-10-10)
 
 * **Facebook:** This release gathers everything since v0.9.0 and brings 87 patches for Facebook 582.0.0.50.54, up from 86. The new one is `Unlock app icons`, which lets you pick any icon on Facebook's App icon page. New switches add a Watch history shortcut, keep a reel's time above its progress bar, stop link history in Facebook's browser and hold back camera roll processing. Saves whose only sound is xHE-AAC now get sound most players can play, and the Reported issues list below maps each report this release touches.
