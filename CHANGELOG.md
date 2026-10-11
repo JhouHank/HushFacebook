@@ -2,7 +2,9 @@
 
 Every Hushfacebook release, newest first.
 
-## Unreleased
+## 0.11.0 (2026-10-11)
+
+* **Facebook:** This release gathers everything since v0.10.0 and brings 88 patches for Facebook 582.0.0.50.54, up from 87. The new one is `Frame step`, which moves a paused reel or video one frame at a time. New switches hide comments with shop links or with words from your News feed list, let Home show just Friends, Favorites, Groups or Pages, and save crashes to Downloads so they can go with a bug report. The kept reel progress bar no longer jumps back on the first reel or sits under the caption, Material You reaches the Menu's top card and Log out strip, and the Reported issues list below maps each report this release touches.
 
 ### Added
 
