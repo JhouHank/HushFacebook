@@ -365,7 +365,7 @@ Facebook will open on %1$s.	Facebook %1$s sekmesinde açılacak.
 # context: switch title under Opening Facebook; Following is Facebook's feed of the friends, Pages and groups you follow, and Home is the tab
 Following feed on Home	Ana Sayfa'da Takip Edilenler akışı
 # context: summary of that switch; the ranked feed is the one Facebook orders for you, and the Feeds tab has its own filters
-Home shows the newest posts from friends, groups and Pages you follow, like All in the Feeds tab, or the filter you pick below. The Feeds tab's filters don't change.	Ana Sayfa, takip ettiğiniz arkadaşların, grupların ve Sayfaların en yeni gönderilerini gösterir; Feeds sekmesindeki Tümü ya da aşağıda seçtiğiniz filtre gibi. Feeds sekmesinin filtreleri değişmez.
+Home shows the newest posts from friends, groups and Pages you follow, like All in the Feeds tab, or the filter you pick below. The Feeds tab's filters don't change.	Ana Sayfa, takip ettiğiniz arkadaşların, grupların ve Sayfaların en yeni gönderilerini gösterir; Akışlar sekmesindeki Tümü ya da aşağıda seçtiğiniz filtre gibi. Akışlar sekmesinin filtreleri değişmez.
 Jump to a section	Bir bölüme git
 Go straight to one group of settings. Back returns to where you were.	Doğrudan bir ayar grubuna git. Geri, bulunduğun yere döndürür.
 # context: switch title under Downloads; on, every video save keeps to formats other apps accept
@@ -854,7 +854,7 @@ Shows the post's date under the poster's name instead of Facebook's rotating det
 # context: switch title under News feed; the Feeds header is the row at the top of the Feeds tab with Feeds, the menu and search, and the filters under it, All, Favorites, Friends, Groups and Pages
 Hide the Feeds header	Akışlar başlığını gizle
 # context: description of that switch; the Feeds tab is where Facebook lists posts by those filters, and the title row is the one with the tab's name
-Shows the Feeds tab straight on its posts, without the title row or the filters. Restart Facebook to see the change.	Feeds sekmesini başlık satırı ve filtreler olmadan doğrudan gönderileriyle gösterir. Değişikliği görmek için Facebook'u yeniden başlatın.
+Shows the Feeds tab straight on its posts, without the title row or the filters. Restart Facebook to see the change.	Akışlar sekmesini başlık satırı ve filtreler olmadan doğrudan gönderileriyle gösterir. Değişikliği görmek için Facebook'u yeniden başlatın.
 # context: switch title under Reels and Watch; the prompt is Facebook's "Are you interested in this reel?" question on a reel
 Hide reel interest prompts	Reels'teki ilgi sorusunu gizle
 # context: description of that switch; the quoted text is Facebook's own prompt, so use Facebook's wording in your language if you know it
@@ -920,11 +920,11 @@ The Feeds tab will open on the filter Facebook picks.	Akışlar sekmesi Facebook
 The Feeds tab will open on %1$s.	Akışlar sekmesi %1$s filtresinde açılacak.
 # context: title of the list under Following feed on Home that picks which Feeds tab filter Home shows
 Home shows	Ana Sayfa'da gösterilen
-Home shows the same posts as All in the Feeds tab.	Ana Sayfa, Feeds sekmesindeki Tümü ile aynı gönderileri gösterir.
+Home shows the same posts as All in the Feeds tab.	Ana Sayfa, Akışlar sekmesindeki Tümü ile aynı gönderileri gösterir.
 # context: %1$s is a Feeds tab filter's name, like Friends or Groups
-Home shows the same posts as %1$s in the Feeds tab. If Facebook doesn't have that feed, Home shows All.	Ana Sayfa, Feeds sekmesindeki %1$s ile aynı gönderileri gösterir. Facebook'ta bu akış yoksa Ana Sayfa Tümü'nü gösterir.
+Home shows the same posts as %1$s in the Feeds tab. If Facebook doesn't have that feed, Home shows All.	Ana Sayfa, Akışlar sekmesindeki %1$s ile aynı gönderileri gösterir. Facebook'ta bu akış yoksa Ana Sayfa Tümü'nü gösterir.
 # context: settings import preview; %1$s is the Following feed on Home switch, %2$s a Feeds tab filter
-With %1$s on, Home will show the same posts as %2$s in the Feeds tab.	%1$s açıkken Ana Sayfa, Feeds sekmesindeki %2$s ile aynı gönderileri gösterecek.
+With %1$s on, Home will show the same posts as %2$s in the Feeds tab.	%1$s açıkken Ana Sayfa, Akışlar sekmesindeki %2$s ile aynı gönderileri gösterecek.
 Saved	Kaydedilenler
 Saved shortcut	Kaydedilenler kısayolu
 Adds Saved to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	Facebook simgesine basılı tutunca açılan menüye, yer varsa Kaydedilenler seçeneğini ekler. Mevcut kısayollar kalır.
