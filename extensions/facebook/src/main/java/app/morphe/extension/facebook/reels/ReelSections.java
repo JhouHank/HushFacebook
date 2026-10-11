@@ -5,6 +5,7 @@
 package app.morphe.extension.facebook.reels;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -141,9 +142,12 @@ public final class ReelSections {
         return false;
     }
 
-    /** The list this field holds, or null when the field holds no list. */
+    /**
+     * The list this field holds, or null when the field holds no list. A static field is no
+     * section's own items, and writing a static final one back is refused from Android 17 on.
+     */
     private static List<?> itemsOf(Field field, Object section) throws IllegalAccessException {
-        if (!List.class.isAssignableFrom(field.getType())) return null;
+        if (Modifier.isStatic(field.getModifiers()) || !List.class.isAssignableFrom(field.getType())) return null;
 
         field.setAccessible(true);
         Object value = field.get(section);
