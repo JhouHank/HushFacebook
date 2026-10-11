@@ -284,6 +284,15 @@
     },
     {
       "paths": [
+        "extensions/shared/library/src/main/java/app/morphe/extension/shared/settings/preference/CrashFile.java"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: writes the redacted crash report to Download/Hushfacebook through MediaStore, keeps the newest five, and takes a file back when the process lived through the exception."
+    },
+    {
+      "paths": [
         "extensions/shared/library/src/main/java/app/morphe/extension/shared/L10nTranslations.java"
       ],
       "origin": "original",
