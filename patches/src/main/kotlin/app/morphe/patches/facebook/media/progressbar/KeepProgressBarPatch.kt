@@ -17,6 +17,7 @@ import app.morphe.patches.facebook.feed.methodsHolding
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
+import app.morphe.patches.facebook.misc.extension.freeLocalsAt
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -101,7 +102,11 @@ internal const val VIEW_GROUP = "Landroid/view/ViewGroup;"
  * 0:00 over the reel's author row. A drag still shows it, as the touch path calls the active look
  * itself and the seek bar listener sets the label's visibility. With the time switch on, the label
  * stays instead, and the scrubber's progress update has Facebook's own time writer refresh it a few
- * times a second, which Facebook does only during a drag.
+ * times a second, which Facebook does only during a drag. That call goes where the update asks
+ * whether you're dragging, which it reaches only after it has found the reel's position and length
+ * usable and moved the bar. The writer checks neither and moves the bar too, so asked any earlier
+ * it put the bar back at the start whenever the player wasn't ready, as on the first reel while
+ * its player is handed over (issue #120).
  *
  * Three more hooks finish the Reels bar (582, issue #73). The scrubber's minimum length check
  * answers yes, so a reel Facebook finds too short for a bar gets one. The Reels footer's own bar
@@ -186,6 +191,7 @@ val keepProgressBarPatch = bytecodePatch(
         if (progress.base.type != scrubberClass.superclass || !scrubber.viewsField.startsWith("${progress.base.type}->")) {
             refuse("${progress.base.type}, which updates the progress, isn't the base holding ${scrubber.type}'s views")
         }
+        progress.update.freeLocalsAt(PATCH, dragCheck(progress.update, progress), 1)
         val delay = frameDelay(progress)
         val footerCheck = footerBarCheck(
             classDefByStrings(REEL_FOOTER, StringComparisonType.EQUALS)
@@ -202,7 +208,7 @@ val keepProgressBarPatch = bytecodePatch(
             .activeInstead(scrubber)
         mutableClassDefBy(scrubber.type).methods.single { it.sameAs(lengthCheck) }.longEnoughWhileKept()
         mutableClassDefBy(progress.base.type).methods.single { it.sameAs(progress.update) }
-            .refreshesTimeFirst(progress, scrubber)
+            .refreshesTimeWithBar(progress, scrubber)
         mutableClassDefBy(progress.base.type).methods.single { it.sameAs(delay) }.smoothWhileKept()
         mutableClassDefBy(footerCheck.first.type).methods.single { it.sameAs(footerCheck.second) }.roomForEveryReel()
         if (plugin != null && sizes != null) {
@@ -338,6 +344,31 @@ internal fun progressUpdate(holders: List<ClassDef>): ProgressUpdate {
     val writer = writers.singleOrNull()
         ?: refuse("${base.type} has ${writers.size} static methods setting text, expected one, its time writer")
     return ProgressUpdate(base, update, writer)
+}
+
+/**
+ * Where [update], the scrubber base's progress update, asks whether you're dragging: the
+ * `sget-object` of the drag state right before the `if-ne` that skips the update's one call to its
+ * time writer (582 `LX/9c4;->A04`, `sget-object v0, LX/0UA;->A01`). The update gets there only after
+ * reading the reel's position and length, finding a position and a length above 0, and moving the
+ * bar. Returns that instruction's index. Refuses unless the writer is called once, right after
+ * such a check.
+ */
+internal fun dragCheck(update: Method, progress: ProgressUpdate): Int {
+    val base = progress.base.type
+    val writer = "$base->${progress.writeTime.name}($base)V"
+    val code = update.implementation!!.instructions.toList()
+    val calls = code.indices.filter {
+        code[it].opcode == Opcode.INVOKE_STATIC && (code[it] as ReferenceInstruction).reference.toString() == writer
+    }
+    val call = calls.singleOrNull()
+        ?: refuse("$base->${update.name} calls its time writer ${calls.size} times, expected once, during a drag")
+    val branch = code.getOrNull(call - 1)?.takeIf { it.opcode == Opcode.IF_NE } as? TwoRegisterInstruction
+    val state = code.getOrNull(call - 2)?.takeIf { it.opcode == Opcode.SGET_OBJECT } as? OneRegisterInstruction
+    if (branch == null || state == null || state.registerA !in setOf(branch.registerA, branch.registerB)) {
+        refuse("$base->${update.name} no longer checks for a drag right before calling its time writer")
+    }
+    return call - 2
 }
 
 /**
@@ -580,26 +611,29 @@ internal fun MutableMethod.longEnoughWhileKept() {
 }
 
 /**
- * First thing in the scrubber's progress update: read the time label off the scrubber the update
- * takes, and when the extension asks for the time, have Facebook's own writer refresh it before the
- * update runs as always. A views holder that isn't there yet skips straight to Facebook's code.
+ * In the scrubber's progress update, in front of its [dragCheck], so only once Facebook has moved
+ * the bar: read the time label off the scrubber the update takes, and when the extension asks for
+ * the time, have Facebook's own writer refresh it, then go on to the drag check as always. A views
+ * holder that isn't there yet goes straight on. The hook borrows one low local that nothing reads
+ * from there on.
  */
-internal fun MutableMethod.refreshesTimeFirst(progress: ProgressUpdate, looks: ScrubberLooks) {
-    requireLocals(PATCH, 1)
+internal fun MutableMethod.refreshesTimeWithBar(progress: ProgressUpdate, looks: ScrubberLooks) {
+    val at = dragCheck(this, progress)
+    val v = freeLocalsAt(PATCH, at, 1).single()
     val base = progress.base.type
     addInstructionsWithLabels(
-        0,
+        at,
         """
-            move-object/from16 v0, p0
-            iget-object v0, v0, ${looks.viewsField}
-            if-eqz v0, :facebook
-            iget-object v0, v0, ${looks.labelField}
-            invoke-static { v0 }, $REFRESHES_TIME
-            move-result v0
-            if-eqz v0, :facebook
+            move-object/from16 v$v, p0
+            iget-object v$v, v$v, ${looks.viewsField}
+            if-eqz v$v, :facebook
+            iget-object v$v, v$v, ${looks.labelField}
+            invoke-static { v$v }, $REFRESHES_TIME
+            move-result v$v
+            if-eqz v$v, :facebook
             invoke-static/range { p0 .. p0 }, $base->${progress.writeTime.name}($base)V
         """,
-        ExternalLabel("facebook", getInstruction(0)),
+        ExternalLabel("facebook", getInstruction(at)),
     )
 }
 

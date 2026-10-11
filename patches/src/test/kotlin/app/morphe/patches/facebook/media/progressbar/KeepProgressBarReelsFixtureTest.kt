@@ -11,6 +11,7 @@ import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
+import app.morphe.util.RegisterLiveness
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -30,13 +31,19 @@ import java.io.File
 /**
  * Keep the progress bar's Reels hooks on every Facebook build the bundle declares: the scrubber's
  * minimum length check answering yes while kept, so a short reel gets a bar, its progress update
- * having Facebook's own time writer refresh the time label first, the wait before its next update
+ * having Facebook's own time writer refresh the time label once the update has moved the bar (never
+ * before its position checks, issue #120), the wait before its next update
  * cut to a frame, and the Reels footer's bar check reading a short reel's length as long enough, so
  * the caption leaves room for the bar. Each hook asks the extension first or works in Facebook's own
  * register, a no lands on Facebook's code, and nothing of Facebook's code moves. Reads the fixture
  * bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class KeepProgressBarReelsFixtureTest {
+    private companion object {
+        const val SET_PROGRESS = "Landroid/widget/ProgressBar;->setProgress(I)V"
+        const val GET_MAX = "Landroid/widget/ProgressBar;->getMax()I"
+    }
+
     private fun bundles(check: (File) -> Unit) {
         val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
         assertTrue("the bundle declares no Facebook build", versions.isNotEmpty())
@@ -98,7 +105,7 @@ class KeepProgressBarReelsFixtureTest {
     }
 
     @Test
-    fun `each declared build has Facebook's writer refresh the shown time first`() = bundles { bundle ->
+    fun `each declared build has Facebook's writer refresh the shown time once the bar has moved`() = bundles { bundle ->
         val name = bundle.name
         val found = scrubber(bundle)
         val looks = found.looks
@@ -110,32 +117,56 @@ class KeepProgressBarReelsFixtureTest {
             progress.writeTime.code().any { it.reference() == TEXT_VIEW_SET_TEXT })
         assertTrue("$name: the writer doesn't reach the views holder the time label is in",
             progress.writeTime.code().any { it.reference()?.startsWith(looks.labelField.substringBefore("->")) == true })
-        assertTrue("$where has no local register for the hook", progress.update.implementation!!.registerCount - 1 >= 1)
+        // Issue #120: the writer moves the bar with no check of its own, so it may run only where Facebook's update
+        // has found a usable position and length. The update reads the bar's maximum only past both checks.
+        assertTrue("$name: the writer no longer moves the bar", progress.writeTime.code().any { it.reference() == SET_PROGRESS })
+        val at = dragCheck(progress.update, progress)
+        val inflow = ControlFlow.of(progress.update)
+        val update = progress.update.code()
+        val maxReads = update.indices.filter { update[it].reference() == GET_MAX }.toSet()
+        assertTrue("$where reads no bar maximum", maxReads.isNotEmpty())
+        val reached = mutableSetOf(0)
+        val queue = ArrayDeque(listOf(0))
+        while (queue.isNotEmpty()) {
+            val next = queue.removeFirst()
+            if (next in maxReads) continue
+            (inflow.normal[next] + inflow.exceptional[next]).forEach { if (reached.add(it)) queue += it }
+        }
+        assertTrue("$where reaches its drag check without reading the bar's maximum, before its position checks", at !in reached)
 
         val context = PatchContexts.of(listOf(base))
         val method = context.mutableClassDefBy(base.type).methods.single { it.sameAs(progress.update) }
         val original = method.code()
-        method.refreshesTimeFirst(progress, looks)
+        method.refreshesTimeWithBar(progress, looks)
         val patched = method.code()
         val local = method.localRegisterCount()
         assertEquals("$where gains eight instructions", original.size + 8, patched.size)
-        assertEquals("$where: the scrubber moves into a local through the wide form", Opcode.MOVE_OBJECT_FROM16, patched[0].opcode)
-        val register = (patched[0] as TwoRegisterInstruction).registerA
-        assertTrue("$where: the hook writes v$register, which isn't a local", register < local)
-        assertEquals("$where: from p0", local, (patched[0] as TwoRegisterInstruction).registerB)
-        assertEquals("$where: the views holder is read", looks.viewsField, patched[1].reference())
-        assertEquals("$where: a missing holder goes on to Facebook", Opcode.IF_EQZ, patched[2].opcode)
-        assertEquals("$where: then the time label", looks.labelField, patched[3].reference())
-        assertEquals("$where: the extension is asked about the label", REFRESHES_TIME, patched[4].reference())
-        assertEquals("$where: its answer is kept", Opcode.MOVE_RESULT, patched[5].opcode)
-        assertEquals("$where: a no goes on to Facebook", Opcode.IF_EQZ, patched[6].opcode)
-        assertEquals("$where: a yes runs Facebook's writer", "${base.type}->${progress.writeTime.name}(${base.type})V", patched[7].reference())
-        val call = patched[7] as RegisterRangeInstruction
+        assertEquals("$where: Facebook's code up to the drag check stays", original.take(at).map { it.opcode },
+            patched.take(at).map { it.opcode })
+        assertEquals("$where: the scrubber moves into a local through the wide form", Opcode.MOVE_OBJECT_FROM16, patched[at].opcode)
+        val register = (patched[at] as TwoRegisterInstruction).registerA
+        assertTrue("$where: the hook writes v$register, which isn't a low local", register < minOf(local, 16))
+        assertTrue("$where: the hook borrows v$register, which Facebook reads on",
+            register !in RegisterLiveness.of(progress.update).liveInto(at))
+        assertEquals("$where: from p0", local, (patched[at] as TwoRegisterInstruction).registerB)
+        assertEquals("$where: the views holder is read", looks.viewsField, patched[at + 1].reference())
+        assertEquals("$where: a missing holder goes on to Facebook", Opcode.IF_EQZ, patched[at + 2].opcode)
+        assertEquals("$where: then the time label", looks.labelField, patched[at + 3].reference())
+        assertEquals("$where: the extension is asked about the label", REFRESHES_TIME, patched[at + 4].reference())
+        assertEquals("$where: its answer is kept", Opcode.MOVE_RESULT, patched[at + 5].opcode)
+        assertEquals("$where: a no goes on to Facebook", Opcode.IF_EQZ, patched[at + 6].opcode)
+        assertEquals("$where: a yes runs Facebook's writer", "${base.type}->${progress.writeTime.name}(${base.type})V",
+            patched[at + 7].reference())
+        val call = patched[at + 7] as RegisterRangeInstruction
         assertEquals("$where: on this scrubber", listOf(local, 1), listOf(call.startRegister, call.registerCount))
-        assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(8).map { it.opcode })
+        assertEquals("$where: Facebook's drag check and the rest stay", original.drop(at).map { it.opcode },
+            patched.drop(at + 8).map { it.opcode })
+        assertEquals("$where: the drag check comes right after the hook", Opcode.SGET_OBJECT, patched[at + 8].opcode)
         val flow = ControlFlow.of(method)
-        assertEquals("$where: a missing holder lands on Facebook's first instruction", setOf(3, 8), flow.normal[2].toSet())
-        assertEquals("$where: a no lands on Facebook's first instruction", setOf(7, 8), flow.normal[6].toSet())
+        assertEquals("$where: a missing holder lands on the drag check", setOf(at + 3, at + 8), flow.normal[at + 2].toSet())
+        assertEquals("$where: a no lands on the drag check", setOf(at + 7, at + 8), flow.normal[at + 6].toSet())
+        val into = patched.indices.filter { at + 8 in flow.normal[it] }.toSet()
+        assertEquals("$where: something jumps to the drag check past the hook", setOf(at + 2, at + 6, at + 7), into)
     }
 
     @Test

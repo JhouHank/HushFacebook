@@ -133,10 +133,11 @@ public final class ProgressBar {
     }
 
     /**
-     * The hook, first thing in the scrubber's progress update, with the scrubber's time label. True
-     * has Facebook's own time writer put the current elapsed and total time into it before the
-     * update runs: only while the time is shown, the label is on screen and {@link #TIME_REFRESH_MS}
-     * has passed since that label's last refresh.
+     * The hook in the scrubber's progress update, with the scrubber's time label, once Facebook has
+     * moved the bar and just before it checks for a drag. True has Facebook's own time writer put the
+     * current elapsed and total time into it: only while the time is shown, the label is on screen
+     * and {@link #TIME_REFRESH_MS} has passed since that label's last refresh. The writer moves the
+     * bar as well, so it's asked only where Facebook found the position and length usable (#120).
      */
     public static boolean refreshesTime(ViewGroup label) {
         try {
