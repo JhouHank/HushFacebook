@@ -84,6 +84,32 @@ public class FollowingHomeTest {
     }
 
     /**
+     * A family's report keeps 16 named counts. Past eight feed types counted by name, the rest are
+     * counted together, so Home's own count still finds room however many feeds a session asks for.
+     */
+    @Test
+    public void manyOtherFeedsLeaveRoomForHomesOwnCount() {
+        Settings.FOLLOWING_FEED_HOME.save(true);
+        for (int i = 0; i < 12; i++) FollowingHome.feedType(new FeedType("other_feed_" + i));
+        Settings.HOME_FEED.save(FeedsSubtab.GROUPS);
+        assertSame(FeedType.MOST_RECENT_GROUP, FollowingHome.feedType(FeedType.TOP_STORIES));
+        Settings.HOME_FEED.save(FeedsSubtab.ALL);
+        assertSame(FeedType.MOST_RECENT, FollowingHome.feedType(FeedType.TOP_STORIES));
+
+        String line = statusLine();
+        assertTrue(line, line.contains(FollowingHome.LEFT_ALONE + "other_feed_7 1, "
+                + FollowingHome.LEFT_ALONE + "another type 4, "
+                + FollowingHome.SWAPPED_TO + "most_recent_group 1, "
+                + FollowingHome.SWAPPED + " 1"));
+        assertFalse(line, line.contains("other_feed_8"));
+
+        // An emptied report starts its names over.
+        HookStatus.clear();
+        FollowingHome.feedType(new FeedType("other_feed_11"));
+        assertTrue(statusLine(), statusLine().endsWith("Counted: " + FollowingHome.LEFT_ALONE + "other_feed_11 1"));
+    }
+
+    /**
      * With a filter chosen, Home's request carries that filter's most recent feed type, counted by
      * name, and the Feeds tab's own requests stay as they came. A choice changed between requests
      * is taken by the next one, and All is the most recent feed again.

@@ -6,6 +6,8 @@ package app.morphe.extension.facebook.feed;
 
 import androidx.annotation.Nullable;
 
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import app.morphe.extension.facebook.navigation.FeedsSubtab;
@@ -70,6 +72,21 @@ public final class FollowingHome {
 
     /** A feed type's name as Facebook writes its built-in ones. Anything else is counted unnamed. */
     private static final Pattern FEED_TYPE_NAME = Pattern.compile("[a-z0-9_]{1,40}");
+
+    /** What a request for a feed type that isn't named, or past the names kept, is counted as. */
+    private static final String ANOTHER_TYPE = "another type";
+
+    /**
+     * Feed types counted by name after {@link #LEFT_ALONE}. A family's report keeps 16 named counts,
+     * and Home's own, one per filter and the most recent feed, have to fit after these.
+     */
+    private static final int LEFT_ALONE_NAMES = 8;
+
+    /** The names counted after {@link #LEFT_ALONE} since the report was last emptied. */
+    private static final Set<String> leftAloneNames = ConcurrentHashMap.newKeySet();
+
+    /** The report's generation {@link #leftAloneNames} belongs to. */
+    private static volatile long leftAloneGeneration = -1;
 
     private static final String FAMILY = FamilyNames.FOLLOWING_HOME;
 
@@ -140,11 +157,23 @@ public final class FollowingHome {
         }
     }
 
-    /** Counts a request for another feed while the switch is on, under its type's name when it reads like one. */
+    /**
+     * Counts a request for another feed while the switch is on, under its type's name when it reads
+     * like one and there's room for another name.
+     */
     private static void countLeftAlone(@Nullable String name) {
         if (!Utils.settingsReady() || !Settings.FOLLOWING_FEED_HOME.get()) return;
-        HookStatus.counted(FAMILY, LEFT_ALONE
-                + (name != null && FEED_TYPE_NAME.matcher(name).matches() ? name : "another type"));
+        String counted = name != null && FEED_TYPE_NAME.matcher(name).matches() ? name : ANOTHER_TYPE;
+        long generation = HookStatus.generation();
+        if (generation != leftAloneGeneration) {
+            leftAloneNames.clear();
+            leftAloneGeneration = generation;
+        }
+        if (!ANOTHER_TYPE.equals(counted) && !leftAloneNames.contains(counted)) {
+            if (leftAloneNames.size() >= LEFT_ALONE_NAMES) counted = ANOTHER_TYPE;
+            else leftAloneNames.add(counted);
+        }
+        HookStatus.counted(FAMILY, LEFT_ALONE + counted);
     }
 
     /** The most recent feed's type among the constants of [requested]'s class, or null. */
