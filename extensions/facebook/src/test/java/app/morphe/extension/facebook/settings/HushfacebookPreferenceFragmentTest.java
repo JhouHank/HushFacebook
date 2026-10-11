@@ -1575,7 +1575,10 @@ public class HushfacebookPreferenceFragmentTest {
                             && greyed.contains(SwitchLabels.title(Settings.FOLLOWING_FEED_HOME))
                             && greyed.endsWith("to use this."));
 
+            // The switch saves what its listener accepted, and a later save of the choice has the
+            // shared fragment work out which rows are open from the saved switch.
             assertTrue(following.getOnPreferenceChangeListener().onPreferenceChange(following, true));
+            Settings.FOLLOWING_FEED_HOME.save(true);
             assertTrue(feed.isEnabled());
             assertEquals("Home shows the same posts as All in the Feeds tab.", String.valueOf(feed.getSummary()));
             pick(feed, "FRIENDS");
@@ -1584,9 +1587,11 @@ public class HushfacebookPreferenceFragmentTest {
                     + "Home shows All.", String.valueOf(feed.getSummary()));
 
             assertTrue(following.getOnPreferenceChangeListener().onPreferenceChange(following, false));
+            Settings.FOLLOWING_FEED_HOME.save(false);
             assertFalse(feed.isEnabled());
             assertEquals("turning the switch off changed the choice", FeedsSubtab.FRIENDS, Settings.HOME_FEED.savedValue());
         } finally {
+            Settings.FOLLOWING_FEED_HOME.resetToDefault();
             Settings.HOME_FEED.resetToDefault();
         }
     }
