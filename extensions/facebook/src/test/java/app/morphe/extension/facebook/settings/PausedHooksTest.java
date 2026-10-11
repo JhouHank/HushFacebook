@@ -668,7 +668,8 @@ public class PausedHooksTest {
                 HdrBrightnessForTests::keepsAnHdrWindowInTheUsualRange, HdrBrightnessForTests::holdsTheHeadroom,
                 HdrBrightnessForTests::answersTheScreenAsShowingNoHdr));
         // A reel's bar is kept full size, and a full-screen video sets no fade timer.
-        probes.put(PatchFamily.PROGRESS_BAR, Arrays.asList(ProgressBar::keepsReelBar, ProgressBar::keepsControls));
+        probes.put(PatchFamily.PROGRESS_BAR, Arrays.asList(ProgressBar::keepsReelBar, ProgressBar::keepsControls,
+                ProgressBar::liftsFooter, ProgressBar::noFadedBar));
         // A tab asked for shows without its slide.
         probes.put(PatchFamily.SCREEN_TRANSITIONS, Collections.singletonList(() -> !ScreenTransitionsForTests.slides()));
         // The app icon benefit is answered yes, at the provider's check and at the picker's own look,

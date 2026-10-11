@@ -18,6 +18,8 @@ import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.freeLocalsAt
+import app.morphe.patches.facebook.misc.extension.liveAcrossInjection
+import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -27,11 +29,14 @@ import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.WideLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 
 private const val PATCH = "Keep the progress bar"
 
@@ -51,10 +56,12 @@ internal const val SCRUBBER_UPDATE = "UDDScrubberBasePlugin.updateProgress"
 /** The surface name both of the scrubber's `(IZ)Z` length checks compare first, a kept literal. */
 internal const val LENGTH_CHECK_SURFACE = "ai_styles_drafts"
 
-/** The log tag of the Reels viewer's footer, which lays out the caption above the bar, a kept literal. */
-internal const val REEL_FOOTER = "FbShortsViewerFooterParamsFactory"
+/** The names of the Reels footer's seek bar status values, kept enum literals (582 `LX/AGw;`). */
+internal const val STATUS_HIDDEN = "HIDDEN"
+internal const val STATUS_VISIBLE = "VISIBLE"
+internal const val STATUS_DRAGGING = "DRAGGING"
 
-internal const val INT_VALUE = "Ljava/lang/Number;->intValue()I"
+internal const val FUNCTION1_INVOKE = "Lkotlin/jvm/functions/Function1;->invoke(Ljava/lang/Object;)Ljava/lang/Object;"
 
 /** How long, in ms, the kept bar waits between moves: about a frame, where Facebook's default is 100. */
 internal const val SMOOTH_FRAME_DELAY_MS = 16
@@ -84,7 +91,9 @@ internal const val HIDE_TIME_LABEL = "$PROGRESS_BAR->hideTimeLabel(Landroid/view
 internal const val BARS_EVERY_REEL = "$PROGRESS_BAR->barsEveryReel()Z"
 internal const val REFRESHES_TIME = "$PROGRESS_BAR->refreshesTime(Landroid/view/ViewGroup;)Z"
 internal const val SMOOTHS_BAR = "$PROGRESS_BAR->smoothsBar()Z"
-internal const val REEL_LENGTH = "$PROGRESS_BAR->reelLength(I)I"
+internal const val LIFTS_FOOTER = "$PROGRESS_BAR->liftsFooter()Z"
+internal const val NO_FADED_BAR = "$PROGRESS_BAR->noFadedBar()Z"
+internal const val COUNTS_LOOK = "$PROGRESS_BAR->look(Ljava/lang/Integer;)V"
 internal const val VIEW_GROUP = "Landroid/view/ViewGroup;"
 
 /**
@@ -108,12 +117,20 @@ internal const val VIEW_GROUP = "Landroid/view/ViewGroup;"
  * it put the bar back at the start whenever the player wasn't ready, as on the first reel while
  * its player is handed over (issue #120).
  *
- * Three more hooks finish the Reels bar (582, issue #73). The scrubber's minimum length check
- * answers yes, so a reel Facebook finds too short for a bar gets one. The Reels footer's own bar
- * check reads such a reel's length as long enough, so its caption leaves the same room above the bar
- * as a longer reel's instead of sitting where the bar now goes. And the wait before the scrubber's
- * next progress update, Facebook's `defaultFrameDelayMs` of 100 ms, drops to about a frame, so the
- * bar moves smoothly instead of in visible steps.
+ * More hooks finish the Reels bar (582, issue #73). The scrubber's minimum length check answers
+ * yes, so a reel Facebook finds too short for a bar gets one. Its other length check, which gives a
+ * short reel the look that fades the bar out (alpha 0) when a server flag is on, answers no. The
+ * scrubber's look selector reports the looks that still hide the bar, for the diagnostic report.
+ * And the wait before the scrubber's next progress update, Facebook's `defaultFrameDelayMs` of
+ * 100 ms, drops to about a frame, so the bar moves smoothly instead of in visible steps.
+ *
+ * The Reels footer lays the caption out from a seek bar status (582 `LX/AGv;` holding a `LX/AGw;`):
+ * HIDDEN while a reel plays, VISIBLE while it's paused, DRAGGING during a drag. Only VISIBLE lifts
+ * the caption, by about 35 dp, above where the bar and its time go. While playing it sat laid out
+ * for Facebook's 2 dp line, so the kept bar and its time landed on the caption. So the holder starts
+ * at VISIBLE instead of HIDDEN, and its update stores VISIBLE where it would store HIDDEN and stops
+ * there when VISIBLE was already the status. DRAGGING still applies, and the HIDDEN after a drag
+ * becomes VISIBLE, so the footer doesn't stay in its drag layout.
  *
  * Older builds' Reels viewer used a bottom bar plugin, named [REEL_SEEK_BAR_PLUGIN], sizes its SeekBar with two
  * static (SeekBar, plugin) methods (581 `LX/8sg;->A00` and `A01`, still present on every declared
@@ -184,6 +201,7 @@ val keepProgressBarPatch = bytecodePatch(
         ) { classDefByOrNull(it) }
         val scrubberClass = classDefByOrNull(scrubber.type) ?: refuse("${scrubber.type} went missing")
         val lengthCheck = minimumLengthCheck(scrubberClass)
+        val shortCheck = shortReelCheck(scrubberClass)
         val progress = progressUpdate(
             classDefByStrings(SCRUBBER_UPDATE, StringComparisonType.EQUALS)
                 .filterNot { it.type.startsWith(EXTENSION_CLASSES) },
@@ -193,24 +211,31 @@ val keepProgressBarPatch = bytecodePatch(
         }
         progress.update.freeLocalsAt(PATCH, dragCheck(progress.update, progress), 1)
         val delay = frameDelay(progress)
-        val footerCheck = footerBarCheck(
-            classDefByStrings(REEL_FOOTER, StringComparisonType.EQUALS)
+        val selector = lookSelector(progress.base, scrubber)
+        val status = seekBarStatus(
+            classDefByStrings(STATUS_DRAGGING, StringComparisonType.EQUALS)
                 .filterNot { it.type.startsWith(EXTENSION_CLASSES) },
-        ) { classDefByOrNull(it) }
+        )
         val controllers = mutableListOf<ClassDef>()
+        val statusOwners = mutableListOf<ClassDef>()
         classDefForEach {
             if (it.type.startsWith(EXTENSION_CLASSES)) return@classDefForEach
             if (takesUpdater(it, updater)) controllers += it
+            if (it.fields.any { field -> field.type == status.type }) statusOwners += it
         }
         val (hider, hiderRun) = controlsHideRunnable(controllers) { classDefByOrNull(it) }
+        val footer = statusHolder(statusOwners, status)
 
         mutableClassDefBy(scrubber.type).methods.single { it.sameAs(scrubber.passive) }
             .activeInstead(scrubber)
         mutableClassDefBy(scrubber.type).methods.single { it.sameAs(lengthCheck) }.longEnoughWhileKept()
+        mutableClassDefBy(scrubber.type).methods.single { it.sameAs(shortCheck) }.notShortWhileKept()
         mutableClassDefBy(progress.base.type).methods.single { it.sameAs(progress.update) }
             .refreshesTimeWithBar(progress, scrubber)
         mutableClassDefBy(progress.base.type).methods.single { it.sameAs(delay) }.smoothWhileKept()
-        mutableClassDefBy(footerCheck.first.type).methods.single { it.sameAs(footerCheck.second) }.roomForEveryReel()
+        mutableClassDefBy(progress.base.type).methods.single { it.sameAs(selector) }.countsLook()
+        mutableClassDefBy(footer.type).methods.single { it.sameAs(footer.constructor) }.startsLifted(footer, status)
+        mutableClassDefBy(footer.type).methods.single { it.sameAs(footer.update) }.staysLifted(footer, status)
         if (plugin != null && sizes != null) {
             mutableClassDefBy(plugin.type).methods.single { it.sameAs(sizes.shrink) }
                 .fullSizeInstead(plugin.type, sizes.fullSize)
@@ -300,26 +325,63 @@ internal fun timeLabelFields(scrubber: ClassDef, passive: Method): Pair<String, 
 }
 
 /**
- * The scrubber's check that a reel is long enough for a bar (582 `LX/9d9;->A1O`). The scrubber has
- * two instance `(IZ)Z` length checks, each loading [LENGTH_CHECK_SURFACE] first. This one answers no
- * through an `if-lt` of the reel's length, its int parameter, against Facebook's minimum, and its
- * answer decides between the passive look and no bar at all. The other (`A1N`) asks whether a reel
- * is long enough for the long-video look and compares the other way. Refuses unless there's
- * exactly one such check.
+ * The scrubber's instance `(IZ)Z` length checks loading [LENGTH_CHECK_SURFACE] that compare the
+ * reel's length, their int parameter, first in an [opcode] against Facebook's minimum.
  */
-internal fun minimumLengthCheck(scrubber: ClassDef): Method {
-    val checks = methodsHolding(scrubber, LENGTH_CHECK_SURFACE).filter {
+private fun lengthChecks(scrubber: ClassDef, opcode: Opcode): List<Method> =
+    methodsHolding(scrubber, LENGTH_CHECK_SURFACE).filter {
         !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Z" &&
             it.parameterTypes.map(CharSequence::toString) == listOf("I", "Z")
-    }
-    val minimum = checks.filter { check ->
+    }.filter { check ->
         val implementation = check.implementation!!
         // The parameters take the last three registers: this, the length, then the boolean.
         val length = implementation.registerCount - 2
-        implementation.instructions.any { it.opcode == Opcode.IF_LT && (it as TwoRegisterInstruction).registerA == length }
+        implementation.instructions.any { it.opcode == opcode && (it as TwoRegisterInstruction).registerA == length }
     }
+
+/**
+ * The scrubber's check that a reel is long enough for a bar (582 `LX/9d9;->A1O`). The scrubber has
+ * two instance `(IZ)Z` length checks, each loading [LENGTH_CHECK_SURFACE] first. This one answers no
+ * through an `if-lt` of the reel's length against Facebook's minimum, and its answer decides between
+ * the passive look and no bar at all. Refuses unless there's exactly one such check.
+ */
+internal fun minimumLengthCheck(scrubber: ClassDef): Method {
+    val minimum = lengthChecks(scrubber, Opcode.IF_LT)
     return minimum.singleOrNull()
         ?: refuse("${scrubber.type} has ${minimum.size} length check(s) failing a reel shorter than a minimum, expected one")
+}
+
+/**
+ * The scrubber's other length check (582 `LX/9d9;->A1N`), which answers no through an `if-gt` of
+ * the reel's length against the same minimum, so yes for a short reel, when a server flag is on.
+ * The scrubber asks it first, and its yes gives the reel the look that sets the bar's alpha to 0,
+ * so a short reel's bar showed for a moment and went. Refuses unless there's exactly one.
+ */
+internal fun shortReelCheck(scrubber: ClassDef): Method {
+    val short = lengthChecks(scrubber, Opcode.IF_GT)
+    return short.singleOrNull()
+        ?: refuse("${scrubber.type} has ${short.size} length check(s) passing only a reel at most a minimum long, expected one")
+}
+
+/**
+ * The scrubber base's look selector (582 `LX/9c4;->A1F`): the one instance `(Integer)V` method of
+ * [base] calling both of [looks]' looks. Its Integer is the look, 0 passive, 1 or 3 active, 2 faded
+ * out and 4 invisible. Refuses unless there's exactly one.
+ */
+internal fun lookSelector(base: ClassDef, looks: ScrubberLooks): Method {
+    val selectors = base.methods.filter { method ->
+        !AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "V" &&
+            method.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Integer;") &&
+            listOf(looks.active, looks.passive).all { look ->
+                method.implementation?.instructions?.any {
+                    val call = (it as? ReferenceInstruction)?.reference as? MethodReference
+                    it.opcode.name.startsWith("invoke") && call?.name == look.name && call.returnType == "V" &&
+                        call.parameterTypes.isEmpty()
+                } == true
+            }
+    }
+    return selectors.singleOrNull()
+        ?: refuse("${base.type} has ${selectors.size} (Integer)V method(s) calling both scrubber looks, expected one")
 }
 
 /** The scrubber base's progress update and the method writing its time. */
@@ -393,46 +455,103 @@ internal fun frameDelay(progress: ProgressUpdate): Method {
         ?: refuse("$call, the wait before the next progress update, isn't declared on ${base.type}")
 }
 
+/** The Reels footer's seek bar status enum and its HIDDEN and VISIBLE values, as `class->name:type`. */
+internal class SeekBarStatus(val type: String, val hidden: String, val visible: String)
+
 /**
- * The footer's check that a reel gets a bar (582 `LX/90Q;->A0N`), which decides whether the
- * caption leaves room for one: the one method called from [holders]' methods loading [REEL_FOOTER]
- * that returns `Z` and takes the reel's length last, as an Integer. It answers no for a reel under
- * Facebook's minimum length, which then gets its caption laid out right down where the bar goes.
- * Returns its class, found with [classOf], and the method. Refuses unless there's exactly one, and
- * unless it still compares that length with an `if-lt`.
+ * The seek bar status (582 `LX/AGw;`): the one enum of [holders] whose `<clinit>` builds exactly
+ * three values, named [STATUS_HIDDEN], [STATUS_VISIBLE] and [STATUS_DRAGGING], each name the last
+ * string loaded before the value's `sput-object`. Refuses unless there's exactly one.
  */
-internal fun footerBarCheck(holders: List<ClassDef>, classOf: (String) -> ClassDef?): Pair<ClassDef, Method> {
-    val calls = holders.distinctBy { it.type }.flatMap { methodsHolding(it, REEL_FOOTER) }.flatMap { method ->
-        method.implementation!!.instructions.mapNotNull { instruction ->
-            ((instruction as? ReferenceInstruction)?.takeIf { instruction.opcode.name.startsWith("invoke") }?.reference as? MethodReference)
-                ?.takeIf { it.returnType == "Z" && it.parameterTypes.lastOrNull()?.toString() == "Ljava/lang/Integer;" }
+internal fun seekBarStatus(holders: List<ClassDef>): SeekBarStatus {
+    fun values(enum: ClassDef): Map<String, String>? {
+        if (enum.superclass != "Ljava/lang/Enum;") return null
+        val code = enum.methods.singleOrNull { it.name == "<clinit>" }?.implementation?.instructions ?: return null
+        var name: String? = null
+        val values = mutableMapOf<String, String>()
+        for (instruction in code) {
+            val reference = (instruction as? ReferenceInstruction)?.reference
+            if (reference is StringReference) name = reference.string
+            if (instruction.opcode == Opcode.SPUT_OBJECT && reference is FieldReference && reference.type == enum.type) {
+                values[name ?: return null] = reference.toString()
+                name = null
+            }
         }
-    }.distinctBy { it.toString() }
-    val call = calls.singleOrNull()
-        ?: refuse("expected the methods loading \"$REEL_FOOTER\" to ask one method about a reel's length, found ${calls.size}")
-    val owner = classOf(call.definingClass) ?: refuse("${call.definingClass}, the footer's bar check, isn't in this APK")
-    val check = owner.methods.singleOrNull {
-        it.name == call.name && it.returnType == "Z" &&
-            it.parameterTypes.map(CharSequence::toString) == call.parameterTypes.map(CharSequence::toString)
-    } ?: refuse("$call, the footer's bar check, isn't declared on ${owner.type}")
-    lengthRead(check) ?: refuse("$call no longer compares the reel's length with an if-lt")
-    return owner to check
+        return values.takeIf { it.keys == setOf(STATUS_HIDDEN, STATUS_VISIBLE, STATUS_DRAGGING) }
+    }
+    val found = holders.distinctBy { it.type }.mapNotNull { enum -> values(enum)?.let { enum.type to it } }
+    val (type, values) = found.singleOrNull()
+        ?: refuse("expected one enum of $STATUS_HIDDEN, $STATUS_VISIBLE and $STATUS_DRAGGING, found ${found.size}")
+    return SeekBarStatus(type, values.getValue(STATUS_HIDDEN), values.getValue(STATUS_VISIBLE))
 }
 
 /**
- * Where [method] has the reel's length: the index of the one `move-result` after an [INT_VALUE]
- * call whose register a later `if-lt` compares first, against the minimum.
+ * The class keeping the footer's status (582 `LX/AGv;`): [update], its one store of a new status
+ * into [field] at [store], from register [new] into the object in [self], with the status before it
+ * in [old]; and [constructor], whose one store of the starting status is at [initialStore].
  */
-internal fun lengthRead(method: Method): Int? {
-    val code = method.implementation?.instructions?.toList() ?: return null
-    val reads = code.indices.filter { index ->
-        val result = code.getOrNull(index + 1)?.takeIf { it.opcode == Opcode.MOVE_RESULT } as? OneRegisterInstruction
-        code[index].opcode == Opcode.INVOKE_VIRTUAL && (code[index] as ReferenceInstruction).reference.toString() == INT_VALUE &&
-            result != null && code.drop(index + 2).any {
-                it.opcode == Opcode.IF_LT && (it as TwoRegisterInstruction).registerA == result.registerA
-            }
+internal class StatusHolder(
+    val type: String,
+    val field: String,
+    val update: Method,
+    val store: Int,
+    val new: Int,
+    val old: Int,
+    val self: Int,
+    val constructor: Method,
+    val initialStore: Int,
+)
+
+private fun Method.code() = implementation?.instructions?.toList().orEmpty()
+
+private fun stores(method: Method, field: String) = method.code().withIndex().filter { (_, it) ->
+    it.opcode == Opcode.IPUT_OBJECT && ((it as ReferenceInstruction).reference as? FieldReference)?.toString() == field
+}.map { it.index }
+
+/**
+ * The status holder among [owners], the classes with a field of [status]' type: the one whose
+ * instance `V` method stores a status into its own field once, hands that same register to
+ * [FUNCTION1_INVOKE] after the store, and reads the field once before it, into a register no
+ * instruction between the read and the store writes. Its one constructor stores the starting status
+ * into that field once, with no branch anywhere in it. Refuses unless there's exactly one.
+ */
+internal fun statusHolder(owners: List<ClassDef>, status: SeekBarStatus): StatusHolder {
+    val found = owners.distinctBy { it.type }.flatMap { owner ->
+        owner.fields.filter { it.type == status.type && !AccessFlags.STATIC.isSet(it.accessFlags) }.flatMap { declared ->
+            val field = "${owner.type}->${declared.name}:${status.type}"
+            owner.methods.filter { !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" && it.name != "<init>" }
+                .mapNotNull { update -> holderOf(owner, field, update) }
+        }
     }
-    return reads.singleOrNull()?.plus(1)
+    return found.singleOrNull()
+        ?: refuse("expected one class storing a ${status.type} and handing it to a Function1, found ${found.size}")
+}
+
+private fun holderOf(owner: ClassDef, field: String, update: Method): StatusHolder? {
+    val code = update.code()
+    val store = stores(update, field).singleOrNull() ?: return null
+    val put = code[store] as TwoRegisterInstruction
+    // `this` sits right after the locals.
+    val self = update.localRegisterCount()
+    if (put.registerB != self) return null
+    val handed = code.drop(store + 1).any {
+        it.opcode == Opcode.INVOKE_INTERFACE && (it as ReferenceInstruction).reference.toString() == FUNCTION1_INVOKE &&
+            (it as FiveRegisterInstruction).registerCount == 2 && it.registerD == put.registerA
+    }
+    if (!handed) return null
+    val read = code.withIndex().filter { (index, it) ->
+        index < store && it.opcode == Opcode.IGET_OBJECT && ((it as ReferenceInstruction).reference as FieldReference).toString() == field
+    }.singleOrNull() ?: return null
+    val old = (read.value as TwoRegisterInstruction).registerA
+    val overwritten = code.subList(read.index + 1, store).any {
+        val target = (it as? OneRegisterInstruction)?.registerA
+        target != null && (it.opcode.setsRegister() && target == old || it.opcode.setsWideRegister() && target + 1 == old)
+    }
+    if (overwritten || old == put.registerA) return null
+    val constructors = owner.methods.filter { it.name == "<init>" && stores(it, field).size == 1 }
+    val constructor = constructors.singleOrNull() ?: return null
+    if (constructor.code().any { it is OffsetInstruction }) return null
+    return StatusHolder(owner.type, field, update, store, put.registerA, old, self, constructor, stores(constructor, field).single())
 }
 
 /** The plugin's two size methods. */
@@ -658,20 +777,82 @@ internal fun MutableMethod.smoothWhileKept() {
 }
 
 /**
- * Right after the footer's bar check reads the reel's length: hand it to the extension, which
- * answers a length past any minimum while it keeps the bar, so a short reel's caption leaves the
- * same room for the bar as a longer one's. The hook works in the length's own register, so no
- * other register is borrowed.
+ * First thing in the scrubber's short reel check: while the extension keeps the bar, answer no, so
+ * a short reel isn't given the look that fades its bar out. Otherwise Facebook's own code runs from
+ * its first instruction.
  */
-internal fun MutableMethod.roomForEveryReel() {
-    val at = lengthRead(this) ?: refuse("$definingClass->$name no longer compares the reel's length with an if-lt")
-    val register = (getInstruction(at) as OneRegisterInstruction).registerA
-    addInstructions(
-        at + 1,
+internal fun MutableMethod.notShortWhileKept() {
+    requireLocals(PATCH, 1)
+    addInstructionsWithLabels(
+        0,
         """
-            invoke-static/range { v$register .. v$register }, $REEL_LENGTH
-            move-result v$register
+            invoke-static { }, $NO_FADED_BAR
+            move-result v0
+            if-eqz v0, :facebook
+            const/4 v0, 0x0
+            return v0
         """,
+        ExternalLabel("facebook", getInstruction(0)),
+    )
+}
+
+/** First thing in the scrubber's look selector: hand the look to the extension, which only counts it. */
+internal fun MutableMethod.countsLook() {
+    // The range form names any register, so p1 past v15 is fine.
+    addInstructions(0, "invoke-static/range { p1 .. p1 }, $COUNTS_LOOK")
+}
+
+/**
+ * Right after the status holder's constructor stores the starting status: while the extension
+ * keeps the bar, store VISIBLE over it, so a reel's footer starts in its lifted layout. The
+ * constructor has no branch, so nothing jumps past the code.
+ */
+internal fun MutableMethod.startsLifted(holder: StatusHolder, status: SeekBarStatus) {
+    val at = holder.initialStore + 1
+    val self = (getInstruction(holder.initialStore) as TwoRegisterInstruction).registerB
+    val free = freeLocalsAt(PATCH, at, 1).single()
+    if (self > 15) refuse("$definingClass->$name keeps itself past v15")
+    addInstructionsWithLabels(
+        at,
+        """
+            invoke-static { }, $LIFTS_FOOTER
+            move-result v$free
+            if-eqz v$free, :facebook
+            sget-object v$free, ${status.visible}
+            iput-object v$free, v$self, ${holder.field}
+        """,
+        ExternalLabel("facebook", getInstruction(at)),
+    )
+}
+
+/**
+ * Right after the status holder's update stores a new status: when that's HIDDEN and the extension
+ * keeps the bar, store VISIBLE instead, which the update then hands on as it would HIDDEN, and
+ * return if VISIBLE was already the status. The instruction after the store isn't a branch target
+ * on 582, and the code borrows one local nothing reads from there on that isn't the old status.
+ */
+internal fun MutableMethod.staysLifted(holder: StatusHolder, status: SeekBarStatus) {
+    val at = holder.store + 1
+    val registers = listOf(holder.new, holder.old, holder.self)
+    // The old status is dead past the store on 582, so liveness alone could hand it out.
+    val live = liveAcrossInjection(at)
+    val free = (0 until minOf(localRegisterCount(), 16)).firstOrNull { it !in live && it !in registers }
+        ?: refuse("$definingClass->$name has no local free after its status store besides $registers")
+    if (registers.any { it > 15 }) refuse("$definingClass->$name keeps the status past v15: $registers")
+    addInstructionsWithLabels(
+        at,
+        """
+            sget-object v$free, ${status.hidden}
+            if-ne v${holder.new}, v$free, :facebook
+            invoke-static { }, $LIFTS_FOOTER
+            move-result v$free
+            if-eqz v$free, :facebook
+            sget-object v${holder.new}, ${status.visible}
+            iput-object v${holder.new}, v${holder.self}, ${holder.field}
+            if-ne v${holder.old}, v${holder.new}, :facebook
+            return-void
+        """,
+        ExternalLabel("facebook", getInstruction(at)),
     )
 }
 

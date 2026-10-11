@@ -130,33 +130,54 @@ public class ProgressBarTest {
     }
 
     @Test
-    public void onShortReelsGetTheBarAndItsRoomAndTheBarMovesEveryFrame() {
+    public void onShortReelsKeepTheBarTheCaptionStaysAboveItAndTheBarMovesEveryFrame() {
         Settings.KEEP_PROGRESS_BAR.save(true);
         assertTrue("a short reel was left without a bar", ProgressBar.barsEveryReel());
-        assertEquals("a short reel's caption kept Facebook's layout without room for the bar",
-                Integer.MAX_VALUE, ProgressBar.reelLength(7));
+        assertTrue("a short reel was given the faded bar", ProgressBar.noFadedBar());
+        assertTrue("a playing reel's caption went back down onto the bar", ProgressBar.liftsFooter());
         assertTrue("the bar kept Facebook's 100 ms wait", ProgressBar.smoothsBar());
-        assertEquals(FamilyNames.PROGRESS_BAR + ": invoked 3, 3 found, 0 missing. Counted: "
-                + ProgressBar.SHORT_REEL_BAR + " 1, " + ProgressBar.SHORT_REEL_ROOM + " 1, "
-                + ProgressBar.BAR_SMOOTHED + " 1", statusLine());
+        assertEquals(FamilyNames.PROGRESS_BAR + ": invoked 4, 4 found, 0 missing. Counted: "
+                + ProgressBar.SHORT_REEL_BAR + " 1, " + ProgressBar.FADED_LOOK_SKIPPED + " 1, "
+                + ProgressBar.FOOTER_LIFTED + " 1, " + ProgressBar.BAR_SMOOTHED + " 1", statusLine());
+    }
+
+    /** The looks that leave no bar are counted while it's kept, and the others aren't. */
+    @Test
+    public void theLooksThatLeaveNoBarAreCountedWhileItsKept() {
+        ProgressBar.look(ProgressBar.FADED);
+        assertEquals("off, a look was counted", FamilyNames.PROGRESS_BAR + ": invoked 1, 0 found, 0 missing", statusLine());
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        for (Integer look : new Integer[]{0, 1, 3, null}) ProgressBar.look(look);
+        assertEquals("a look that shows the bar was counted",
+                FamilyNames.PROGRESS_BAR + ": invoked 1, 0 found, 0 missing", statusLine());
+        ProgressBar.look(ProgressBar.FADED);
+        ProgressBar.look(ProgressBar.INVISIBLE);
+        ProgressBar.look(ProgressBar.INVISIBLE);
+        assertEquals(FamilyNames.PROGRESS_BAR + ": invoked 4, 1 found, 0 missing. Counted: "
+                + ProgressBar.FADED_LOOK + " 1, " + ProgressBar.INVISIBLE_LOOK + " 2", statusLine());
     }
 
     @Test
     public void offOrPausedShortReelsAndTheBarStayFacebooks() {
         assertFalse("off, a short reel was given a bar", ProgressBar.barsEveryReel());
-        assertEquals("off, a reel's length was changed", 7, ProgressBar.reelLength(7));
+        assertFalse("off, a short reel's faded bar was skipped", ProgressBar.noFadedBar());
+        assertFalse("off, a playing reel's caption was lifted", ProgressBar.liftsFooter());
         assertFalse("off, the bar's wait was changed", ProgressBar.smoothsBar());
 
         Settings.KEEP_PROGRESS_BAR.save(true);
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         assertFalse("paused, a short reel was given a bar", ProgressBar.barsEveryReel());
-        assertEquals("paused, a reel's length was changed", 7, ProgressBar.reelLength(7));
+        assertFalse("paused, a short reel's faded bar was skipped", ProgressBar.noFadedBar());
+        assertFalse("paused, a playing reel's caption was lifted", ProgressBar.liftsFooter());
         assertFalse("paused, the bar's wait was changed", ProgressBar.smoothsBar());
+        ProgressBar.look(ProgressBar.FADED);
         PauseForTests.resume();
         SettingsContextRule.withoutContext(() -> {
             assertFalse("a short reel was given a bar before the settings were ready", ProgressBar.barsEveryReel());
-            assertEquals(7, ProgressBar.reelLength(7));
+            assertFalse(ProgressBar.noFadedBar());
+            assertFalse(ProgressBar.liftsFooter());
             assertFalse(ProgressBar.smoothsBar());
+            ProgressBar.look(ProgressBar.INVISIBLE);
         });
         String line = statusLine();
         assertFalse("an answer that left it to Facebook was counted: " + line, line != null && line.contains("Counted"));

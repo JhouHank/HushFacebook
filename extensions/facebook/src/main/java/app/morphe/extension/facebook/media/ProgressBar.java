@@ -8,6 +8,8 @@ import android.os.SystemClock;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.Nullable;
+
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -61,8 +63,21 @@ public final class ProgressBar {
     /** Counted each time the kept bar's next move is set a frame away instead of Facebook's wait. */
     static final String BAR_SMOOTHED = "Reel bar moved every frame";
 
-    /** Counted each time a reel's caption is laid out with room for the bar, whatever the reel's length. */
-    static final String SHORT_REEL_ROOM = "Reel caption given room for the bar";
+    /** Counted each time a reel's footer is kept in its paused layout, with the caption above the bar. */
+    static final String FOOTER_LIFTED = "Reel caption kept above the bar";
+
+    /** Counted each time a short reel's check for the faded bar look is answered no. */
+    static final String FADED_LOOK_SKIPPED = "Short reel kept from the faded bar";
+
+    /** Counted each time the bar, while kept, is still set to the look that fades it out. */
+    static final String FADED_LOOK = "Reel bar set to the faded look";
+
+    /** Counted each time the bar, while kept, is still set to the look that hides it. */
+    static final String INVISIBLE_LOOK = "Reel bar set to the invisible look";
+
+    /** The scrubber's looks that leave no bar on screen: 2 fades it out, 4 hides it. */
+    static final int FADED = 2;
+    static final int INVISIBLE = 4;
 
     /**
      * The least time between two refreshes of one time label. Facebook updates the bar many times a
@@ -171,13 +186,39 @@ public final class ProgressBar {
     }
 
     /**
-     * The hook on a reel's length, right after the Reels footer's bar check reads it. Facebook lays
-     * a reel's caption out with room for the bar only when the reel is past its minimum length for
-     * one, so a short reel's caption would sit where {@link #barsEveryReel} now puts the bar. While
-     * the bar is kept this answers a length past any minimum; otherwise the reel's own.
+     * The hook in the Reels footer's seek bar status, when it starts a reel and each time it would
+     * go to HIDDEN, which a playing reel gets. Only VISIBLE, a paused reel's status, lifts the
+     * caption above where the bar and its time go, so while playing the kept bar and its time sat on
+     * the caption (#73). True keeps the status VISIBLE; false lets Facebook hide it.
      */
-    public static int reelLength(int length) {
-        return keeps("short reel room", SHORT_REEL_ROOM) ? Integer.MAX_VALUE : length;
+    public static boolean liftsFooter() {
+        return keeps("reel caption lift", FOOTER_LIFTED);
+    }
+
+    /**
+     * The hook, first thing in the scrubber's check that a reel is short enough for the look that
+     * fades the bar out, which Facebook asks before the length check {@link #barsEveryReel} answers.
+     * True answers no, so a short reel keeps its bar; false lets Facebook check.
+     */
+    public static boolean noFadedBar() {
+        return keeps("short reel faded bar", FADED_LOOK_SKIPPED);
+    }
+
+    /**
+     * The hook, first thing in the scrubber's look selector, with the look. Changes nothing: while
+     * the bar is kept it counts the looks that still leave no bar, so a report shows which way a
+     * reel without one went.
+     */
+    public static void look(@Nullable Integer look) {
+        try {
+            if (look == null || (look != FADED && look != INVISIBLE)) return;
+            HookStatus.invoked(FAMILY);
+            if (!Utils.settingsReady() || !Settings.KEEP_PROGRESS_BAR.get()) return;
+            HookStatus.bound(FAMILY, "reel bar look");
+            HookStatus.counted(FAMILY, look == FADED ? FADED_LOOK : INVISIBLE_LOOK);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel bar look", failure);
+        }
     }
 
     /** Whether the reel's time label stays up: the bar is kept and the time switch is on. */

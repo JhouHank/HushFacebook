@@ -259,6 +259,8 @@ public class ColdStartHooksTest {
                 HdrBrightnessForTests.answersTheScreenAsShowingNoHdr());
         assertFalse("a reel's bar kept full size before the context said yes", ProgressBar.keepsReelBar());
         assertFalse("a fade timer skipped before the context said yes", ProgressBar.keepsControls());
+        assertFalse("a reel's caption lifted before the context said yes", ProgressBar.liftsFooter());
+        assertFalse("a short reel's faded bar skipped before the context said yes", ProgressBar.noFadedBar());
         assertTrue("a haptic before the context was held back", Haptics.performHapticFeedback(new android.view.View(app) {
             @Override
             public boolean performHapticFeedback(int feedbackConstant) {
