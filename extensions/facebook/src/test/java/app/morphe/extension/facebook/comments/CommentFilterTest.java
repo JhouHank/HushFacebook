@@ -81,6 +81,23 @@ public class CommentFilterTest {
         assertFalse("an abbreviation", ShopLinks.holds("e.g. this one"));
     }
 
+    /**
+     * Amazon's share links (a.co/d/...) and Shopee's affiliate ones (shope.ee/...) count too. A shop
+     * written with no space after a full stop isn't a link: "Shopee.Fast" read as a host before.
+     * A bare host with a real ending, in one case, still counts.
+     */
+    @Test
+    public void shortLinksCountAndAMissingSpaceDoesNot() {
+        assertTrue(ShopLinks.holds("got mine here https://a.co/d/0aBcDeF"));
+        assertTrue(ShopLinks.holds("a.co/d/0aBcDeF"));
+        assertTrue(ShopLinks.holds("shope.ee/9zKsAbC"));
+        assertTrue("a bare host with a real ending", ShopLinks.holds("on shopee.vn now"));
+        assertTrue("a bare host in capitals", ShopLinks.holds("ON SHOPEE.PH NOW"));
+        assertFalse("no space after a full stop", ShopLinks.holds("Got mine on Shopee.Fast shipping"));
+        assertFalse("a capital after the stop", ShopLinks.holds("Ordered from Lazada.It came today"));
+        assertFalse("not a link ending", ShopLinks.holds("loved temu.never again"));
+    }
+
     @Test
     public void theTypeTagIsTextWithEntitiesNamesMd5() throws Exception {
         byte[] digest = MessageDigest.getInstance("MD5").digest("TextWithEntities".getBytes("UTF-8"));
