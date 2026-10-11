@@ -30,6 +30,7 @@ import app.morphe.extension.shared.settings.BooleanSetting;
 import app.morphe.extension.shared.settings.EnumSetting;
 import app.morphe.extension.shared.settings.Setting;
 import app.morphe.extension.shared.settings.StringSetting;
+import app.morphe.extension.shared.settings.preference.CrashFile;
 
 /**
  * The switches behind the hooks that ask before they act.
@@ -969,6 +970,21 @@ public class Settings extends BaseSettings {
      */
     public static final BooleanSetting APP_LOCK =
             new BooleanSetting("hushfacebook_app_lock", FALSE);
+
+    /**
+     * A Java crash that ends the app also goes to Download/Hushfacebook as a text file
+     * ({@link CrashFile}), so it can be sent with a bug report when Facebook won't open. The
+     * settings entry's own switch, so every build has it ({@link PatchFamily#ENTRY_SWITCHES}). On
+     * by default: the file holds only what the diagnostic report's crash section shows, redacted
+     * the same way. Like the other switches it answers off while Hushfacebook is paused.
+     */
+    public static final BooleanSetting SAVE_CRASH_FILE =
+            new BooleanSetting("hushfacebook_save_crash_file", TRUE);
+
+    static {
+        // The crash handler is the shared library's, which can't name this class.
+        CrashFile.useSwitch(SAVE_CRASH_FILE);
+    }
 
     /**
      * The story viewer's menu offers Save on anyone's story, and Save runs Hushfacebook's own

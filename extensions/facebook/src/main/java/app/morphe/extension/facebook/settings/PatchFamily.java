@@ -269,7 +269,7 @@ public enum PatchFamily {
      */
     static final List<BooleanSetting> ENTRY_SWITCHES = Collections.unmodifiableList(
             java.util.Arrays.asList(Settings.CHECK_FOR_RELEASES, Settings.SAVED_SHORTCUT,
-                    Settings.WATCH_HISTORY_SHORTCUT, Settings.APP_LOCK));
+                    Settings.WATCH_HISTORY_SHORTCUT, Settings.APP_LOCK, Settings.SAVE_CRASH_FILE));
 
     /**
      * The switches the download patches share and none of them owns: each shapes what every

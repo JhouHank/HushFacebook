@@ -1030,6 +1030,8 @@ Hides posts that share a link to a website, with its preview card.	Oculta public
 Hides short posts shown as big text on a colored background.	Oculta publicações curtas exibidas como texto grande sobre um fundo colorido.
 # context: switch title in Privacy: asks for the phone's own screen lock before Facebook shows
 Lock Facebook	Bloquear o Facebook
+Save crashes to Downloads	Salvar falhas em Downloads
+When Facebook crashes, the error goes in a text file in Download/Hushfacebook, so you can send it with a bug report even if Facebook won't open. Links and IDs are left out. The newest five are kept.	Quando o Facebook falha, o erro vai para um arquivo de texto em Download/Hushfacebook, para você enviar com um relatório de bug mesmo se o Facebook não abrir. Links e IDs ficam de fora. Os cinco mais recentes são mantidos.
 # context: summary of the Lock Facebook switch; the time below is the Lock after row under it
 Facebook asks for your fingerprint, face or screen lock at startup and when you return after the time below. Your phone needs a screen lock.	O Facebook pede sua digital, rosto ou bloqueio de tela ao abrir e quando você volta depois do tempo abaixo. O celular precisa de um bloqueio de tela.
 # context: toast when Lock Facebook is turned on and the phone has no screen lock to ask for

@@ -27,12 +27,13 @@ import app.morphe.extension.shared.diagnostics.DiagnosticRedactor;
  * module's uncaught-exception handler hands each crash here before passing it on. The trace and
  * the last diagnostic events go through the redactor and stay in Facebook's own files, so every
  * report exported after it carries them, until the next crash replaces them or the diagnostic log
- * is cleared.
+ * is cleared. While the app's crash file switch is on, the same text also goes to a file in
+ * Download/Hushfacebook ({@link CrashFile}), for a Facebook that crashes before settings open.
  *
  * <p>The handler sits in front of Facebook's own, so it also sees an exception one of Facebook's
  * swallows. When the handlers after it return, the process lives on, and an exception off the main
- * thread put the report back as it was ({@link #survived}), so it can't push out a crash from an
- * earlier start. One swallowed on the main thread stays: that thread is gone, and Facebook freezes.
+ * thread puts the report back as it was ({@link #survived}) and takes its file back, so it can't
+ * push out a crash from an earlier start. One swallowed on the main thread stays: that thread is gone, and Facebook freezes.
  */
 public final class JavaCrashReport {
     /** How much of the diagnostic event log goes in after the trace. */
@@ -56,7 +57,13 @@ public final class JavaCrashReport {
             if (context == null || throwable == null || lastSaved.get() == throwable) return null;
             lastSaved = new WeakReference<>(throwable);
             String before = LogBufferManager.readCrashReport(context);
-            LogBufferManager.persistCrashReport(context, build(context, thread, throwable));
+            String report = build(context, thread, throwable);
+            LogBufferManager.persistCrashReport(context, report);
+            if (CrashFile.wanted()) {
+                CrashFile.write(context, report, System.currentTimeMillis());
+            } else {
+                CrashFile.forgetLast();
+            }
             return before;
         } catch (Throwable ignored) {
             // Crash-time code must never get in the way of the handlers after this one.
@@ -73,6 +80,7 @@ public final class JavaCrashReport {
             Context context = Utils.getContext();
             if (context == null || before == null || thread == null || thread == Looper.getMainLooper().getThread()) return;
             LogBufferManager.persistCrashReport(context, before);
+            CrashFile.takeBackLast(context);
         } catch (Throwable ignored) {
             // The exception's report stays; nothing else is lost.
         }
@@ -109,5 +117,6 @@ public final class JavaCrashReport {
     /** Forgets the exception kept last, as in a new process. Called by the pause module's reset. */
     public static void resetForTests() {
         lastSaved = new WeakReference<>(null);
+        CrashFile.forgetLast();
     }
 }

@@ -375,6 +375,10 @@ final class AppPages {
         });
         privacy.addPreference(lock);
         privacy.addPreference(lockAfterRow(context));
+        // The settings entry's own too: it's what a Facebook that won't open can still send.
+        privacy.addPreference(toggle(context, Settings.SAVE_CRASH_FILE,
+                L10n.t("When Facebook crashes, the error goes in a text file in Download/Hushfacebook, so you can send it with a "
+                        + "bug report even if Facebook won't open. Links and IDs are left out. The newest five are kept.")));
         if (build.contains(PatchFamily.ANALYTICS_UPLOADS)) {
             // XAnalytics resumes its uploader once, as Facebook starts.
             privacy.addPreference(toggle(context, Settings.HOLD_ANALYTICS_UPLOADS,
