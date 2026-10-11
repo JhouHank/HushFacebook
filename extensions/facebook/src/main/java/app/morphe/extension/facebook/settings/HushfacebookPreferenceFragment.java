@@ -77,6 +77,7 @@ import app.morphe.extension.facebook.settings.ValueRows.DownloadActionRow;
 import app.morphe.extension.facebook.settings.ValueRows.FeedsSubtabRow;
 import app.morphe.extension.facebook.settings.ValueRows.FileNameRow;
 import app.morphe.extension.facebook.settings.ValueRows.FolderRow;
+import app.morphe.extension.facebook.settings.ValueRows.HomeFeedRow;
 import app.morphe.extension.facebook.settings.ValueRows.PlaybackQualityRow;
 import app.morphe.extension.facebook.settings.ValueRows.QuietHourRow;
 import app.morphe.extension.facebook.settings.ValueRows.QualityRow;
@@ -1091,6 +1092,40 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
     }
 
     /**
+     * Which of the Feeds tab's filters Home shows while Following feed on Home is on. Like the
+     * Feeds filter row, its values are the setting's own names and its summary says what the
+     * choice does.
+     */
+    static HomeFeedRow homeFeedRow(Context context) {
+        HomeFeedRow row = new HomeFeedRow(context);
+        row.setKey(Settings.HOME_FEED.key);
+        row.setTitle(L10n.t("Home shows"));
+        row.setDialogTitle(L10n.t("Home shows"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        FeedsSubtab[] feeds = FeedsSubtab.values();
+        CharSequence[] entries = new CharSequence[feeds.length];
+        CharSequence[] values = new CharSequence[feeds.length];
+        for (int i = 0; i < feeds.length; i++) {
+            entries[i] = feedsSubtabLabel(feeds[i]);
+            values[i] = feeds[i].name();
+        }
+        row.setEntries(entries);
+        row.setEntryValues(values);
+        row.setValue(Settings.HOME_FEED.savedValue().name());
+        return row;
+    }
+
+    /**
+     * What Home shows with [feed], for the row's summary. A filter Facebook hasn't got leaves Home
+     * on All, so the summary says so rather than promise the filter.
+     */
+    static String homeFeedSummary(FeedsSubtab feed) {
+        if (feed == FeedsSubtab.ALL) return L10n.t("Home shows the same posts as All in the Feeds tab.");
+        return L10n.f("Home shows the same posts as %1$s in the Feeds tab. If Facebook doesn't have that feed, "
+                + "Home shows All.", feedsSubtabLabel(feed));
+    }
+
+    /**
      * The order comment sheets ask for. Like the start tab row, its values are the setting's own
      * names and its summary says what the choice does.
      */
@@ -1526,6 +1561,8 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
             ((StartTabRow) listPreference).showSummary();
         } else if (listPreference instanceof FeedsSubtabRow) {
             ((FeedsSubtabRow) listPreference).showSummary();
+        } else if (listPreference instanceof HomeFeedRow) {
+            ((HomeFeedRow) listPreference).showSummary();
         } else if (listPreference instanceof CommentOrderRow) {
             ((CommentOrderRow) listPreference).showSummary();
         } else if (listPreference instanceof LockAfterRow) {

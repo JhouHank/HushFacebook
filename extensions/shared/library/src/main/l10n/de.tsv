@@ -365,7 +365,7 @@ Facebook will open on %1$s.	Facebook startet dann mit %1$s.
 # context: switch title under Opening Facebook; Following is Facebook's feed of the friends, Pages and groups you follow, and Home is the tab
 Following feed on Home	Gefolgt-Feed auf der Startseite
 # context: summary of that switch; the ranked feed is the one Facebook orders for you, and the Feeds tab has its own filters
-Home shows the newest posts from friends, groups and Pages you follow, like All in the Feeds tab. The Feeds tab's filters don't change.	Start zeigt die neuesten Beiträge von Freunden, Gruppen und Seiten, denen du folgst, wie Alle im Feeds-Tab. Die Filter im Feeds-Tab bleiben unverändert.
+Home shows the newest posts from friends, groups and Pages you follow, like All in the Feeds tab, or the filter you pick below. The Feeds tab's filters don't change.	Start zeigt die neuesten Beiträge von Freunden, Gruppen und Seiten, denen du folgst, wie Alle im Feeds-Tab oder der Filter, den du unten wählst. Die Filter im Feeds-Tab bleiben unverändert.
 Jump to a section	Zu einem Abschnitt springen
 Go straight to one group of settings. Back returns to where you were.	Direkt zu einer Gruppe von Einstellungen. Zurück bringt dich dorthin, wo du warst.
 # context: switch title under Downloads; on, every video save keeps to formats other apps accept
@@ -918,6 +918,13 @@ When Facebook opens on Feeds, the Feeds tab opens on the filter Facebook picks.	
 When Facebook opens on Feeds, the Feeds tab opens on %1$s. If your Feeds tab doesn't have it, it opens as usual.	Wenn Facebook mit Feeds startet, zeigt der Feeds-Tab %1$s. Hat dein Feeds-Tab diesen Filter nicht, öffnet er sich wie gewohnt.
 The Feeds tab will open on the filter Facebook picks.	Der Feeds-Tab zeigt dann den Filter, den Facebook auswählt.
 The Feeds tab will open on %1$s.	Der Feeds-Tab zeigt dann %1$s.
+# context: title of the list under Following feed on Home that picks which Feeds tab filter Home shows
+Home shows	Start zeigt
+Home shows the same posts as All in the Feeds tab.	Start zeigt dieselben Beiträge wie Alle im Feeds-Tab.
+# context: %1$s is a Feeds tab filter's name, like Friends or Groups
+Home shows the same posts as %1$s in the Feeds tab. If Facebook doesn't have that feed, Home shows All.	Start zeigt dieselben Beiträge wie %1$s im Feeds-Tab. Hat Facebook diesen Feed nicht, zeigt Start Alle.
+# context: settings import preview; %1$s is the Following feed on Home switch, %2$s a Feeds tab filter
+With %1$s on, Home will show the same posts as %2$s in the Feeds tab.	Mit %1$s an zeigt Start dann dieselben Beiträge wie %2$s im Feeds-Tab.
 Saved	Gespeichert
 Saved shortcut	Verknüpfung zu Gespeichert
 Adds Saved to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	Fügt Gespeichert zum Menü hinzu, das beim langen Drücken des Facebook-Symbols erscheint, wenn Platz ist. Vorhandene Verknüpfungen bleiben.

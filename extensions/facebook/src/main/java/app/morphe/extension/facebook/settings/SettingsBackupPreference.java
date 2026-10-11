@@ -389,6 +389,7 @@ public class SettingsBackupPreference extends Preference {
                     snapshot.lockAfterChange(), snapshot.textSizeChange(), snapshot.accentChange()));
             if (snapshot.ceilingChange() != null) parts.add(ceilingSentence(snapshot.ceilingChange()));
             if (snapshot.shareItemsChange() != null) parts.add(shareItemsSentence(snapshot.shareItemsChange()));
+            if (snapshot.homeFeedChange() != null) parts.add(homeFeedSentence(snapshot.homeFeedChange()));
             if (snapshot.seenKeep != null && snapshot.changes().containsKey(SettingsBackup.SEEN_KEEP)) {
                 parts.add(L10n.f("Posts you've seen will stay hidden for %1$s.",
                         HushfacebookPreferenceFragment.seenKeepLabel(snapshot.seenKeep)));
@@ -534,6 +535,13 @@ public class SettingsBackupPreference extends Preference {
     static String feedsSubtabSentence(FeedsSubtab subtab) {
         if (subtab == FeedsSubtab.ALL) return L10n.t("The Feeds tab will open on the filter Facebook picks.");
         return L10n.f("The Feeds tab will open on %1$s.", HushfacebookPreferenceFragment.feedsSubtabLabel(subtab));
+    }
+
+    /** The sentence that says which filter's posts Home shows after an import, while its switch is on. */
+    static String homeFeedSentence(FeedsSubtab feed) {
+        return L10n.f("With %1$s on, Home will show the same posts as %2$s in the Feeds tab.",
+                L10n.isolate(SwitchLabels.title(Settings.FOLLOWING_FEED_HOME)),
+                HushfacebookPreferenceFragment.feedsSubtabLabel(feed));
     }
 
     /** The sentence that says in what order comments open after an import. */
@@ -863,7 +871,8 @@ public class SettingsBackupPreference extends Preference {
                     snapshot.storiesQualityChange(), snapshot.quietFromChange(), snapshot.quietUntilChange(),
                     snapshot.lockAfterChange(), snapshot.textSizeChange(), snapshot.accentChange())
                     + (snapshot.ceilingChange() == null ? "" : " " + ceilingSentence(snapshot.ceilingChange()))
-                    + (snapshot.shareItemsChange() == null ? "" : " " + shareItemsSentence(snapshot.shareItemsChange()));
+                    + (snapshot.shareItemsChange() == null ? "" : " " + shareItemsSentence(snapshot.shareItemsChange()))
+                    + (snapshot.homeFeedChange() == null ? "" : " " + homeFeedSentence(snapshot.homeFeedChange()));
             accepted = Utils.runOnBackgroundThread(() -> {
                 try {
                     SettingsBackup.apply(snapshot);

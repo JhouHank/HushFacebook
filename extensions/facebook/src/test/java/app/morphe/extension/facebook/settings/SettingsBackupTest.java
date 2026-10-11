@@ -182,6 +182,7 @@ public class SettingsBackupTest {
         Settings.PHOTO_FILENAME_TEMPLATE.resetToDefault();
         Settings.START_TAB.resetToDefault();
         Settings.FEEDS_SUBTAB.resetToDefault();
+        Settings.HOME_FEED.resetToDefault();
         Settings.COMMENT_ORDER.resetToDefault();
         Settings.PLAYBACK_QUALITY.resetToDefault();
         Settings.REELS_PLAYBACK_QUALITY.resetToDefault();
@@ -243,7 +244,7 @@ public class SettingsBackupTest {
         for (Setting<?> setting : SettingsBackup.VALUES) {
             assertFalse(setting.key + " is carried and kept out at once", VALUES_STAY_OUT.containsKey(setting.key));
         }
-        assertEquals(Arrays.<Setting<?>>asList(Settings.HIDDEN_WORDS, Settings.KEPT_WORDS, Settings.HIDDEN_SOURCES, Settings.HIDE_POSTS_OVER_REACTIONS, Settings.HIDDEN_SHARE_ITEMS, Settings.SEEN_POSTS_KEEP, Settings.SAVE_TO,
+        assertEquals(Arrays.<Setting<?>>asList(Settings.HIDDEN_WORDS, Settings.KEPT_WORDS, Settings.HIDDEN_SOURCES, Settings.HIDE_POSTS_OVER_REACTIONS, Settings.HIDDEN_SHARE_ITEMS, Settings.HOME_FEED, Settings.SEEN_POSTS_KEEP, Settings.SAVE_TO,
                 Settings.SAVE_FOLDER, Settings.VIDEO_SUBFOLDER, Settings.PHOTO_SUBFOLDER, Settings.DOWNLOAD_QUALITY,
                 Settings.FILENAME_TEMPLATE, Settings.PHOTO_FILENAME_TEMPLATE, Settings.DOWNLOAD_ACTION, Settings.SEND_TO_APP,
                 Settings.START_TAB, Settings.FEEDS_SUBTAB, Settings.COMMENT_ORDER, Settings.PLAYBACK_QUALITY,
@@ -260,6 +261,7 @@ public class SettingsBackupTest {
         assertEquals(Settings.PHOTO_FILENAME_TEMPLATE, SettingsBackup.PHOTO_NAME);
         assertEquals(Settings.START_TAB, SettingsBackup.START);
         assertEquals(Settings.FEEDS_SUBTAB, SettingsBackup.SUBTAB);
+        assertEquals(Settings.HOME_FEED, SettingsBackup.HOME_FEED);
         assertEquals(Settings.COMMENT_ORDER, SettingsBackup.ORDER);
         assertEquals(Settings.PLAYBACK_QUALITY, SettingsBackup.PLAYBACK);
         assertEquals(Settings.REELS_PLAYBACK_QUALITY, SettingsBackup.REELS_QUALITY);
@@ -1572,6 +1574,62 @@ public class SettingsBackupTest {
                 SettingsBackupPreference.importedMessage(0, "Hush", null, null, null),
                 SettingsBackupPreference.importedMessage(0, "Hush", null, null, null, null, null, null, null, null,
                         null, null, null));
+    }
+
+    /**
+     * The feed Home shows goes out as its file value and comes back only as one this build offers,
+     * like the Feeds filter, and the preview says what it does. A file from before it was carried
+     * leaves it alone.
+     */
+    @Test
+    public void homesFeedRoundTripsAndComesBackOnlyAsOneThisBuildOffers() throws Exception {
+        for (FeedsSubtab feed : FeedsSubtab.values()) {
+            Settings.HOME_FEED.save(feed);
+            String file = SettingsBackup.create();
+            assertEquals(feed.fileValue, new JSONObject(file).getJSONObject("settings").get(SettingsBackup.HOME_FEED.key));
+            Settings.HOME_FEED.save(feed == FeedsSubtab.ALL ? FeedsSubtab.FRIENDS : FeedsSubtab.ALL);
+
+            SettingsBackup.Snapshot snapshot = SettingsBackup.parse(file);
+            assertEquals(feed, snapshot.homeFeed);
+            assertEquals(feed, snapshot.homeFeedChange());
+            assertEquals(Collections.singletonMap(SettingsBackup.HOME_FEED, feed), snapshot.changes());
+            assertEquals(1, SettingsBackup.apply(snapshot));
+            assertEquals(feed, Settings.HOME_FEED.savedValue());
+            assertEquals("a file read back is the file", file, SettingsBackup.create());
+            assertEquals("the same feed again changes nothing", 0, SettingsBackup.parse(file).changes().size());
+        }
+
+        Settings.HOME_FEED.save(FeedsSubtab.FRIENDS);
+        String file = SettingsBackup.create();
+        Map<String, ?> before = store();
+        for (Object refused : new Object[]{"FRIENDS", "Friends", "most_recent_friend", "top_stories", "", 3, true,
+                JSONObject.NULL, new JSONObject(), new org.json.JSONArray()}) {
+            JSONObject hostile = new JSONObject(file);
+            hostile.getJSONObject("settings").put(SettingsBackup.HOME_FEED.key, refused);
+            try {
+                SettingsBackup.parse(hostile.toString());
+                fail("a file with the Home feed " + printable(String.valueOf(refused)) + " was read");
+            } catch (SettingsBackup.Rejected rejected) {
+                assertEquals(printable(String.valueOf(refused)), SettingsBackup.Reason.VALUE, rejected.reason);
+            }
+        }
+        assertEquals("a refused file wrote something", before, store());
+
+        SettingsBackup.Snapshot older = SettingsBackup.parse(fileWith(Settings.HIDE_SUGGESTED_POSTS, false));
+        assertNull(older.homeFeed);
+        assertNull(older.homeFeedChange());
+        SettingsBackup.apply(older);
+        assertEquals(FeedsSubtab.FRIENDS, Settings.HOME_FEED.savedValue());
+
+        // A preview kept across a rebuild keeps its feed, and only one this build offers comes back.
+        Bundle state = SettingsBackup.parse(file).toBundle();
+        assertEquals(FeedsSubtab.FRIENDS, SettingsBackup.Snapshot.fromBundle(state).homeFeed);
+        state.putString("home_feed", "FRIENDS");
+        assertNull(SettingsBackup.Snapshot.fromBundle(state).homeFeed);
+
+        assertEquals(L10n.f("With %1$s on, Home will show the same posts as %2$s in the Feeds tab.",
+                        L10n.isolate(SwitchLabels.title(Settings.FOLLOWING_FEED_HOME)), L10n.t("Groups")),
+                SettingsBackupPreference.homeFeedSentence(FeedsSubtab.GROUPS));
     }
 
     /**

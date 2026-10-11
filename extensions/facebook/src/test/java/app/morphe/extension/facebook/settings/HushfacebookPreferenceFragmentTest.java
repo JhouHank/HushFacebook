@@ -1546,6 +1546,51 @@ public class HushfacebookPreferenceFragmentTest {
         }
     }
 
+    /**
+     * Home shows sits right under Following feed on Home, follows it the way the seen posts time
+     * follows its switch, offers the Feeds tab's filters by their names in Facebook, and says what
+     * each one shows.
+     */
+    @Test
+    public void homesFeedChoiceFollowsFollowingFeedOnHome() {
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.FOLLOWING_HOME);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            List<Preference> rows = rowsOf(controller);
+            int switchAt = indexOfKey(rows, Settings.FOLLOWING_FEED_HOME.key);
+            assertTrue("no Following feed on Home switch", switchAt >= 0);
+            Preference following = rows.get(switchAt);
+            assertTrue("no row under the switch", rows.get(switchAt + 1) instanceof ValueRows.HomeFeedRow);
+            ValueRows.HomeFeedRow feed = (ValueRows.HomeFeedRow) rows.get(switchAt + 1);
+            assertEquals(Settings.HOME_FEED.key, feed.getKey());
+            assertEquals("Home shows", String.valueOf(feed.getTitle()));
+            List<String> entries = new ArrayList<>();
+            for (CharSequence entry : feed.getEntries()) entries.add(String.valueOf(entry));
+            assertEquals(Arrays.asList("All", "Favorites", "Friends", "Groups", "Pages"), entries);
+            assertEquals("ALL", feed.getValue());
+
+            assertFalse("the feed choice is open with the switch off", feed.isEnabled());
+            String greyed = String.valueOf(feed.getSummary());
+            assertTrue("the greyed feed choice doesn't say why: " + greyed,
+                    greyed.startsWith("Home shows the same posts as All in the Feeds tab. Turn on")
+                            && greyed.contains(SwitchLabels.title(Settings.FOLLOWING_FEED_HOME))
+                            && greyed.endsWith("to use this."));
+
+            assertTrue(following.getOnPreferenceChangeListener().onPreferenceChange(following, true));
+            assertTrue(feed.isEnabled());
+            assertEquals("Home shows the same posts as All in the Feeds tab.", String.valueOf(feed.getSummary()));
+            pick(feed, "FRIENDS");
+            assertEquals(FeedsSubtab.FRIENDS, Settings.HOME_FEED.savedValue());
+            assertEquals("Home shows the same posts as Friends in the Feeds tab. If Facebook doesn't have that feed, "
+                    + "Home shows All.", String.valueOf(feed.getSummary()));
+
+            assertTrue(following.getOnPreferenceChangeListener().onPreferenceChange(following, false));
+            assertFalse(feed.isEnabled());
+            assertEquals("turning the switch off changed the choice", FeedsSubtab.FRIENDS, Settings.HOME_FEED.savedValue());
+        } finally {
+            Settings.HOME_FEED.resetToDefault();
+        }
+    }
+
     private static List<Preference> rowsOf(ActivityController<Activity> controller) {
         HushfacebookPreferenceFragment fragment = new HushfacebookPreferenceFragment();
         controller.get().getFragmentManager().beginTransaction()

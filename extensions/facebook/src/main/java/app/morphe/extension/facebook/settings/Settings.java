@@ -1027,6 +1027,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_following_feed_home", FALSE);
 
     /**
+     * Which of the Feeds tab's filters Home shows while {@link #FOLLOWING_FEED_HOME} is on. All is
+     * the most recent feed. A filter Facebook's feed types don't have leaves Home on All.
+     */
+    public static final EnumSetting<FeedsSubtab> HOME_FEED =
+            new EnumSetting<>("hushfacebook_home_feed", FeedsSubtab.ALL, Setting.parent(FOLLOWING_FEED_HOME));
+
+    /**
      * The tab bar keeps Marketplace, Notifications and the profile or Menu tab, and a start from
      * the launcher icon opens Marketplace whatever {@link #START_TAB} says. Home with the news feed,
      * Video, Friends, Feeds, Groups, Gaming and Events go. Facebook builds the bar once, so a change

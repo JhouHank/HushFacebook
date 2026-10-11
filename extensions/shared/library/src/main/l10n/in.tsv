@@ -365,7 +365,7 @@ Facebook will open on %1$s.	Facebook akan terbuka di %1$s.
 # context: switch title under Opening Facebook; Following is Facebook's feed of the friends, Pages and groups you follow, and Home is the tab
 Following feed on Home	Feed Diikuti di Beranda
 # context: summary of that switch; the ranked feed is the one Facebook orders for you, and the Feeds tab has its own filters
-Home shows the newest posts from friends, groups and Pages you follow, like All in the Feeds tab. The Feeds tab's filters don't change.	Beranda menampilkan postingan terbaru dari teman, grup, dan Halaman yang kamu ikuti, seperti Semua di tab Feeds. Filter di tab Feeds tidak berubah.
+Home shows the newest posts from friends, groups and Pages you follow, like All in the Feeds tab, or the filter you pick below. The Feeds tab's filters don't change.	Beranda menampilkan postingan terbaru dari teman, grup, dan Halaman yang kamu ikuti, seperti Semua di tab Feeds atau filter yang kamu pilih di bawah. Filter di tab Feeds tidak berubah.
 Jump to a section	Lompat ke bagian
 Go straight to one group of settings. Back returns to where you were.	Langsung ke satu kelompok setelan. Kembali membawamu ke tempat semula.
 # context: switch title under Downloads; on, every video save keeps to formats other apps accept
@@ -918,6 +918,13 @@ When Facebook opens on Feeds, the Feeds tab opens on the filter Facebook picks.	
 When Facebook opens on Feeds, the Feeds tab opens on %1$s. If your Feeds tab doesn't have it, it opens as usual.	Saat Facebook terbuka di Feed, tab Feed terbuka di %1$s. Jika tab Feed kamu tidak memilikinya, tab itu terbuka seperti biasa.
 The Feeds tab will open on the filter Facebook picks.	Tab Feed akan terbuka di filter yang dipilih Facebook.
 The Feeds tab will open on %1$s.	Tab Feed akan terbuka di %1$s.
+# context: title of the list under Following feed on Home that picks which Feeds tab filter Home shows
+Home shows	Beranda menampilkan
+Home shows the same posts as All in the Feeds tab.	Beranda menampilkan postingan yang sama dengan Semua di tab Feeds.
+# context: %1$s is a Feeds tab filter's name, like Friends or Groups
+Home shows the same posts as %1$s in the Feeds tab. If Facebook doesn't have that feed, Home shows All.	Beranda menampilkan postingan yang sama dengan %1$s di tab Feeds. Jika Facebook tidak punya feed itu, Beranda menampilkan Semua.
+# context: settings import preview; %1$s is the Following feed on Home switch, %2$s a Feeds tab filter
+With %1$s on, Home will show the same posts as %2$s in the Feeds tab.	Saat %1$s menyala, Beranda akan menampilkan postingan yang sama dengan %2$s di tab Feeds.
 Saved	Tersimpan
 Saved shortcut	Pintasan Tersimpan
 Adds Saved to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	Menambahkan Tersimpan ke menu yang muncul saat ikon Facebook ditekan lama, jika ada ruang. Pintasan yang ada tetap tersedia.

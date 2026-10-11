@@ -9,6 +9,7 @@ package app.morphe.extension.facebook.settings;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.category;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.commentOrderRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.feedsSubtabRow;
+import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.homeFeedRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.mark;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.reactionCeilingRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.seenKeepRow;
@@ -82,9 +83,18 @@ final class FeedPages {
             }
             if (build.contains(PatchFamily.FOLLOWING_HOME)) {
                 // Home asks for its feed each time it loads one, so no restart is needed.
-                opening.addPreference(toggle(context, Settings.FOLLOWING_FEED_HOME,
-                        L10n.t("Home shows the newest posts from friends, groups and Pages you follow, like All in the Feeds tab. "
-                                + "The Feeds tab's filters don't change.")));
+                SwitchPreference following = toggle(context, Settings.FOLLOWING_FEED_HOME,
+                        L10n.t("Home shows the newest posts from friends, groups and Pages you follow, like All in the Feeds tab, "
+                                + "or the filter you pick below. The Feeds tab's filters don't change."));
+                // The feed choice follows the switch and is greyed out until it's on, as the seen posts time is.
+                Preference homeFeed = homeFeedRow(context);
+                homeFeed.setEnabled(Settings.FOLLOWING_FEED_HOME.savedValue());
+                following.setOnPreferenceChangeListener((preference, value) -> {
+                    homeFeed.setEnabled(Boolean.TRUE.equals(value));
+                    return true;
+                });
+                opening.addPreference(following);
+                opening.addPreference(homeFeed);
             }
         }
     }
