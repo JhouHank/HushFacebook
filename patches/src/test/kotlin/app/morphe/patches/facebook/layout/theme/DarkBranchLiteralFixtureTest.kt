@@ -22,11 +22,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Issue #37's Menu profile card on each declared build: the card at the top of Menu, with the
- * account's name and picture, is #333334 that Facebook writes right after its own dark check says
- * yes (582 `LX/3Nj;->invoke` and `LX/374;->render`, seen on the emulator). Route three's dark-branch
- * pass finds at least those two, and every site it finds gets the extension's call right after its
- * `const`, on the same register.
+ * Issue #37's Create story tile on each declared build: the tile at the start of the stories tray
+ * is #333334 under the account's picture, which Facebook writes right after its own dark check says
+ * yes (582 `LX/3Nj;->invoke`, the AddToStoryTileSplitCardComponentSpec, and `LX/374;->render`).
+ * Route three's dark-branch pass finds at least those two, and every site it finds gets the
+ * extension's call right after its `const`, on the same register.
  */
 class DarkBranchLiteralFixtureTest {
     private val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
@@ -37,11 +37,11 @@ class DarkBranchLiteralFixtureTest {
 
     private fun Method.descriptor() = "$definingClass->$name(${parameterTypes.joinToString("")})$returnType"
 
-    /** The Menu card's grey, #333334, as a signed int. */
+    /** The Create story tile's grey, #333334, as a signed int. */
     private val cardGrey = -0xcccccc
 
     @Test
-    fun `the Menu card's grey is on Facebook's dark branch and each such colour goes to the extension`() {
+    fun `the Create story tile's grey is on Facebook's dark branch and each such colour goes to the extension`() {
         val checked = mutableSetOf<String>()
         for (version in versions) {
             for (bundle in bundles(version)) {
@@ -55,7 +55,7 @@ class DarkBranchLiteralFixtureTest {
                 }
                 val sites = owners.flatMap { owner -> owner.methods.flatMap { method -> method.darkBranchLiterals(darkCheck).map { method to it } } }
                 val cards = sites.filter { (method, index) -> (method.body()[index] as NarrowLiteralInstruction).narrowLiteral == cardGrey }
-                assertTrue("$name: the Menu card's two #333334 writes, at least (${cards.map { it.first.descriptor() }})", cards.size >= 2)
+                assertTrue("$name: the Create story tile's two #333334 writes, at least (${cards.map { it.first.descriptor() }})", cards.size >= 2)
 
                 val context = PatchContexts.of(owners)
                 assertEquals("$name: every site changed", sites.size, with(context) { readDarkBranchLiterals(darkCheck) })

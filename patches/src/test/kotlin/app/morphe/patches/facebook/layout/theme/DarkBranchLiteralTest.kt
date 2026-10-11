@@ -32,24 +32,24 @@ import org.junit.Test
  */
 class DarkBranchLiteralTest {
     private val check = "Lfixture/Fds;->isDark(Landroid/content/Context;)Z"
-    private val menu = "Lfixture/MenuCard;"
+    private val tile = "Lfixture/StoryTile;"
     private val context = "Landroid/content/Context;"
 
-    /** The Menu card's grey, #333334, and light mode's, #F8F9FB, as signed ints. */
+    /** The Create story tile's grey, #333334, and light mode's, #F8F9FB, as signed ints. */
     private val grey = -0xcccccc
     private val light = -0x70605
 
     private fun method(name: String, smali: String): Method =
         MutableMethod(
             ImmutableMethod(
-                menu, name, listOf(ImmutableMethodParameter(context, null, null)), "I",
+                tile, name, listOf(ImmutableMethodParameter(context, null, null)), "I",
                 AccessFlags.PUBLIC.value or AccessFlags.STATIC.value or AccessFlags.FINAL.value,
                 null, null, ImmutableMethodImplementation(4, emptyList(), null, null),
             ),
         ).apply { addInstructionsWithLabels(0, smali) }.let(ImmutableMethod::of)
 
     private fun app(): BytecodePatchContext = PatchContexts.of(listOf<ClassDef>(
-        ImmutableClassDef(menu, AccessFlags.PUBLIC.value or AccessFlags.FINAL.value, "Ljava/lang/Object;", null, null, null,
+        ImmutableClassDef(tile, AccessFlags.PUBLIC.value or AccessFlags.FINAL.value, "Ljava/lang/Object;", null, null, null,
             emptyList(), listOf(
                 method("card", """
                     invoke-static { p0 }, $check
@@ -106,7 +106,7 @@ class DarkBranchLiteralTest {
     ))
 
     private fun BytecodePatchContext.body(name: String): List<Instruction> =
-        mutableClassDefBy(menu).methods.single { it.name == name }.implementation!!.instructions.toList()
+        mutableClassDefBy(tile).methods.single { it.name == name }.implementation!!.instructions.toList()
 
     private fun Instruction.call(): String? = (this as? ReferenceInstruction)?.reference?.toString()
 
