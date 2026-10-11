@@ -6,6 +6,7 @@ Every Hushfacebook release, newest first.
 
 ### Added
 
+* **Facebook:** New patch, `Frame step`, under Playback (issue #95). With it on, pause a reel or a video and tap the right third of the picture to move one frame forward, or the left third to move one frame back. The middle third plays it again, and taps on a playing video work as before. It starts off, and the report counts the steps each way.
 * **Facebook:** Two new switches under Comments in `Comment sheet options`, **Hide comments with shop links** and **Hide comments with your words** (issue #118). The first leaves out comments that link to Shopee, Lazada, Tokopedia, AliExpress, Temu, Shein, TikTok Shop or Amazon's short links, replies and all. The second leaves out comments holding something from your News feed **Words to hide** list, unless they also have something from **Words that keep a post**, so the one list now covers posts and comments. Both start off, and the report counts what each one hid.
 
 ### Fixed

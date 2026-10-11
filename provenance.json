@@ -706,6 +706,17 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/media/FrameStep.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/media/framestep/FrameStepAnchors.kt",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/media/framestep/FrameStepPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: Frame step, for issue #95, from Facebook 582. It finds FbGrootPlayer the way Resume long videos does and hooks its kept-name maybeTrackVideoStart and maybeTrackVideoStop, its release and its static seek, plus the one Integer-and-int boolean check that seek asks before dropping a small seek, and fills stubs with the position reader, isPlaying, the public seek and the one ViewGroup field the attach holding FbGrootPlayer.attachPlayerViewInternal writes. GestureReactionComponent, found by its constructor's name, makes a view whose constructor sets one OnTouchListener; the hook goes first in its onTouch. The extension steps a paused player under a quick side-third tap by 33 ms with BY_USER and turns the tap's up into a cancel."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/reels/DoubleTapLike.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/reels/doubletap/DoubleTapAnchors.kt",
         "patches/src/main/kotlin/app/morphe/patches/facebook/reels/doubletap/TurnOffDoubleTapLikePatch.kt"

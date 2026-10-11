@@ -624,6 +624,10 @@ Type @ before Facebook suggests someone to tag in posts or comments. Your text s
 Resume long videos	Reanudar videos largos
 # context: summary of that switch; the seek bar is the bar under a video you drag to move through it; Reels is Facebook's name for its short videos
 Videos over two minutes pick up where you left off. Drag the bar to start elsewhere. Short reels, live videos and ads start as usual.	Los vídeos de más de dos minutos continúan donde los dejaste. Arrastra la barra para empezar en otro punto. Los reels cortos, los vídeos en directo y los anuncios empiezan como siempre.
+# context: switch title under Playback; a frame is one still picture of a video
+Frame step	Avance por fotogramas
+# context: summary of that switch; Reels is Facebook's name for its short videos
+With a reel or video paused, tap its right side to step one frame forward and its left side to step one frame back. Tap the middle to play.	Con un reel o vídeo en pausa, toca su lado derecho para avanzar un fotograma y su lado izquierdo para retroceder uno. Toca el centro para reproducirlo.
 # context: switch title under News feed, right below Hide AI-detected posts; on, posts their creator labelled as AI go too
 Also hide posts labeled as AI	Ocultar también publicaciones etiquetadas como IA
 Hide Meta AI in the feed	Ocultar Meta AI en el feed

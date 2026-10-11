@@ -1061,10 +1061,10 @@ public class SettingsNavigationTest {
         page.navigation.open(page.findPreference(Settings.TAP_TO_PLAY.key));
         recreate();
         assertTrue(contains(Settings.TAP_TO_PLAY.key));
-        // Playback: Tap to play and Only the first reel waits, Resume long videos, Default playback quality and its
-        // Playback quality, Reels quality and Stories quality lists, Picture-in-picture, Turn off HDR brightness,
-        // Keep the progress bar and Show a reel's time.
-        assertEquals(11, list().getCount());
+        // Playback: Tap to play and Only the first reel waits, Resume long videos, Frame step, Default playback
+        // quality and its Playback quality, Reels quality and Stories quality lists, Picture-in-picture, Turn off
+        // HDR brightness, Keep the progress bar and Show a reel's time.
+        assertEquals(12, list().getCount());
         page.navigation.back();
         findSearch(dialog.getView()).setText("other apps");
         recreate();

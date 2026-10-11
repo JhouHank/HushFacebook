@@ -624,6 +624,10 @@ Type @ before Facebook suggests someone to tag in posts or comments. Your text s
 Resume long videos	Uzun videolara kaldığın yerden devam et
 # context: summary of that switch; the seek bar is the bar under a video you drag to move through it; Reels is Facebook's name for its short videos
 Videos over two minutes pick up where you left off. Drag the bar to start elsewhere. Short reels, live videos and ads start as usual.	İki dakikadan uzun videolar kaldığınız yerden devam eder. Başka bir yerden başlamak için çubuğu sürükleyin. Kısa reeller, canlı videolar ve reklamlar her zamanki gibi başlar.
+# context: switch title under Playback; a frame is one still picture of a video
+Frame step	Kare kare ilerle
+# context: summary of that switch; Reels is Facebook's name for its short videos
+With a reel or video paused, tap its right side to step one frame forward and its left side to step one frame back. Tap the middle to play.	Bir reel veya video duraklatılmışken bir kare ileri gitmek için sağ tarafına, bir kare geri gitmek için sol tarafına dokunun. Oynatmak için ortasına dokunun.
 # context: switch title under News feed, right below Hide AI-detected posts; on, posts their creator labelled as AI go too
 Also hide posts labeled as AI	Yapay zekâ olarak etiketlenen gönderileri de gizle
 Hide Meta AI in the feed	Akışta Meta AI'ı gizle

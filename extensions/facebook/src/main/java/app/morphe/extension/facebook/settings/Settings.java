@@ -646,6 +646,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_resume_long_videos", FALSE);
 
     /**
+     * With a reel or video paused, a tap on its right third steps it one frame forward and a tap on
+     * its left third one frame back ({@link app.morphe.extension.facebook.media.FrameStep}). Starts
+     * off. Off or paused, every tap goes to Facebook as before.
+     */
+    public static final BooleanSetting FRAME_STEP =
+            new BooleanSetting("hushfacebook_frame_step", FALSE);
+
+    /**
      * Videos, reels and video stories start at the quality in {@link #PLAYBACK_QUALITY}, through
      * the same per-video choice Facebook's own quality menu makes
      * ({@link app.morphe.extension.facebook.media.QualityChoice}). A pick in that menu still wins
