@@ -350,9 +350,9 @@ internal fun progressUpdate(holders: List<ClassDef>): ProgressUpdate {
  * Where [update], the scrubber base's progress update, asks whether you're dragging: the
  * `sget-object` of the drag state right before the `if-ne` that skips the update's one call to its
  * time writer (582 `LX/9c4;->A04`, `sget-object v0, LX/0UA;->A01`). The update gets there only after
- * reading the reel's position and length, finding a position and a length above 0, and moving the
- * bar. Returns that instruction's index. Refuses unless the writer is called once, right after
- * such a check.
+ * reading the reel's position and length, finding a position other than -1 and a length above 0,
+ * and moving the bar. Returns that instruction's index. Refuses unless the writer is called once,
+ * right after such a check.
  */
 internal fun dragCheck(update: Method, progress: ProgressUpdate): Int {
     val base = progress.base.type
