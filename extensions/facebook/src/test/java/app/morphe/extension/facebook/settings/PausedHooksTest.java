@@ -143,9 +143,11 @@ import app.morphe.extension.shared.settings.PauseForTests;
  * <p>Each probe is one hook with its switch on. It must change Facebook's behaviour while
  * Hushfacebook runs, which is the control, and leave it alone while paused. A family that gains a
  * switch without a probe here fails the first test.
+ *
+ * <p>Also at sdk 37, Android 17, which reaches Samsung phones from One UI 9.
  */
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 30)
+@Config(sdk = {30, 37})
 public class PausedHooksTest {
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 

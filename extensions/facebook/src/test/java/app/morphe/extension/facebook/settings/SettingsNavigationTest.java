@@ -62,9 +62,12 @@ import org.robolectric.shadows.ShadowPackageManager;
 import org.robolectric.shadows.ShadowSigningInfo;
 import org.robolectric.shadows.ShadowToast;
 
-/** Exercises the actual dialog host and its filtered view of the original preference model. */
+/**
+ * Exercises the actual dialog host and its filtered view of the original preference model, on
+ * Android 11 and on Android 17 (sdk 37).
+ */
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 30, qualifiers = "w390dp-h844dp-night-xhdpi")
+@Config(sdk = {30, 37}, qualifiers = "w390dp-h844dp-night-xhdpi")
 @SuppressWarnings("deprecation")
 public class SettingsNavigationTest {
     @Rule public final SettingsContextRule settings = new SettingsContextRule();

@@ -115,7 +115,9 @@ import app.morphe.extension.shared.settings.PauseForTests;
  * out of the start. PausedHooksTest can't see that: its sandbox loaded the settings classes with a
  * context first, so a read there just answers. This is the only class at sdk 33, so it runs in a
  * sandbox of its own where nothing has loaded them yet, and it declares no SettingsContextRule,
- * which would load them. Give another class sdk 33 and this stops proving anything.
+ * which would load them. Give another class sdk 33 and this stops proving anything. For the same
+ * reason it doesn't also run at sdk 37 beside PausedHooksTest and SettingsNavigationTest: the
+ * order it proves doesn't depend on the Android version, and a shared sandbox would hide it.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 33)
