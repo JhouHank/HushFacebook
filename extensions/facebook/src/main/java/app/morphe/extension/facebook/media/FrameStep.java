@@ -350,7 +350,11 @@ public final class FrameStep {
         return null;
     }
 
-    /** Seeks [paused] a frame forward (1) or back (-1). True once the seek was made. */
+    /**
+     * Seeks [paused] a frame forward (1) or back (-1). True once the seek was made, or when a step
+     * back from the very start has nowhere to go: the tap is still taken, since Facebook would
+     * play the video with it.
+     */
     private static boolean step(Paused paused, int direction) {
         Object held = paused.player.get();
         if (held == null) return false;
@@ -361,7 +365,7 @@ public final class FrameStep {
         Object trigger = stepTrigger(paused.triggers);
         if (trigger == null) return false;
         int to = Math.max(0, from + direction * FRAME_MS);
-        if (to == from) return false;
+        if (to == from) return true;
         int ask = Math.max(0, to - landsBy(held));
         if (!seek(player, held, trigger, ask)) return false;
         paused.sought = to;

@@ -198,8 +198,11 @@ public class FrameStepTest {
         FrameStep.stopped(player, Trigger.BY_USER);
         FrameStepForTests.tap(screen, 100, 800);
         assertEquals(Collections.singletonList("BY_INITIAL_FRAME_PERFECT_SEEK@0"), player.seeks);
-        assertEquals("nothing is left to step back to", MotionEvent.ACTION_UP, FrameStepForTests.tap(screen, 100, 800));
-        assertEquals(1, player.seeks.size());
+        // Nothing is left to step back to, and the tap still isn't Facebook's: let through, it
+        // played the video, which a tap on the left third never asks for.
+        assertEquals("a back tap at the start stays out of Facebook", MotionEvent.ACTION_CANCEL,
+                FrameStepForTests.tap(screen, 100, 800));
+        assertEquals("and seeks nowhere", 1, player.seeks.size());
     }
 
     @Test
