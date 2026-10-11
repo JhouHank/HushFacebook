@@ -4,6 +4,10 @@ Every Hushfacebook release, newest first.
 
 ## Unreleased
 
+### Added
+
+* **Facebook:** Two new switches under Comments in `Comment sheet options`, **Hide comments with shop links** and **Hide comments with your words** (issue #118). The first leaves out comments that link to Shopee, Lazada, Tokopedia, AliExpress, Temu, Shein, TikTok Shop or Amazon's short links, replies and all. The second leaves out comments holding something from your News feed **Words to hide** list, unless they also have something from **Words that keep a post**, so the one list now covers posts and comments. Both start off, and the report counts what each one hid.
+
 ### Fixed
 
 * **Facebook:** A link to a site that isn't Meta's shows up in the diagnostic report's list of screens opened as "(outside link)" and nothing more. The list used to keep the site and the page's path, so a report could name a page you read in Facebook's browser or a file you opened from it.

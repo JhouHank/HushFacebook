@@ -69,6 +69,8 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_COMMENT_GIF_STICKER_BUTTONS) return L10n.t("Hide GIF and sticker buttons");
         if (setting == Settings.OPEN_REPLY_THREADS) return L10n.t("Open every reply thread");
         if (setting == Settings.HIDE_RELATED_GROUPS_UNDER_COMMENTS) return L10n.t("Hide related groups");
+        if (setting == Settings.HIDE_SHOP_LINK_COMMENTS) return L10n.t("Hide comments with shop links");
+        if (setting == Settings.HIDE_COMMENTS_WITH_WORDS) return L10n.t("Hide comments with your words");
         if (setting == Settings.TAG_SUGGESTIONS_ONLY_AFTER_AT) return L10n.t("Tag suggestions only after @");
         if (setting == Settings.HIDE_REELS_TAB) return L10n.t("Hide the Reels tab");
         if (setting == Settings.HIDE_REELS_TAB_DOT) return L10n.t("Hide the Reels tab dot");

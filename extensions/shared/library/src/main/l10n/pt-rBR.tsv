@@ -1258,3 +1258,11 @@ Takes away Send to group when you pick two or more people, and the share sheet's
 Share the post's own link	Compartilhar o link próprio da publicação
 # context: that switch's summary. Copy link is the share sheet item of that name; facebook.com/share/ is a web address and stays as written
 Copy link and the share sheet's other link shares give the post's own facebook.com address instead of a facebook.com/share/ link made for that one share.	“Copiar link” e as outras formas de compartilhar um link dão o endereço facebook.com da própria publicação em vez de um link facebook.com/share/ criado só para aquele compartilhamento.
+# context: switch title under Comments in Hushfacebook settings, after Hide related groups
+Hide comments with shop links	Ocultar comentários com links de lojas
+# context: that switch's summary. Shopee, Lazada and Amazon are online shops and stay as written
+Hides comments that link to a shop like Shopee, Lazada or Amazon, along with their replies.	Oculta comentários com links para uma loja como Shopee, Lazada ou Amazon, junto com as respostas.
+# context: switch title under Comments, right after Hide comments with shop links
+Hide comments with your words	Ocultar comentários com suas palavras
+# context: that switch's summary. Words to hide is the word list row under News feed and Words that keep a post its second list; use the same translations as those rows
+Hides comments containing a word from your Words to hide list in News feed, along with their replies. Words that keep a post keep a comment too.	Oculta comentários que contêm uma palavra da sua lista Palavras para ocultar em Feed de notícias, junto com as respostas. Palavras que mantêm uma publicação também mantêm um comentário.

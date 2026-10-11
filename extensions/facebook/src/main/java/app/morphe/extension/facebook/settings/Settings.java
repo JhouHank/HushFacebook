@@ -593,6 +593,22 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_related_groups_under_comments", FALSE);
 
     /**
+     * Comments whose words link to an online shop, like the Shopee links pasted under reels, are
+     * left out with their replies ({@link app.morphe.extension.facebook.comments.CommentSheetOptions},
+     * #118). Off by default. A change shows on the next comments drawn.
+     */
+    public static final BooleanSetting HIDE_SHOP_LINK_COMMENTS =
+            new BooleanSetting("hushfacebook_hide_shop_link_comments", FALSE);
+
+    /**
+     * Comments holding a phrase from {@link #HIDDEN_WORDS} and none from {@link #KEPT_WORDS} are
+     * left out with their replies, matched as posts are
+     * ({@link app.morphe.extension.facebook.comments.CommentSheetOptions}, #118). Off by default.
+     */
+    public static final BooleanSetting HIDE_COMMENTS_WITH_WORDS =
+            new BooleanSetting("hushfacebook_hide_comments_with_words", FALSE);
+
+    /**
      * Facebook's text boxes (posts, comments, captions, a story's text) look people up to tag only
      * for a word that starts with @. Off, they also look them up for a plain word Facebook takes for
      * a name, what its code calls an implicit mention

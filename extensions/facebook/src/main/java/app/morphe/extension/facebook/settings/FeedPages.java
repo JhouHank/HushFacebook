@@ -358,6 +358,15 @@ final class FeedPages {
                     L10n.t("Comments show their replies right away, so there's no View replies to tap.")));
             comments.addPreference(toggle(context, Settings.HIDE_RELATED_GROUPS_UNDER_COMMENTS,
                     L10n.t("A group post's comments end without the Related groups list and its Join buttons.")));
+            comments.addPreference(toggle(context, Settings.HIDE_SHOP_LINK_COMMENTS,
+                    L10n.t("Hides comments that link to a shop like Shopee, Lazada or Amazon, along with their replies.")));
+            // The words are the feed's own lists, edited on the Feed page, so the switch shows
+            // only in a build that has them.
+            if (build.contains(PatchFamily.POST_WORDS)) {
+                comments.addPreference(toggle(context, Settings.HIDE_COMMENTS_WITH_WORDS,
+                        L10n.t("Hides comments containing a word from your Words to hide list in News feed, along with their "
+                                + "replies. Words that keep a post keep a comment too.")));
+            }
             comments.addPreference(reactionCountsRow(context));
         }
     }

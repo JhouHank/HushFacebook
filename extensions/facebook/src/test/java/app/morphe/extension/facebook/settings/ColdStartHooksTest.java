@@ -19,6 +19,7 @@ import android.graphics.Typeface;
 import android.net.Uri;
 import android.widget.TextView;
 
+import com.facebook.graphql.model.GraphQLComment;
 import com.facebook.graphql.model.GraphQLPagesYouMayLikeFeedUnit;
 import com.facebook.graphql.model.GraphQLStory;
 
@@ -309,6 +310,8 @@ public class ColdStartHooksTest {
                 CommentSheetOptions.openReplyThreads(false));
         assertFalse("a post's comments drawn before the context lost Related groups",
                 CommentSheetOptions.holdsBottomContent(CommentSheetOptions.RELATED_GROUPS));
+        assertFalse("a comment with a shop link drawn before the context was left out",
+                CommentSheetOptions.hidesComment(new GraphQLComment("https://s.shopee.vn/9zKs")));
         assertFalse("a word typed before the context lost its tag suggestions", TagSuggestionsForTests.skipsAPlainWord());
         assertFalse("a list of people open before the context was closed", TagSuggestionsForTests.closesAListLeftOpen());
         assertFalse("a Chats list built before the context lost the Get Messenger card",

@@ -18,6 +18,7 @@ import android.os.SystemClock;
 import android.widget.FrameLayout;
 
 import com.facebook.common.util.TriState;
+import com.facebook.graphql.model.GraphQLComment;
 import com.facebook.graphql.model.GraphQLPagesYouMayLikeFeedUnit;
 import com.facebook.graphql.model.GraphQLStory;
 
@@ -576,13 +577,16 @@ public class PausedHooksTest {
                 () -> MetaAiSummaries.holds(MetaAiSummaries.POST_SUMMARY)));
         // The comment box's check answers no for its GIF and sticker buttons, a long press on Like
         // returns before the reaction picker opens, a comment starts with its replies open, and the
-        // check under a post's comments answers no for Related groups.
+        // check under a post's comments answers no for Related groups. A comment linking to a shop,
+        // and one holding a phrase from the hide list, are left out of the comment section.
         probes.put(PatchFamily.COMMENT_SHEET_OPTIONS, Arrays.asList(
                 () -> CommentSheetOptions.holdsButton(CommentSheetOptions.GIF_BUTTON),
                 () -> CommentSheetOptions.holdsButton(CommentSheetOptions.STICKER_BUTTON),
                 CommentSheetOptions::skipReactionPicker,
                 () -> CommentSheetOptions.openReplyThreads(false),
-                () -> CommentSheetOptions.holdsBottomContent(CommentSheetOptions.RELATED_GROUPS)));
+                () -> CommentSheetOptions.holdsBottomContent(CommentSheetOptions.RELATED_GROUPS),
+                () -> CommentSheetOptions.hidesComment(new GraphQLComment("https://s.shopee.vn/9zKs")),
+                () -> CommentSheetOptions.hidesComment(new GraphQLComment("Big SPOILER inside"))));
         // A word without @ in a post or comment box looks nobody up, and a list of people left open
         // by an earlier @ is closed.
         probes.put(PatchFamily.TAG_SUGGESTIONS, Arrays.asList(
