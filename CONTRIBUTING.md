@@ -20,7 +20,7 @@ Hushfacebook is a Morphe patch source for Facebook's Android app, package `com.f
 
 The current declared target is Facebook 582.0.0.50.54 on Android 11 or newer. `AppCompatibilities.kt` holds its version codes and the Facebook signing certificates. It declares build 475417104 for arm64-v8a and 475417036 for armeabi-v7a. Fixtures for older builds can still help when tracing a rename, but the current catalog declares only 582. Read the README's unsupported-version section before promising that an undeclared build works, and rerun the full fixture check before changing that claim.
 
-The v0.8.0 bundle uses Morphe patcher 1.15.1 and needs Morphe Manager 1.34.0 or newer. The Gradle wrapper, dependency pins, and verification data live under `gradle/`. The Morphe plugin version is in `settings.gradle.kts`. Keep those pins aligned when updating the patcher.
+The bundle uses Morphe patcher 1.15.1 and needs Morphe Manager 1.34.0 or newer. `scripts/validate-release-facts.ps1` holds both numbers here to the pins in `gradle/libs.versions.toml`. The Gradle wrapper, dependency pins, and verification data live under `gradle/`. The Morphe plugin version is in `settings.gradle.kts`. Keep those pins aligned when updating the patcher.
 
 ## Source map
 
@@ -41,7 +41,7 @@ The v0.8.0 bundle uses Morphe patcher 1.15.1 and needs Morphe Manager 1.34.0 or 
 | `provenance.json` and `NOTICE` | Per-file origin and license notices carried into the patch bundle. `ProvenanceTest` checks the source headers against this record. |
 | `scripts/` and `fixtures/` | Build, compatibility, release, and device helpers. The Facebook APK and APKM fixtures are local inputs and are not committed. |
 
-Patch folders follow implementation areas. Morphe's visible categories come from each patch's `category()` declaration, so one category can draw patches from several folders. In v0.8.0 the release notes count 85 user-facing features. The generated 86-row catalog also includes the required `Hushfacebook settings` patch.
+Patch folders follow implementation areas. Morphe's visible categories come from each patch's `category()` declaration, so one category can draw patches from several folders. The generated catalog has one row more than the user-facing features the release notes count, because it also lists the required `Hushfacebook settings` patch.
 
 Patch and runtime directories are grouped by behavior. Their names don't always match, so start from the Morphe patch declaration and follow its injected extension class, status method, or setting key into Java.
 

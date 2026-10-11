@@ -802,6 +802,26 @@ Require-Match -Text $readme -Pattern "(?m)^\d+\.\s+Install \[Morphe Manager\]\([
     -Description 'README install step Manager floor'
 Write-Host "[release] README requires Morphe Manager $managerFloor or newer for patcher $pinnedPatcher"
 
+# CONTRIBUTING names the patcher and the floor as well, and it still said "the v0.8.0 bundle" with
+# 0.8.0's feature counts two releases later, with nothing to catch it. It's held to the same pins and
+# may not describe the bundle by a release version, which the next release makes wrong.
+$contributing = Get-Content -LiteralPath (Join-Path $rootPath 'CONTRIBUTING.md') -Raw
+$contributingReleases = @([regex]::Matches($contributing, '(?i)\b(?:the|in) v\d+(?:\.\d+)+\b') |
+    ForEach-Object { $_.Value } | Select-Object -Unique)
+if ($contributingReleases.Count -gt 0) {
+    throw ("CONTRIBUTING.md describes the bundle by a release (" + ($contributingReleases -join ', ') +
+        "), which the next release makes wrong. Say it without the version.")
+}
+Require-Match -Text $contributing -Pattern "\bMorphe patcher $([regex]::Escape($pinnedPatcher))\b" `
+    -Description 'CONTRIBUTING patcher version'
+$contributingFloors = @([regex]::Matches($contributing, '\bMorphe Manager\s+(\d+(?:\.\d+)+)\s+or newer\b') |
+    ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique)
+if ($contributingFloors.Count -eq 0 -or @($contributingFloors | Where-Object { $_ -ne $managerFloor }).Count -gt 0) {
+    throw ("CONTRIBUTING.md asks for Morphe Manager $($contributingFloors -join ', ') or newer, but patcher " +
+        "$pinnedPatcher needs $managerFloor, which the catalog pins.")
+}
+Write-Host "[release] CONTRIBUTING names patcher $pinnedPatcher and Morphe Manager $managerFloor, and no release"
+
 # The index description names a floor too, and it's what Manager users read before they install.
 # It describes the published release, which needs the floor that release's own commit pinned, not
 # the one pinned since, so it's held to the catalog at the release tag. Nothing read it before.

@@ -1929,7 +1929,8 @@ $factsScript = Join-Path $PSScriptRoot 'validate-release-facts.ps1'
 $factsRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("hushfacebook-facts-" + [guid]::NewGuid().ToString('N'))
 try {
     New-Item -ItemType Directory -Path $factsRoot -Force | Out-Null
-    foreach ($relative in @('patches-list.json', 'patches-bundle.json', 'gradle.properties', 'README.md', 'CHANGELOG.md')) {
+    foreach ($relative in @('patches-list.json', 'patches-bundle.json', 'gradle.properties', 'README.md', 'CHANGELOG.md',
+            'CONTRIBUTING.md')) {
         Copy-Item -LiteralPath (Join-Path $Root $relative) -Destination (Join-Path $factsRoot $relative)
     }
     New-Item -ItemType Directory -Path (Join-Path $factsRoot 'gradle') -Force | Out-Null
@@ -2293,6 +2294,27 @@ try {
     }
     Assert-Throws { Invoke-Facts } '*README badge Manager floor*' 'A README badge showing an older Manager was accepted.'
     Reset-FactsFile 'README.md'
+
+    # CONTRIBUTING names the patcher and the floor too, and it described "the v0.8.0 bundle" two
+    # releases on with nothing reading it. A release named there, an older floor or another
+    # patcher is refused.
+    foreach ($case in @(
+            @{ Name = 'the bundle described by its release'; Pattern = '*describes the bundle by a release*'
+                Edit = { param($text) $text -replace '(?m)^The bundle uses Morphe patcher', 'The v0.8.0 bundle uses Morphe patcher' } },
+            @{ Name = 'an older Manager floor'; Pattern = '*Morphe Manager 1.20.0 or newer*'
+                Edit = { param($text) $text -replace ('Morphe Manager ' + [regex]::Escape($fixtureFloor) + ' or newer'), 'Morphe Manager 1.20.0 or newer' } },
+            @{ Name = 'another patcher'; Pattern = '*CONTRIBUTING patcher version*'
+                Edit = { param($text) $text -replace 'Morphe patcher \d+(?:\.\d+)+', 'Morphe patcher 1.0.0' } })) {
+        $unedited = Get-Content -LiteralPath (Join-Path $factsRoot 'CONTRIBUTING.md') -Raw
+        Set-FactsFile 'CONTRIBUTING.md' $case.Edit
+        try {
+            Assert-True ((Get-Content -LiteralPath (Join-Path $factsRoot 'CONTRIBUTING.md') -Raw) -cne $unedited) `
+                "The CONTRIBUTING case '$($case.Name)' changed nothing, so it proves nothing."
+            Assert-Throws { Invoke-Facts } $case.Pattern "A CONTRIBUTING.md with $($case.Name) was accepted."
+        } finally {
+            Reset-FactsFile 'CONTRIBUTING.md'
+        }
+    }
 
     # And each copy has to be there. The alt text and install step cases above name a stale floor,
     # which the stale-floor check refuses before the presence checks run, so neither presence check
