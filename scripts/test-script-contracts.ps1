@@ -2975,8 +2975,9 @@ try {
     & git -C $hookRoot add extensions/facebook/src/main/java/FirstCommit.java
     & git -C $hookRoot commit --quiet -m 'code first'
     $firstCommit = (& git -C $hookRoot rev-parse HEAD).Trim()
-    Set-Content -LiteralPath (Join-Path $hookRoot 'CONTRIBUTING.md') -Encoding UTF8 -Value 'tip only'
-    & git -C $hookRoot add CONTRIBUTING.md
+    New-Item -ItemType Directory -Path (Join-Path $hookRoot 'docs') -Force | Out-Null
+    Set-Content -LiteralPath (Join-Path $hookRoot 'docs/guide.md') -Encoding UTF8 -Value 'tip only'
+    & git -C $hookRoot add docs/guide.md
     & git -C $hookRoot commit --quiet -m 'docs tip'
     $newBranchHead = (& git -C $hookRoot rev-parse HEAD).Trim()
     # A stale local remote-tracking ref that already points at the code commit must not subtract
@@ -3049,20 +3050,20 @@ try {
     $phoneSerial = 'R5' + 'C' + 'ZZZZ9999'
     $phoneDoc = Join-Path $hookRoot 'docs/phone.md'
     New-Item -ItemType Directory -Path (Split-Path -Parent $phoneDoc) -Force | Out-Null
-    Set-Content -LiteralPath (Join-Path $hookRoot 'CONTRIBUTING.md') -Encoding UTF8 -Value "Fixtures live in ~/$notesFolder/fixtures."
+    Set-Content -LiteralPath (Join-Path $hookRoot 'docs/guide.md') -Encoding UTF8 -Value "Fixtures live in ~/$notesFolder/fixtures."
     Set-Content -LiteralPath $phoneDoc -Encoding UTF8 -Value "adb -s $phoneSerial install app.apk"
     Set-Content -LiteralPath (Join-Path $hookRoot '.gitignore') -Encoding UTF8 -Value "$notesFolder/"
-    & git -C $hookRoot add CONTRIBUTING.md docs/phone.md .gitignore
+    & git -C $hookRoot add docs/guide.md docs/phone.md .gitignore
     & git -C $hookRoot commit --quiet -m 'names the machine'
     $namingCommit = (& git -C $hookRoot rev-parse HEAD).Trim()
     Assert-Throws { & $prePushScript -Root $hookRoot -PushedRefs "refs/heads/main $namingCommit refs/heads/main $newBranchHead" 6> $null } `
-        "*$namingCommit*CONTRIBUTING.md*docs/phone.md*" 'A push of docs naming the machine and a phone went through.'
+        "*$namingCommit*docs/guide.md*docs/phone.md*" 'A push of docs naming the machine and a phone went through.'
     Assert-Throws { & $prePushScript -Root $hookRoot -ChangedPaths @('docs/phone.md') 6> $null } `
-        '*the working tree*CONTRIBUTING.md*docs/phone.md*' 'A run by hand passed a working tree whose docs name the machine.'
+        '*the working tree*docs/guide.md*docs/phone.md*' 'A run by hand passed a working tree whose docs name the machine.'
     # The control: the same files naming nothing, .gitignore still naming the folder, go through.
-    Set-Content -LiteralPath (Join-Path $hookRoot 'CONTRIBUTING.md') -Encoding UTF8 -Value 'Fixtures live in HUSHFACEBOOK_FIXTURE_DIR.'
+    Set-Content -LiteralPath (Join-Path $hookRoot 'docs/guide.md') -Encoding UTF8 -Value 'Fixtures live in HUSHFACEBOOK_FIXTURE_DIR.'
     Set-Content -LiteralPath $phoneDoc -Encoding UTF8 -Value 'adb -s $env:HUSHFACEBOOK_DEVICE_SERIAL install app.apk'
-    & git -C $hookRoot add CONTRIBUTING.md docs/phone.md
+    & git -C $hookRoot add docs/guide.md docs/phone.md
     & git -C $hookRoot commit --quiet -m 'names nothing'
     $cleanCommit = (& git -C $hookRoot rev-parse HEAD).Trim()
     $global:LASTEXITCODE = 0
@@ -3075,9 +3076,9 @@ try {
     # commit: the naming commit is refused while the tree holds the clean text, and the clean
     # commit goes through while the tree names the machine.
     Assert-Throws { & $prePushScript -Root $hookRoot -PushedRefs "refs/heads/main $namingCommit refs/heads/main $newBranchHead" 6> $null } `
-        "*${namingCommit}:CONTRIBUTING.md:1:*${namingCommit}:docs/phone.md:1:*" `
+        "*${namingCommit}:docs/guide.md:1:*${namingCommit}:docs/phone.md:1:*" `
         'A push of a commit naming the machine went through because the working tree does not.'
-    Set-Content -LiteralPath (Join-Path $hookRoot 'CONTRIBUTING.md') -Encoding UTF8 -Value "Fixtures live in ~/$notesFolder/fixtures."
+    Set-Content -LiteralPath (Join-Path $hookRoot 'docs/guide.md') -Encoding UTF8 -Value "Fixtures live in ~/$notesFolder/fixtures."
     Set-Content -LiteralPath $phoneDoc -Encoding UTF8 -Value "adb -s $phoneSerial install app.apk"
     try {
         $global:LASTEXITCODE = 0
@@ -3086,7 +3087,7 @@ try {
     } catch {
         throw "A push of a clean commit was stopped by what the working tree names: $($_.Exception.Message)"
     } finally {
-        & git -C $hookRoot checkout --quiet -- CONTRIBUTING.md docs/phone.md
+        & git -C $hookRoot checkout --quiet -- docs/guide.md docs/phone.md
     }
 
     # Every commit the push publishes, not only each ref's tip: a serial one commit adds and the
@@ -3098,8 +3099,8 @@ try {
     & git -C $hookRoot commit --quiet -m 'names the phone again'
     $servedSerial = (& git -C $hookRoot rev-parse HEAD).Trim()
     & git -C $hookRoot rm --quiet docs/phone.md
-    Set-Content -LiteralPath (Join-Path $hookRoot 'CONTRIBUTING.md') -Encoding UTF8 -Value 'Fixtures live in HUSHFACEBOOK_FIXTURE_DIR, not in docs.'
-    & git -C $hookRoot add CONTRIBUTING.md
+    Set-Content -LiteralPath (Join-Path $hookRoot 'docs/guide.md') -Encoding UTF8 -Value 'Fixtures live in HUSHFACEBOOK_FIXTURE_DIR, not in docs.'
+    & git -C $hookRoot add docs/guide.md
     & git -C $hookRoot commit --quiet -m 'drops the doc'
     $droppedSerial = (& git -C $hookRoot rev-parse HEAD).Trim()
     $scanRemote = Join-Path $hookRoot 'scan-remote.git'
@@ -4628,6 +4629,22 @@ try {
         ':run',
         'if exist "%APK%.xmltree" (type "%APK%.xmltree") else (type "%APK%")',
         'exit /b %errorlevel%') -join "`r`n") + "`r`n"), [System.Text.Encoding]::ASCII)
+    # The 16 KB check runs the zipalign beside aapt2. Aligned unless a case below says otherwise.
+    [System.IO.File]::WriteAllText((Join-Path $tools 'zipalign.cmd'), ((@(
+        '@echo off',
+        'if "%HUSHFACEBOOK_CONTRACT_ZIPALIGN%"=="old" goto old',
+        'echo Verifying alignment of patched.apk (4)...',
+        'if "%HUSHFACEBOOK_CONTRACT_ZIPALIGN%"=="bad" goto bad',
+        'echo   49152 lib/arm64-v8a/libstub.so (OK)',
+        'echo Verification succesful',
+        'exit /b 0',
+        ':bad',
+        'echo   49152 lib/arm64-v8a/libstub.so (BAD - 4096)',
+        'echo Verification FAILED',
+        'exit /b 1',
+        ':old',
+        'echo Unknown option -P',
+        'exit /b 1') -join "`r`n") + "`r`n"), [System.Text.Encoding]::ASCII)
     Set-Content -LiteralPath $stubJar -Value 'not a jar' -Encoding ASCII
     New-TestBundleArchive -Path (Join-Path $tools 'patched.apk') -Entries ([ordered]@{
         'AndroidManifest.xml' = 'binary manifest'; 'classes.dex' = "dex`n035" })
@@ -5141,6 +5158,22 @@ try {
         throw "build-release-receipt.ps1 refused the built bundle once its sources were older again: $($_.Exception.Message)"
     } finally {
         [System.IO.File]::WriteAllBytes($releaseReceipt, $builtReceiptBytes)
+    }
+
+    # The 16 KB alignment check, through the zipalign stand-in beside aapt2: a stored library off a
+    # 16 KB boundary stops the receipt and is named, and a zipalign too old for -P, which names no
+    # entry, stops it with its own words rather than an empty list of misses.
+    foreach ($alignment in @(
+            @{ Mode = 'bad'; Pattern = '*not 16 KB aligned (zipalign exit 1)*libstub.so (BAD - 4096)*' },
+            @{ Mode = 'old'; Pattern = "*zipalign exited 1*without naming an entry*the 16 KB check didn't run*Unknown option*" })) {
+        $env:HUSHFACEBOOK_CONTRACT_ZIPALIGN = $alignment.Mode
+        try {
+            Assert-Throws { Invoke-ReceiptBuilder -Fixtures @($allFixtures | Select-Object -First 1) } $alignment.Pattern `
+                "build-release-receipt.ps1 went ahead past a zipalign that answered '$($alignment.Mode)'."
+        } finally {
+            Remove-Item Env:\HUSHFACEBOOK_CONTRACT_ZIPALIGN -ErrorAction SilentlyContinue
+            [System.IO.File]::WriteAllBytes($releaseReceipt, $builtReceiptBytes)
+        }
     }
 
     # patch-for-device.ps1 on the same root and stand-ins. It held every run's report to the
