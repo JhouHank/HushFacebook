@@ -7,6 +7,7 @@ Every Hushfacebook release, newest first.
 ### Fixed
 
 * **Facebook:** With `Keep the progress bar` on, a reel goes where you drag it again (issue #120). Keeping the full-size look ran Facebook's time writer, which put the bar back at the player's old spot right before Facebook read it to seek. On reels that show preview frames while you drag, that sent the reel back to where the drag began. The same writer sent the bar to the start when the reel's length wasn't known yet.
+* **Facebook:** With `Show a reel's time` on, the time comes back on its own after a reel ends or after a drag with preview frames (issue #73). Facebook hid it at those moments and only showed it again on the next drag, so a reel could play on with the bar but no time.
 
 ## 0.11.0 (2026-10-11)
 

@@ -11,6 +11,7 @@ import static org.junit.Assert.assertTrue;
 
 import android.view.View;
 import android.widget.LinearLayout;
+import android.widget.SeekBar;
 
 import org.junit.After;
 import org.junit.Before;
@@ -192,20 +193,20 @@ public class ProgressBarTest {
         ProgressBar.hideTimeLabel(label);
         assertEquals("the time label was hidden with the time switch on", View.VISIBLE, label.getVisibility());
 
-        assertTrue("a shown label wasn't refreshed", ProgressBar.refreshesTime(label));
+        assertTrue("a shown label wasn't refreshed", ProgressBar.refreshesTime(label, null));
         assertFalse("the label was refreshed again within " + ProgressBar.TIME_REFRESH_MS + " ms",
-                ProgressBar.refreshesTime(label));
+                ProgressBar.refreshesTime(label, null));
         ShadowSystemClock.advanceBy(ProgressBar.TIME_REFRESH_MS, TimeUnit.MILLISECONDS);
         assertTrue("the label wasn't refreshed after " + ProgressBar.TIME_REFRESH_MS + " ms",
-                ProgressBar.refreshesTime(label));
+                ProgressBar.refreshesTime(label, null));
 
         LinearLayout next = new LinearLayout(RuntimeEnvironment.getApplication());
         next.setVisibility(View.VISIBLE);
-        assertTrue("the next reel's label waited on the last one's refresh", ProgressBar.refreshesTime(next));
+        assertTrue("the next reel's label waited on the last one's refresh", ProgressBar.refreshesTime(next, null));
         next.setVisibility(View.INVISIBLE);
         ShadowSystemClock.advanceBy(ProgressBar.TIME_REFRESH_MS, TimeUnit.MILLISECONDS);
-        assertFalse("a label off screen was refreshed", ProgressBar.refreshesTime(next));
-        assertFalse("a missing label was refreshed", ProgressBar.refreshesTime(null));
+        assertFalse("a label off screen was refreshed", ProgressBar.refreshesTime(next, null));
+        assertFalse("a missing label was refreshed", ProgressBar.refreshesTime(null, null));
     }
 
     @Test
@@ -213,14 +214,14 @@ public class ProgressBarTest {
         Settings.KEEP_PROGRESS_BAR.save(true);
         LinearLayout shown = new LinearLayout(RuntimeEnvironment.getApplication());
         LinearLayout readied = new LinearLayout(RuntimeEnvironment.getApplication());
-        assertTrue(ProgressBar.refreshesTime(shown));
-        assertTrue(ProgressBar.refreshesTime(readied));
+        assertTrue(ProgressBar.refreshesTime(shown, null));
+        assertTrue(ProgressBar.refreshesTime(readied, null));
         assertFalse("the first label was refreshed again because a second one updated in between",
-                ProgressBar.refreshesTime(shown));
-        assertFalse(ProgressBar.refreshesTime(readied));
+                ProgressBar.refreshesTime(shown, null));
+        assertFalse(ProgressBar.refreshesTime(readied, null));
         ShadowSystemClock.advanceBy(ProgressBar.TIME_REFRESH_MS, TimeUnit.MILLISECONDS);
-        assertTrue(ProgressBar.refreshesTime(shown));
-        assertTrue(ProgressBar.refreshesTime(readied));
+        assertTrue(ProgressBar.refreshesTime(shown, null));
+        assertTrue(ProgressBar.refreshesTime(readied, null));
     }
 
     @Test
@@ -230,9 +231,68 @@ public class ProgressBarTest {
         LinearLayout label = new LinearLayout(RuntimeEnvironment.getApplication());
         reel.addView(label);
         reel.setVisibility(View.GONE);
-        assertFalse("a label whose reel is hidden was refreshed", ProgressBar.refreshesTime(label));
+        assertFalse("a label whose reel is hidden was refreshed", ProgressBar.refreshesTime(label, null));
         reel.setVisibility(View.VISIBLE);
-        assertTrue(ProgressBar.refreshesTime(label));
+        assertTrue(ProgressBar.refreshesTime(label, null));
+    }
+
+    @Test
+    public void aTimeLabelFacebookLeftHiddenComesBackOnlyWhileTheBarShowsUndragged() {
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        LinearLayout reel = new LinearLayout(RuntimeEnvironment.getApplication());
+        LinearLayout label = new LinearLayout(RuntimeEnvironment.getApplication());
+        SeekBar bar = new SeekBar(RuntimeEnvironment.getApplication());
+        reel.addView(label);
+        reel.addView(bar);
+        // #73: the reel ended, or a drag showed preview frames, and Facebook left the label hidden.
+        label.setVisibility(View.INVISIBLE);
+        bar.setPressed(true);
+        assertFalse("the label came back mid-drag", ProgressBar.refreshesTime(label, bar));
+        assertEquals(View.INVISIBLE, label.getVisibility());
+        bar.setPressed(false);
+        bar.setVisibility(View.INVISIBLE);
+        assertFalse("the label came back with no bar on screen", ProgressBar.refreshesTime(label, bar));
+        assertEquals(View.INVISIBLE, label.getVisibility());
+        assertFalse("the label came back without its bar", ProgressBar.refreshesTime(label, null));
+        bar.setVisibility(View.VISIBLE);
+        reel.setVisibility(View.GONE);
+        assertFalse("the label came back in a hidden reel", ProgressBar.refreshesTime(label, bar));
+        assertEquals(View.INVISIBLE, label.getVisibility());
+
+        reel.setVisibility(View.VISIBLE);
+        assertTrue("a hidden label wasn't put back and refreshed while the bar showed",
+                ProgressBar.refreshesTime(label, bar));
+        assertEquals(View.VISIBLE, label.getVisibility());
+        // Shown: nothing to put back, nothing counted again.
+        ShadowSystemClock.advanceBy(ProgressBar.TIME_REFRESH_MS, TimeUnit.MILLISECONDS);
+        assertTrue(ProgressBar.refreshesTime(label, bar));
+        // Gone is Facebook taking the label out of the layout, not a look leaving it hidden.
+        label.setVisibility(View.GONE);
+        ShadowSystemClock.advanceBy(ProgressBar.TIME_REFRESH_MS, TimeUnit.MILLISECONDS);
+        assertFalse("a gone label was refreshed", ProgressBar.refreshesTime(label, bar));
+        assertEquals("a gone label came back", View.GONE, label.getVisibility());
+        assertEquals(FamilyNames.PROGRESS_BAR + ": invoked 0, 0 found, 0 missing. Counted: "
+                + ProgressBar.TIME_LABEL_BACK + " 1", statusLine());
+    }
+
+    @Test
+    public void withoutTheTimeSwitchAHiddenLabelStaysHidden() {
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        Settings.KEEP_PROGRESS_BAR_TIME.save(false);
+        try {
+            LinearLayout label = new LinearLayout(RuntimeEnvironment.getApplication());
+            SeekBar bar = new SeekBar(RuntimeEnvironment.getApplication());
+            label.setVisibility(View.INVISIBLE);
+            assertFalse(ProgressBar.refreshesTime(label, bar));
+            assertEquals("the label came back with the time switch off", View.INVISIBLE, label.getVisibility());
+        } finally {
+            Settings.KEEP_PROGRESS_BAR_TIME.resetToDefault();
+        }
+        Settings.KEEP_PROGRESS_BAR.save(false);
+        LinearLayout label = new LinearLayout(RuntimeEnvironment.getApplication());
+        label.setVisibility(View.INVISIBLE);
+        assertFalse(ProgressBar.refreshesTime(label, new SeekBar(RuntimeEnvironment.getApplication())));
+        assertEquals("the label came back with the bar not kept", View.INVISIBLE, label.getVisibility());
     }
 
     @Test
@@ -245,14 +305,14 @@ public class ProgressBarTest {
             ProgressBar.hideTimeLabel(label);
             assertEquals("the label stayed with the time switch off", View.INVISIBLE, label.getVisibility());
             label.setVisibility(View.VISIBLE);
-            assertFalse("the label was refreshed with the time switch off", ProgressBar.refreshesTime(label));
+            assertFalse("the label was refreshed with the time switch off", ProgressBar.refreshesTime(label, null));
         } finally {
             Settings.KEEP_PROGRESS_BAR_TIME.resetToDefault();
         }
         Settings.KEEP_PROGRESS_BAR.save(false);
         LinearLayout label = new LinearLayout(RuntimeEnvironment.getApplication());
         label.setVisibility(View.VISIBLE);
-        assertFalse("the label was refreshed with the bar not kept", ProgressBar.refreshesTime(label));
+        assertFalse("the label was refreshed with the bar not kept", ProgressBar.refreshesTime(label, null));
     }
 
     @Test

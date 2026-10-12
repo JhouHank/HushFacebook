@@ -60,6 +60,9 @@ public final class ProgressBar {
     /** Counted each time the time label is shown after the active look. */
     static final String TIME_LABEL_SHOWN = "Reel time label shown";
 
+    /** Counted each time a time label Facebook left hidden is put back while the bar shows. */
+    static final String TIME_LABEL_BACK = "Reel time label put back";
+
     /** Counted each time the kept bar's next move is set a frame away instead of Facebook's wait. */
     static final String BAR_SMOOTHED = "Reel bar moved every frame";
 
@@ -148,15 +151,26 @@ public final class ProgressBar {
     }
 
     /**
-     * The hook in the scrubber's progress update, with the scrubber's time label, once Facebook has
-     * moved the bar and just before it checks for a drag. True has Facebook's own time writer put the
-     * current elapsed and total time into it: only while the time is shown, the label is on screen
-     * and {@link #TIME_REFRESH_MS} has passed since that label's last refresh. The writer moves the
-     * bar as well, so it's asked only where Facebook found the position and length usable (#120).
+     * The hook in the scrubber's progress update, with the scrubber's time label and its bar, once
+     * Facebook has moved the bar and just before it checks for a drag. True has Facebook's own time
+     * writer put the current elapsed and total time into it: only while the time is shown, the label
+     * is on screen and {@link #TIME_REFRESH_MS} has passed since that label's last refresh. The writer
+     * moves the bar as well, so it's asked only where Facebook found the position and length usable
+     * (#120).
+     *
+     * <p>Facebook hides the label (invisible) when a touch starts, at a reel's end and while a drag
+     * shows preview frames, and only its looks show it again. A look that doesn't change leaves it
+     * hidden, so a reel could play on with no time until the next drag (#73). While the time is shown,
+     * the bar is on screen and nobody is dragging it, this puts such a label back first.
      */
-    public static boolean refreshesTime(ViewGroup label) {
+    public static boolean refreshesTime(ViewGroup label, @Nullable View bar) {
         try {
-            if (label == null || !visible(label) || !showsTime()) return false;
+            if (label == null || !showsTime()) return false;
+            if (label.getVisibility() == View.INVISIBLE && bar != null && !bar.isPressed() && visible(bar)) {
+                label.setVisibility(View.VISIBLE);
+                HookStatus.counted(FAMILY, TIME_LABEL_BACK);
+            }
+            if (!visible(label)) return false;
             long now = SystemClock.uptimeMillis();
             Long last = lastRefresh.get(label);
             if (last != null && now - last < TIME_REFRESH_MS) return false;

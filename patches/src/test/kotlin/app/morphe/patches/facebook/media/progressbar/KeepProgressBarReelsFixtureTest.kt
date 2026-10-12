@@ -16,6 +16,7 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
@@ -24,6 +25,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstructio
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.WideLiteralInstruction
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -140,33 +142,41 @@ class KeepProgressBarReelsFixtureTest {
         method.refreshesTimeWithBar(progress, looks)
         val patched = method.code()
         val local = method.localRegisterCount()
-        assertEquals("$where gains eight instructions", original.size + 8, patched.size)
+        assertEquals("$where gains nine instructions", original.size + 9, patched.size)
         assertEquals("$where: Facebook's code up to the drag check stays", original.take(at).map { it.opcode },
             patched.take(at).map { it.opcode })
         assertEquals("$where: the scrubber moves into a local through the wide form", Opcode.MOVE_OBJECT_FROM16, patched[at].opcode)
         val register = (patched[at] as TwoRegisterInstruction).registerA
-        assertTrue("$where: the hook writes v$register, which isn't a low local", register < minOf(local, 16))
-        assertTrue("$where: the hook borrows v$register, which Facebook reads on",
-            register !in RegisterLiveness.of(progress.update).liveInto(at))
+        val bar = (patched[at + 3] as TwoRegisterInstruction).registerA
+        val live = RegisterLiveness.of(progress.update).liveInto(at)
+        for (borrowed in listOf(register, bar)) {
+            assertTrue("$where: the hook writes v$borrowed, which isn't a low local", borrowed < minOf(local, 16))
+            assertTrue("$where: the hook borrows v$borrowed, which Facebook reads on", borrowed !in live)
+        }
+        assertNotEquals("$where: the bar and the label share a register", register, bar)
         assertEquals("$where: from p0", local, (patched[at] as TwoRegisterInstruction).registerB)
         assertEquals("$where: the views holder is read", looks.viewsField, patched[at + 1].reference())
         assertEquals("$where: a missing holder goes on to Facebook", Opcode.IF_EQZ, patched[at + 2].opcode)
-        assertEquals("$where: then the time label", looks.labelField, patched[at + 3].reference())
-        assertEquals("$where: the extension is asked about the label", REFRESHES_TIME, patched[at + 4].reference())
-        assertEquals("$where: its answer is kept", Opcode.MOVE_RESULT, patched[at + 5].opcode)
-        assertEquals("$where: a no goes on to Facebook", Opcode.IF_EQZ, patched[at + 6].opcode)
+        assertEquals("$where: then the bar", looks.barField, patched[at + 3].reference())
+        assertEquals("$where: off the views holder", register, (patched[at + 3] as TwoRegisterInstruction).registerB)
+        assertEquals("$where: then the time label", looks.labelField, patched[at + 4].reference())
+        assertEquals("$where: the extension is asked about the label and its bar", REFRESHES_TIME, patched[at + 5].reference())
+        val ask = patched[at + 5] as FiveRegisterInstruction
+        assertEquals("$where: in that order", listOf(2, register, bar), listOf(ask.registerCount, ask.registerC, ask.registerD))
+        assertEquals("$where: its answer is kept", Opcode.MOVE_RESULT, patched[at + 6].opcode)
+        assertEquals("$where: a no goes on to Facebook", Opcode.IF_EQZ, patched[at + 7].opcode)
         assertEquals("$where: a yes runs Facebook's writer", "${base.type}->${progress.writeTime.name}(${base.type})V",
-            patched[at + 7].reference())
-        val call = patched[at + 7] as RegisterRangeInstruction
+            patched[at + 8].reference())
+        val call = patched[at + 8] as RegisterRangeInstruction
         assertEquals("$where: on this scrubber", listOf(local, 1), listOf(call.startRegister, call.registerCount))
         assertEquals("$where: Facebook's drag check and the rest stay", original.drop(at).map { it.opcode },
-            patched.drop(at + 8).map { it.opcode })
-        assertEquals("$where: the drag check comes right after the hook", Opcode.SGET_OBJECT, patched[at + 8].opcode)
+            patched.drop(at + 9).map { it.opcode })
+        assertEquals("$where: the drag check comes right after the hook", Opcode.SGET_OBJECT, patched[at + 9].opcode)
         val flow = ControlFlow.of(method)
-        assertEquals("$where: a missing holder lands on the drag check", setOf(at + 3, at + 8), flow.normal[at + 2].toSet())
-        assertEquals("$where: a no lands on the drag check", setOf(at + 7, at + 8), flow.normal[at + 6].toSet())
-        val into = patched.indices.filter { at + 8 in flow.normal[it] }.toSet()
-        assertEquals("$where: something jumps to the drag check past the hook", setOf(at + 2, at + 6, at + 7), into)
+        assertEquals("$where: a missing holder lands on the drag check", setOf(at + 3, at + 9), flow.normal[at + 2].toSet())
+        assertEquals("$where: a no lands on the drag check", setOf(at + 8, at + 9), flow.normal[at + 7].toSet())
+        val into = patched.indices.filter { at + 9 in flow.normal[it] }.toSet()
+        assertEquals("$where: something jumps to the drag check past the hook", setOf(at + 2, at + 7, at + 8), into)
     }
 
     @Test

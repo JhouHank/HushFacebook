@@ -91,7 +91,7 @@ internal const val KEEPS_REEL_BAR = "$PROGRESS_BAR->keepsReelBar()Z"
 internal const val KEEPS_CONTROLS = "$PROGRESS_BAR->keepsControls()Z"
 internal const val HIDE_TIME_LABEL = "$PROGRESS_BAR->hideTimeLabel(Landroid/view/ViewGroup;)V"
 internal const val BARS_EVERY_REEL = "$PROGRESS_BAR->barsEveryReel()Z"
-internal const val REFRESHES_TIME = "$PROGRESS_BAR->refreshesTime(Landroid/view/ViewGroup;)Z"
+internal const val REFRESHES_TIME = "$PROGRESS_BAR->refreshesTime(Landroid/view/ViewGroup;Landroid/view/View;)Z"
 internal const val SMOOTHS_BAR = "$PROGRESS_BAR->smoothsBar()Z"
 internal const val LIFTS_FOOTER = "$PROGRESS_BAR->liftsFooter()Z"
 internal const val NO_FADED_BAR = "$PROGRESS_BAR->noFadedBar()Z"
@@ -215,7 +215,7 @@ val keepProgressBarPatch = bytecodePatch(
         if (progress.base.type != scrubberClass.superclass || !scrubber.viewsField.startsWith("${progress.base.type}->")) {
             refuse("${progress.base.type}, which updates the progress, isn't the base holding ${scrubber.type}'s views")
         }
-        progress.update.freeLocalsAt(PATCH, dragCheck(progress.update, progress), 1)
+        progress.update.freeLocalsAt(PATCH, dragCheck(progress.update, progress), 2)
         val delay = frameDelay(progress)
         val selector = lookSelector(progress.base, scrubber)
         val status = seekBarStatus(
@@ -766,14 +766,15 @@ internal fun MutableMethod.longEnoughWhileKept() {
 
 /**
  * In the scrubber's progress update, in front of its [dragCheck], so only once Facebook has moved
- * the bar: read the time label off the scrubber the update takes, and when the extension asks for
- * the time, have Facebook's own writer refresh it, then go on to the drag check as always. A views
- * holder that isn't there yet goes straight on. The hook borrows one low local that nothing reads
- * from there on.
+ * the bar: read the time label and the bar off the scrubber the update takes, and when the extension
+ * asks for the time, have Facebook's own writer refresh it, then go on to the drag check as always.
+ * The extension also puts back a label Facebook left hidden (#73), which is why it gets the bar. A
+ * views holder that isn't there yet goes straight on. The hook borrows two low locals that nothing
+ * reads from there on.
  */
 internal fun MutableMethod.refreshesTimeWithBar(progress: ProgressUpdate, looks: ScrubberLooks) {
     val at = dragCheck(this, progress)
-    val v = freeLocalsAt(PATCH, at, 1).single()
+    val (v, bar) = freeLocalsAt(PATCH, at, 2)
     val base = progress.base.type
     addInstructionsWithLabels(
         at,
@@ -781,8 +782,9 @@ internal fun MutableMethod.refreshesTimeWithBar(progress: ProgressUpdate, looks:
             move-object/from16 v$v, p0
             iget-object v$v, v$v, ${looks.viewsField}
             if-eqz v$v, :facebook
+            iget-object v$bar, v$v, ${looks.barField}
             iget-object v$v, v$v, ${looks.labelField}
-            invoke-static { v$v }, $REFRESHES_TIME
+            invoke-static { v$v, v$bar }, $REFRESHES_TIME
             move-result v$v
             if-eqz v$v, :facebook
             invoke-static/range { p0 .. p0 }, $base->${progress.writeTime.name}($base)V
