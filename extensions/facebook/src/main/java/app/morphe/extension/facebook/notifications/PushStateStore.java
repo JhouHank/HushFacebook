@@ -4,6 +4,7 @@
  */
 package app.morphe.extension.facebook.notifications;
 
+import android.os.SystemClock;
 import android.util.AtomicFile;
 
 import java.io.DataInputStream;
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
+import java.util.function.LongSupplier;
 
 import static app.morphe.extension.facebook.notifications.PushDiagnostics.Route;
 import static app.morphe.extension.facebook.notifications.PushDiagnostics.Status;
@@ -75,19 +77,24 @@ final class PushStateStore {
 
     private final File directory;
     private final int boot;
+    private final LongSupplier elapsedClock, wallClock;
 
-    PushStateStore(File directory) { this(directory, -1); }
-    PushStateStore(File directory, int boot) { this.directory = directory; this.boot = boot; }
-
-    State read(long elapsed, long wall) throws IOException {
-        return access(null, elapsed, wall);
+    PushStateStore(File directory, int boot) {
+        this(directory, boot, SystemClock::elapsedRealtime, System::currentTimeMillis);
     }
 
-    State merge(State updates, long elapsed, long wall) throws IOException {
-        return access(updates, elapsed, wall);
+    PushStateStore(File directory, int boot, LongSupplier elapsedClock, LongSupplier wallClock) {
+        this.directory = directory;
+        this.boot = boot;
+        this.elapsedClock = elapsedClock;
+        this.wallClock = wallClock;
     }
 
-    private State access(State updates, long elapsed, long wall) throws IOException {
+    State read() throws IOException { return access(null); }
+
+    State merge(State updates) throws IOException { return access(updates); }
+
+    private State access(State updates) throws IOException {
         if (!directory.isDirectory() && !directory.mkdirs()) throw new IOException("Private push directory unavailable");
         try (RandomAccessFile lockFile = new RandomAccessFile(new File(directory, "hush_push_v1.lock"), "rw")) {
             FileLock lock;
@@ -95,6 +102,7 @@ final class PushStateStore {
             catch (OverlappingFileLockException busy) { throw new IOException("Push records busy"); }
             if (lock == null) throw new IOException("Push records busy");
             try {
+                long elapsed = elapsedClock.getAsLong(), wall = wallClock.getAsLong();
                 AtomicFile file = new AtomicFile(new File(directory, FILE));
                 boolean current = updates != null && updates.sameClock(elapsed, wall);
                 long startElapsed = current ? updates.startElapsed : elapsed;

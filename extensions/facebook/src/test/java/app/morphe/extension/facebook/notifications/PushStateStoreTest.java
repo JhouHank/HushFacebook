@@ -17,6 +17,7 @@ import java.io.RandomAccessFile;
 import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static app.morphe.extension.facebook.notifications.PushDiagnostics.Route;
 import static app.morphe.extension.facebook.notifications.PushDiagnostics.Status;
@@ -28,6 +29,59 @@ public class PushStateStoreTest {
     private static final long EPOCH = 1_800_000_000_000L;
     @Rule public final TemporaryFolder temp = new TemporaryFolder();
 
+    private static final class Store {
+        private final AtomicLong elapsed = new AtomicLong(), wall = new AtomicLong();
+        private final PushStateStore delegate;
+
+        Store(File directory) { this(directory, -1); }
+        Store(File directory, int boot) {
+            delegate = new PushStateStore(directory, boot, elapsed::get, wall::get);
+        }
+        PushStateStore.State read(long elapsed, long wall) throws IOException {
+            this.elapsed.set(elapsed);
+            this.wall.set(wall);
+            return delegate.read();
+        }
+        PushStateStore.State merge(PushStateStore.State updates, long elapsed, long wall) throws IOException {
+            this.elapsed.set(elapsed);
+            this.wall.set(wall);
+            return delegate.merge(updates);
+        }
+    }
+
+    @Test public void samplingTheClockCannotLetAnotherWriterCommitBetweenTheSampleAndRead() throws Exception {
+        File directory = temp.newFolder();
+        Store other = new Store(directory, 7);
+        other.merge(batch(1_000, Route.FCM, Status.ACCEPTED, 1_100), 1_200, EPOCH + 1_200);
+        PushStateStore delayed = new PushStateStore(directory, 7, () -> {
+            assertThrows(IOException.class, () -> other.merge(
+                    batch(1_000, Route.MQTT, Status.CONNECTED, 2_000), 2_100, EPOCH + 2_100));
+            return 1_500;
+        }, () -> EPOCH + 1_500);
+        PushStateStore.State merged = delayed.merge(batch(1_000, Route.FCM, Status.FAILED, 1_400));
+        assertFalse(merged.historyLost);
+        assertEquals(2, merged.rows[Route.FCM.ordinal()].count);
+        assertEquals(Status.FAILED, merged.rows[Route.FCM.ordinal()].status);
+        assertEquals(0, merged.rows[Route.MQTT.ordinal()].count);
+        assertFalse(delayed.read().historyLost);
+    }
+
+    @Test public void anEarlierCallbackBatchPreservesANewerCommittedOutcome() throws Exception {
+        File directory = temp.newFolder();
+        Store other = new Store(directory, 7);
+        PushStateStore.State earlier = batch(1_000, Route.FCM, Status.FAILED, 1_400);
+        other.merge(batch(1_000, Route.FCM, Status.ACCEPTED, 2_000), 2_100, EPOCH + 2_100);
+        PushStateStore delayed = new PushStateStore(directory, 7, () -> 2_200, () -> EPOCH + 2_200);
+        PushStateStore.State merged = delayed.merge(earlier);
+        assertFalse(merged.historyLost);
+        assertEquals(1_000, merged.startElapsed);
+        assertEquals(2, merged.rows[Route.FCM.ordinal()].count);
+        assertEquals(1_400, merged.rows[Route.FCM.ordinal()].first);
+        assertEquals(2_000, merged.rows[Route.FCM.ordinal()].last);
+        assertEquals(2_000, merged.rows[Route.FCM.ordinal()].firstSuccess);
+        assertEquals(Status.ACCEPTED, merged.rows[Route.FCM.ordinal()].status);
+    }
+
     private PushStateStore.State batch(long start, Route route, Status status, long at) {
         PushStateStore.State value = new PushStateStore.State(start, EPOCH + start);
         value.rows[route.ordinal()].add(status, at, 1, status == Status.ACCEPTED || status == Status.CONNECTED ? at : -1);
@@ -36,12 +90,12 @@ public class PushStateStoreTest {
 
     @Test public void independentProcessesMergeWithoutLosingTheFirstOutcomeOrWindow() throws Exception {
         File directory = temp.newFolder();
-        PushStateStore main = new PushStateStore(directory);
-        PushStateStore notifications = new PushStateStore(directory);
+        Store main = new Store(directory);
+        Store notifications = new Store(directory);
         notifications.merge(batch(1_000, Route.FCM, Status.ACCEPTED, 1_100), 1_200, EPOCH + 1_200);
         main.merge(batch(1_500, Route.MQTT, Status.CONNECTED, 1_600), 1_700, EPOCH + 1_700);
         notifications.merge(batch(1_000, Route.FCM, Status.FAILED, 2_000), 2_100, EPOCH + 2_100);
-        PushStateStore.State state = new PushStateStore(directory).read(3_000, EPOCH + 3_000);
+        PushStateStore.State state = new Store(directory).read(3_000, EPOCH + 3_000);
         assertEquals(1_000, state.startElapsed);
         assertEquals(Status.FAILED, state.rows[Route.FCM.ordinal()].status);
         assertEquals(2, state.rows[Route.FCM.ordinal()].count);
@@ -52,13 +106,13 @@ public class PushStateStoreTest {
 
     @Test public void lockContentionLeavesTheOtherProcessesRecordsIntact() throws Exception {
         File directory = temp.newFolder();
-        PushStateStore store = new PushStateStore(directory);
+        Store store = new Store(directory);
         store.merge(batch(1_000, Route.FCM, Status.ACCEPTED, 1_100), 1_200, EPOCH + 1_200);
         byte[] before = Files.readAllBytes(new File(directory, PushStateStore.FILE).toPath());
         try (RandomAccessFile file = new RandomAccessFile(new File(directory, "hush_push_v1.lock"), "rw");
              FileLock held = file.getChannel().lock()) {
-            assertThrows(IOException.class, () -> new PushStateStore(directory).read(1_300, EPOCH + 1_300));
-            assertThrows(IOException.class, () -> new PushStateStore(directory).merge(
+            assertThrows(IOException.class, () -> new Store(directory).read(1_300, EPOCH + 1_300));
+            assertThrows(IOException.class, () -> new Store(directory).merge(
                     batch(1_000, Route.FCM, Status.FAILED, 1_300), 1_400, EPOCH + 1_400));
             assertArrayEquals(before, Files.readAllBytes(new File(directory, PushStateStore.FILE).toPath()));
         }
@@ -67,7 +121,7 @@ public class PushStateStoreTest {
 
     @Test public void unreadableOrMissingRecordsNeverMeanTheCallbackDidNotRun() throws Exception {
         File directory = temp.newFolder();
-        PushStateStore store = new PushStateStore(directory);
+        Store store = new Store(directory);
         assertThrows(IOException.class, () -> store.read(1_000, EPOCH + 1_000));
         String secret = "token/account/payload/error-must-never-be-exported";
         Files.write(new File(directory, PushStateStore.FILE).toPath(), secret.getBytes(StandardCharsets.UTF_8));
@@ -84,7 +138,7 @@ public class PushStateStoreTest {
 
     @Test public void aRebootOrClockJumpDiscardsThePreviousEpochAndStaysReadable() throws Exception {
         File directory = temp.newFolder();
-        PushStateStore store = new PushStateStore(directory);
+        Store store = new Store(directory);
         store.merge(batch(1_000, Route.FCM, Status.ACCEPTED, 1_100), 1_200, EPOCH + 1_200);
         // This same live collector still has a pre-jump batch. It must be dropped, not re-dated.
         PushStateStore.State jumped = store.merge(batch(1_000, Route.MQTT, Status.CONNECTED, 1_300), 1_400, EPOCH + 301_400);
@@ -104,7 +158,7 @@ public class PushStateStoreTest {
 
     @Test public void retainedRecordsAreFixedSizeAndCountersSaturate() throws Exception {
         File directory = temp.newFolder();
-        PushStateStore store = new PushStateStore(directory);
+        Store store = new Store(directory);
         PushStateStore.State updates = batch(1_000, Route.FCM, Status.ACCEPTED, 1_100);
         updates.rows[Route.FCM.ordinal()].add(Status.REJECTED, 1_200, Integer.MAX_VALUE, -1);
         store.merge(updates, 1_300, EPOCH + 1_300);
@@ -117,8 +171,8 @@ public class PushStateStoreTest {
 
     @Test public void aQuickRebootCannotReuseThePreviousBootsPositiveResult() throws Exception {
         File directory = temp.newFolder();
-        new PushStateStore(directory, 7).merge(batch(1_000, Route.FCM, Status.ACCEPTED, 1_100), 1_200, EPOCH + 1_200);
-        PushStateStore nextBoot = new PushStateStore(directory, 8);
+        new Store(directory, 7).merge(batch(1_000, Route.FCM, Status.ACCEPTED, 1_100), 1_200, EPOCH + 1_200);
+        Store nextBoot = new Store(directory, 8);
         // A short reboot can fit the wall-clock tolerance and even have a larger current uptime.
         assertThrows(IOException.class, () -> nextBoot.read(2_000, EPOCH + 32_000));
         PushStateStore.State fresh = new PushStateStore.State(2_000, EPOCH + 32_000);
@@ -131,8 +185,8 @@ public class PushStateStoreTest {
 
     @Test public void aFutureOutcomeInvalidatesTheEpochWhenTheBootCounterIsUnavailable() throws Exception {
         File directory = temp.newFolder();
-        new PushStateStore(directory).merge(batch(1_000, Route.FCM, Status.ACCEPTED, 60_000), 61_000, EPOCH + 61_000);
-        PushStateStore nextBoot = new PushStateStore(directory);
+        new Store(directory).merge(batch(1_000, Route.FCM, Status.ACCEPTED, 60_000), 61_000, EPOCH + 61_000);
+        Store nextBoot = new Store(directory);
         // Its early origin still fits, but its late outcome is beyond this boot's elapsed clock.
         assertThrows(IOException.class, () -> nextBoot.read(31_000, EPOCH + 40_000));
         PushStateStore.State state = nextBoot.merge(new PushStateStore.State(31_000, EPOCH + 40_000), 32_000, EPOCH + 41_000);
@@ -147,8 +201,8 @@ public class PushStateStoreTest {
 
     @Test public void newlyAvailableBootCounterCannotCertifyAnOlderUnverifiedWindow() throws Exception {
         File directory = temp.newFolder();
-        new PushStateStore(directory).merge(batch(1_000, Route.FCM, Status.ACCEPTED, 1_100), 1_200, EPOCH + 1_200);
-        PushStateStore knownBoot = new PushStateStore(directory, 9);
+        new Store(directory).merge(batch(1_000, Route.FCM, Status.ACCEPTED, 1_100), 1_200, EPOCH + 1_200);
+        Store knownBoot = new Store(directory, 9);
         assertThrows(IOException.class, () -> knownBoot.read(1_300, EPOCH + 1_300));
         PushStateStore.State state = knownBoot.merge(new PushStateStore.State(1_300, EPOCH + 1_300), 1_400, EPOCH + 1_400);
         assertTrue(state.historyLost);
@@ -158,7 +212,7 @@ public class PushStateStoreTest {
 
     @Test public void impossibleRouteStatusesAndTrailingDataAreRejected() throws Exception {
         File directory = temp.newFolder();
-        PushStateStore store = new PushStateStore(directory);
+        Store store = new Store(directory);
         store.merge(batch(1_000, Route.FCM, Status.ACCEPTED, 1_100), 1_200, EPOCH + 1_200);
         File records = new File(directory, PushStateStore.FILE);
         try (RandomAccessFile file = new RandomAccessFile(records, "rw")) {

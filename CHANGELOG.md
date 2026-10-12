@@ -22,6 +22,8 @@ Every Hushfacebook release, newest first.
 
 ### Fixed
 
+* **Facebook:** Push diagnostics keep newer observations when another Facebook process writes while a record update is delayed. The clock is sampled under the shared lock, so the delay is no longer mistaken for a restart.
+
 * **Tooling:** Linux codec checks clean up their tool processes even if the private launcher is terminated. A separate guard keeps ownership of the process group, so cleanup doesn't send a terminating signal through a group number that could have been reused.
 
 * **Facebook:** With `Keep the progress bar` on, a reel goes where you drag it again (issue #120). Keeping the full-size look ran Facebook's time writer, which put the bar back at the player's old spot right before Facebook read it to seek. On reels that show preview frames while you drag, that sent the reel back to where the drag began. The same writer sent the bar to the start when the reel's length wasn't known yet.

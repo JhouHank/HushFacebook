@@ -88,7 +88,7 @@ public final class PushDiagnostics {
                 schedule();
                 waiting = workerQueued || initializePending || hasPending();
                 try {
-                    if (store != null) state = store.read(SystemClock.elapsedRealtime(), System.currentTimeMillis());
+                    if (store != null) state = store.read();
                 } catch (IOException | RuntimeException unreadable) { /* Report unknown, never infer an absent callback. */ }
             }
             return report(state, SystemClock.elapsedRealtime(), new boolean[] {
@@ -204,7 +204,7 @@ public final class PushDiagnostics {
             batch = window.take();
         }
         try {
-            store.merge(batch, SystemClock.elapsedRealtime(), System.currentTimeMillis());
+            store.merge(batch);
             written = true;
         } catch (IOException | RuntimeException unreadable) {
             synchronized (LOCK) {
