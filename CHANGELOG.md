@@ -6,6 +6,8 @@ Every Hushfacebook release, newest first.
 
 ### Changed
 
+* **Tooling:** Settings previews are refreshed from both Android SDK capture runs, with focus, disabled, validation and export-result states checked in all three themes.
+
 * **Facebook:** Settings controls have visible focus boundaries and distinct disabled actions in black, Material dark and Material light. Switches and button feedback follow the same small corner scale, and recovery spacing adapts to shorter screens and large text.
 * **Facebook:** Downloads keeps the last generic save result until Facebook closes, including when notifications are off. It contains no filename or media address. Joining and gallery-copy notifications now match the phase shown in settings.
 * **Facebook:** Diagnostic export shows copying or saving in its row, disables repeat actions while working, and leaves a readable result. Reopening the page keeps that state.

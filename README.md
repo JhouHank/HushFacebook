@@ -1,7 +1,7 @@
 ![Hushfacebook. Keep the people. Cut the noise.](assets/readme-hero.png)
 
 <p align="center">
-  <a href="https://github.com/SysAdminDoc/Hushfacebook/releases"><img src="https://img.shields.io/badge/version-0.11.0-0866FF" alt="Version 0.11.0"></a>
+  <a href="https://github.com/SysAdminDoc/Hushfacebook/releases"><img src="https://img.shields.io/badge/version-0.11.1-0866FF" alt="Version 0.11.1"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="License GPL-3.0"></a>
   <img src="https://img.shields.io/badge/platform-Android%2011%2B-3DDC84" alt="Platform Android 11+">
   <img src="https://img.shields.io/badge/Facebook-582.0.0.50.54-0866FF" alt="Facebook 582.0.0.50.54">
@@ -206,7 +206,7 @@ The Opening Facebook page in the unreleased layout, rendered offscreen at phone 
 
 ## Settings
 
-The screenshots show the unreleased settings layout. The published v0.11.0 bundle keeps its earlier appearance.
+The screenshots show the unreleased v0.11.1 settings layout. The published v0.11.0 bundle keeps its earlier appearance.
 
 <p><img src="assets/settings-overview.png" width="320" alt="Hushfacebook overview with search, Pause and category pages"><img src="assets/settings-downloads.png" width="320" alt="Downloads settings with quality, folder and file name controls"></p>
 

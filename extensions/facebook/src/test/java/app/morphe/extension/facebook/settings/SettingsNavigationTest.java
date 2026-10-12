@@ -76,6 +76,13 @@ public class SettingsNavigationTest {
     private HushfacebookPreferenceFragment page;
 
     @Before public void open() {
+        // Retained outcomes belong to one process. Give each capture a fresh launch.
+        org.robolectric.util.ReflectionHelpers.setStaticField(
+                app.morphe.extension.facebook.download.SaveControl.class, "lastOutcome", null);
+        Class<?> export = app.morphe.extension.shared.settings.preference.ExportDiagnosticReportPreference.class;
+        Object exportState = org.robolectric.util.ReflectionHelpers.getStaticField(export, "state");
+        org.robolectric.util.ReflectionHelpers.setStaticField(export, "state",
+                exportState.getClass().getEnumConstants()[0]);
         PatchFamily.inBuildForTests = EnumSet.allOf(PatchFamily.class);
         PatchFamily.inBuildForTests.remove(PatchFamily.MATERIAL_YOU_THEME);
         PauseForTests.resume();
@@ -1154,58 +1161,178 @@ public class SettingsNavigationTest {
     /** All pages are rendered with the same viewport as the design reference. */
     @Test @GraphicsMode(GraphicsMode.Mode.NATIVE)
     public void renderEveryPageAndSearchOffscreen() throws Exception {
-        capture("00-overview");
+        renderPagesAndSearch("");
+    }
+
+    @Test @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    public void renderEveryPageAndSearchInMaterialDarkOffscreen() throws Exception {
+        PatchFamily.inBuildForTests.add(PatchFamily.MATERIAL_YOU_THEME);
+        recreate();
+        assertFalse(ScreenColors.shown.light);
+        renderPagesAndSearch("material-dark-");
+    }
+
+    @Test @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(qualifiers = "w390dp-h844dp-notnight-xhdpi")
+    public void renderEveryPageAndSearchInMaterialLightOffscreen() throws Exception {
+        PatchFamily.inBuildForTests.add(PatchFamily.MATERIAL_YOU_THEME);
+        recreate();
+        assertTrue(ScreenColors.shown.light);
+        renderPagesAndSearch("material-light-");
+    }
+
+    private void renderPagesAndSearch(String prefix) throws Exception {
+        capture(prefix + "00-overview");
         for (Preference section : page.sections()) {
             page.navigation.open(section);
             String name = section.getTitle().toString().toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z]+", "-");
-            capture(name);
+            capture(prefix + name);
             assertUncutText(dialog.getView());
             list().setSelection(list().getCount() - 1);
-            capture(name + "-end");
+            capture(prefix + name + "-end");
             assertEquals("the last setting is reachable on " + section.getTitle(),
                     list().getCount() - 1, list().getLastVisiblePosition());
             assertUncutText(dialog.getView());
         }
         page.navigation.navigate("more");
-        capture("more-settings");
+        capture(prefix + "more-settings");
         page.navigation.back();
         findSearch(dialog.getView()).setText("video");
         ShadowLooper.idleMainLooper(1, java.util.concurrent.TimeUnit.SECONDS);
-        capture("search-results");
+        capture(prefix + "search-results");
         findSearch(dialog.getView()).setText("noSuchSetting987654");
         ShadowLooper.idleMainLooper(1, java.util.concurrent.TimeUnit.SECONDS);
-        capture("search-empty");
+        capture(prefix + "search-empty");
         page.navigation.back();
         page.navigation.navigate("Downloads");
         ValueRows.QualityRow quality = (ValueRows.QualityRow) page.findPreference(Settings.DOWNLOAD_QUALITY.key);
         quality.showDialog(null);
-        captureDialog("dialog-quality", (AlertDialog) quality.getDialog());
+        captureDialog(prefix + "dialog-quality", (AlertDialog) quality.getDialog());
         quality.getDialog().dismiss();
         ValueRows.FolderRow folder = (ValueRows.FolderRow) page.findPreference(Settings.SAVE_FOLDER.key);
         folder.showDialog(null);
-        captureDialog("dialog-folder", (AlertDialog) folder.getDialog());
+        captureDialog(prefix + "dialog-folder", (AlertDialog) folder.getDialog());
         folder.getDialog().dismiss();
         ValueRows.FileNameRow name = (ValueRows.FileNameRow) page.findPreference(Settings.FILENAME_TEMPLATE.key);
         name.showDialog(null);
-        captureDialog("dialog-file-name", (AlertDialog) name.getDialog());
+        captureDialog(prefix + "dialog-file-name", (AlertDialog) name.getDialog());
         name.getDialog().dismiss();
         page.navigation.navigate("Pause, backup and diagnostics");
         Preference export = page.findPreference("action_export_diagnostic_report");
         export.getOnPreferenceClickListener().onPreferenceClick(export);
         AlertDialog report = (AlertDialog) org.robolectric.shadows.ShadowDialog.getLatestDialog();
-        captureDialog("dialog-report", report);
+        captureDialog(prefix + "dialog-report", report);
         report.dismiss();
         page.pendingImport = SettingsBackup.parse("{\"format\":\"hushfacebook-settings\",\"schema\":1,\"settings\":{\"hushfacebook_tap_to_play\":false}}").toBundle();
         SettingsBackupPreference.onPageResumed(page);
-        captureDialog("dialog-import", page.importPreview);
+        captureDialog(prefix + "dialog-import", page.importPreview);
         page.importPreview.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
         page.navigation.navigate("About");
         Preference about = page.sections().get(page.sections().size() - 1);
         Preference licenses = ((PreferenceCategory) about).getPreference(2);
         licenses.getOnPreferenceClickListener().onPreferenceClick(licenses);
         AlertDialog notice = (AlertDialog) org.robolectric.shadows.ShadowDialog.getLatestDialog();
-        captureDialog("dialog-licenses", notice);
+        captureDialog(prefix + "dialog-licenses", notice);
         notice.dismiss();
+        renderControlStates(prefix);
+    }
+
+    private void renderControlStates(String prefix) throws Exception {
+        while (page.navigation.back()) { }
+        EditText search = findSearch(dialog.getView());
+        search.setText("");
+        search.requestFocus();
+        capture(prefix + "state-search-focused");
+        search.clearFocus();
+        page.navigation.navigate("Opening Facebook");
+        capture(prefix + "state-dependent-disabled");
+        page.navigation.navigate("Downloads");
+        ValueRows.QualityRow quality = (ValueRows.QualityRow) page.findPreference(Settings.DOWNLOAD_QUALITY.key);
+        quality.showDialog(null);
+        AlertDialog choices = (AlertDialog) quality.getDialog();
+        int checked = choices.getListView().getCheckedItemPosition();
+        ShadowLooper.idleMainLooper();
+        Object choiceRoot = org.robolectric.util.ReflectionHelpers.callInstanceMethod(
+                choices.getWindow().getDecorView(), "getViewRootImpl");
+        assertNotNull("the choice window has not attached", choiceRoot);
+        org.robolectric.util.ReflectionHelpers.callInstanceMethod(choiceRoot, "ensureTouchMode",
+                org.robolectric.util.ReflectionHelpers.ClassParameter.from(boolean.class, false));
+        assertFalse("directional navigation is still in touch mode", choices.getListView().isInTouchMode());
+        assertTrue(choices.getListView().requestFocus());
+        choices.getListView().dispatchKeyEvent(new android.view.KeyEvent(
+                android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_DPAD_DOWN));
+        choices.getListView().dispatchKeyEvent(new android.view.KeyEvent(
+                android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_DPAD_DOWN));
+        captureDialog(prefix + "state-choice-focused", choices);
+        assertTrue("the choice list lost navigation focus", choices.getListView().hasFocus());
+        assertNotNull("no choice has navigation focus", choices.getListView().getSelectedView());
+        assertTrue("the focused choice has no selected state", choices.getListView().getSelectedView().isSelected());
+        assertEquals("moving focus must not change the saved choice", checked,
+                choices.getListView().getCheckedItemPosition());
+        choices.dismiss();
+        ValueRows.FolderRow folder = (ValueRows.FolderRow) page.findPreference(Settings.SAVE_FOLDER.key);
+        folder.showDialog(null);
+        AlertDialog editor = (AlertDialog) folder.getDialog();
+        folder.getEditText().requestFocus();
+        captureDialog(prefix + "state-field-focused", editor);
+        folder.getEditText().clearFocus();
+        editor.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+        captureDialog(prefix + "state-save-disabled", editor);
+        editor.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+        assertTrue(editor.getButton(AlertDialog.BUTTON_POSITIVE).requestFocusFromTouch());
+        captureDialog(prefix + "state-save-focused", editor);
+        assertTrue(editor.getButton(AlertDialog.BUTTON_POSITIVE).hasFocus());
+        editor.dismiss();
+        int save = app.morphe.extension.facebook.download.SavesForTests.begin(controller.get().getApplicationContext(), true);
+        try {
+            app.morphe.extension.facebook.download.SavesForTests.joining(save);
+            capture(prefix + "state-save-joining");
+            assertTrue(app.morphe.extension.facebook.download.SavesForTests.publishing(save));
+            capture(prefix + "state-save-publishing");
+        } finally { app.morphe.extension.facebook.download.SavesForTests.end(save); }
+        capture(prefix + "state-save-failed");
+        page.navigation.navigate("News feed");
+        ValueRows.SourcesRow sources = (ValueRows.SourcesRow) page.findPreference(Settings.HIDDEN_SOURCES.key);
+        sources.showDialog(null);
+        sources.getEditText().setText(new String(new char[app.morphe.extension.facebook.feed.PostSources.MAX_LENGTH + 1]).replace('\0', 'x'));
+        AlertDialog sourceEditor = (AlertDialog) sources.getDialog();
+        sourceEditor.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        assertTrue("a rejected draft must stay open", sourceEditor.isShowing());
+        captureDialog(prefix + "state-sources-invalid", sourceEditor);
+        sourceEditor.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+        page.navigation.navigate("Appearance");
+        capture(prefix + "state-font-choice");
+        page.navigation.navigate("Pause, backup and diagnostics");
+        java.util.concurrent.CountDownLatch entered = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+        app.morphe.extension.shared.settings.preference.LogBufferManager.registerReportSection(
+                new app.morphe.extension.shared.settings.preference.LogBufferManager.ReportSection() {
+                    @Override public String title() { return "VISUAL CHECK"; }
+                    @Override public List<String> lines() {
+                        entered.countDown();
+                        try {
+                            if (!release.await(15, java.util.concurrent.TimeUnit.SECONDS))
+                                throw new IllegalStateException("export capture did not release its worker");
+                        } catch (InterruptedException interrupted) {
+                            Thread.currentThread().interrupt();
+                            throw new IllegalStateException(interrupted);
+                        }
+                        return java.util.Collections.emptyList();
+                    }
+                });
+        Preference export = page.findPreference("action_export_diagnostic_report");
+        export.getOnPreferenceClickListener().onPreferenceClick(export);
+        AlertDialog chooser = (AlertDialog) org.robolectric.shadows.ShadowDialog.getLatestDialog();
+        try {
+            chooser.getListView().performItemClick(null, 0, 0);
+            assertTrue("report worker never entered", entered.await(10, java.util.concurrent.TimeUnit.SECONDS));
+            assertFalse(export.isEnabled());
+            capture(prefix + "state-report-copying");
+        } finally { release.countDown(); chooser.dismiss(); }
+        app.morphe.extension.shared.Utils.awaitBackgroundTasksForTests();
+        ShadowLooper.idleMainLooper();
+        assertTrue(export.isEnabled());
+        capture(prefix + "state-report-copied");
     }
 
     @Test public void fileNameExampleUsesTheSameFormatterAndCancelKeepsTheSavedTemplate() {
