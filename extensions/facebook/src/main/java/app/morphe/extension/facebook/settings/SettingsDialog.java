@@ -196,8 +196,9 @@ public final class SettingsDialog extends DialogFragment {
         android.graphics.drawable.GradientDrawable surface = new android.graphics.drawable.GradientDrawable();
         surface.setColor(palette.card);
         surface.setCornerRadius(dp(10));
-        surface.setStroke(dp(1), palette.outline);
+        surface.setStroke(dp(2), ScreenColors.focusStroke(palette.heading, palette.outline));
         searchBox.setBackground(surface);
+        searchBox.setAddStatesFromChildren(true);
         searchBox.setPaddingRelative(dp(16), 0, 0, 0);
         ImageView icon = new ImageView(getContext());
         icon.setImageDrawable(SettingsIcons.icon(getContext(), SettingsIcons.SEARCH, palette.summary));
@@ -209,7 +210,9 @@ public final class SettingsDialog extends DialogFragment {
         search.setSingleLine(true);
         search.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
         search.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-        search.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH);
+        search.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH
+                | android.view.inputmethod.EditorInfo.IME_FLAG_NO_FULLSCREEN
+                | android.view.inputmethod.EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         search.setBackground(null);
         search.setTextColor(palette.title);
         search.setHintTextColor(palette.summary);
@@ -225,7 +228,10 @@ public final class SettingsDialog extends DialogFragment {
         int emptyClearVisibility = getResources().getConfiguration().fontScale >= 1.5f
                 ? View.GONE : View.INVISIBLE;
         clear.setVisibility(emptyClearVisibility);
-        clear.setOnClickListener(ignored -> search.setText(""));
+        clear.setOnClickListener(ignored -> {
+            search.setText("");
+            search.requestFocus();
+        });
         searchBox.addView(clear, new LinearLayout.LayoutParams(dp(48), dp(48)));
         search.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence text, int start, int count, int after) { }

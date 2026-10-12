@@ -285,7 +285,7 @@ final class SettingsNavigation extends BaseAdapter {
                 boolean headingAdded = false;
                 for (int i = 0; i < section.category.getPreferenceCount(); i++) {
                     Preference row = section.category.getPreference(i);
-                    String text = normalized(section.category.getTitle() + " " + row.getTitle() + " " + row.getSummary());
+                    String text = searchText(section.category.getTitle(), row.getTitle(), row.getSummary());
                     boolean matches = true;
                     for (String term : terms.split("\\s+")) if (!text.contains(term)) matches = false;
                     if (!matches) continue;
@@ -377,6 +377,12 @@ final class SettingsNavigation extends BaseAdapter {
 
     private static String normalized(String value) {
         return Normalizer.normalize(value, Normalizer.Form.NFD).replaceAll("\\p{M}+", "").toLowerCase(Locale.ROOT);
+    }
+
+    private static String searchText(CharSequence... parts) {
+        StringBuilder text = new StringBuilder();
+        for (CharSequence part : parts) if (part != null) text.append(part).append(' ');
+        return normalized(text.toString());
     }
 
     private int originalPosition(Preference item) {

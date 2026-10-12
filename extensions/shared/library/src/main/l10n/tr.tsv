@@ -11,7 +11,6 @@ Hides "Pages you may like" cards, cards promoting Facebook's own features, and s
 %1$s. It was set when you patched, so Pause can't turn it off. To rule it out, patch again and leave out that patch.	%1$s. Yamaladığında ayarlandığı için Duraklatma bunu kapatamaz. Bunu elemek için yeniden yamala ve o yamayı dışarıda bırak.
 %1$s. They were set when you patched, so Pause can't turn them off. To rule one out, patch again and leave out the patch in brackets after it.	%1$s. Yamaladığında ayarlandıkları için Duraklatma bunları kapatamaz. Birini elemek için yeniden yamala ve onun ardından parantez içinde yazan yamayı dışarıda bırak.
 A change here applies after Facebook restarts.	Buradaki bir değişiklik Facebook yeniden başladıktan sonra geçerli olur.
-A diagnostic report is already being saved.	Bir tanılama raporu zaten kaydediliyor.
 Add a Download button to reels, using your download quality. Off or paused, Facebook's own buttons return.	Reels'e indirme kalitenizle İndir düğmesi ekler. Kapalı veya duraklatılmışken Facebook'un kendi düğmeleri geri gelir.
 A file named %1$s in %2$s paused Hushfacebook.	%2$s içindeki %1$s adlı bir dosya Hushfacebook'u duraklattı.
 About	Hakkında
@@ -103,18 +102,12 @@ Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook 
 Draws Facebook's text in your phone's font, or in a font file you choose below. Restart Facebook to see the change.	Facebook'un yazılarını telefonunuzun yazı tipiyle veya aşağıdan seçtiğiniz bir yazı tipi dosyasıyla gösterir. Değişikliği görmek için Facebook'u yeniden başlatın.
 Font file	Yazı tipi dosyası
 Use your phone's font	Telefonun yazı tipini kullan
-Stops using the font file and goes back to your phone's font.	Yazı tipi dosyasını bırakır ve telefonunun yazı tipine geri döner.
-None chosen, so your phone's font is used. Choose a .ttf or .otf font file of up to %1$d MB.	Hiçbiri seçilmedi, bu yüzden telefonunuzun yazı tipi kullanılır. En fazla %1$d MB boyutunda bir .ttf veya .otf yazı tipi dosyası seçin.
-Hushfacebook's copy of %1$s is gone, so your phone's font is used. Choose the file again.	Hushfacebook'un %1$s kopyası yok, bu yüzden telefonunun yazı tipi kullanılıyor. Dosyayı yeniden seç.
-Using %1$s. Choose another file to replace it.	%1$s kullanılıyor. Değiştirmek için başka bir dosya seç.
 Copying the font file	Yazı tipi dosyası kopyalanıyor
-Font set to %1$s. Restart Facebook to see it.	Yazı tipi %1$s olarak ayarlandı. Görmek için Facebook'u yeniden başlat.
 That isn't a .ttf or .otf font file. Your font didn't change.	Bu bir .ttf veya .otf yazı tipi dosyası değil. Yazı tipiniz değişmedi.
 That font file is over %1$d MB. Your font didn't change.	Bu yazı tipi dosyası %1$d MB'tan büyük. Yazı tipin değişmedi.
 Android couldn't use that font file. Your font didn't change.	Android bu yazı tipi dosyasını kullanamadı. Yazı tipiniz değişmedi.
 Couldn't save a copy of that font. Check that the phone has room, then try again.	Bu yazı tipinin kopyası kaydedilemedi. Telefonda yer olup olmadığını kontrol et, sonra tekrar dene.
 Couldn't open that file. Your font didn't change.	Bu dosya açılamadı. Yazı tipin değişmedi.
-Back to your phone's font. Restart Facebook to see it.	Telefonunun yazı tipine geri dönüldü. Görmek için Facebook'u yeniden başlat.
 Couldn't go back to your phone's font. Try again.	Telefonunun yazı tipine geri dönülemedi. Tekrar dene.
 Full report saved to %1$s	Tam rapor şuraya kaydedildi: %1$s
 The GPL-3.0 license, plus notices for the projects this is built on	GPL-3.0 lisansı ve bu çalışmanın dayandığı projelerin bildirimleri
@@ -264,7 +257,6 @@ Videos go to %1$s and photos to %2$s.	Videolar %1$s klasörüne, fotoğraflar %2
 Open web links in your browser. Facebook's own pages stay in the app.	Web bağlantılarını tarayıcınızda açar. Facebook sayfaları uygulamada kalır.
 Records what the patches do and shows error messages, to help with a bug report. Leave it off for everyday use.	Yamaların ne yaptığını kaydeder ve hata mesajlarını gösterir; hata bildirimi için işe yarar. Günlük kullanımda kapalı tutun.
 You paused Hushfacebook.	Hushfacebook'u duraklattın.
-Your switches already match that file, so nothing will change.	Anahtarların zaten o dosyayla aynı, bu yüzden hiçbir şey değişmeyecek.
 Keep feed position on return	Geri dönünce akış konumunu koru
 Returning to Facebook within ten minutes, or switching back to Home, keeps your place. Pull to refresh still works.	Facebook'a on dakika içinde dönersen ya da Ana Sayfa'ya geri geçersen kaldığın yer korunur. Yenilemek için aşağı çekmeye devam edebilirsin.
 No time limit	Süre sınırı yok
@@ -560,8 +552,6 @@ Hides posts by people or Pages on your list below, or linking to sites on it, in
 People, Pages and sites to hide	Gizlenecek kişiler, sayfalar ve siteler
 One per line, up to %1$d: a name as Facebook shows it, a profile or Page ID, or a site like example.com, which also covers addresses like m.example.com. Capital letters don't matter. A Facebook link works when it has the ID in it.	Her satıra bir tane, en fazla %1$d: Facebook'un gösterdiği şekliyle bir ad, bir profil veya Sayfa kimliği ya da m.example.com gibi adresleri de kapsayan example.com gibi bir site. Büyük harfler önemli değildir. Kimliği içeren bir Facebook bağlantısı çalışır.
 One name, id or site per line	Her satıra bir ad, kimlik veya site
-%1$d line was left out. A line holds up to %2$d characters, the list up to %3$d lines, and one given twice counts once.	%1$d satır dışarıda bırakıldı. Bir satır en fazla %2$d karakter, liste en fazla %3$d satır alır ve iki kez yazılan bir kez sayılır.
-%1$d lines were left out. A line holds up to %2$d characters, the list up to %3$d lines, and one given twice counts once.	%1$d satır dışarıda bırakıldı. Bir satır en fazla %2$d karakter, liste en fazla %3$d satır alır ve iki kez yazılan bir kez sayılır.
 Nobody listed yet, so no post is hidden.	Henüz kimse eklenmedi, bu yüzden hiçbir gönderi gizlenmiyor.
 %1$d person, Page or site.	%1$d kişi, sayfa veya site.
 %1$d people, Pages or sites.	%1$d kişi, sayfa veya site.
@@ -1390,3 +1380,30 @@ Hides comments that link to a shop like Shopee, Lazada or Amazon, along with the
 Hide comments with your words	Sözcüklerinizi içeren yorumları gizle
 # context: that switch's summary. Words to hide is the word list row under News feed and Words that keep a post its second list; use the same translations as those rows
 Hides comments containing a word from your Words to hide list in News feed, along with their replies. Words that keep a post keep a comment too.	Akış bölümündeki Gizlenecek kelimeler listenizden bir sözcük içeren yorumları yanıtlarıyla birlikte gizler. Gönderiyi tutan kelimeler yorumu da tutar.
+
+# context: Editor limits, font selection and background action results
+%1$d of %2$d people, Pages or sites. The list fills %3$d%% of its room.	%2$d kişi, Sayfa veya siteden %1$d tanesi. Liste, ayrılan alanın %%%3$d kadarını dolduruyor.
+A diagnostic report is already being exported.	Bir tanılama raporu zaten dışa aktarılıyor.
+Copying diagnostic report...	Tanılama raporu kopyalanıyor...
+Diagnostic report copied.	Tanılama raporu kopyalandı.
+Diagnostic report saved.	Tanılama raporu kaydedildi.
+Font file cleared. Restart Facebook to apply the font change.	Yazı tipi dosyası kaldırıldı. Değişikliği uygulamak için Facebook'u yeniden başlat.
+Last save	Son kaydetme
+Line %1$d can't be saved. Check its length or use the profile or Page ID, then save again.	%1$d. satır kaydedilemiyor. Uzunluğunu kontrol et veya profil ya da Sayfa kimliğini kullanıp tekrar kaydet.
+No file chosen. Choose a .ttf or .otf font file of up to %1$d MB.	Dosya seçilmedi. En fazla %1$d MB boyutunda bir .ttf veya .otf yazı tipi dosyası seç.
+Removes the saved font file. Restart Facebook to use your phone's font.	Kayıtlı yazı tipi dosyasını siler. Telefonunun yazı tipini kullanmak için Facebook'u yeniden başlat.
+Removes the saved font file. Use the system font stays off.	Kayıtlı yazı tipi dosyasını siler. "Sistem yazı tipini kullan" kapalı kalır.
+Saving diagnostic report...	Tanılama raporu kaydediliyor...
+Selected %1$s. Font changes apply after restarting Facebook.	%1$s seçildi. Yazı tipi değişiklikleri Facebook yeniden başlatılınca uygulanır.
+Selected %1$s. Restart Facebook to apply the font change.	%1$s seçildi. Değişikliği uygulamak için Facebook'u yeniden başlat.
+Selected %1$s. Turn on Use the system font and restart Facebook to use it.	%1$s seçildi. Kullanmak için "Sistem yazı tipini kullan" seçeneğini açıp Facebook'u yeniden başlat.
+Selected %1$s. Use the system font is off. Turn it on and restart Facebook to use this file.	%1$s seçildi. "Sistem yazı tipini kullan" kapalı. Bu dosyayı kullanmak için seçeneği açıp Facebook'u yeniden başlat.
+The diagnostic report couldn't be copied. Try again.	Tanılama raporu kopyalanamadı. Tekrar dene.
+The list holds up to %1$d people, Pages or sites. Remove some, then save again.	Liste en fazla %1$d kişi, Sayfa veya site tutar. Bazılarını kaldırıp tekrar kaydet.
+The photo wasn't saved. Try again.	Fotoğraf kaydedilmedi. Tekrar dene.
+The report couldn't be copied. Try again.	Rapor kopyalanamadı. Tekrar dene.
+The report couldn't be saved. Try again.	Rapor kaydedilemedi. Tekrar dene.
+The saved copy of %1$s is missing. Choose the file again.	%1$s dosyasının kayıtlı kopyası yok. Dosyayı tekrar seç.
+The video wasn't saved. Try again.	Video kaydedilmedi. Tekrar dene.
+This list needs more room than it has. Shorten it, then save again.	Bu liste ayrılan alana sığmıyor. Kısaltıp tekrar kaydet.
+Your settings already match that file, so nothing will change.	Ayarların zaten bu dosyayla aynı, bu yüzden hiçbir şey değişmeyecek.

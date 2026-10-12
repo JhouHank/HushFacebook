@@ -365,6 +365,24 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
             saveRows.put(save.id, row);
             group.addPreference(row);
         }
+        SaveControl.Outcome outcome = SaveControl.lastOutcome();
+        Preference last = group.findPreference("last_save_outcome");
+        if (outcome == null) {
+            if (last != null) group.removePreference(last);
+            return;
+        }
+        if (last == null) {
+            last = new Row(group.getContext());
+            last.setKey("last_save_outcome");
+            last.setTitle(L10n.t("Last save"));
+            last.setPersistent(false);
+            last.setSelectable(false);
+            last.setOrder(Integer.MIN_VALUE / 4);
+            last.setSummary(SaveControl.outcomeText(outcome));
+            group.addPreference(last);
+        } else {
+            last.setSummary(SaveControl.outcomeText(outcome));
+        }
     }
 
     /**
@@ -1601,7 +1619,7 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         // from Facebook's, and the dialog read "Speichern" next to "Cancel".
         row.setNegativeButtonText(L10n.t("Cancel"));
         EditText field = row.getEditText();
-        field.setSingleLine(true);
+        keepEditorInDialog(field, false);
         field.setHint(L10n.t("Folder name"));
         row.setText(Settings.SAVE_FOLDER.savedValue());
         row.setOnPreferenceChangeListener((preference, typed) -> {
@@ -1636,7 +1654,7 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         row.setPositiveButtonText(L10n.t("Save"));
         row.setNegativeButtonText(L10n.t("Cancel"));
         EditText field = row.getEditText();
-        field.setSingleLine(true);
+        keepEditorInDialog(field, false);
         field.setHint(L10n.t("Folder name"));
         row.setText(setting.savedValue());
         row.setOnPreferenceChangeListener((preference, typed) -> {
@@ -1745,7 +1763,7 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         // Android's own Cancel follows the activity's language, as the folder row's did.
         row.setNegativeButtonText(L10n.t("Cancel"));
         EditText field = row.getEditText();
-        field.setSingleLine(true);
+        keepEditorInDialog(field, false);
         field.setHint(L10n.t("File name"));
         row.setText(setting.savedValue());
         row.setOnPreferenceChangeListener((preference, typed) -> {
@@ -1811,7 +1829,7 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         row.setPositiveButtonText(L10n.t("Save"));
         row.setNegativeButtonText(L10n.t("Cancel"));
         EditText field = row.getEditText();
-        field.setSingleLine(true);
+        keepEditorInDialog(field, false);
         field.setHint(L10n.t("App ID"));
         row.setText(Settings.SEND_TO_APP.savedValue());
         row.setOnPreferenceChangeListener((preference, typed) -> {
@@ -1880,11 +1898,7 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         // Android's own Cancel follows the activity's language, as the folder row's did.
         row.setNegativeButtonText(L10n.t("Cancel"));
         EditText field = row.getEditText();
-        field.setSingleLine(false);
-        field.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
-        // A landscape IME's extracted editor replaces the dialog and hides Save and Cancel.
-        field.setImeOptions(field.getImeOptions() | EditorInfo.IME_FLAG_NO_FULLSCREEN
-                | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        keepEditorInDialog(field, true);
         // No line cap: the list grows inside its dialog's scroll, which a field scrolling itself
         // inside it would fight (#58).
         field.setMinLines(3);
@@ -1934,9 +1948,8 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
 
     /**
      * The list Hide posts from people, Pages and sites reads. What's typed is cleaned before it's
-     * kept, one rule per line within the bounds {@link PostSources} holds the list to, so the row,
-     * the setting and the filter all read the same rules. A dialog says how many lines were left
-     * out, never which.
+     * kept, one rule per line within the bounds {@link PostSources} holds the list to. Its editor
+     * refuses anything that would lose a rule, keeping the draft open to correct it.
      */
     SourcesRow sourcesRow(Context context) {
         SourcesRow row = new SourcesRow(context);
@@ -1951,36 +1964,67 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         row.setPositiveButtonText(L10n.t("Save"));
         row.setNegativeButtonText(L10n.t("Cancel"));
         EditText field = row.getEditText();
-        field.setSingleLine(false);
-        field.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
-        // A landscape IME's extracted editor replaces the dialog and hides Save and Cancel.
-        field.setImeOptions(field.getImeOptions() | EditorInfo.IME_FLAG_NO_FULLSCREEN
-                | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        keepEditorInDialog(field, true);
         field.setMinLines(3);
         field.setHint(L10n.t("One name, id or site per line"));
         row.setText(Settings.HIDDEN_SOURCES.savedValue());
         row.setOnPreferenceChangeListener((preference, typed) -> {
             String raw = typed == null ? "" : typed.toString();
+            if (sourcesRefusal(raw) != null) return false;
             String clean = PostSources.clean(raw);
             if (clean.equals(raw)) return true;
-            // Keeps the clean list in place of what was typed, as the word lists do.
-            int leftOut = PostSources.leftOut(raw);
+            // Harmless normalization and duplicates use the filter's own spelling and identity.
             ((SourcesRow) preference).setText(clean);
-            if (leftOut > 0) {
-                String why = L10n.quantity(leftOut,
-                        "%1$d line was left out. A line holds up to %2$d characters, the list up to %3$d lines, "
-                                + "and one given twice counts once.",
-                        "%1$d lines were left out. A line holds up to %2$d characters, the list up to %3$d lines, "
-                                + "and one given twice counts once.",
-                        leftOut, PostSources.MAX_LENGTH, PostSources.MAX_RULES);
-                show(new AlertDialog.Builder(preference.getContext())
-                        .setTitle(title)
-                        .setMessage(why)
-                        .setPositiveButton(L10n.t("OK"), null));
-            }
             return false;
         });
         return row;
+    }
+
+    /** Counts and capacity only, never a name, id or site from the draft. */
+    static String sourcesEditorLine(@Nullable String typed) {
+        String why = sourcesRefusal(typed);
+        if (why != null) return why;
+        String clean = PostSources.clean(typed);
+        int rules = PostSources.count(clean);
+        int percent = (int) ((100L * PostWords.encodedBytes(clean) + PostSources.MAX_LIST_BYTES - 1)
+                / PostSources.MAX_LIST_BYTES);
+        return L10n.f("%1$d of %2$d people, Pages or sites. The list fills %3$d%% of its room.",
+                rules, PostSources.MAX_RULES, percent);
+    }
+
+    /** Refuses lost rules while accepting blank lines, normalization and equivalent duplicates. */
+    @Nullable
+    static String sourcesRefusal(@Nullable String typed) {
+        if (typed == null || PostSources.leftOut(typed) == 0) return null;
+        String clean = PostSources.clean(typed);
+        String[] kept = clean.isEmpty() ? new String[0] : clean.split("\n");
+        Set<String> spellings = new HashSet<>();
+        for (String line : kept) spellings.add(line.toLowerCase(Locale.ROOT));
+        int number = 0;
+        for (String line : typed.split("\n", -1)) {
+            number++;
+            String one = PostSources.clean(line);
+            if (one.isEmpty()) {
+                if (PostSources.leftOut(line) == 0) continue;
+                return L10n.f("Line %1$d can't be saved. Check its length or use the profile or Page ID, then save again.", number);
+            }
+            if (spellings.contains(one.toLowerCase(Locale.ROOT))) continue;
+            // Different spellings may be the same rule, such as an id and a Facebook profile link.
+            // A two-rule list is below every capacity bound, so the filter decides identity here.
+            boolean duplicate = false;
+            for (String stored : kept) {
+                if (PostSources.count(PostSources.clean(stored + "\n" + one)) == 1) {
+                    duplicate = true;
+                    break;
+                }
+            }
+            if (!duplicate) {
+                return kept.length == PostSources.MAX_RULES
+                        ? L10n.f("The list holds up to %1$d people, Pages or sites. Remove some, then save again.", PostSources.MAX_RULES)
+                        : L10n.t("This list needs more room than it has. Shorten it, then save again.");
+            }
+        }
+        return null;
     }
 
     /** What the people, Pages and sites row says: how many it holds. Counts only, never a name. */
@@ -2118,6 +2162,15 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         }
         TextView summary = row.findViewById(android.R.id.summary);
         if (summary != null) summary.setMaxLines(Integer.MAX_VALUE);
+    }
+
+    /** Keeps every text editor and its actions together, including with a landscape keyboard. */
+    static void keepEditorInDialog(EditText field, boolean multiline) {
+        field.setSingleLine(!multiline);
+        if (multiline) field.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        // The landscape extracted editor replaces the dialog and hides its actions.
+        field.setImeOptions(field.getImeOptions() | EditorInfo.IME_FLAG_NO_FULLSCREEN
+                | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
     }
 
     /**

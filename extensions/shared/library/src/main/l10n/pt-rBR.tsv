@@ -11,7 +11,6 @@ Hides "Pages you may like" cards, cards promoting Facebook's own features, and s
 %1$s. It was set when you patched, so Pause can't turn it off. To rule it out, patch again and leave out that patch.	%1$s. Isso foi definido quando você aplicou os patches, então a pausa não pode desativá-lo. Para descartar essa possibilidade, aplique os patches novamente sem esse patch.
 %1$s. They were set when you patched, so Pause can't turn them off. To rule one out, patch again and leave out the patch in brackets after it.	%1$s. Esses itens foram definidos quando você aplicou os patches, então a pausa não pode desativá-los. Para descartar um deles, aplique os patches novamente sem o patch entre parênteses depois dele.
 A change here applies after Facebook restarts.	Uma alteração daqui vale depois que o Facebook reiniciar.
-A diagnostic report is already being saved.	Um relatório de diagnóstico já está sendo salvo.
 Add a Download button to reels, using your download quality. Off or paused, Facebook's own buttons return.	Adiciona um botão Baixar aos Reels, usando sua qualidade de download. Desativado ou pausado, os botões do próprio Facebook voltam.
 A file named %1$s in %2$s paused Hushfacebook.	Um arquivo chamado %1$s em %2$s pausou o Hushfacebook.
 About	Sobre
@@ -103,18 +102,12 @@ Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook 
 Draws Facebook's text in your phone's font, or in a font file you choose below. Restart Facebook to see the change.	Mostra o texto do Facebook com a fonte do celular ou com um arquivo de fonte que você escolher abaixo. Reinicie o Facebook para ver a mudança.
 Font file	Arquivo de fonte
 Use your phone's font	Usar a fonte do celular
-Stops using the font file and goes back to your phone's font.	Deixa de usar o arquivo de fonte e volta para a fonte do seu celular.
-None chosen, so your phone's font is used. Choose a .ttf or .otf font file of up to %1$d MB.	Nenhum escolhido, então a fonte do celular é usada. Escolha um arquivo de fonte .ttf ou .otf de até %1$d MB.
-Hushfacebook's copy of %1$s is gone, so your phone's font is used. Choose the file again.	A cópia de %1$s feita pelo Hushfacebook não está mais disponível, então a fonte do seu dispositivo será usada. Escolha o arquivo novamente.
-Using %1$s. Choose another file to replace it.	Usando %1$s. Escolha outro arquivo para substituí-lo.
 Copying the font file	Copiando o arquivo de fonte
-Font set to %1$s. Restart Facebook to see it.	Fonte definida como %1$s. Reinicie o Facebook para ver.
 That isn't a .ttf or .otf font file. Your font didn't change.	Isso não é um arquivo de fonte .ttf ou .otf. Sua fonte não mudou.
 That font file is over %1$d MB. Your font didn't change.	Esse arquivo de fonte tem mais de %1$d MB. Sua fonte não mudou.
 Android couldn't use that font file. Your font didn't change.	O Android não conseguiu usar esse arquivo de fonte. Sua fonte não mudou.
 Couldn't save a copy of that font. Check that the phone has room, then try again.	Não foi possível salvar uma cópia dessa fonte. Veja se o celular tem espaço e tente de novo.
 Couldn't open that file. Your font didn't change.	Não foi possível abrir esse arquivo. Sua fonte não mudou.
-Back to your phone's font. Restart Facebook to see it.	De volta à fonte do seu celular. Reinicie o Facebook para ver.
 Couldn't go back to your phone's font. Try again.	Não foi possível voltar para a fonte do seu celular. Tente de novo.
 Full report saved to %1$s	Relatório completo salvo em %1$s
 The GPL-3.0 license, plus notices for the projects this is built on	A licença GPL-3.0 e os avisos dos projetos em que isto se baseia
@@ -257,7 +250,6 @@ Videos go to %1$s and photos to %2$s.	Os vídeos vão para %1$s e as fotos para 
 Open web links in your browser. Facebook's own pages stay in the app.	Abre links da web no seu navegador. As páginas do próprio Facebook continuam abrindo no aplicativo.
 Records what the patches do and shows error messages, to help with a bug report. Leave it off for everyday use.	Registra o que os patches fazem e mostra mensagens de erro, para ajudar em um relatório de bug. Deixe desligado no uso diário.
 You paused Hushfacebook.	Você pausou o Hushfacebook.
-Your switches already match that file, so nothing will change.	Suas opções já correspondem às desse arquivo, então nada será alterado.
 Keep feed position on return	Manter a posição no feed ao voltar
 Returning to Facebook within ten minutes, or switching back to Home, keeps your place. Pull to refresh still works.	Ao voltar ao Facebook em até dez minutos, ou ao voltar para a Página inicial, você continuará no ponto em que estava. O gesto de puxar para baixo para atualizar continuará funcionando.
 No time limit	Sem limite de tempo
@@ -487,8 +479,6 @@ Hides posts by people or Pages on your list below, or linking to sites on it, in
 People, Pages and sites to hide	Pessoas, Páginas e sites para ocultar
 One per line, up to %1$d: a name as Facebook shows it, a profile or Page ID, or a site like example.com, which also covers addresses like m.example.com. Capital letters don't matter. A Facebook link works when it has the ID in it.	Um por linha, até %1$d: um nome como o Facebook o mostra, o ID de um perfil ou Página, ou um site como example.com, que também cobre endereços como m.example.com. Maiúsculas não importam. Um link do Facebook funciona quando tem o ID.
 One name, id or site per line	Um nome, ID ou site por linha
-%1$d line was left out. A line holds up to %2$d characters, the list up to %3$d lines, and one given twice counts once.	%1$d linha foi deixada de fora. Uma linha cabe até %2$d caracteres, a lista até %3$d linhas, e uma repetida conta uma vez.
-%1$d lines were left out. A line holds up to %2$d characters, the list up to %3$d lines, and one given twice counts once.	%1$d linhas foram deixadas de fora. Uma linha cabe até %2$d caracteres, a lista até %3$d linhas, e uma repetida conta uma vez.
 Nobody listed yet, so no post is hidden.	Ninguém na lista ainda, então nenhuma publicação é ocultada.
 %1$d person, Page or site.	%1$d pessoa, Página ou site.
 %1$d people, Pages or sites.	%1$d pessoas, Páginas ou sites.
@@ -1282,3 +1272,30 @@ Hides comments that link to a shop like Shopee, Lazada or Amazon, along with the
 Hide comments with your words	Ocultar comentários com suas palavras
 # context: that switch's summary. Words to hide is the word list row under News feed and Words that keep a post its second list; use the same translations as those rows
 Hides comments containing a word from your Words to hide list in News feed, along with their replies. Words that keep a post keep a comment too.	Oculta comentários que contêm uma palavra da sua lista Palavras para ocultar em Feed de notícias, junto com as respostas. Palavras que mantêm uma publicação também mantêm um comentário.
+
+# context: Editor limits, font selection and background action results
+%1$d of %2$d people, Pages or sites. The list fills %3$d%% of its room.	%1$d de %2$d pessoas, Páginas ou sites. A lista ocupa %3$d%% do espaço disponível.
+A diagnostic report is already being exported.	Um relatório de diagnóstico já está sendo exportado.
+Copying diagnostic report...	Copiando o relatório de diagnóstico...
+Diagnostic report copied.	Relatório de diagnóstico copiado.
+Diagnostic report saved.	Relatório de diagnóstico salvo.
+Font file cleared. Restart Facebook to apply the font change.	Arquivo de fonte removido. Reinicie o Facebook para aplicar a alteração de fonte.
+Last save	Último salvamento
+Line %1$d can't be saved. Check its length or use the profile or Page ID, then save again.	Não é possível salvar a linha %1$d. Confira o tamanho ou use o ID do perfil ou da Página e tente salvar de novo.
+No file chosen. Choose a .ttf or .otf font file of up to %1$d MB.	Nenhum arquivo escolhido. Escolha um arquivo de fonte .ttf ou .otf de até %1$d MB.
+Removes the saved font file. Restart Facebook to use your phone's font.	Remove o arquivo de fonte salvo. Reinicie o Facebook para usar a fonte do seu celular.
+Removes the saved font file. Use the system font stays off.	Remove o arquivo de fonte salvo. "Usar a fonte do sistema" continua desativado.
+Saving diagnostic report...	Salvando o relatório de diagnóstico...
+Selected %1$s. Font changes apply after restarting Facebook.	Selecionado %1$s. As alterações de fonte são aplicadas após reiniciar o Facebook.
+Selected %1$s. Restart Facebook to apply the font change.	Selecionado %1$s. Reinicie o Facebook para aplicar a alteração de fonte.
+Selected %1$s. Turn on Use the system font and restart Facebook to use it.	Selecionado %1$s. Ative "Usar a fonte do sistema" e reinicie o Facebook para usar o arquivo.
+Selected %1$s. Use the system font is off. Turn it on and restart Facebook to use this file.	Selecionado %1$s. "Usar a fonte do sistema" está desativado. Ative a opção e reinicie o Facebook para usar este arquivo.
+The diagnostic report couldn't be copied. Try again.	Não foi possível copiar o relatório de diagnóstico. Tente de novo.
+The list holds up to %1$d people, Pages or sites. Remove some, then save again.	A lista comporta até %1$d pessoas, Páginas ou sites. Remova alguns itens e salve de novo.
+The photo wasn't saved. Try again.	A foto não foi salva. Tente de novo.
+The report couldn't be copied. Try again.	Não foi possível copiar o relatório. Tente de novo.
+The report couldn't be saved. Try again.	Não foi possível salvar o relatório. Tente de novo.
+The saved copy of %1$s is missing. Choose the file again.	A cópia salva de %1$s não foi encontrada. Escolha o arquivo de novo.
+The video wasn't saved. Try again.	O vídeo não foi salvo. Tente de novo.
+This list needs more room than it has. Shorten it, then save again.	Esta lista precisa de mais espaço do que o disponível. Reduza a lista e salve de novo.
+Your settings already match that file, so nothing will change.	Suas configurações já correspondem às desse arquivo, então nada será alterado.

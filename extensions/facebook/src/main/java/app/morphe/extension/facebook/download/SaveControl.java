@@ -52,7 +52,7 @@ import app.morphe.extension.shared.L10n;
  * <p>With Facebook's notifications off, or this channel switched off, a save shows a toast at each
  * end and no notification, and the first toast says where to cancel it. Hushfacebook's settings
  * list every running save under Downloads, with what it's doing and a Cancel of its own
- * ({@link #running}, {@link #watch}), so a save can be stopped either way. Nothing of a save outlives it there: no address, no name, no history.
+ * ({@link #running}, {@link #watch}), so a save can be stopped either way. Only the last generic outcome remains in memory: no address, name or saved history.
  */
 public final class SaveControl {
 
@@ -93,6 +93,22 @@ public final class SaveControl {
     public enum Phase { DOWNLOADING, JOINING, SAVING, PUBLISHING }
 
     enum State { ACTIVE, PUBLISHING, SUCCEEDED, FAILED, CANCELLED }
+
+    /** Only the last generic result, in memory for this process. No save identity is retained. */
+    public enum Outcome { VIDEO_SAVED, PHOTO_SAVED, VIDEO_FAILED, PHOTO_FAILED, CANCELLED }
+    private static volatile Outcome lastOutcome;
+
+    @Nullable public static Outcome lastOutcome() { return lastOutcome; }
+
+    public static String outcomeText(Outcome outcome) {
+        switch (outcome) {
+            case VIDEO_SAVED: return L10n.t("Video saved");
+            case PHOTO_SAVED: return L10n.t("Photo saved");
+            case CANCELLED: return L10n.t("Save canceled");
+            case VIDEO_FAILED: return L10n.t("The video wasn't saved. Try again.");
+            default: return L10n.t("The photo wasn't saved. Try again.");
+        }
+    }
 
     /**
      * Told when a save starts, moves on to its next phase or ends, and at most twice a second while
@@ -149,8 +165,12 @@ public final class SaveControl {
 
     /** What [save] is doing, and how far it has got while it downloads, in the phone's language. */
     public static String status(Running save) {
+        return status(save.phase, save.done, save.total);
+    }
+
+    private static String status(Phase current, long done, long total) {
         String phase;
-        switch (save.phase) {
+        switch (current) {
             case JOINING:
                 phase = L10n.t("Joining the picture and sound");
                 break;
@@ -161,7 +181,7 @@ public final class SaveControl {
             default:
                 phase = L10n.t("Downloading");
         }
-        String progress = save.phase == Phase.DOWNLOADING ? progressText(save.done, save.total) : null;
+        String progress = current == Phase.DOWNLOADING ? progressText(done, total) : null;
         return progress == null ? phase : phase + "\n" + progress;
     }
     /** The application the receiver is registered on: one per process, and one per test. */
@@ -457,12 +477,14 @@ public final class SaveControl {
         public void joining() {
             phase = Phase.JOINING;
             tell();
+            show(-1, 0, -1);
         }
 
         @Override
         public void saving() {
             phase = Phase.SAVING;
             tell();
+            show(-1, 0, -1);
         }
 
         @Override
@@ -502,10 +524,18 @@ public final class SaveControl {
         /** The save is over, however it ended, and its notification goes. */
         void end() {
             state.compareAndSet(State.ACTIVE, State.FAILED);
+            state.compareAndSet(State.PUBLISHING, State.FAILED);
             synchronized (this) {
+                if (ended) return;
                 ended = true;
             }
-            if (RUNNING.remove(id) != null) tell();
+            if (RUNNING.remove(id, this)) {
+                State result = state();
+                lastOutcome = result == State.CANCELLED ? Outcome.CANCELLED
+                        : result == State.SUCCEEDED ? (video ? Outcome.VIDEO_SAVED : Outcome.PHOTO_SAVED)
+                        : (video ? Outcome.VIDEO_FAILED : Outcome.PHOTO_FAILED);
+                tell();
+            }
             if (manager == null) return;
             try {
                 manager.cancel(TAG, id);
@@ -533,8 +563,7 @@ public final class SaveControl {
                     builder.addAction(new Notification.Action.Builder((Icon) null,
                         L10n.t(application, "Cancel"), cancel).build());
                 }
-                String text = phase == Phase.PUBLISHING ? L10n.t(application, "Copying to the gallery")
-                    : progressText(done, total);
+                String text = status(phase, done, total);
                 if (text != null) builder.setContentText(text);
                 manager.notify(TAG, id, builder.build());
             } catch (Throwable t) {

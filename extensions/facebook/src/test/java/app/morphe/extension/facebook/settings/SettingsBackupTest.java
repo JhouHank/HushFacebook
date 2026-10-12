@@ -2843,7 +2843,7 @@ public class SettingsBackupTest {
             HushfacebookPreferenceFragment page = SettingsL10nTest.pageOf(SettingsL10nTest.show(activity));
             deliver(activity, tap(activity, page, IMPORT_ROW), SettingsBackup.create());
             AlertDialog preview = shownPreview();
-            assertEquals("Your switches already match that file, so nothing will change.",
+            assertEquals("Your settings already match that file, so nothing will change.",
                     String.valueOf(shadowOf(preview).getMessage()));
             assertEquals("OK", String.valueOf(preview.getButton(AlertDialog.BUTTON_POSITIVE).getText()));
             assertFalse(preview.getButton(AlertDialog.BUTTON_NEGATIVE).isShown());

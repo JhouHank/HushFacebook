@@ -6,6 +6,8 @@ Every Hushfacebook release, newest first.
 
 ### Changed
 
+* **Facebook:** Settings controls have visible focus boundaries and distinct disabled actions in black, Material dark and Material light. Switches and button feedback follow the same small corner scale, and recovery spacing adapts to shorter screens and large text.
+* **Facebook:** Downloads keeps the last generic save result until Facebook closes, including when notifications are off. It contains no filename or media address. Joining and gallery-copy notifications now match the phase shown in settings.
 * **Facebook:** Diagnostic export shows copying or saving in its row, disables repeat actions while working, and leaves a readable result. Reopening the page keeps that state.
 
 * **Tooling:** The source ledger now includes FacebookGoodies, current NexAlloy branches and ten reviewed duplicate ReVanced forks. Pinned source and license records are updated; global GitLab coverage remains incomplete.
@@ -25,6 +27,9 @@ Every Hushfacebook release, newest first.
 * **Tooling:** Settings captures keep separate copies for each Android SDK and include the end of every category, so long pages are checked below the first screen too. Marketplace previews use the current page layout as well.
 
 ### Fixed
+
+* **Facebook:** The people, Pages and sites editor keeps rejected drafts open and shows its count and capacity as you type. Single-line editors keep Save and Cancel with the keyboard in landscape, as the word editors do. Search no longer matches the word null for rows without a summary.
+* **Facebook:** Font file feedback distinguishes a selected file from an enabled font override. Replacing or removing a font file also keeps the restart reminder visible, including a replacement with the same name.
 
 * **Facebook:** Push diagnostics keep newer observations when another Facebook process writes while a record update is delayed. The clock is sampled under the shared lock, so the delay is no longer mistaken for a restart.
 

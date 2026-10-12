@@ -175,7 +175,7 @@ public class ActiveSavesTest {
 
     /**
      * Cancel sits on the row with no surface of its own, and a tap on it still shows a ripple, kept
-     * to the button. The page's Back arrow, an icon button, gets one bounded by a disc.
+     * to the button. The page's Back arrow, an icon button, gets the same bounded rectangular feedback.
      */
     @Test public void cancelAnswersATapWithARipple() {
         int id = SavesForTests.begin(RuntimeEnvironment.getApplication(), true);
@@ -191,8 +191,8 @@ public class ActiveSavesTest {
         assertTrue("Back has no press feedback", back.getBackground() instanceof android.graphics.drawable.RippleDrawable);
         android.graphics.drawable.Drawable disc = ((android.graphics.drawable.RippleDrawable) back.getBackground())
                 .findDrawableByLayerId(android.R.id.mask);
-        assertTrue("Back's ripple isn't a disc", disc instanceof android.graphics.drawable.GradientDrawable
-                && ((android.graphics.drawable.GradientDrawable) disc).getShape() == android.graphics.drawable.GradientDrawable.OVAL);
+        assertTrue("Back's ripple must follow the shared corner scale", disc instanceof android.graphics.drawable.GradientDrawable
+                && ((android.graphics.drawable.GradientDrawable) disc).getShape() == android.graphics.drawable.GradientDrawable.RECTANGLE);
     }
 
     private static View withDescription(View root, String description) {
@@ -289,6 +289,28 @@ public class ActiveSavesTest {
         layout();
         TreeSet<String> after = new TreeSet<>(Arrays.asList(prefs.list() == null ? new String[0] : prefs.list()));
         assertEquals("a save stored something", before, after);
+    }
+
+    @Test public void lastGenericResultRemainsReadableWithoutNotifications() {
+        Shadows.shadowOf(notifications()).setNotificationsEnabled(false);
+        int id = SavesForTests.begin(RuntimeEnvironment.getApplication(), true);
+        show();
+        SavesForTests.end(id);
+        layout();
+        Preference result = page.findPreference("last_save_outcome");
+        assertNotNull("failure disappeared with its progress row", result);
+        assertEquals("Last save", result.getTitle().toString());
+        assertEquals("The video wasn't saved. Try again.", result.getSummary().toString());
+        assertFalse(result.isSelectable());
+        assertFalse(result.isPersistent());
+        controller.recreate();
+        ShadowLooper.idleMainLooper();
+        dialog = (SettingsDialog) controller.get().getFragmentManager().findFragmentByTag("hushfacebook_settings");
+        page = SettingsL10nTest.pageOf(dialog);
+        page.navigation.navigate("Downloads");
+        layout();
+        assertEquals("The video wasn't saved. Try again.",
+                page.findPreference("last_save_outcome").getSummary().toString());
     }
 
     /** Two saves on the Downloads page, drawn as a phone draws them. */

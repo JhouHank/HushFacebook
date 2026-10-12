@@ -177,6 +177,48 @@ public class SaveProgressTest {
         return sent.getIntExtra(SaveControl.EXTRA_ID, -1);
     }
 
+    @Test public void everyPhaseRefreshesTheNotificationAtOnce() {
+        SaveControl.Save save = SaveControl.begin(context, true);
+        try {
+            save.transferred(MIB, 4 * MIB);
+            save.joining();
+            Notification joining = saveNotification();
+            assertEquals("Joining the picture and sound", joining.extras.getCharSequence(Notification.EXTRA_TEXT).toString());
+            assertTrue(joining.extras.getBoolean(Notification.EXTRA_PROGRESS_INDETERMINATE));
+            assertEquals(SaveControl.status(SaveControl.running().get(0)),
+                    joining.extras.getCharSequence(Notification.EXTRA_TEXT).toString());
+            save.saving();
+            Notification copying = saveNotification();
+            assertEquals("Copying to the gallery", copying.extras.getCharSequence(Notification.EXTRA_TEXT).toString());
+            assertTrue(copying.extras.getBoolean(Notification.EXTRA_PROGRESS_INDETERMINATE));
+            assertEquals(1, copying.actions.length);
+            assertTrue(save.publishing());
+            Notification publishing = saveNotification();
+            assertTrue(publishing.actions == null || publishing.actions.length == 0);
+            assertFalse(save.cancel());
+            save.published(true);
+        } finally { save.end(); }
+        assertEquals(SaveControl.Outcome.VIDEO_SAVED, SaveControl.lastOutcome());
+    }
+
+    @Test public void lateCleanupCannotReplaceANewerGenericOutcome() {
+        Shadows.shadowOf(notifications()).setNotificationsEnabled(false);
+        SaveControl.Save cancelled = SaveControl.begin(context, true);
+        assertTrue(cancelled.cancel());
+        assertEquals(SaveControl.Outcome.CANCELLED, SaveControl.lastOutcome());
+        SaveControl.Save latest = SaveControl.begin(context, false);
+        assertTrue(latest.publishing());
+        latest.published(true);
+        latest.end();
+        cancelled.end();
+        assertEquals(SaveControl.Outcome.PHOTO_SAVED, SaveControl.lastOutcome());
+        assertEquals("Photo saved", SaveControl.outcomeText(SaveControl.lastOutcome()));
+        SaveControl.Save failed = SaveControl.begin(context, true);
+        failed.end();
+        assertEquals("The video wasn't saved. Try again.", SaveControl.outcomeText(SaveControl.lastOutcome()));
+        assertTrue(SaveControl.running().isEmpty());
+    }
+
     @Test
     public void aSaveShowsItsProgressAtOnceAndCancelStopsIt() throws Exception {
         cancelFromTheNotification();
