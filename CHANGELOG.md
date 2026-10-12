@@ -11,6 +11,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* **Facebook:** After you pick an app icon, the long press on the new icon lists Hushfacebook settings again right away. Android takes an app's shortcuts off when its launcher entry changes, and since Facebook keeps running after an icon change, the shortcut stayed gone until Facebook was closed and opened again (issue #119).
 * **Facebook:** With `Debug logging` on, the report's list of screens opened no longer carries the id from a Facebook app link. A link like fb://profile/1234567890 is written as profile/#, since the report's redaction only caught ids of 15 digits or more and older accounts' and most Pages' ids are shorter. Addresses on Instagram, Threads, WhatsApp and m.me are now cut from the whole report the way facebook.com ones already were.
 * **Facebook:** `Default comment order` set to All comments now picks the unfiltered row on posts whose sort menu doesn't list the usual All comments row. A diagnostic report on issue #110 showed menus like that, and those posts stayed on Most relevant. Where a menu has both, the usual row is picked, even if Facebook opened the post on the other one.
 * **Facebook:** With `Use the system font` on, a phone font that draws Bengali or Devanagari itself and hangs the vowel signs past its own line box now gets the extra room too (issue #96). Only Latin letters were measured before, so a font like that could fit y and g and still cut the bottoms off its captions. Text the phone's usual fallback font draws keeps Facebook's layout.

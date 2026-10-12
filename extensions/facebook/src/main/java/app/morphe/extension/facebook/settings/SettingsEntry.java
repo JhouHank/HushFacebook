@@ -10,9 +10,11 @@ import android.app.Activity;
 import android.app.Application;
 import android.app.Fragment;
 import android.app.FragmentManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
 import android.graphics.Bitmap;
@@ -21,7 +23,10 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.drawable.Icon;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.PatternMatcher;
 import android.os.SystemClock;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
@@ -89,6 +94,9 @@ public final class SettingsEntry {
     private static volatile boolean closedByUser;
     /** The long label last pushed, or found already on the shortcut, in this process. */
     private static volatile String publishedLabel;
+    /** How long after a launcher change the shortcuts go back, so Android has disabled the old ones first. */
+    static final long LAUNCHER_CHANGE_DELAY_MS = 2_000;
+    private static volatile Context watchingLauncherFor;
     /** A check of the shortcut's place is waiting for the background thread. */
     private static final AtomicBoolean keepFirstQueued = new AtomicBoolean();
 
@@ -124,6 +132,7 @@ public final class SettingsEntry {
             // above the cover, which then goes back on top (AppLock.Cover).
             AppLock.watch(context);
             ReturnRefresh.register(context);
+            watchLauncherChanges(context);
             TextSize.application(context);
             // Only with the theme in the build, so its class and palette aren't loaded otherwise.
             if (SettingsStatus.materialYouTheme()) MaterialYouTheme.watchWindows(context);
@@ -153,6 +162,61 @@ public final class SettingsEntry {
             SavedShortcut.refreshNow(app);
             WatchHistoryShortcut.refreshNow(app);
         });
+    }
+
+    /**
+     * Picking an app icon turns Facebook's launcher entry off and the icon's alias on, and Android
+     * then disables every dynamic shortcut tied to the entry that went off, ours included. Facebook
+     * keeps running, so they stayed gone until its next cold start (#119). Android announces the
+     * change to Facebook itself with PACKAGE_CHANGED, so a moment after one that names the launcher
+     * entry or an icon alias, the shortcuts are published again on the entry that's on now.
+     */
+    static void watchLauncherChanges(Context context) {
+        final Context app = context.getApplicationContext() != null ? context.getApplicationContext() : context;
+        if (watchingLauncherFor == app) return;
+        BroadcastReceiver receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context ignored, Intent intent) {
+                try {
+                    if (!namesLauncher(app.getPackageName(), intent)) return;
+                    Logger.printInfo(() -> "Settings entry: Facebook's launcher entry changed, publishing the shortcuts again");
+                    Utils.runOnMainThreadDelayed(() -> publishShortcut(app), LAUNCHER_CHANGE_DELAY_MS);
+                } catch (Throwable failure) {
+                    Logger.printException(() -> "Settings entry: could not follow a launcher change", failure);
+                }
+            }
+        };
+        try {
+            IntentFilter filter = new IntentFilter(Intent.ACTION_PACKAGE_CHANGED);
+            filter.addDataScheme("package");
+            filter.addDataSchemeSpecificPart(app.getPackageName(), PatternMatcher.PATTERN_LITERAL);
+            // The system sends it, so a receiver other apps can't reach still gets it.
+            if (Build.VERSION.SDK_INT >= 33) {
+                app.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                app.registerReceiver(receiver, filter);
+            }
+            watchingLauncherFor = app;
+        } catch (Throwable failure) {
+            Logger.printException(() -> "Settings entry: could not watch for launcher changes", failure);
+        }
+    }
+
+    /**
+     * Whether [intent] is a PACKAGE_CHANGED for [packageName] naming its launcher entry, one of the
+     * icon aliases, or the whole package. Package-visible for tests.
+     */
+    static boolean namesLauncher(String packageName, @Nullable Intent intent) {
+        if (intent == null || !Intent.ACTION_PACKAGE_CHANGED.equals(intent.getAction())) return false;
+        Uri data = intent.getData();
+        if (data == null || !packageName.equals(data.getSchemeSpecificPart())) return false;
+        String[] changed = intent.getStringArrayExtra(Intent.EXTRA_CHANGED_COMPONENT_NAME_LIST);
+        if (changed == null) return false;
+        for (String name : changed) {
+            if (packageName.equals(name) || AppIcons.LAUNCHER.equals(name)
+                    || (name != null && name.startsWith(AppIcons.LAUNCHER + "."))) return true;
+        }
+        return false;
     }
 
     /**
