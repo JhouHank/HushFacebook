@@ -1,8 +1,12 @@
 # Changelog
 
-Every Hushfacebook release, newest first.
+Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
+
+## 0.11.1 (2026-10-12)
+
+* **Facebook:** Settings share clearer focus and disabled states in every theme. Editors keep rejected drafts, and Downloads and diagnostic export show their current result. This source update also adds bounded push and Reel-sidebar diagnostics and fixes the shared save limit.
 
 ### Changed
 
