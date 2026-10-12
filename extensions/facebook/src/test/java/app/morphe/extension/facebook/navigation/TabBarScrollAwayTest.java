@@ -185,4 +185,34 @@ public class TabBarScrollAwayTest {
         assertTrue("Pause and the report don't know the switches", PatchFamily.BOTTOM_TAB_BAR.switches.containsAll(
                 Arrays.asList(Settings.KEEP_TAB_BAR, Settings.KEEP_TOP_BAR)));
     }
+
+    @Test
+    public void aKeptBarsPagesClearTheNavigationBarTheyReachUnder() {
+        // The Android 16 emulator: the pager runs to the bottom of a 2400 px window, the bar is
+        // 147 px and the navigation bar under it 63 px.
+        assertEquals(210, TabBarScrollAway.keptPadding(147, 147, -1, 2400, 2400, 63));
+        assertEquals("the padding already set here was changed", 210, TabBarScrollAway.keptPadding(210, 147, 210, 2400, 2400, 63));
+        assertEquals("a window that stops above the navigation bar got more", 147, TabBarScrollAway.keptPadding(147, 147, -1, 2337, 2400, 63));
+        assertEquals("part of the navigation bar", 147 + 33, TabBarScrollAway.keptPadding(147, 147, -1, 2370, 2400, 63));
+        assertEquals("no navigation bar", 147, TabBarScrollAway.keptPadding(147, 147, -1, 2400, 2400, 0));
+        assertEquals("a padding Facebook set since was taken over", -1, TabBarScrollAway.keptPadding(0, 147, 210, 2400, 2400, 63));
+    }
+
+    @Test
+    public void thePagerGetsFacebooksPaddingFirstWhateverTheSwitches() {
+        android.content.Context context = org.robolectric.RuntimeEnvironment.getApplication();
+        for (boolean kept : new boolean[] {false, true}) {
+            Settings.KEEP_TAB_BAR.save(kept);
+            android.view.View pager = new android.widget.FrameLayout(context);
+            TabBarScrollAway.padsPager(pager, 0, 0, 0, 147);
+            // Not in a window, so there are no insets to clear yet.
+            pager.layout(0, 0, 1080, 2272);
+            assertEquals("kept " + kept, 147, pager.getPaddingBottom());
+            assertEquals("kept " + kept, 0, pager.getPaddingTop());
+        }
+        TabBarScrollAway.padsPager(null, 0, 0, 0, 147);
+        String line = statusLine();
+        assertTrue(line, line != null && line.contains("invoked 2,"));
+        assertFalse("a padding was counted without a window: " + line, line.contains(TabBarScrollAway.PAGES_CLEARED));
+    }
 }

@@ -4,6 +4,9 @@
  */
 package app.morphe.extension.facebook.navigation;
 
+import android.view.View;
+import android.view.WindowInsets;
+
 import androidx.annotation.Nullable;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -39,6 +42,8 @@ public final class TabBarScrollAway {
     static final String STAYS_PUT = "Tab bar kept on screen";
     /** Counted under the patch's name each time a kept top bar is held where it rests. */
     static final String TOP_BAR_HELD = "Top bar held on screen";
+    /** Counted each time a kept bar's pages are padded past the navigation bar under it. */
+    static final String PAGES_CLEARED = "Pages kept clear of the kept tab bar";
 
     /** The name Facebook's main screen gives the top bar's scroll-away entry. */
     static final String APP_HEADER = "app_header_container";
@@ -106,6 +111,75 @@ public final class TabBarScrollAway {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "top bar kept", failure);
             return offset;
+        }
+    }
+
+    /**
+     * The tab pager's padding call as the main screen starts. Facebook's padding is set first,
+     * always. With the bar staying put, that's the bar's height, but on a phone drawing under its
+     * navigation bar the bar's holder covers the navigation bar too, so the bottom of each page, a
+     * reel's progress bar with it, sat behind the tab bar. For a kept bar the pager then adds that
+     * overlap each time it's laid out, until Facebook sets a padding of its own.
+     */
+    public static void padsPager(@Nullable View pager, int left, int top, int right, int bottom) {
+        if (pager == null) return;
+        pager.setPadding(left, top, right, bottom);
+        try {
+            HookStatus.invoked(FAMILY);
+            if (!Utils.settingsReady() || Settings.TAB_BAR_SCROLL_AWAY.get() || !Settings.KEEP_TAB_BAR.get()) return;
+            HookStatus.bound(FAMILY, "tab bar kept pages");
+            pager.addOnLayoutChangeListener(new ClearsNavigationBar(bottom));
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "tab bar kept pages", failure);
+        }
+    }
+
+    /**
+     * The bottom padding a kept bar's pager wants: [facebooks], plus as much of the navigation bar
+     * as the pager reaches under, with the pager ending at [pagerBottom] in a window [windowBottom]
+     * tall. -1 leaves [current] alone, as Facebook set it to something other than its own or [ours].
+     */
+    static int keptPadding(int current, int facebooks, int ours, int pagerBottom, int windowBottom, int navigationBar) {
+        if (current != facebooks && current != ours) return -1;
+        int under = navigationBar <= 0 ? 0 : Math.max(0, Math.min(navigationBar, pagerBottom - (windowBottom - navigationBar)));
+        return facebooks + under;
+    }
+
+    private static final class ClearsNavigationBar implements View.OnLayoutChangeListener {
+        private final int facebooks;
+        private int ours = -1;
+
+        ClearsNavigationBar(int facebooks) {
+            this.facebooks = facebooks;
+        }
+
+        @Override
+        public void onLayoutChange(View pager, int left, int top, int right, int bottom,
+                                   int oldLeft, int oldTop, int oldRight, int oldBottom) {
+            try {
+                WindowInsets insets = pager.getRootWindowInsets();
+                if (insets == null) return;
+                int[] at = new int[2];
+                pager.getLocationInWindow(at);
+                int current = pager.getPaddingBottom();
+                int wanted = keptPadding(current, facebooks, ours, at[1] + pager.getHeight(),
+                        pager.getRootView().getHeight(), insets.getInsets(WindowInsets.Type.navigationBars()).bottom);
+                if (wanted < 0) {
+                    pager.removeOnLayoutChangeListener(this);
+                    return;
+                }
+                if (wanted == current) return;
+                ours = wanted;
+                // Not in the middle of this layout: the padding change asks for the next one.
+                pager.post(() -> {
+                    if (pager.getPaddingBottom() != current) return;
+                    pager.setPadding(pager.getPaddingLeft(), pager.getPaddingTop(), pager.getPaddingRight(), wanted);
+                    if (wanted != facebooks) HookStatus.counted(FAMILY, PAGES_CLEARED);
+                });
+            } catch (Throwable failure) {
+                HookStatus.threw(FAMILY, "tab bar kept pages", failure);
+                pager.removeOnLayoutChangeListener(this);
+            }
         }
     }
 }

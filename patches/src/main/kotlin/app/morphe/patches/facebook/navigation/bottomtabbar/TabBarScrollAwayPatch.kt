@@ -8,6 +8,7 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
+import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
@@ -22,6 +23,7 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.BuilderInstruction
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -43,11 +45,16 @@ internal const val TAB_BAR_SCROLL_AWAY = "Lapp/morphe/extension/facebook/navigat
 internal const val SLIDES_AWAY = "$TAB_BAR_SCROLL_AWAY->slidesAway()Z"
 internal const val STAYS_PUT = "$TAB_BAR_SCROLL_AWAY->staysPut()Z"
 internal const val TOP_BAR_OFFSET = "$TAB_BAR_SCROLL_AWAY->topBarOffset(Ljava/lang/String;I)I"
+internal const val PADS_PAGER = "$TAB_BAR_SCROLL_AWAY->padsPager(Landroid/view/View;IIII)V"
+
+/** The trace name Facebook gives the tab pager's setup, where it pads its pages for the bar. */
+internal const val PAGER_INIT = "TabBarViewPager.init"
 
 /** The trace name Facebook gives the method that adds the top bar to the scroll-away views. */
 internal const val SET_TOP_VIEWS = "ScrollAwayNavigationController.setTopScrollAwayViews"
 
 private const val STRING = "Ljava/lang/String;"
+private const val SET_PADDING = "Landroid/view/View;->setPadding(IIII)V"
 private const val SET_TRANSLATION_Y = "Landroid/view/View;->setTranslationY(F)V"
 private const val ANIMATE_TRANSLATION_Y =
     "Landroid/view/ViewPropertyAnimator;->translationY(F)Landroid/view/ViewPropertyAnimator;"
@@ -72,6 +79,12 @@ private const val GATE_WINDOW = 16
  * at the top and keeps the feed's bottom inset, the way it does for the accounts it gives the
  * experiment to.
  *
+ * A bar that stays put has the tab pager pad its pages by the bar's height, in the method traced as
+ * [PAGER_INIT]. On a phone drawing under its navigation bar, the bar's holder covers that too, so
+ * the bottom of each page sat behind the bar: a reel's progress bar, 63 px of it on the Android 16
+ * emulator (2026-10-12). That padding call goes through the extension, which adds the overlap for
+ * a kept bar.
+ *
  * The top bar is an entry of the same scroll-away list, made in the method traced as
  * [SET_TOP_VIEWS] (582 `LX/25q;->A0x`) whatever the server settings say. Each method of the entry
  * class that moves its view starts by adding the entry's resting place to the distance it's asked
@@ -85,6 +98,11 @@ internal val tabBarScrollAwayPatch = bytecodePatch {
         val holders = classDefByStrings(BOTTOM_TABS_CONTAINER, StringComparisonType.EQUALS)
             .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
         val gate = scrollAwayGate(holders)
+        val (pagerInit, padding) = keptBarPadding(
+            classDefByStrings(PAGER_INIT, StringComparisonType.EQUALS).filterNot { it.type.startsWith(EXTENSION_CLASSES) },
+            gate,
+        )
+        mutableClassDefBy(pagerInit.definingClass).findMutableMethodOf(pagerInit).padsPagerForKeptBar(padding)
         val gateClass = mutableClassDefBy(gate.definingClass)
         val method = gateClass.findMutableMethodOf(gate)
         method.slideAwayAfterBarCheck(barAtBottomCheck(method, gateClass))
@@ -297,5 +315,47 @@ internal fun MutableMethod.holdsTopBar(entryName: FieldReference, distance: Int)
             invoke-static { v$local, v$distance }, $TOP_BAR_OFFSET
             move-result v$distance
         """,
+    )
+}
+
+/**
+ * The method of [holders] traced as [PAGER_INIT], where the tab pager pads its pages for a bar that
+ * stays put (582 `LX/25E;->A01`): the one `setPadding` whose bottom is the answer of a method of
+ * [gate]'s own class that takes an Activity and answers an int, the bar's height, read right before
+ * it. The method has to ask [gate] too, since its no is what leads there. Refuses unless exactly one
+ * such call, as index and method.
+ */
+internal fun keptBarPadding(holders: List<ClassDef>, gate: MethodReference): Pair<Method, Int> {
+    val sites = holders.flatMap { holder ->
+        holder.methods.filter { method -> method.implementation?.instructions?.any { loadsString(it, PAGER_INIT) } == true }
+            .flatMap { method ->
+                val code = method.implementation!!.instructions.toList()
+                val asksGate = code.any { instruction ->
+                    calledMethod(instruction)?.let { it.definingClass == gate.definingClass && it.name == gate.name && it.takesOnlyActivity() } == true
+                }
+                code.indices.filter { at ->
+                    asksGate && calledMethod(code[at])?.toString() == SET_PADDING && code[at].opcode == Opcode.INVOKE_VIRTUAL &&
+                        code.getOrNull(at - 1)?.opcode == Opcode.MOVE_RESULT &&
+                        (code[at - 1] as OneRegisterInstruction).registerA == (code[at] as FiveRegisterInstruction).registerG &&
+                        calledMethod(code[at - 2])?.let { height ->
+                            height.definingClass == gate.definingClass && height.returnType == "I" &&
+                                height.parameterTypes.map(CharSequence::toString) == listOf(ACTIVITY)
+                        } == true
+                }.map { method to it }
+            }
+    }
+    return sites.singleOrNull()
+        ?: refuse("expected one setPadding by the tab bar's height in the method traced as \"$PAGER_INIT\", found ${sites.size}")
+}
+
+/**
+ * The pager's padding call at [at] goes through the extension with the same registers, so a kept
+ * bar's pages also clear the navigation bar under it. Facebook's padding is set first either way.
+ */
+internal fun MutableMethod.padsPagerForKeptBar(at: Int) {
+    val call = getInstruction<FiveRegisterInstruction>(at)
+    replaceInstruction(
+        at,
+        "invoke-static { v${call.registerC}, v${call.registerD}, v${call.registerE}, v${call.registerF}, v${call.registerG} }, $PADS_PAGER",
     )
 }

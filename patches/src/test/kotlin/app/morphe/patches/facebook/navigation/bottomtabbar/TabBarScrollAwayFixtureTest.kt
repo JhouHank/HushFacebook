@@ -14,6 +14,7 @@ import app.morphe.util.ControlFlow
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -59,9 +60,15 @@ class TabBarScrollAwayFixtureTest {
     private fun nonExtension(bundle: File, string: String) =
         FixtureDex.classesHolding(bundle, string).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
 
-    /** Everything the patch reads on [bundle]: the gate's holders and class, the top views' class and the entry. */
-    private class Pieces(val gateHolders: List<ClassDef>, val gateClass: ClassDef, val topHolders: List<ClassDef>, val entry: ClassDef) {
-        fun context() = PatchContexts.of((gateHolders + gateClass + topHolders + entry).distinctBy { it.type })
+    /** Everything the patch reads on [bundle]: the gate's holders and class, the top views' class, the entry and the tab pager. */
+    private class Pieces(
+        val gateHolders: List<ClassDef>,
+        val gateClass: ClassDef,
+        val topHolders: List<ClassDef>,
+        val entry: ClassDef,
+        val pagerHolders: List<ClassDef>,
+    ) {
+        fun context() = PatchContexts.of((gateHolders + gateClass + topHolders + entry + pagerHolders).distinctBy { it.type })
     }
 
     private fun pieces(bundle: File): Pieces {
@@ -72,7 +79,9 @@ class TabBarScrollAwayFixtureTest {
         val topHolders = nonExtension(bundle, SET_TOP_VIEWS)
         assertTrue("$name: nothing is traced as \"$SET_TOP_VIEWS\"", topHolders.isNotEmpty())
         val entryType = scrollAwayEntryName(topScrollAwayViews(topHolders)).definingClass
-        return Pieces(holders, gateClass, topHolders, FixtureDex.classes(bundle, setOf(entryType)).values.single())
+        val pagerHolders = nonExtension(bundle, PAGER_INIT)
+        assertTrue("$name: nothing is traced as \"$PAGER_INIT\"", pagerHolders.isNotEmpty())
+        return Pieces(holders, gateClass, topHolders, FixtureDex.classes(bundle, setOf(entryType)).values.single(), pagerHolders)
     }
 
     @Test
@@ -174,6 +183,39 @@ class TabBarScrollAwayFixtureTest {
                     assertEquals("$where: the distance comes back", distance, (patched[2] as OneRegisterInstruction).registerA)
                     assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(3).map { it.opcode })
                 }
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", declaredBundles().keys, checked)
+    }
+
+    @Test
+    fun `each declared build pads its tab pager for a kept bar through the extension`() {
+        val checked = mutableSetOf<String>()
+        for ((version, bundles) in declaredBundles()) {
+            for (bundle in bundles) {
+                val name = bundle.name
+                val gate = scrollAwayGate(nonExtension(bundle, BOTTOM_TABS_CONTAINER))
+                val holders = nonExtension(bundle, PAGER_INIT)
+                assertTrue("$name: nothing is traced as \"$PAGER_INIT\"", holders.isNotEmpty())
+                val (init, at) = keptBarPadding(holders, gate)
+                val where = "$name: ${init.definingClass}->${init.name}"
+                val original = init.code()
+                val asked = original[at] as FiveRegisterInstruction
+
+                val method = PatchContexts.of(holders).mutableClassDefBy(init.definingClass).methods.single { it.sameAs(init) }
+                method.padsPagerForKeptBar(at)
+                val patched = method.code()
+                assertEquals("$where: nothing is added", original.size, patched.size)
+                assertEquals("$where: the padding goes through the extension", Opcode.INVOKE_STATIC, patched[at].opcode)
+                assertEquals("$where: the padding goes through the extension", PADS_PAGER, patched[at].calls())
+                val call = patched[at] as FiveRegisterInstruction
+                assertEquals("$where: with the pager and Facebook's own padding",
+                    listOf(asked.registerC, asked.registerD, asked.registerE, asked.registerF, asked.registerG),
+                    listOf(call.registerC, call.registerD, call.registerE, call.registerF, call.registerG))
+                assertEquals("$where: Facebook's code around it stays",
+                    original.filterIndexed { index, _ -> index != at }.map { it.opcode },
+                    patched.filterIndexed { index, _ -> index != at }.map { it.opcode })
                 checked += version
             }
         }
