@@ -18,6 +18,7 @@ Changes in each Hushfacebook version, newest first.
 * **Tooling:** The release script's index step stops when it can't read the repository description. It used to leave the description as it was and still say the index was done.
 * **Tooling:** The patch, receipt and register scripts read the Android SDK path the way Android Studio writes it in local.properties, with the drive's colon escaped (`C\:\\Users\\...`). That form used to leave a path Windows couldn't open.
 * **Tooling:** `patch-for-device.ps1 -Replace` and the phone smoke test treat a phone without Facebook as not installed. `pm path` answers that with exit code 1 and no output, which the scripts took for an adb failure, so a replace install on a clean phone stopped before installing.
+* **Tooling:** The translation generator refuses a row for an extra plural form (like "|few") when its table lacks the row that form belongs to. Both checks used to pass, and every other count would have stayed in English.
 
 ## 0.11.1 (2026-10-12)
 
