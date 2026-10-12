@@ -8,6 +8,8 @@ Every Hushfacebook release, newest first.
 
 * **Facebook:** Diagnostic reports have a PUSH section for server registration outcomes and timing (issue #83). Separate lines cover FBNS transport readiness and FCM receive callbacks. Records survive process restarts, retain no tokens or message contents, and distinguish an unavailable observer from a route not observed in the window.
 
+* **Facebook:** With Debug logging and reel downloads on, a reel missing both known sidebars can add a small layout sample to the report. It keeps component names around count nodes and leaves out names, captions and count values, to help identify layouts whose Download button is missing (issue #18).
+
 * **Facebook:** Playback quality has now been checked on a Page video story with anonymous viewing on. The 480p ceiling selected 360p from the available qualities, and Highest selected 1080p on the same story.
 
 * **Facebook:** The known-issues notes now reflect reporter confirmations for Reels saving and ads. The original Xiaomi Gallery reporter also confirmed full-quality saves play with sound with Save videos other apps can open off.
