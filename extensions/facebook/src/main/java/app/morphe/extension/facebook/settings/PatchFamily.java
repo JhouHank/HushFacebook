@@ -483,6 +483,7 @@ public enum PatchFamily {
         LogBufferManager.registerReportSection(SeenPosts.REPORT);
         LogBufferManager.registerReportSection(AppLock.REPORT);
         LogBufferManager.registerReportSection(PushDiagnostics.REPORT);
+        LogBufferManager.registerReportSection(NetworkUsage.REPORT);
         for (PatchFamily family : values()) {
             if (family.switches.isEmpty() && family.choice == null) HookStatus.runsWhilePaused(family.patchName);
         }

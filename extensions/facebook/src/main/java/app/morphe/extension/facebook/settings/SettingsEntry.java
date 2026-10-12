@@ -111,7 +111,8 @@ public final class SettingsEntry {
      * color each activity's resources take the accent's colour table. Also where the release
      * check, when it's on, asks at most once a day, on a worker, and where what a save cut short
      * by Android left behind is removed, on a worker too. Every process starts private push
-     * observations. Other processes also start Lock Facebook's watch ({@link AppLock#watch}).
+     * observations. Other processes also start Lock Facebook's watch ({@link AppLock#watch}). The
+     * report's network count starts here too ({@link NetworkUsage}).
      */
     public static void onApplicationCreate(Context context) {
         try {
@@ -122,6 +123,7 @@ public final class SettingsEntry {
                 AppLock.watch(context);
                 return;
             }
+            NetworkUsage.start(context);
             if (context instanceof Application && !callbacksRegistered) {
                 ((Application) context).registerActivityLifecycleCallbacks(new OpenWhenResumed());
                 callbacksRegistered = true;
