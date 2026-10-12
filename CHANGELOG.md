@@ -6,6 +6,8 @@ Every Hushfacebook release, newest first.
 
 ### Changed
 
+* **Facebook:** Diagnostic export shows copying or saving in its row, disables repeat actions while working, and leaves a readable result. Reopening the page keeps that state.
+
 * **Tooling:** The source ledger now includes FacebookGoodies, current NexAlloy branches and ten reviewed duplicate ReVanced forks. Pinned source and license records are updated; global GitLab coverage remains incomplete.
 
 * **Tooling:** The release receipt has been checked against retained, unforced patch runs for both supported 582 variants. It read all 88 patch results per input without running the patcher again or changing the retained files.
