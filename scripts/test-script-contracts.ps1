@@ -3922,6 +3922,22 @@ try {
     $chosen = Resolve-D8 -Root $checkout
     Assert-True ($chosen -like '*37.0.0*d8.bat') "Resolve-D8 chose $chosen over 37.0.0; 9.0.0 sorts above it as text."
 
+    # Android Studio escapes the drive's colon as well as each backslash.
+    Set-Content -LiteralPath (Join-Path $checkout 'local.properties') -Encoding ASCII `
+        -Value ('sdk.dir=' + (($sdk -replace '\\', '\\') -replace ':', '\:'))
+    $chosen = Resolve-D8 -Root $checkout
+    Assert-True ($chosen -like '*37.0.0*d8.bat') "Resolve-D8 chose $chosen from Android Studio's escaped sdk.dir."
+    # Resolve-Aapt2 reads the same line, and takes the newest build-tools whatever it carries.
+    Set-Content -LiteralPath (Join-Path (Join-Path (Join-Path $sdk 'build-tools') '38.0.0') 'aapt2.exe') -Value '' -Encoding ASCII
+    $keptAapt2 = $env:HUSHFACEBOOK_AAPT2
+    try {
+        $env:HUSHFACEBOOK_AAPT2 = $null
+        $chosen = Resolve-Aapt2 -Root $checkout
+        Assert-True ($chosen -like '*38.0.0*aapt2.exe') "Resolve-Aapt2 chose $chosen from Android Studio's escaped sdk.dir."
+    } finally {
+        $env:HUSHFACEBOOK_AAPT2 = $keptAapt2
+    }
+
     $explicit = Join-Path (Join-Path (Join-Path $sdk 'build-tools') '9.0.0') 'd8.bat'
     Assert-True ((Resolve-D8 -Explicit $explicit -Root $checkout) -eq $explicit) `
         'An explicit d8 path was not honoured.'

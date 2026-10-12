@@ -16,6 +16,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** With `Use the system font` on, a phone font that draws Bengali or Devanagari vowel signs past its own line box now gets the extra room too (issue #96). Until now only Latin letters were measured, so a Bengali theme font whose y and g fit still lost the bottoms of its captions in reels and comments.
 * **Tooling:** The release script's publish step now checks that the receipt was made for the commit it's about to tag. It read the commit from a field the receipt doesn't have, so the check never ran.
 * **Tooling:** The release script's index step stops when it can't read the repository description. It used to leave the description as it was and still say the index was done.
+* **Tooling:** The patch, receipt and register scripts read the Android SDK path the way Android Studio writes it in local.properties, with the drive's colon escaped (`C\:\\Users\\...`). That form used to leave a path Windows couldn't open.
 
 ## 0.11.1 (2026-10-12)
 
