@@ -6,6 +6,8 @@ Every Hushfacebook release, newest first.
 
 ### Changed
 
+* **Tooling:** The release receipt has been checked against retained, unforced patch runs for both supported 582 variants. It read all 88 patch results per input without running the patcher again or changing the retained files.
+
 * **Facebook:** With Debug logging on and Hold back analytics uploads off, reports count when Analytics2 requests a retry or finishes without one. This observes the stored retry flag without changing uploads. A job finishing without a retry is not reported as successful delivery.
 
 * **Facebook:** Diagnostic reports have a PUSH section for server registration outcomes and timing (issue #83). Separate lines cover FBNS transport readiness and FCM receive callbacks. Records survive process restarts, retain no tokens or message contents, and distinguish an unavailable observer from a route not observed in the window.
