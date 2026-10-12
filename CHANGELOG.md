@@ -17,6 +17,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** A saved diagnostic report now goes in Download/Hushfacebook, the same folder as the crash files, so everything for a bug report is in one place. Reports saved before this stay in Download/Morphe.
 * **Facebook:** `Reels quality` and `Stories quality` say how each choice relates to `Playback quality` (issue #90 asked). Their first choice is now called Same as Playback quality, and a quality of their own reads like "Highest for reels, whatever Playback quality is set to." instead of a bare "Highest".
 * **Facebook:** The `Unlock app icons` summary names the `Pick an app icon` row that opens the App icon page, so it reads right in search results and in every language, and the hint in the list editors writes ID in capitals like the rest of the settings.
+* **Tooling:** The build moves to Gradle 9.8.1, Kotlin 2.4.21, commons-lang3 3.21.0 and androidx.annotation 1.11.0. They're patch and minor releases, nothing in the patches changes, and the dependency checksums cover the new artifacts.
 
 ### Fixed
 
