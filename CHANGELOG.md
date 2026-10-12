@@ -4,6 +4,10 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+### Fixed
+
+* **Facebook:** `Default comment order` set to All comments now also works on posts whose sort menu names that row differently. A diagnostic report on issue #110 showed some posts offering their own unfiltered row in All comments' place, and those stayed on Most relevant. Where a menu has both, the usual All comments row still wins.
+
 ## 0.11.1 (2026-10-12)
 
 * **Facebook:** Settings share clearer focus and disabled states in every theme. Editors keep rejected drafts, and Downloads and diagnostic export show their current result. This source update also adds bounded push and Reel-sidebar diagnostics and fixes the shared save limit.
