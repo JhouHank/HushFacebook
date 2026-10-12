@@ -171,7 +171,9 @@ public final class TapToSeek {
 
     /**
      * The thumb's bounds, in the frame Facebook's own thumb check measures a press in, or null for
-     * a bar with no thumb drawn. Facebook hides the thumb on a reel's thin bar.
+     * a bar with no thumb drawn. Facebook hides the thumb on a reel's thin bar. 582's check takes the
+     * drawable's own bounds, widened by a margin of its own, against the press's {@code getX()},
+     * without the padding and thumb offset the bar draws the thumb at, so these are compared the same way.
      */
     @Nullable
     private static Rect thumbBounds(SeekBar bar) {
