@@ -5996,7 +5996,7 @@ try {
         "    "" bundle="" + (Split-Path -Leaf `$Bundle) + "" applied="" + `$AppliedDir.Replace('\', '/'))",
         "if ((Get-Content -LiteralPath '$failLiteral' -ErrorAction SilentlyContinue) -eq 'receipt') { exit 1 }",
         '$commit = (git -C $Root rev-parse HEAD).Trim()',
-        'Set-Content -LiteralPath (Join-Path $Root ''release-receipt-1.2.3.json'') -Value (''{"source":{"commit":"'' + $commit + ''"}}'') -Encoding ASCII',
+        'Set-Content -LiteralPath (Join-Path $Root ''release-receipt-1.2.3.json'') -Value (''{"release":{"commit":"'' + $commit + ''"}}'') -Encoding ASCII',
         'exit 0')
     # Each stand-in fails when fail.txt names it, so a case can stop the run at any step.
     Set-Content -LiteralPath (Join-Path $flowRepo 'scripts/test-script-contracts.ps1') -Encoding UTF8 -Value @(
@@ -6187,6 +6187,18 @@ try {
     Assert-Throws { & $flowScript -Stage publish -Version 1.2.3 6> $null } '*-Checked*' 'Publish ran without a checked paragraph.'
     $flowChecked = Join-Path $releaseFlow 'checked.txt'
     Set-Content -LiteralPath $flowChecked -Value 'Checked.' -Encoding ASCII
+    # A receipt for another commit, or one naming none, is refused before anything is tagged: the
+    # assets would go out under a tag on a commit they weren't built from.
+    $flowReceipt = Join-Path $flowAssets 'release-receipt-1.2.3.json'
+    $keptReceipt = Get-Content -LiteralPath $flowReceipt -Raw
+    foreach ($other in @(('{"release":{"commit":"' + ('b' * 40) + '"}}'), '{"release":{}}')) {
+        Set-Content -LiteralPath $flowReceipt -Value $other -Encoding ASCII -NoNewline
+        Assert-Throws { & $flowScript -Stage publish -Version 1.2.3 -Checked $flowChecked 6> $null 3> $null } '*The receipt is for*' `
+            "Publish went ahead with a receipt that isn't for HEAD: $other"
+    }
+    Set-Content -LiteralPath $flowReceipt -Value $keptReceipt -Encoding ASCII -NoNewline
+    Assert-True (@(Read-FlowLog).Count -eq 0) 'Publish ran a step before refusing the receipt.'
+    Assert-True (-not (& git -C $flowRepo tag --list v1.2.3)) 'Publish tagged the commit before refusing the receipt.'
     & $flowScript -Stage publish -Version 1.2.3 -Checked $flowChecked 6> $null 3> $null
     $flow = @(Read-FlowLog)
     Assert-True ($flow.Count -eq 3 -and $flow[0] -like "py * github-notes --version 1.2.3 --checked $flowChecked --out *notes.md" -and
