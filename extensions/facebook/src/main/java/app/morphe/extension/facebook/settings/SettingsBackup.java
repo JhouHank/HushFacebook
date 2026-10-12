@@ -250,6 +250,8 @@ public final class SettingsBackup {
             Settings.HIDE_JOBS_TAB,
             Settings.BOTTOM_TAB_BAR,
             Settings.TAB_BAR_SCROLL_AWAY,
+            Settings.KEEP_TAB_BAR,
+            Settings.KEEP_TOP_BAR,
             Settings.FORCE_DARK_MODE,
             Settings.HIDE_REEL_PROMPTS,
             Settings.HIDE_GET_MESSENGER_CARD,

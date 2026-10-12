@@ -116,6 +116,13 @@ final class HushfacebookPages {
             appearance.addPreference(toggle(context, Settings.TAB_BAR_SCROLL_AWAY,
                     L10n.t("The bottom tab bar hides as you scroll down and returns when you scroll up, for more room. Restart "
                             + "Facebook to see the change.")));
+            // Same check as the switch above, answered no; that switch wins, so this one greys out under it.
+            appearance.addPreference(toggle(context, Settings.KEEP_TAB_BAR,
+                    L10n.t("The bottom tab bar stays put while you scroll, on accounts where Facebook slides it away. Restart "
+                            + "Facebook to see the change.")));
+            // Asked each time Facebook moves the top bar, so it takes effect on the next scroll.
+            appearance.addPreference(toggle(context, Settings.KEEP_TOP_BAR,
+                    L10n.t("The top bar with search and Messenger stays put while you scroll down, instead of sliding away.")));
         }
         if (build.contains(PatchFamily.HIDDEN_TABS)) {
             // Facebook builds the tab bar once, so a change waits for a restart.

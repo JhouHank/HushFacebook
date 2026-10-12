@@ -2888,7 +2888,7 @@
     },
     {
       "name": "Tab bar at the bottom",
-      "description": "Moves Facebook's tab bar to the bottom of the screen on accounts that have it at the top, where it's easier to reach. A second switch lets it slide away as you scroll. Starts off. Turn it on in Hushfacebook settings > Appearance, then restart Facebook.",
+      "description": "Moves Facebook's tab bar to the bottom of the screen on accounts that have it at the top, where it's easier to reach. A second switch lets it slide away as you scroll, and two more keep the tab bar or the top bar on screen instead. Starts off. Turn it on in Hushfacebook settings > Appearance, then restart Facebook.",
       "category": "Navigation",
       "use": true,
       "dependencies": [

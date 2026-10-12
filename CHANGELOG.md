@@ -4,6 +4,10 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+### Added
+
+* **Facebook:** Two new switches under Appearance keep the bars on screen while you scroll, each on its own (issue #132). **Keep the tab bar on screen** stops the bottom tab bar from sliding away on accounts where Facebook does that by itself. It greys out while `Hide the tab bar while scrolling` is on, and needs a restart. **Keep the top bar on screen** holds the top bar with search and Messenger in place as you scroll down, with the tabs too when they sit at the top. It works on the next scroll, no restart needed. Both start off.
+
 ### Changed
 
 * **Facebook:** `Reels quality` and `Stories quality` say how each choice relates to `Playback quality` (issue #90 asked). Their first choice is now called Same as Playback quality, and a quality of their own reads like "Highest for reels, whatever Playback quality is set to." instead of a bare "Highest".

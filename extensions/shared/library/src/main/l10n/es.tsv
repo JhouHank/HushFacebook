@@ -95,6 +95,14 @@ Moves Facebook's tab bar to the bottom, within thumb reach, on accounts that sho
 Hide the tab bar while scrolling	Ocultar la barra de pestañas al desplazarte
 # context: description of that switch; it does nothing while the tab bar is at the top of the screen
 The bottom tab bar hides as you scroll down and returns when you scroll up, for more room. Restart Facebook to see the change.	La barra de pestañas inferior se oculta al bajar y vuelve al subir, para tener más espacio. Reinicia Facebook para ver el cambio.
+# context: switch title under Appearance, after Hide the tab bar while scrolling; the bottom bar never slides off the screen
+Keep the tab bar on screen	Mantener la barra de pestañas en pantalla
+# context: description of that switch; it greys out while Hide the tab bar while scrolling is on
+The bottom tab bar stays put while you scroll, on accounts where Facebook slides it away. Restart Facebook to see the change.	La barra de pestañas inferior se queda fija al desplazarte, en las cuentas donde Facebook la oculta. Reinicia Facebook para ver el cambio.
+# context: switch title right after it; the bar at the top with search and Messenger never slides off the screen
+Keep the top bar on screen	Mantener la barra superior en pantalla
+# context: description of that switch
+The top bar with search and Messenger stays put while you scroll down, instead of sliding away.	La barra superior con la búsqueda y Messenger se queda fija al bajar, en vez de ocultarse.
 # context: switch title under Appearance; it keeps Facebook's dark mode on whatever Facebook's own Dark mode setting says
 Force dark mode	Forzar modo oscuro
 # context: description of that switch; on some tablets Facebook's own Settings page has no Dark mode row

@@ -95,6 +95,14 @@ Moves Facebook's tab bar to the bottom, within thumb reach, on accounts that sho
 Hide the tab bar while scrolling	Kaydırırken sekme çubuğunu gizle
 # context: description of that switch; it does nothing while the tab bar is at the top of the screen
 The bottom tab bar hides as you scroll down and returns when you scroll up, for more room. Restart Facebook to see the change.	Alttaki sekme çubuğu aşağı kaydırdığınızda gizlenir, yukarı kaydırdığınızda geri gelir. Böylece daha çok yer kalır. Değişikliği görmek için Facebook'u yeniden başlatın.
+# context: switch title under Appearance, after Hide the tab bar while scrolling; the bottom bar never slides off the screen
+Keep the tab bar on screen	Sekme çubuğunu ekranda tut
+# context: description of that switch; it greys out while Hide the tab bar while scrolling is on
+The bottom tab bar stays put while you scroll, on accounts where Facebook slides it away. Restart Facebook to see the change.	Alttaki sekme çubuğu, Facebook'un onu gizlediği hesaplarda da kaydırırken yerinde kalır. Değişikliği görmek için Facebook'u yeniden başlatın.
+# context: switch title right after it; the bar at the top with search and Messenger never slides off the screen
+Keep the top bar on screen	Üst çubuğu ekranda tut
+# context: description of that switch
+The top bar with search and Messenger stays put while you scroll down, instead of sliding away.	Arama ve Messenger'ın olduğu üst çubuk, aşağı kaydırdığınızda kaybolmak yerine yerinde kalır.
 # context: switch title under Appearance; it keeps Facebook's dark mode on whatever Facebook's own Dark mode setting says
 Force dark mode	Karanlık modu zorla
 # context: description of that switch; on some tablets Facebook's own Settings page has no Dark mode row

@@ -1177,6 +1177,22 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_tab_bar_scroll_away", FALSE, true);
 
     /**
+     * The tab bar at the bottom stays on screen while the feed scrolls, on the accounts Facebook's
+     * server settings give scroll-away to. Facebook adds the bar to the views that scroll away as its
+     * main screen starts, so a change waits for a restart. Greyed out while
+     * {@link #TAB_BAR_SCROLL_AWAY} is on, which wins.
+     */
+    public static final BooleanSetting KEEP_TAB_BAR =
+            new BooleanSetting("hushfacebook_keep_tab_bar", FALSE, true, Setting.parentNot(TAB_BAR_SCROLL_AWAY));
+
+    /**
+     * The top bar stays where it rests while the feed scrolls, instead of sliding away. Asked each
+     * time Facebook moves it, so a change shows on the next scroll.
+     */
+    public static final BooleanSetting KEEP_TOP_BAR =
+            new BooleanSetting("hushfacebook_keep_top_bar", FALSE);
+
+    /**
      * Facebook's dark mode controller answers dark whatever its own setting says
      * ({@link app.morphe.extension.facebook.theme.ForceDarkMode}), for tablets whose Facebook
      * settings have no Dark mode row. Facebook asks as each screen applies its theme, so a change

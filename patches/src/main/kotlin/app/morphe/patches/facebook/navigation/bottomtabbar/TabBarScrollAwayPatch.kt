@@ -5,6 +5,7 @@
 package app.morphe.patches.facebook.navigation.bottomtabbar
 
 import app.morphe.patcher.StringComparisonType
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.PatchException
@@ -16,6 +17,7 @@ import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.freeLocalsAt
 import app.morphe.util.ControlFlow
 import app.morphe.util.findMutableMethodOf
+import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.BuilderInstruction
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -23,8 +25,11 @@ import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 
 /**
  * The name Facebook's main screen gives the bottom tab bar's entry in its scroll-away list, the
@@ -36,6 +41,16 @@ internal const val ACTIVITY = "Landroid/app/Activity;"
 
 internal const val TAB_BAR_SCROLL_AWAY = "Lapp/morphe/extension/facebook/navigation/TabBarScrollAway;"
 internal const val SLIDES_AWAY = "$TAB_BAR_SCROLL_AWAY->slidesAway()Z"
+internal const val STAYS_PUT = "$TAB_BAR_SCROLL_AWAY->staysPut()Z"
+internal const val TOP_BAR_OFFSET = "$TAB_BAR_SCROLL_AWAY->topBarOffset(Ljava/lang/String;I)I"
+
+/** The trace name Facebook gives the method that adds the top bar to the scroll-away views. */
+internal const val SET_TOP_VIEWS = "ScrollAwayNavigationController.setTopScrollAwayViews"
+
+private const val STRING = "Ljava/lang/String;"
+private const val SET_TRANSLATION_Y = "Landroid/view/View;->setTranslationY(F)V"
+private const val ANIMATE_TRANSLATION_Y =
+    "Landroid/view/ViewPropertyAnimator;->translationY(F)Landroid/view/ViewPropertyAnimator;"
 
 /** How far before the entry's name the start may ask the gate. 581 asks 11 instructions before. */
 private const val GATE_WINDOW = 16
@@ -49,11 +64,19 @@ private const val GATE_WINDOW = 16
  * (the class's own check of fb4a_bottom_tabs_override_enabled, the read Tab bar at the bottom
  * answers), and two server settings turn the experiment on for the account.
  *
- * The extension goes in right after the bar's position check passes. While the switch is on it
- * answers yes in place of the two server settings; otherwise Facebook carries on to them. With the
- * bar at the top, or scroll-away off for the phone, the extension isn't reached at all. Facebook's
- * own scroll-away code then moves the bar, snaps it back at the top and keeps the feed's bottom
- * inset, the way it does for the accounts it gives the experiment to.
+ * The extension goes in right after the bar's position check passes. A kept bar answers no there
+ * outright, so it stays put even for the accounts the server settings give the experiment to.
+ * While the scroll-away switch is on it answers yes in place of the two server settings; otherwise
+ * Facebook carries on to them. With the bar at the top, or scroll-away off for the phone, the
+ * extension isn't reached at all. Facebook's own scroll-away code then moves the bar, snaps it back
+ * at the top and keeps the feed's bottom inset, the way it does for the accounts it gives the
+ * experiment to.
+ *
+ * The top bar is an entry of the same scroll-away list, made in the method traced as
+ * [SET_TOP_VIEWS] (582 `LX/25q;->A0x`) whatever the server settings say. Each method of the entry
+ * class that moves its view starts by adding the entry's resting place to the distance it's asked
+ * to move (582 `LX/2Ir;->A01` and `A03`). The extension goes in front of that with the entry's name
+ * and the distance, and a kept top bar gets 0, so it stays where it rests and keeps its inset.
  */
 internal val tabBarScrollAwayPatch = bytecodePatch {
     dependsOn(facebookExtensionPatch)
@@ -65,6 +88,15 @@ internal val tabBarScrollAwayPatch = bytecodePatch {
         val gateClass = mutableClassDefBy(gate.definingClass)
         val method = gateClass.findMutableMethodOf(gate)
         method.slideAwayAfterBarCheck(barAtBottomCheck(method, gateClass))
+
+        val topViews = topScrollAwayViews(
+            classDefByStrings(SET_TOP_VIEWS, StringComparisonType.EQUALS).filterNot { it.type.startsWith(EXTENSION_CLASSES) },
+        )
+        val name = scrollAwayEntryName(topViews)
+        val entry = mutableClassDefBy(name.definingClass)
+        for ((move, distance) in entryMoves(entry)) {
+            entry.findMutableMethodOf(move).holdsTopBar(name, distance)
+        }
     }
 }
 
@@ -141,9 +173,10 @@ private fun Method.readsTriState() = implementation?.instructions?.any { instruc
 } == true
 
 /**
- * Puts the extension at [at], the bar at the bottom: a yes returns yes, and a no goes on to
- * Facebook's own server settings. The register is one nothing reads from there. Nothing may jump
- * to [at], since code arriving there would skip the call.
+ * Puts the extension at [at], the bar at the bottom: a kept bar returns no, then a bar set to
+ * slide away returns yes, and anything else goes on to Facebook's own server settings. The
+ * register is one nothing reads from there. Nothing may jump to [at], since code arriving there
+ * would skip the calls.
  */
 internal fun MutableMethod.slideAwayAfterBarCheck(at: Int) {
     val next = implementation!!.instructions[at] as BuilderInstruction
@@ -152,11 +185,114 @@ internal fun MutableMethod.slideAwayAfterBarCheck(at: Int) {
     addInstructionsWithLabels(
         at,
         """
+            invoke-static { }, $STAYS_PUT
+            move-result v$register
+            if-eqz v$register, :ask
+            const/16 v$register, 0x0
+            return v$register
+            :ask
             invoke-static { }, $SLIDES_AWAY
             move-result v$register
             if-eqz v$register, :facebook
             return v$register
         """,
         ExternalLabel("facebook", getInstruction(at)),
+    )
+}
+
+private fun loadsString(instruction: Instruction, value: String) =
+    instruction.opcode.name.startsWith("const-string") &&
+        ((instruction as ReferenceInstruction).reference as StringReference).string == value
+
+/**
+ * The method of [holders] traced as [SET_TOP_VIEWS], the one that adds the top bar to the
+ * scroll-away views. Refuses unless exactly one loads the name.
+ */
+internal fun topScrollAwayViews(holders: List<ClassDef>): Method {
+    val methods = holders.flatMap { holder ->
+        holder.methods.filter { method -> method.implementation?.instructions?.any { loadsString(it, SET_TOP_VIEWS) } == true }
+    }
+    return methods.singleOrNull() ?: refuse("expected one method traced as \"$SET_TOP_VIEWS\", found ${methods.size}")
+}
+
+/**
+ * The scroll-away entry's name, read in [topViews]: the String field it reads off a class it makes,
+ * the entry whose name it hands Facebook's inset tracker. Refuses unless exactly one such field.
+ */
+internal fun scrollAwayEntryName(topViews: Method): FieldReference {
+    val where = "${topViews.definingClass}->${topViews.name}"
+    val code = topViews.implementation?.instructions?.toList() ?: refuse("$where has no body")
+    val made = code.filter { it.opcode == Opcode.NEW_INSTANCE }
+        .map { ((it as ReferenceInstruction).reference as TypeReference).type }
+        .toSet()
+    val names = code.filter { it.opcode == Opcode.IGET_OBJECT }
+        .map { (it as ReferenceInstruction).reference as FieldReference }
+        .filter { it.type == STRING && it.definingClass in made }
+        .distinctBy { "${it.definingClass}->${it.name}" }
+    return names.singleOrNull() ?: refuse("$where reads ${names.size} names off the entries it makes, expected one")
+}
+
+/**
+ * The methods of the scroll-away [entry] that move its view, each with the register holding the
+ * distance it's asked to move it. Every method that moves a view with setTranslationY or a
+ * ViewPropertyAnimator's translationY has to start by adding an int field of the entry to its one
+ * int parameter, or the patch refuses, since the hook would miss that move. Refuses when none moves.
+ */
+internal fun entryMoves(entry: ClassDef): List<Pair<Method, Int>> {
+    val moves = entry.methods.filter { method ->
+        method.implementation?.instructions?.any {
+            calledMethod(it)?.toString().let { called -> called == SET_TRANSLATION_Y || called == ANIMATE_TRANSLATION_Y }
+        } == true
+    }
+    if (moves.isEmpty()) refuse("${entry.type} has no method that moves its view")
+    return moves.map { method ->
+        method to (movedDistance(method)
+            ?: refuse("${entry.type}->${method.name} moves its view without first adding a field to the int it's given"))
+    }
+}
+
+private fun parameterSize(type: String) = if (type == "J" || type == "D") 2 else 1
+
+/**
+ * The register of [method]'s one int parameter, when the method is an instance method whose first
+ * two instructions read an int field of its own class off this and add it to that parameter.
+ */
+private fun movedDistance(method: Method): Int? {
+    if (AccessFlags.STATIC.isSet(method.accessFlags)) return null
+    val types = method.parameterTypes.map(CharSequence::toString)
+    if (types.count { it == "I" } != 1) return null
+    val implementation = method.implementation ?: return null
+    val sizes = types.map(::parameterSize)
+    val self = implementation.registerCount - sizes.sum() - 1
+    var next = self + 1
+    var distance = -1
+    types.forEachIndexed { index, type ->
+        if (type == "I") distance = next
+        next += sizes[index]
+    }
+    val code = implementation.instructions.toList()
+    val read = code.getOrNull(0)?.takeIf { it.opcode == Opcode.IGET } as? TwoRegisterInstruction ?: return null
+    val field = (read as ReferenceInstruction).reference as FieldReference
+    if (field.definingClass != method.definingClass || field.type != "I" || read.registerB != self) return null
+    val add = code.getOrNull(1)?.takeIf { it.opcode == Opcode.ADD_INT_2ADDR } as? TwoRegisterInstruction ?: return null
+    return distance.takeIf { add.registerA == it && add.registerB == read.registerA }
+}
+
+/**
+ * Puts the extension at the start of this move of a scroll-away entry: the entry's [entryName] and
+ * the [distance] go in, and the distance comes back, 0 for a kept top bar. The name goes in a local
+ * nothing reads before writing it.
+ */
+internal fun MutableMethod.holdsTopBar(entryName: FieldReference, distance: Int) {
+    val self = implementation!!.registerCount - parameterTypes.sumOf { parameterSize(it.toString()) } - 1
+    if (self > 15 || distance > 15) refuse("$definingClass->$name keeps this or its distance past v15")
+    val local = freeLocalsAt(PATCH, 0, 1, highest = 15).single()
+    addInstructions(
+        0,
+        """
+            iget-object v$local, v$self, $entryName
+            invoke-static { v$local, v$distance }, $TOP_BAR_OFFSET
+            move-result v$distance
+        """,
     )
 }
