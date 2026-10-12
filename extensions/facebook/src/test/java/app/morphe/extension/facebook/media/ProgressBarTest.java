@@ -167,6 +167,21 @@ public class ProgressBarTest {
                 + ProgressBar.FOOTER_LIFTED + " 1, " + ProgressBar.BAR_SMOOTHED + " 1", statusLine());
     }
 
+    /** The next reel starts without the last one's graph and chapter marks only while the bar is kept. */
+    @Test
+    public void theNextReelIsClearedOnlyWhileTheBarIsKept() {
+        assertFalse("off, the last reel's graph was cleared", ProgressBar.clearsLastReel());
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        assertTrue("kept, the last reel's graph stayed for the next", ProgressBar.clearsLastReel());
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("paused, the last reel's graph was cleared", ProgressBar.clearsLastReel());
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> assertFalse("cleared before the settings were ready", ProgressBar.clearsLastReel()));
+        String line = statusLine();
+        assertTrue("only the kept reel was counted: " + line, line.endsWith(", 1 found, 0 missing. Counted: "
+                + ProgressBar.NEXT_REEL_CLEARED + " 1"));
+    }
+
     /** The looks that leave no bar are counted while it's kept, and the others aren't. */
     @Test
     public void theLooksThatLeaveNoBarAreCountedWhileItsKept() {
