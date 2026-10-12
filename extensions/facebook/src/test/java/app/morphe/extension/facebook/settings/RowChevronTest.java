@@ -77,6 +77,7 @@ public class RowChevronTest {
             "Ads in the feed", "Ads on profiles", "Ads in Stories", "Ads in Reels", "Ads in search results",
             "Ads in Marketplace", "Ads in Instant Games", "Usage statistics uploads", "Reel watch history", "Text size", "Accent color", "Hide posts with more reactions than",
             "Export settings", "Import settings",
+            "Pick an app icon",
             "Export diagnostic report", "Facebook's Whitehat settings", "Source code and issues", "Licenses"));
 
     /** Built by the first show(), after a test has set the text size it wants. */

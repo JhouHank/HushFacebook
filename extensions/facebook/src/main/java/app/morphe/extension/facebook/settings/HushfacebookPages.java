@@ -157,9 +157,10 @@ final class HushfacebookPages {
         if (build.contains(PatchFamily.APP_ICONS)) {
             // The App icon page asks as it opens. A picked icon is a launcher alias, so it outlives the switch.
             appearance.addPreference(toggle(context, Settings.UNLOCK_APP_ICONS,
-                    L10n.t("Lets you pick the app icons Facebook keeps for Facebook Plus. They're on Facebook's App icon "
-                            + "page, at Menu > Settings and privacy > App icon, when Facebook shows that page on your "
-                            + "account. Your pick stays if you turn this off, so pick the blue one first to go back.")));
+                    L10n.t("Lets you pick the app icons Facebook keeps for Facebook Plus, on Facebook's App icon page. "
+                            + "Pick an app icon below opens it. Your pick stays if you turn this off, so pick the blue one "
+                            + "first to go back.")));
+            appearance.addPreference(AppIconScreen.row(context));
         }
     }
 
