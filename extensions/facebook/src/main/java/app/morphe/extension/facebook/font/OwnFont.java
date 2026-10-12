@@ -506,8 +506,7 @@ public final class OwnFont {
         stockProbe.setTextSize(PROBE_SIZE);
         for (int i = 0; i < SCRIPTS.length && !overflows; i++) {
             String script = SCRIPTS[i];
-            Paint.FontMetricsInt drawing = new Paint.FontMetricsInt();
-            probe.getFontMetricsInt(script, 0, script.length(), 0, script.length(), false, drawing);
+            Paint.FontMetricsInt drawing = fallbackLine(probe, script);
             Rect letters = new Rect();
             probe.getTextBounds(script, 0, script.length(), letters);
             Rect stock = new Rect();
@@ -524,6 +523,23 @@ public final class OwnFont {
         OVERFLOWS.put(face, overflows);
         HookStatus.counted(FamilyNames.SYSTEM_FONT, overflows ? PADDED : FITS);
         return overflows;
+    }
+
+    /**
+     * The line box a layout spaced by its fallback fonts gives [script] in [paint], the way
+     * Facebook's StaticLayouts build it. Paint's own per-text metrics call is Android 14 and later,
+     * and Facebook runs from Android 11, so the line is read off a one-line layout instead.
+     */
+    static Paint.FontMetricsInt fallbackLine(Paint paint, String script) {
+        StaticLayout layout = StaticLayout.Builder
+                .obtain(script, 0, script.length(), new TextPaint(paint), 1 << 16)
+                .setIncludePad(false)
+                .setUseLineSpacingFromFallbacks(true)
+                .build();
+        Paint.FontMetricsInt line = new Paint.FontMetricsInt();
+        line.ascent = layout.getLineAscent(0);
+        line.descent = layout.getLineDescent(0);
+        return line;
     }
 
     /**
