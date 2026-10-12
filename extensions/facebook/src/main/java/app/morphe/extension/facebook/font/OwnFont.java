@@ -90,7 +90,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>Facebook lays most of its text out without font padding, each line as tall as the font's own
  * ascent and descent, which fits Optimistic. Some fonts phones offer declare far less descent than
- * their letters use (#96), and there y, g and p lost their tails. So each text layout Facebook
+ * their letters use (#96), and there y, g and p lost their tails, or a Bengali caption its vowel
+ * signs. So each text layout Facebook
  * builds, and each text view, takes the padding while the switch is on and its font is one of
  * those ({@link #needsPad}).
  */
@@ -139,6 +140,13 @@ public final class OwnFont {
     /** Letters reaching below the line, and above the x-height, for {@link #overflows}. */
     private static final String DESCENDERS = "gjpqy";
     private static final String ASCENDERS = "bdfhklt";
+    /**
+     * Bengali and Devanagari letters with the vowel signs that hang below them and rise above them,
+     * for {@link #overflows}, one script to a line as Facebook lays them out.
+     */
+    static final String[] SCRIPTS = {
+            "কুকূকৃকিকীকৈ",
+            "कुकूकृकिकीकै"};
     static final float PROBE_SIZE = 100f;
 
     /** What {@link #overflows} measured for each typeface, for as long as it lives. */
@@ -468,6 +476,12 @@ public final class OwnFont {
      * Whether [face]'s letters reach past the ascent and descent it declares, measured once. Some
      * fonts phones offer as the system font declare almost no descent and draw y, g and p well below
      * it, which Android's own views never show, since they lay out with the padding on.
+     *
+     * <p>Bengali and Devanagari are measured too, each against the line box Facebook's layouts give
+     * it: the tallest ascent and descent of the fonts that draw it, since they lay lines out with
+     * the fallback fonts' spacing. Theme fonts made for those scripts often hang their vowel signs
+     * below that box while their Latin letters fit (#96), and a fallback font that draws the script
+     * itself keeps Facebook's layout.
      */
     static boolean overflows(Typeface face) {
         Boolean known = OVERFLOWS.get(face);
@@ -481,14 +495,33 @@ public final class OwnFont {
         Rect above = new Rect();
         probe.getTextBounds(ASCENDERS, 0, ASCENDERS.length(), above);
         boolean overflows = reachesPast(metrics.ascent, metrics.descent, above.top, below.bottom);
-        OVERFLOWS.put(face, overflows);
-        HookStatus.counted(FamilyNames.SYSTEM_FONT, overflows ? PADDED : FITS);
         if (overflows) {
             Logger.printInfo(() -> String.format(Locale.ROOT, "The font at weight %d draws past its line box at %.0f px "
                     + "(ascent %.1f, descent %.1f, letters %d to %d), so its text gets the font padding",
                     face.getWeight(), PROBE_SIZE, metrics.ascent, metrics.descent, above.top, below.bottom));
         }
+        for (int i = 0; i < SCRIPTS.length && !overflows; i++) {
+            String script = SCRIPTS[i];
+            Paint.FontMetricsInt line = new Paint.FontMetricsInt();
+            probe.getFontMetricsInt(script, 0, script.length(), 0, script.length(), false, line);
+            Rect letters = new Rect();
+            probe.getTextBounds(script, 0, script.length(), letters);
+            overflows = drawnPast(line, letters);
+            if (overflows) {
+                Logger.printInfo(() -> String.format(Locale.ROOT, "The font at weight %d draws %s past its line box at "
+                        + "%.0f px (ascent %d, descent %d, letters %d to %d), so its text gets the font padding",
+                        face.getWeight(), Character.UnicodeScript.of(script.codePointAt(0)), PROBE_SIZE,
+                        line.ascent, line.descent, letters.top, letters.bottom));
+            }
+        }
+        OVERFLOWS.put(face, overflows);
+        HookStatus.counted(FamilyNames.SYSTEM_FONT, overflows ? PADDED : FITS);
         return overflows;
+    }
+
+    /** Whether [letters] reach past [line], {@link #reachesPast}; a script no font draws has no letters to. */
+    static boolean drawnPast(Paint.FontMetricsInt line, Rect letters) {
+        return !letters.isEmpty() && reachesPast(line.ascent, line.descent, letters.top, letters.bottom);
     }
 
     /**

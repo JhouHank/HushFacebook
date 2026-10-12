@@ -13,6 +13,7 @@ Changes in each Hushfacebook version, newest first.
 
 * **Facebook:** With `Debug logging` on, the report's list of screens opened no longer carries the id from a Facebook app link. A link like fb://profile/1234567890 is written as profile/#, since the report's redaction only caught ids of 15 digits or more and older accounts' and most Pages' ids are shorter.
 * **Facebook:** `Default comment order` set to All comments now also works on posts whose sort menu names that row differently. A diagnostic report on issue #110 showed some posts offering their own unfiltered row in All comments' place, and those stayed on Most relevant. Where a menu has both, the usual All comments row still wins.
+* **Facebook:** With `Use the system font` on, a phone font that draws Bengali or Devanagari vowel signs past its own line box now gets the extra room too (issue #96). Until now only Latin letters were measured, so a Bengali theme font whose y and g fit still lost the bottoms of its captions in reels and comments.
 
 ## 0.11.1 (2026-10-12)
 

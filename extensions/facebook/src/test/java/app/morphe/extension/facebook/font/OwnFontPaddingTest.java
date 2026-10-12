@@ -9,6 +9,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -62,6 +64,25 @@ public class OwnFontPaddingTest {
         assertFalse("within the slack", OwnFont.reachesPast(-90f, 20f, -91, 22));
         assertTrue("tails below the descent", OwnFont.reachesPast(-95f, 2f, -74, 22));
         assertTrue("ascenders above the ascent", OwnFont.reachesPast(-60f, 25f, -75, 21));
+    }
+
+    /**
+     * The reporter's Bengali captions lost their vowel signs while Latin fit: a theme font drawing a
+     * script past the line box its fonts declare pads, and a script no font draws has nothing to pad.
+     */
+    @Test
+    public void aScriptsVowelSignsPastTheLineBoxOverflow() {
+        Paint.FontMetricsInt line = new Paint.FontMetricsInt();
+        line.ascent = -93;
+        line.descent = 21;
+        assertTrue("signs below the descent", OwnFont.drawnPast(line, new Rect(0, -80, 600, 33)));
+        assertTrue("signs above the ascent", OwnFont.drawnPast(line, new Rect(0, -101, 600, 20)));
+        assertFalse("inside the slack", OwnFont.drawnPast(line, new Rect(0, -94, 600, 22)));
+        assertFalse("no font draws it", OwnFont.drawnPast(line, new Rect()));
+        for (String script : OwnFont.SCRIPTS) {
+            Character.UnicodeScript first = Character.UnicodeScript.of(script.codePointAt(0));
+            script.codePoints().forEach(c -> assertEquals("one script to a probe", first, Character.UnicodeScript.of(c)));
+        }
     }
 
     @Test
