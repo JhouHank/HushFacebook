@@ -66,19 +66,30 @@ public class OwnFontPaddingTest {
         assertTrue("ascenders above the ascent", OwnFont.reachesPast(-60f, 25f, -75, 21));
     }
 
+    private static Paint.FontMetricsInt box(int ascent, int descent) {
+        Paint.FontMetricsInt metrics = new Paint.FontMetricsInt();
+        metrics.ascent = ascent;
+        metrics.descent = descent;
+        return metrics;
+    }
+
     /**
-     * The reporter's Bengali captions lost their vowel signs while Latin fit: a theme font drawing a
-     * script past the line box its fonts declare pads, and a script no font draws has nothing to pad.
+     * The reporter's Bengali captions lost their vowel signs while Latin fit. A font that draws a
+     * script itself past the line a fallback-spaced layout gives it pads. One whose script comes
+     * from the phone's fallback font, drawn as a serif paint draws it, keeps Facebook's layout, as
+     * does a line the fallback's taller metrics already hold, and a script no font draws.
      */
     @Test
     public void aScriptsVowelSignsPastTheLineBoxOverflow() {
-        Paint.FontMetricsInt line = new Paint.FontMetricsInt();
-        line.ascent = -93;
-        line.descent = 21;
-        assertTrue("signs below the descent", OwnFont.drawnPast(line, new Rect(0, -80, 600, 33)));
-        assertTrue("signs above the ascent", OwnFont.drawnPast(line, new Rect(0, -101, 600, 20)));
-        assertFalse("inside the slack", OwnFont.drawnPast(line, new Rect(0, -94, 600, 22)));
-        assertFalse("no font draws it", OwnFont.drawnPast(line, new Rect()));
+        Paint.FontMetricsInt own = box(-93, 21);
+        Rect stock = new Rect(0, -96, 640, 35);
+        assertTrue("signs below the descent", OwnFont.scriptReachesPast(own, own, new Rect(0, -80, 600, 33), stock));
+        assertTrue("signs above the ascent", OwnFont.scriptReachesPast(own, own, new Rect(0, -101, 600, 20), stock));
+        assertFalse("inside the slack", OwnFont.scriptReachesPast(own, own, new Rect(0, -94, 600, 22), stock));
+        assertFalse("the phone's fallback draws it", OwnFont.scriptReachesPast(own, box(-90, 24), new Rect(stock), stock));
+        assertFalse("the fallback's own descent holds it",
+                OwnFont.scriptReachesPast(own, box(-97, 36), new Rect(0, -80, 600, 33), stock));
+        assertFalse("no font draws it", OwnFont.scriptReachesPast(own, own, new Rect(), new Rect()));
         for (String script : OwnFont.SCRIPTS) {
             Character.UnicodeScript first = Character.UnicodeScript.of(script.codePointAt(0));
             script.codePoints().forEach(c -> assertEquals("one script to a probe", first, Character.UnicodeScript.of(c)));
