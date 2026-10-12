@@ -14,7 +14,7 @@ Every Hushfacebook release, newest first.
 
 * **Facebook:** Diagnostic reports have a PUSH section for server registration outcomes and timing (issue #83). Separate lines cover FBNS transport readiness and FCM receive callbacks. Records survive process restarts, retain no tokens or message contents, and distinguish an unavailable observer from a route not observed in the window.
 
-* **Facebook:** With Debug logging and reel downloads on, a reel missing both known sidebars can add a small layout sample to the report. It keeps component names around count nodes and leaves out names, captions and count values, to help identify layouts whose Download button is missing (issue #18).
+* **Facebook:** With Debug logging and reel downloads on, a reel missing both known sidebars can add a small layout sample to the report. It keeps actual view class paths and the root component class, without reading names, captions or count values, to help identify layouts whose Download button is missing (issue #18). Deeper component paths aren't available.
 
 * **Facebook:** Playback quality has now been checked on a Page video story with anonymous viewing on. The 480p ceiling selected 360p from the available qualities, and Highest selected 1080p on the same story.
 

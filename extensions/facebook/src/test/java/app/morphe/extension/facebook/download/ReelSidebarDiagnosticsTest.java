@@ -13,10 +13,13 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.facebook.katana.activity.FbMainTabActivity;
 import com.facebook.litho.BaseMountingView;
+import com.facebook.litho.LithoView;
+import com.facebook.litho.LithoViewTestHelper;
 
 import org.junit.After;
 import org.junit.Before;
@@ -85,28 +88,54 @@ public class ReelSidebarDiagnosticsTest {
         return String.join("\n", HookStatus.report());
     }
 
-    private static void screen() {
+    private static LithoView screen() {
         FbMainTabActivity screen = Robolectric.buildActivity(FbMainTabActivity.class).setup().get();
-        BaseMountingView mount = new BaseMountingView(screen);
+        LithoView mount = new LithoView(screen);
         mount.description = TREE;
+        mount.root = new Object() {
+            @Override public String toString() { throw new AssertionError("read root display name"); }
+        };
         screen.setContentView(mount);
+        return mount;
     }
 
     @Test
-    public void aReelWithoutEitherSidebarExportsOnlyCountComponentPathsAfterDrawing() {
-        screen();
+    public void aReelWithoutEitherSidebarExportsOnlyActualViewAndRootClassesAfterDrawing() {
+        LithoView mount = screen();
         ReelSidebarDiagnostics.reelStarted();
         assertTrue(counts(), counts().contains(ReelSidebarDiagnostics.SCHEDULED + " 1"));
         assertFalse(LogBufferManager.buildExportText().contains(ReelSidebarDiagnostics.LABEL));
         waitForRead();
         String report = LogBufferManager.buildExportText();
         assertTrue(report, report.contains(ReelSidebarDiagnostics.LABEL));
-        assertTrue(report, report.contains("litho.Column > litho.SideButtons > litho.Like > litho.Text [count]"));
+        assertTrue(report, report.contains(LithoView.class.getName() + " [view]"));
+        assertTrue(report, report.contains("Litho root class: " + mount.root.getClass().getName()));
+        assertTrue(report, report.contains("Litho component paths unavailable"));
         assertTrue(counts(), counts().contains(ReelSidebarDiagnostics.SAMPLED + " 1"));
         for (String secret : Arrays.asList("Pat Doe", "8273", "private.example", "/reel/token", "Private caption",
                 "Secret account", "1.2K", "١٢", "content-description", "text=", "0,0-1080")) {
             assertFalse(secret + " was exported: " + report, report.contains(secret));
         }
+    }
+
+    @Test
+    public void multilineAndQuoteInjectionCannotSupplyComponentNames() {
+        int priorDumpCalls = LithoViewTestHelper.calls;
+        LithoView mount = screen();
+        mount.description = "litho.Column{id text=\"ordinary caption\n"
+                + "litho.PrivateAccountName{id text=\"123123123123\"}\n"
+                + "  litho.PrivateTokenValue{id text=\"456456456456\"}\n"
+                + "\"}\nlitho.OtherPrivateName{id text=\"789789789789\"}";
+        ReelSidebarDiagnostics.reelStarted();
+        waitForRead();
+        String report = LogBufferManager.buildExportText();
+        assertTrue(report, report.contains(ReelSidebarDiagnostics.LABEL));
+        assertTrue(report, report.contains(LithoView.class.getName() + " [view]"));
+        for (String secret : Arrays.asList("PrivateAccountName", "PrivateTokenValue", "OtherPrivateName",
+                "ordinary caption", "123123123123", "456456456456", "789789789789")) {
+            assertFalse(secret + " was exported: " + report, report.contains(secret));
+        }
+        assertEquals("content dump helper was called", priorDumpCalls, LithoViewTestHelper.calls);
     }
 
     @Test
@@ -203,7 +232,9 @@ public class ReelSidebarDiagnosticsTest {
         root.addView(secret);
         ReelSidebarDiagnostics.Reading reading = ReelSidebarDiagnostics.read(Collections.singletonList(root), Long.MAX_VALUE);
         assertEquals(0, reading.trees);
-        assertTrue(reading.paths.isEmpty());
+        assertEquals(Collections.singleton(FrameLayout.class.getName() + " > " + secret.getClass().getName() + " [view]"),
+                reading.paths);
+        assertTrue(reading.roots.isEmpty());
     }
 
     @Test
@@ -229,26 +260,57 @@ public class ReelSidebarDiagnosticsTest {
     }
 
     @Test
-    public void descriptionPrefixesLinesPathsWindowsAndTreesHaveIndependentCaps() {
-        StringBuilder description = new StringBuilder();
-        for (int i = 0; i < ReelSidebarDiagnostics.PATHS_MAX + 20; i++) {
-            description.append("litho.Button").append(i).append("{id text=\"12\"}\n");
+    public void nativePathsWindowsAndMountingViewsHaveIndependentCaps() {
+        FrameLayout root = new FrameLayout(RuntimeEnvironment.getApplication());
+        for (int i = 0; i < ReelSidebarDiagnostics.PATHS_MAX + 1; i++) {
+            android.view.ViewGroup parent = root;
+            for (int bit = 0; bit < 4; bit++) {
+                android.view.ViewGroup child = (i & (1 << bit)) == 0
+                        ? new FrameLayout(root.getContext()) : new LinearLayout(root.getContext());
+                parent.addView(child);
+                parent = child;
+            }
+            parent.addView(new View(root.getContext()));
         }
-        ReelSidebarDiagnostics.Reading paths = new ReelSidebarDiagnostics.Reading();
-        ReelSidebarDiagnostics.paths(description.toString(), paths, Long.MAX_VALUE);
+        ReelSidebarDiagnostics.Reading paths = ReelSidebarDiagnostics.read(Collections.singletonList(root), Long.MAX_VALUE);
         assertEquals(ReelSidebarDiagnostics.PATHS_MAX, paths.paths.size());
         assertTrue(paths.limited);
-        for (String prefix : Arrays.asList("x\n".repeat(ReelSidebarDiagnostics.LINES_MAX),
-                "x".repeat(ReelSidebarDiagnostics.DESCRIPTION_CHARS_MAX) + "\n")) {
-            ReelSidebarDiagnostics.Reading truncated = new ReelSidebarDiagnostics.Reading();
-            ReelSidebarDiagnostics.paths(prefix + TREE, truncated, Long.MAX_VALUE);
-            assertTrue(truncated.paths.isEmpty());
-            assertTrue(truncated.limited);
-        }
-        FrameLayout root = new FrameLayout(RuntimeEnvironment.getApplication());
+        root.removeAllViews();
         for (int i = 0; i < ReelSidebarDiagnostics.TREES_MAX + 2; i++) root.addView(new BaseMountingView(root.getContext()));
         ReelSidebarDiagnostics.Reading trees = ReelSidebarDiagnostics.read(Collections.nCopies(ReelSidebarDiagnostics.WINDOWS_MAX + 1, root), Long.MAX_VALUE);
         assertEquals(ReelSidebarDiagnostics.TREES_MAX, trees.trees);
         assertTrue(trees.limited);
+    }
+
+    @Test
+    public void nativePathsKeepOnlyTheLastEightActualParents() {
+        FrameLayout root = new FrameLayout(RuntimeEnvironment.getApplication());
+        FrameLayout parent = root;
+        for (int i = 0; i < ReelSidebarDiagnostics.PARENTS_MAX + 2; i++) {
+            FrameLayout child = new FrameLayout(root.getContext());
+            parent.addView(child);
+            parent = child;
+        }
+        parent.addView(new View(root.getContext()));
+        ReelSidebarDiagnostics.Reading reading = ReelSidebarDiagnostics.read(Collections.singletonList(root), Long.MAX_VALUE);
+        assertEquals(1, reading.paths.size());
+        String path = reading.paths.iterator().next();
+        assertEquals(ReelSidebarDiagnostics.PARENTS_MAX, path.split(" > ").length);
+        assertTrue(path, path.endsWith(View.class.getName() + " [view]"));
+    }
+
+    @Test
+    public void longActualClassPathsAreOmittedRatherThanExceedingTheLineBudget() {
+        FrameLayout root = new FrameLayout(RuntimeEnvironment.getApplication());
+        FrameLayout parent = root;
+        for (int i = 0; i < ReelSidebarDiagnostics.PARENTS_MAX + 2; i++) {
+            FrameLayout child = new FrameLayout(root.getContext()) {};
+            parent.addView(child);
+            parent = child;
+        }
+        parent.addView(new View(root.getContext()));
+        ReelSidebarDiagnostics.Reading reading = ReelSidebarDiagnostics.read(Collections.singletonList(root), Long.MAX_VALUE);
+        assertTrue(reading.paths.isEmpty());
+        assertTrue(reading.limited);
     }
 }

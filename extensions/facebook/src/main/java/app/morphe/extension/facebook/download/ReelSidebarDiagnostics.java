@@ -9,11 +9,11 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -28,9 +28,9 @@ import app.morphe.extension.shared.settings.HushfacebookPause;
 /**
  * A bounded clue for a Reels layout that reaches neither known sidebar (#18). With Debug logging
  * and reel downloads on, a real reel start plans a read a moment later. A known sidebar built
- * shortly before the start, or before the read, cancels it. Only component names and their parent
- * paths around numeric count nodes reach the log. Text, descriptions, resource ids and count
- * values are never retained. This observes the layout; it doesn't add a button to it.
+ * shortly before the start, or before the read, cancels it. Only actual View class paths and the
+ * actual root component class reach the log. Text, descriptions, resource ids and count values
+ * are never read. This observes the layout; it doesn't add a button to it.
  */
 public final class ReelSidebarDiagnostics {
     static final long DELAY_MS = 1_500;
@@ -41,8 +41,6 @@ public final class ReelSidebarDiagnostics {
     static final int VIEWS_MAX = 400;
     static final int TREES_MAX = 4;
     static final int DEPTH_MAX = 40;
-    static final int DESCRIPTION_CHARS_MAX = 32_768;
-    static final int LINES_MAX = 256;
     static final int LINE_CHARS_MAX = 512;
     static final int PATHS_MAX = 12;
     static final int PARENTS_MAX = 8;
@@ -53,10 +51,8 @@ public final class ReelSidebarDiagnostics {
 
     private static final String SOURCE = "ReelSidebarDiagnostics";
     private static final String MOUNTING_VIEW = "com.facebook.litho.BaseMountingView";
-    private static final String HELPER = "com.facebook.litho.LithoViewTestHelper";
-    private static final String TEXT = " text=\"";
-    private static final Pattern COMPONENT = Pattern.compile("litho\\.[A-Za-z_$][A-Za-z0-9_.$]{0,63}");
-    private static final Pattern COUNT = Pattern.compile("[\\p{Nd}][\\p{Nd}., \\u00a0\\u202f]*[KMBkmb]?\\+?");
+    private static final String LITHO_VIEW = "com.facebook.litho.LithoView";
+    private static final String ROOT_LABEL = "Litho root class: ";
 
     private static long generation = -1;
     private static long sidebarSequence;
@@ -135,10 +131,14 @@ public final class ReelSidebarDiagnostics {
             }
             HookStatus.counted(FamilyNames.REEL_DOWNLOAD, SAMPLED);
             String body = LABEL + ": neither known sidebar observed near a reel start; "
-                    + reading.views + " views, " + reading.trees + " Litho trees, " + reading.paths.size()
-                    + " count paths" + (reading.limited ? " (scan limit reached)" : "")
-                    + (reading.unavailable ? " (Litho description unavailable)" : "")
-                    + (reading.paths.isEmpty() ? "" : "\n" + String.join("\n", reading.paths));
+                    + reading.views + " native views, " + reading.trees + " Litho mounting views, "
+                    + reading.paths.size() + " native View paths, " + reading.roots.size() + " Litho root classes"
+                    + (reading.limited ? " (scan limit reached)" : "")
+                    + (reading.unavailable ? " (native windows unavailable)" : "")
+                    + (reading.rootUnavailable ? " (root class unavailable)" : "")
+                    + ". Litho component paths unavailable; only native View and root classes are retained."
+                    + (reading.paths.isEmpty() ? "" : "\n" + String.join("\n", reading.paths))
+                    + (reading.roots.isEmpty() ? "" : "\n" + ROOT_LABEL + String.join("\n" + ROOT_LABEL, reading.roots));
             Logger.diagnosticDebug(DiagnosticCategory.DOWNLOADS, SOURCE, () -> body);
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.REEL_DOWNLOAD, "sidebar diagnostic read", failure);
@@ -150,111 +150,117 @@ public final class ReelSidebarDiagnostics {
         int trees;
         boolean limited;
         boolean unavailable;
+        boolean rootUnavailable;
         final Set<String> paths = new LinkedHashSet<>();
+        final Set<String> roots = new LinkedHashSet<>();
     }
 
-    /** No text or accessibility properties of Android views are read. A deadline stops our walk and parser. */
+    /** No text, accessibility properties or description dumps are read. A deadline stops our walk. */
     static Reading read(List<View> windows, long deadline) {
         Reading reading = new Reading();
-        if (windows == null || windows.isEmpty()) return reading;
+        if (windows == null) {
+            reading.unavailable = true;
+            return reading;
+        }
+        if (windows.isEmpty()) return reading;
         if (SystemClock.elapsedRealtime() >= deadline) {
             reading.limited = true;
             return reading;
         }
-        try {
-            Class<?> mounting = Class.forName(MOUNTING_VIEW, false, ReelSidebarDiagnostics.class.getClassLoader());
-            Method describe = Class.forName(HELPER).getMethod("viewToString", mounting);
-            List<View> trees = new ArrayList<>();
-            for (int i = 0; i < windows.size() && i < WINDOWS_MAX; i++) {
-                collect(windows.get(i), mounting, trees, reading, 0, deadline);
-            }
-            if (windows.size() > WINDOWS_MAX) reading.limited = true;
-            reading.trees = trees.size();
-            for (View tree : trees) {
-                if (SystemClock.elapsedRealtime() >= deadline || reading.paths.size() >= PATHS_MAX) {
-                    reading.limited = true;
-                    break;
-                }
-                // Litho's kept helper is synchronous. Check the deadline again after each call;
-                // neither its implementation nor the UI thread can safely be interrupted.
-                Object description = describe.invoke(null, tree);
-                if (SystemClock.elapsedRealtime() >= deadline) {
-                    reading.limited = true;
-                    break;
-                }
-                if (description instanceof String) {
-                    paths((String) description, reading, deadline);
-                }
-            }
-        } catch (ReflectiveOperationException | LinkageError failure) {
-            reading.unavailable = true;
+        List<String> parents = new ArrayList<>();
+        for (int i = 0; i < windows.size() && i < WINDOWS_MAX; i++) {
+            collect(windows.get(i), parents, reading, 0, deadline);
         }
+        if (windows.size() > WINDOWS_MAX) reading.limited = true;
         return reading;
     }
 
-    private static void collect(View view, Class<?> mounting, List<View> trees, Reading reading, int depth, long deadline) {
-        if (reading.views >= VIEWS_MAX || depth >= DEPTH_MAX || SystemClock.elapsedRealtime() >= deadline) {
+    private static void collect(View view, List<String> parents, Reading reading, int depth, long deadline) {
+        if (reading.views >= VIEWS_MAX || depth >= DEPTH_MAX || reading.paths.size() >= PATHS_MAX
+                || SystemClock.elapsedRealtime() >= deadline) {
             reading.limited = true;
             return;
         }
         reading.views++;
         if (view == null || view.getVisibility() != View.VISIBLE) return;
-        if (mounting.isInstance(view)) {
-            if (trees.size() < TREES_MAX) trees.add(view);
-            else reading.limited = true;
-        }
-        if (!(view instanceof ViewGroup)) return;
-        ViewGroup group = (ViewGroup) view;
-        for (int i = 0; i < group.getChildCount(); i++) {
-            if (reading.views >= VIEWS_MAX || SystemClock.elapsedRealtime() >= deadline) {
+        Class<?> type = view.getClass();
+        if (namedType(type, MOUNTING_VIEW) != null) {
+            if (reading.trees >= TREES_MAX) {
                 reading.limited = true;
-                break;
+                return;
             }
-            collect(group.getChildAt(i), mounting, trees, reading, depth + 1, deadline);
+            reading.trees++;
+            readRoot(view, type, reading, deadline);
+        }
+        if (SystemClock.elapsedRealtime() >= deadline) {
+            reading.limited = true;
+            return;
+        }
+        parents.add(type.getName());
+        try {
+            if (!(view instanceof ViewGroup) || ((ViewGroup) view).getChildCount() == 0) {
+                addPath(parents, reading);
+                return;
+            }
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                if (reading.views >= VIEWS_MAX || reading.paths.size() >= PATHS_MAX
+                        || SystemClock.elapsedRealtime() >= deadline) {
+                    reading.limited = true;
+                    break;
+                }
+                collect(group.getChildAt(i), parents, reading, depth + 1, deadline);
+            }
+        } finally {
+            parents.remove(parents.size() - 1);
         }
     }
 
-    /** Reads only a bounded prefix. Numeric text classifies a count; only static component names survive. */
-    static void paths(String description, Reading reading, long deadline) {
-        int limit = Math.min(description.length(), DESCRIPTION_CHARS_MAX);
-        if (description.length() > limit) reading.limited = true;
-        List<String> parents = new ArrayList<>();
-        List<Integer> indents = new ArrayList<>();
-        int at = 0;
-        int lines = 0;
-        while (at < limit && lines++ < LINES_MAX && reading.paths.size() < PATHS_MAX) {
+    private static void addPath(List<String> parents, Reading reading) {
+        int first = Math.max(0, parents.size() - PARENTS_MAX);
+        int length = " [view]".length();
+        for (int i = first; i < parents.size(); i++) {
+            length += parents.get(i).length() + (i == first ? 0 : 3);
+            if (length > LINE_CHARS_MAX) {
+                reading.limited = true;
+                return;
+            }
+        }
+        reading.paths.add(String.join(" > ", parents.subList(first, parents.size())) + " [view]");
+    }
+
+    private static Class<?> namedType(Class<?> type, String name) {
+        for (; type != null; type = type.getSuperclass()) if (name.equals(type.getName())) return type;
+        return null;
+    }
+
+    /** Both 582 ABIs keep this final getter. It only reads the current ComponentTree root under its lock. */
+    private static void readRoot(View view, Class<?> actualType, Reading reading, long deadline) {
+        Class<?> type = namedType(actualType, LITHO_VIEW);
+        if (type == null) return;
+        if (SystemClock.elapsedRealtime() >= deadline) {
+            reading.limited = true;
+            return;
+        }
+        try {
+            Method getter = type.getMethod("getRootComponent");
+            int modifiers = getter.getModifiers();
+            if (getter.getDeclaringClass() != type || !Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers)) {
+                reading.rootUnavailable = true;
+                return;
+            }
+            Object root = getter.invoke(view);
             if (SystemClock.elapsedRealtime() >= deadline) {
                 reading.limited = true;
-                break;
+                return;
             }
-            int end = at;
-            while (end < limit && description.charAt(end) != '\n') end++;
-            String line = description.substring(at, Math.min(end, at + LINE_CHARS_MAX));
-            at = end + 1;
-            int indent = 0;
-            while (indent < line.length() && line.charAt(indent) == ' ') indent++;
-            int brace = line.indexOf('{', indent);
-            if (brace < 0 || brace - indent > 70) continue;
-            String component = line.substring(indent, brace);
-            if (!COMPONENT.matcher(component).matches()) continue;
-            while (!indents.isEmpty() && indents.get(indents.size() - 1) >= indent) {
-                parents.remove(parents.size() - 1);
-                indents.remove(indents.size() - 1);
+            if (root != null) {
+                String name = root.getClass().getName();
+                if (name.length() + ROOT_LABEL.length() <= LINE_CHARS_MAX) reading.roots.add(name);
+                else reading.limited = true;
             }
-            if (parents.size() >= DEPTH_MAX) {
-                reading.limited = true;
-                continue;
-            }
-            parents.add(component);
-            indents.add(indent);
-            int text = line.indexOf(TEXT, brace);
-            if (text < 0) continue;
-            int start = text + TEXT.length();
-            int quote = line.indexOf('"', start);
-            if (quote < start || quote - start > 24 || !COUNT.matcher(line.substring(start, quote)).matches()) continue;
-            int first = Math.max(0, parents.size() - PARENTS_MAX);
-            reading.paths.add(String.join(" > ", parents.subList(first, parents.size())) + " [count]");
+        } catch (ReflectiveOperationException | LinkageError | SecurityException failure) {
+            reading.rootUnavailable = true;
         }
-        if (at < limit) reading.limited = true;
     }
 }
