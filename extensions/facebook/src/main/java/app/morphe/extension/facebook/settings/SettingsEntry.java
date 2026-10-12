@@ -50,6 +50,7 @@ import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.misc.ScreenTransitions;
 import app.morphe.extension.facebook.misc.TextSize;
 import app.morphe.extension.facebook.navigation.ReelsTab;
+import app.morphe.extension.facebook.notifications.PushDiagnostics;
 import app.morphe.extension.facebook.stories.StorySeenButton;
 import app.morphe.extension.facebook.theme.AccentResources;
 import app.morphe.extension.facebook.theme.MaterialYouTheme;
@@ -101,11 +102,12 @@ public final class SettingsEntry {
      * build, each activity's dark window background takes the palette from here on, and with Accent
      * color each activity's resources take the accent's colour table. Also where the release
      * check, when it's on, asks at most once a day, on a worker, and where what a save cut short
-     * by Android left behind is removed, on a worker too. In Facebook's other processes it only
-     * starts Lock Facebook's watch ({@link AppLock#watch}).
+     * by Android left behind is removed, on a worker too. Every process starts private push
+     * observations. Other processes also start Lock Facebook's watch ({@link AppLock#watch}).
      */
     public static void onApplicationCreate(Context context) {
         try {
+            PushDiagnostics.initialize(context);
             if (!Utils.isMainProcess()) {
                 // Instant Games, the Audience Network ads and Facebook's crash screen have
                 // processes of their own. Only the lock watches their screens.

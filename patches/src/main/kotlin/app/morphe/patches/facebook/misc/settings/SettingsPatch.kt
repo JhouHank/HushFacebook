@@ -17,6 +17,7 @@ import app.morphe.patches.facebook.misc.extension.FACEBOOK_APPLICATION
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.resignedtrust.fbnsSignersPatch
+import app.morphe.patches.facebook.notifications.pushDiagnosticsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.superclassChain
 import com.android.tools.smali.dexlib2.Opcode
@@ -93,6 +94,8 @@ val settingsPatch = bytecodePatch(
     // A re-signed build's push service rejects Facebook and restarts itself in a loop unless its
     // signer read gets the original certificate, whatever was picked. See FbnsSignersPatch.kt.
     dependsOn(fbnsSignersPatch)
+    // Fixed private outcomes from the notification process are readable in the main report.
+    dependsOn(pushDiagnosticsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
     execute {
