@@ -41,7 +41,6 @@ import java.io.File
  */
 class KeepProgressBarReelsFixtureTest {
     private companion object {
-        const val SET_PROGRESS = "Landroid/widget/ProgressBar;->setProgress(I)V"
         const val GET_MAX = "Landroid/widget/ProgressBar;->getMax()I"
     }
 

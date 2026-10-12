@@ -113,43 +113,65 @@ class KeepProgressBarFixtureTest {
         assertTrue("$name: the passive look doesn't set the bar's max height",
             looks.passive.code().any { it.reference()?.endsWith("ProgressBar;->setMaxHeight(I)V") == true })
         val registers = looks.passive.implementation!!.registerCount
-        // The hook borrows v0: this is the one parameter register.
-        assertTrue("$name: ${looks.type}->${looks.passive.name} has no local register for the hook", registers - 1 >= 1)
+        // The hook borrows v0 and v1: p0 is the one parameter register.
+        assertTrue("$name: ${looks.type}->${looks.passive.name} has no two local registers for the hook", registers - 1 >= 2)
+        // The active look runs Facebook's time writer, which moves the bar: why the hook puts it back (#120).
+        val scrubber = holders.single { it.type == looks.type }
+        val base = FixtureDex.classes(bundle, setOf(scrubber.superclass!!)).values.single()
+        val writers = looks.active.code().mapNotNull {
+            (it as? ReferenceInstruction)?.takeIf { call -> call.opcode == Opcode.INVOKE_STATIC }?.reference as? MethodReference
+        }.filter { it.definingClass == base.type }
+        assertTrue("$name: the active look runs nothing of ${base.type} that moves the bar", writers.any { call ->
+            base.methods.any { it.name == call.name && it.implementation != null && it.code().any { i -> i.reference() == SET_PROGRESS } }
+        })
+        assertEquals("$name: the bar is a SeekBar of the views holder", listOf(SEEK_BAR, looks.labelField.substringBefore("->")),
+            listOf(looks.barField.substringAfter(":"), looks.barField.substringBefore("->")))
 
-        val context = PatchContexts.of(listOf(holders.single { it.type == looks.type }))
+        val context = PatchContexts.of(listOf(scrubber))
         val passive = context.mutableClassDefBy(looks.type).methods.single { it.sameAs(looks.passive) }
         val original = passive.code()
         passive.activeInstead(looks)
         val patched = passive.code()
         val where = "$name: ${looks.type}->${looks.passive.name}"
-        assertEquals("$where gains nine instructions", original.size + 9, patched.size)
+        assertEquals("$where gains fifteen instructions", original.size + 15, patched.size)
         assertEquals("$where: the extension is asked first", KEEPS_REEL_BAR, patched[0].reference())
         assertEquals("$where: its answer is kept", Opcode.MOVE_RESULT, patched[1].opcode)
         val register = (patched[1] as OneRegisterInstruction).registerA
         assertTrue("$where: the hook writes v$register, which isn't a local", register < passive.localRegisterCount())
         assertEquals("$where: a no goes on to Facebook", Opcode.IF_EQZ, patched[2].opcode)
-        assertEquals("$where: a yes runs the active look", "${looks.type}->${looks.active.name}()V", patched[3].reference())
-        assertEquals("$where: through the range form, which reaches any register", Opcode.INVOKE_VIRTUAL_RANGE, patched[3].opcode)
-        val call = patched[3] as RegisterRangeInstruction
-        assertEquals("$where: on this instance only", listOf(passive.localRegisterCount(), 1),
-            listOf(call.startRegister, call.registerCount))
         val local = passive.localRegisterCount()
-        assertEquals("$where: the instance moves into a local through the wide form", Opcode.MOVE_OBJECT_FROM16, patched[4].opcode)
-        val move = patched[4] as TwoRegisterInstruction
-        assertEquals("$where: from p0 into the hook's local", listOf(register, local), listOf(move.registerA, move.registerB))
-        assertEquals("$where: the views holder is read off the scrubber", looks.viewsField, patched[5].reference())
-        assertEquals("$where: then the time label out of it", looks.labelField, patched[6].reference())
-        for (index in 5..6) {
-            val read = patched[index] as TwoRegisterInstruction
-            assertEquals("$where: read $index stays in the local", listOf(register, register), listOf(read.registerA, read.registerB))
+        for (at in listOf(3, 10)) {
+            assertEquals("$where: the instance moves into a local through the wide form ($at)", Opcode.MOVE_OBJECT_FROM16, patched[at].opcode)
+            val move = patched[at] as TwoRegisterInstruction
+            assertEquals("$where: from p0 into the hook's local ($at)", listOf(register, local), listOf(move.registerA, move.registerB))
+            assertEquals("$where: the views holder is read off the scrubber ($at)", looks.viewsField, patched[at + 1].reference())
+            for (index in at + 1..at + 2) {
+                val read = patched[index] as TwoRegisterInstruction
+                assertEquals("$where: read $index stays in the local", listOf(register, register), listOf(read.registerA, read.registerB))
+            }
         }
+        assertEquals("$where: then the bar out of it", looks.barField, patched[5].reference())
+        assertEquals("$where: its position is read", GET_PROGRESS, patched[6].reference())
+        assertEquals("$where: from the bar", listOf(register), listOf((patched[6] as FiveRegisterInstruction).registerC))
+        assertEquals("$where: and kept", Opcode.MOVE_RESULT, patched[7].opcode)
+        val position = (patched[7] as OneRegisterInstruction).registerA
+        assertTrue("$where: the position goes in v$position, which isn't a local", position < local)
+        assertNotEquals("$where: the position doesn't overwrite the bar", register, position)
+        assertEquals("$where: a yes runs the active look", "${looks.type}->${looks.active.name}()V", patched[8].reference())
+        assertEquals("$where: through the range form, which reaches any register", Opcode.INVOKE_VIRTUAL_RANGE, patched[8].opcode)
+        val call = patched[8] as RegisterRangeInstruction
+        assertEquals("$where: on this instance only", listOf(local, 1), listOf(call.startRegister, call.registerCount))
+        assertEquals("$where: then the bar goes back where it was", SET_PROGRESS, patched[9].reference())
+        val back = patched[9] as FiveRegisterInstruction
+        assertEquals("$where: the same bar and position", listOf(2, register, position), listOf(back.registerCount, back.registerC, back.registerD))
+        assertEquals("$where: then the time label out of the views holder", looks.labelField, patched[12].reference())
         assertEquals("$where: the label is a ViewGroup of the views holder", VIEW_GROUP,
-            (patched[6] as ReferenceInstruction).reference.let { (it as FieldReference).type })
-        assertEquals("$where: the label goes to the extension", HIDE_TIME_LABEL, patched[7].reference())
-        assertEquals("$where: with the local", listOf(register), listOf((patched[7] as FiveRegisterInstruction).registerC))
-        assertEquals("$where: and returns", Opcode.RETURN_VOID, patched[8].opcode)
-        assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(9).map { it.opcode })
-        assertEquals("$where: a no lands on Facebook's first instruction", setOf(3, 9), ControlFlow.of(passive).normal[2].toSet())
+            (patched[12] as ReferenceInstruction).reference.let { (it as FieldReference).type })
+        assertEquals("$where: the label goes to the extension", HIDE_TIME_LABEL, patched[13].reference())
+        assertEquals("$where: with the local", listOf(register), listOf((patched[13] as FiveRegisterInstruction).registerC))
+        assertEquals("$where: and returns", Opcode.RETURN_VOID, patched[14].opcode)
+        assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(15).map { it.opcode })
+        assertEquals("$where: a no lands on Facebook's first instruction", setOf(3, 15), ControlFlow.of(passive).normal[2].toSet())
     }
 
     @Test

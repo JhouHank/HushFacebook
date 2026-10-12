@@ -72,6 +72,8 @@ internal const val TEXT_VIEW_SET_TEXT = "Landroid/widget/TextView;->setText(Ljav
 internal const val FULLSCREEN_CONTROLS = "Lcom/facebook/feed/video/fullscreen/orion/FeedFullscreenVideoControlsPlugin;"
 
 internal const val SEEK_BAR = "Landroid/widget/SeekBar;"
+internal const val GET_PROGRESS = "Landroid/widget/ProgressBar;->getProgress()I"
+internal const val SET_PROGRESS = "Landroid/widget/ProgressBar;->setProgress(I)V"
 internal const val SET_ALPHA = "Landroid/graphics/drawable/Drawable;->setAlpha(I)V"
 internal const val SET_ENABLED = "Landroid/view/View;->setEnabled(Z)V"
 internal const val SEND_DELAYED = "Landroid/os/Handler;->sendEmptyMessageDelayed(IJ)Z"
@@ -115,7 +117,11 @@ internal const val VIEW_GROUP = "Landroid/view/ViewGroup;"
  * whether you're dragging, which it reaches only after it has found the reel's position and length
  * usable and moved the bar. The writer checks neither and moves the bar too, so asked any earlier
  * it put the bar back at the start whenever the player wasn't ready, as on the first reel while
- * its player is handed over (issue #120).
+ * its player is handed over (issue #120). The active look starts with that writer too, so the hook
+ * puts the bar back where it was after running it, as the passive look never moves the bar. Letting
+ * go of a drag switches to the passive look just before Facebook reads the bar to seek, so on a reel
+ * showing preview frames during the drag, whose player hasn't moved, the seek went back to where the
+ * drag began, and where the reel's length wasn't known yet the bar went to the start.
  *
  * More hooks finish the Reels bar (582, issue #73). The scrubber's minimum length check answers
  * yes, so a reel Facebook finds too short for a bar gets one. Its other length check, which gives a
@@ -279,6 +285,8 @@ internal class ScrubberLooks(
     /** The scrubber's field holding its views (582 `LX/9c4;->A0J`), and the time label field in that holder (`A09`). */
     val viewsField: String,
     val labelField: String,
+    /** The SeekBar field in that holder (582 `LX/9DH;->A0A`). */
+    val barField: String,
 )
 
 /**
@@ -295,7 +303,22 @@ internal fun vddScrubber(holders: List<ClassDef>): ScrubberLooks {
         ?: refuse("expected one class tracing both \"$SCRUBBER_ACTIVE\" and \"$SCRUBBER_PASSIVE\", found ${scrubbers.size}")
     val passive = look(scrubber, SCRUBBER_PASSIVE).single()
     val (viewsField, labelField) = timeLabelFields(scrubber, passive)
-    return ScrubberLooks(scrubber.type, look(scrubber, SCRUBBER_ACTIVE).single(), passive, viewsField, labelField)
+    val barField = seekBarField(passive, labelField.substringBefore("->"))
+    return ScrubberLooks(scrubber.type, look(scrubber, SCRUBBER_ACTIVE).single(), passive, viewsField, labelField, barField)
+}
+
+/**
+ * The SeekBar field of the scrubber's views class [views], read from the passive look, which sizes
+ * the bar: every `iget-object` there of a [SEEK_BAR] field that [views] declares. Refuses unless
+ * that's exactly one field.
+ */
+internal fun seekBarField(passive: Method, views: String): String {
+    val found = passive.implementation!!.instructions.mapNotNull { instruction ->
+        ((instruction as? ReferenceInstruction)?.takeIf { instruction.opcode == Opcode.IGET_OBJECT }?.reference as? FieldReference)
+            ?.takeIf { it.type == SEEK_BAR && it.definingClass == views }?.toString()
+    }.distinct()
+    return found.singleOrNull()
+        ?: refuse("${passive.definingClass}->${passive.name} reads ${found.size} SeekBar fields off $views, expected the one bar")
 }
 
 /**
@@ -689,16 +712,28 @@ internal fun controlsHideRunnable(controllers: List<ClassDef>, classOf: (String)
  * look on the same instance, hide the time label the way the passive look does, and return.
  * Otherwise Facebook's own code runs from its first instruction. The range form names p0, which
  * can sit past v15 in these long methods, and so does the move that reads it into v0 (format 22x).
+ *
+ * The active look starts with Facebook's time writer, which moves the bar to the player's position,
+ * or to the start when the reel's length isn't known yet. The passive look never moves the bar, so
+ * the hook puts the bar back where it was. Letting go of a drag switches to the passive look just
+ * before Facebook reads the bar to seek, and where the player hadn't followed the drag (a reel
+ * showing preview frames instead) the seek went back to where the drag began (issue #120).
  */
 internal fun MutableMethod.activeInstead(looks: ScrubberLooks) {
-    requireLocals(PATCH, 1)
+    requireLocals(PATCH, 2)
     addInstructionsWithLabels(
         0,
         """
             invoke-static { }, $KEEPS_REEL_BAR
             move-result v0
             if-eqz v0, :facebook
+            move-object/from16 v0, p0
+            iget-object v0, v0, ${looks.viewsField}
+            iget-object v0, v0, ${looks.barField}
+            invoke-virtual { v0 }, $GET_PROGRESS
+            move-result v1
             invoke-virtual/range { p0 .. p0 }, ${looks.type}->${looks.active.name}()V
+            invoke-virtual { v0, v1 }, $SET_PROGRESS
             move-object/from16 v0, p0
             iget-object v0, v0, ${looks.viewsField}
             iget-object v0, v0, ${looks.labelField}
