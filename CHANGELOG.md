@@ -32,6 +32,8 @@ Every Hushfacebook release, newest first.
 
 ### Fixed
 
+* **Facebook:** Individual photos, videos and photo chains share one three-save limit. Cancelling a save keeps its slot occupied until cleanup finishes, and a failed worker start gives the slot back.
+
 * **Facebook:** The people, Pages and sites editor keeps rejected drafts open and shows its count and capacity as you type. Single-line editors keep Save and Cancel with the keyboard in landscape, as the word editors do. Search no longer matches the word null for rows without a summary.
 * **Facebook:** Font file feedback distinguishes a selected file from an enabled font override. Replacing or removing a font file also keeps the restart reminder visible, including a replacement with the same name.
 
