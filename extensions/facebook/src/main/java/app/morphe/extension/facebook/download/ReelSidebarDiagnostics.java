@@ -8,8 +8,6 @@ import android.os.SystemClock;
 import android.view.View;
 import android.view.ViewGroup;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -28,9 +26,9 @@ import app.morphe.extension.shared.settings.HushfacebookPause;
 /**
  * A bounded clue for a Reels layout that reaches neither known sidebar (#18). With Debug logging
  * and reel downloads on, a real reel start plans a read a moment later. A known sidebar built
- * shortly before the start, or before the read, cancels it. Only actual View class paths and the
- * actual root component class reach the log. Text, descriptions, resource ids and count values
- * are never read. This observes the layout; it doesn't add a button to it.
+ * shortly before the start, or before the read, cancels it. Only actual View class paths reach the
+ * log. Text, descriptions, resource ids and count values are never read. This observes the layout;
+ * it doesn't add a button to it.
  */
 public final class ReelSidebarDiagnostics {
     static final long DELAY_MS = 1_500;
@@ -51,8 +49,6 @@ public final class ReelSidebarDiagnostics {
 
     private static final String SOURCE = "ReelSidebarDiagnostics";
     private static final String MOUNTING_VIEW = "com.facebook.litho.BaseMountingView";
-    private static final String LITHO_VIEW = "com.facebook.litho.LithoView";
-    private static final String ROOT_LABEL = "Litho root class: ";
 
     private static long generation = -1;
     private static long sidebarSequence;
@@ -132,13 +128,11 @@ public final class ReelSidebarDiagnostics {
             HookStatus.counted(FamilyNames.REEL_DOWNLOAD, SAMPLED);
             String body = LABEL + ": neither known sidebar observed near a reel start; "
                     + reading.views + " native views, " + reading.trees + " Litho mounting views, "
-                    + reading.paths.size() + " native View paths, " + reading.roots.size() + " Litho root classes"
+                    + reading.paths.size() + " native View paths"
                     + (reading.limited ? " (scan limit reached)" : "")
                     + (reading.unavailable ? " (native windows unavailable)" : "")
-                    + (reading.rootUnavailable ? " (root class unavailable)" : "")
-                    + ". Litho component paths unavailable; only native View and root classes are retained."
-                    + (reading.paths.isEmpty() ? "" : "\n" + String.join("\n", reading.paths))
-                    + (reading.roots.isEmpty() ? "" : "\n" + ROOT_LABEL + String.join("\n" + ROOT_LABEL, reading.roots));
+                    + ". Deeper Litho component paths unavailable; only native View classes are retained."
+                    + (reading.paths.isEmpty() ? "" : "\n" + String.join("\n", reading.paths));
             Logger.diagnosticDebug(DiagnosticCategory.DOWNLOADS, SOURCE, () -> body);
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.REEL_DOWNLOAD, "sidebar diagnostic read", failure);
@@ -150,9 +144,7 @@ public final class ReelSidebarDiagnostics {
         int trees;
         boolean limited;
         boolean unavailable;
-        boolean rootUnavailable;
         final Set<String> paths = new LinkedHashSet<>();
-        final Set<String> roots = new LinkedHashSet<>();
     }
 
     /** No text, accessibility properties or description dumps are read. A deadline stops our walk. */
@@ -190,7 +182,6 @@ public final class ReelSidebarDiagnostics {
                 return;
             }
             reading.trees++;
-            readRoot(view, type, reading, deadline);
         }
         if (SystemClock.elapsedRealtime() >= deadline) {
             reading.limited = true;
@@ -234,33 +225,4 @@ public final class ReelSidebarDiagnostics {
         return null;
     }
 
-    /** Both 582 ABIs keep this final getter. It only reads the current ComponentTree root under its lock. */
-    private static void readRoot(View view, Class<?> actualType, Reading reading, long deadline) {
-        Class<?> type = namedType(actualType, LITHO_VIEW);
-        if (type == null) return;
-        if (SystemClock.elapsedRealtime() >= deadline) {
-            reading.limited = true;
-            return;
-        }
-        try {
-            Method getter = type.getMethod("getRootComponent");
-            int modifiers = getter.getModifiers();
-            if (getter.getDeclaringClass() != type || !Modifier.isFinal(modifiers) || Modifier.isStatic(modifiers)) {
-                reading.rootUnavailable = true;
-                return;
-            }
-            Object root = getter.invoke(view);
-            if (SystemClock.elapsedRealtime() >= deadline) {
-                reading.limited = true;
-                return;
-            }
-            if (root != null) {
-                String name = root.getClass().getName();
-                if (name.length() + ROOT_LABEL.length() <= LINE_CHARS_MAX) reading.roots.add(name);
-                else reading.limited = true;
-            }
-        } catch (ReflectiveOperationException | LinkageError | SecurityException failure) {
-            reading.rootUnavailable = true;
-        }
-    }
 }

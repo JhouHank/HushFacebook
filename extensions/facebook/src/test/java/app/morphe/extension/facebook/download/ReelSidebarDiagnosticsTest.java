@@ -18,7 +18,6 @@ import android.widget.TextView;
 
 import com.facebook.katana.activity.FbMainTabActivity;
 import com.facebook.litho.BaseMountingView;
-import com.facebook.litho.LithoView;
 import com.facebook.litho.LithoViewTestHelper;
 
 import org.junit.After;
@@ -88,29 +87,40 @@ public class ReelSidebarDiagnosticsTest {
         return String.join("\n", HookStatus.report());
     }
 
-    private static LithoView screen() {
+    private static final class RootGetterTrap extends BaseMountingView {
+        int rootGetterCalls;
+
+        RootGetterTrap(android.content.Context context) {
+            super(context);
+        }
+
+        public final Object getRootComponent() {
+            rootGetterCalls++;
+            throw new AssertionError("read host root getter");
+        }
+    }
+
+    private static RootGetterTrap screen() {
         FbMainTabActivity screen = Robolectric.buildActivity(FbMainTabActivity.class).setup().get();
-        LithoView mount = new LithoView(screen);
+        RootGetterTrap mount = new RootGetterTrap(screen);
         mount.description = TREE;
-        mount.root = new Object() {
-            @Override public String toString() { throw new AssertionError("read root display name"); }
-        };
         screen.setContentView(mount);
         return mount;
     }
 
     @Test
-    public void aReelWithoutEitherSidebarExportsOnlyActualViewAndRootClassesAfterDrawing() {
-        LithoView mount = screen();
+    public void aReelWithoutEitherSidebarExportsOnlyActualViewClassesAfterDrawing() {
+        RootGetterTrap mount = screen();
         ReelSidebarDiagnostics.reelStarted();
         assertTrue(counts(), counts().contains(ReelSidebarDiagnostics.SCHEDULED + " 1"));
         assertFalse(LogBufferManager.buildExportText().contains(ReelSidebarDiagnostics.LABEL));
         waitForRead();
         String report = LogBufferManager.buildExportText();
         assertTrue(report, report.contains(ReelSidebarDiagnostics.LABEL));
-        assertTrue(report, report.contains(LithoView.class.getName() + " [view]"));
-        assertTrue(report, report.contains("Litho root class: " + mount.root.getClass().getName()));
+        assertTrue(report, report.contains(mount.getClass().getName() + " [view]"));
+        assertFalse(report, report.contains("Litho root class"));
         assertTrue(report, report.contains("Litho component paths unavailable"));
+        assertEquals("host root getter was called", 0, mount.rootGetterCalls);
         assertTrue(counts(), counts().contains(ReelSidebarDiagnostics.SAMPLED + " 1"));
         for (String secret : Arrays.asList("Pat Doe", "8273", "private.example", "/reel/token", "Private caption",
                 "Secret account", "1.2K", "١٢", "content-description", "text=", "0,0-1080")) {
@@ -121,7 +131,7 @@ public class ReelSidebarDiagnosticsTest {
     @Test
     public void multilineAndQuoteInjectionCannotSupplyComponentNames() {
         int priorDumpCalls = LithoViewTestHelper.calls;
-        LithoView mount = screen();
+        RootGetterTrap mount = screen();
         mount.description = "litho.Column{id text=\"ordinary caption\n"
                 + "litho.PrivateAccountName{id text=\"123123123123\"}\n"
                 + "  litho.PrivateTokenValue{id text=\"456456456456\"}\n"
@@ -130,12 +140,13 @@ public class ReelSidebarDiagnosticsTest {
         waitForRead();
         String report = LogBufferManager.buildExportText();
         assertTrue(report, report.contains(ReelSidebarDiagnostics.LABEL));
-        assertTrue(report, report.contains(LithoView.class.getName() + " [view]"));
+        assertTrue(report, report.contains(mount.getClass().getName() + " [view]"));
         for (String secret : Arrays.asList("PrivateAccountName", "PrivateTokenValue", "OtherPrivateName",
                 "ordinary caption", "123123123123", "456456456456", "789789789789")) {
             assertFalse(secret + " was exported: " + report, report.contains(secret));
         }
         assertEquals("content dump helper was called", priorDumpCalls, LithoViewTestHelper.calls);
+        assertEquals("host root getter was called", 0, mount.rootGetterCalls);
     }
 
     @Test
@@ -234,7 +245,6 @@ public class ReelSidebarDiagnosticsTest {
         assertEquals(0, reading.trees);
         assertEquals(Collections.singleton(FrameLayout.class.getName() + " > " + secret.getClass().getName() + " [view]"),
                 reading.paths);
-        assertTrue(reading.roots.isEmpty());
     }
 
     @Test
