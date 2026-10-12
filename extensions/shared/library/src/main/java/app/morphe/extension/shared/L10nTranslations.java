@@ -1458,8 +1458,8 @@ public final class L10nTranslations {
                 "Foto speichern");
         table.put("Save photo in post menus",
                 "Foto speichern im Beitragsmen\u00fc");
-        table.put("Save the full report in Download/Morphe.",
-                "Vollst\u00e4ndigen Bericht unter Download/Morphe speichern.");
+        table.put("Save the full report in Download/Hushfacebook.",
+                "Vollst\u00e4ndigen Bericht unter Download/Hushfacebook speichern.");
         table.put("Save to",
                 "Speichern in");
         table.put("Save to phone",
@@ -3445,8 +3445,8 @@ public final class L10nTranslations {
                 "Guardar foto");
         table.put("Save photo in post menus",
                 "Guardar foto en los men\u00fas de publicaciones");
-        table.put("Save the full report in Download/Morphe.",
-                "Guarda el informe completo en Download/Morphe.");
+        table.put("Save the full report in Download/Hushfacebook.",
+                "Guarda el informe completo en Download/Hushfacebook.");
         table.put("Save to",
                 "Guardar en");
         table.put("Save to phone",
@@ -5432,8 +5432,8 @@ public final class L10nTranslations {
                 "Simpan foto");
         table.put("Save photo in post menus",
                 "Simpan foto di menu postingan");
-        table.put("Save the full report in Download/Morphe.",
-                "Simpan laporan lengkap di Download/Morphe.");
+        table.put("Save the full report in Download/Hushfacebook.",
+                "Simpan laporan lengkap di Download/Hushfacebook.");
         table.put("Save to",
                 "Simpan ke");
         table.put("Save to phone",
@@ -7419,8 +7419,8 @@ public final class L10nTranslations {
                 "Salvar foto");
         table.put("Save photo in post menus",
                 "Salvar foto no menu das publica\u00e7\u00f5es");
-        table.put("Save the full report in Download/Morphe.",
-                "Salve o relat\u00f3rio completo em Download/Morphe.");
+        table.put("Save the full report in Download/Hushfacebook.",
+                "Salve o relat\u00f3rio completo em Download/Hushfacebook.");
         table.put("Save to",
                 "Salvar em");
         table.put("Save to phone",
@@ -9406,8 +9406,8 @@ public final class L10nTranslations {
                 "Foto\u011fraf\u0131 kaydet");
         table.put("Save photo in post menus",
                 "G\u00f6nderi men\u00fclerinde foto\u011fraf\u0131 kaydet");
-        table.put("Save the full report in Download/Morphe.",
-                "Tam raporu Download/Morphe konumuna kaydeder.");
+        table.put("Save the full report in Download/Hushfacebook.",
+                "Tam raporu Download/Hushfacebook konumuna kaydeder.");
         table.put("Save to",
                 "Kaydetme yeri");
         table.put("Save to phone",

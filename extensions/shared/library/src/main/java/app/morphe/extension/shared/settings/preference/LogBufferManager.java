@@ -16,7 +16,6 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Build;
-import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.AtomicFile;
 import android.database.Cursor;
@@ -276,8 +275,8 @@ public final class LogBufferManager {
         ContentValues values = new ContentValues();
         values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
         values.put(MediaStore.MediaColumns.MIME_TYPE, "text/plain");
-        values.put(MediaStore.MediaColumns.RELATIVE_PATH,
-                Environment.DIRECTORY_DOWNLOADS + "/Morphe");
+        // Next to the crash files, so a bug report's two files are in one folder.
+        values.put(MediaStore.MediaColumns.RELATIVE_PATH, CrashFile.FOLDER);
         values.put(MediaStore.MediaColumns.IS_PENDING, 1);
         Uri pendingUri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
         if (pendingUri == null) throw new IOException("Could not create report file");
@@ -291,7 +290,7 @@ public final class LogBufferManager {
             if (resolver.update(pendingUri, values, null, null) != 1) {
                 throw new IOException("Could not publish report file");
             }
-            return Environment.DIRECTORY_DOWNLOADS + "/Morphe/" + savedName;
+            return CrashFile.FOLDER + savedName;
         } catch (Exception error) {
             deleteIncomplete(resolver, pendingUri, error);
             throw error;
