@@ -18,6 +18,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -34,7 +35,8 @@ import java.io.File
  * hook's one register. Then the patch on that class: a kept bar's no returned right after the
  * position check passes, then a sliding bar's yes, a no going on to Facebook's next instruction, and
  * nothing else in the method moved. Second the top bar: the method that adds it to the scroll-away
- * views, the name it reads off the entry it makes, and each move of that entry handing its distance
+ * views, the name it reads off the entry it makes (followed from the "app_header_container" string
+ * into that very field), and each move of that entry handing its distance
  * through the extension first. Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips
  * without it.
  */
@@ -183,6 +185,91 @@ class TabBarScrollAwayFixtureTest {
                     assertEquals("$where: the distance comes back", distance, (patched[2] as OneRegisterInstruction).registerA)
                     assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(3).map { it.opcode })
                 }
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", declaredBundles().keys, checked)
+    }
+
+    /** Keeps [held], the registers holding one value, up to date across [instruction] when it's an object move. */
+    private fun follows(instruction: Instruction, held: MutableSet<Int>) {
+        if (instruction.opcode.name.startsWith("move-object")) {
+            val move = instruction as TwoRegisterInstruction
+            if (move.registerB in held) held += move.registerA else held -= move.registerA
+        }
+    }
+
+    /**
+     * The field [name] ends up in on the entry [topViews] makes, as 582 hands it on: loaded by a
+     * `const-string`, passed to the constructor of an options class (`LX/2Io;`), stored there, and
+     * copied from there into the entry (`LX/2Ir;`) by the entry's constructor, which takes the options.
+     */
+    private fun nameRoute(bundle: File, topViews: Method, name: String): String {
+        val where = "${bundle.name}: ${topViews.definingClass}->${topViews.name}"
+        val code = topViews.code()
+        val load = code.indexOfFirst { it.loads() == name }
+        assertTrue("$where doesn't load \"$name\"", load >= 0)
+        val loaded = (code[load] as OneRegisterInstruction).registerA
+        // The first call after the load that takes the name, with nothing writing its register before.
+        val call = (load + 1 until code.size).first { index ->
+            val instruction = code[index]
+            val takes = when (instruction) {
+                is RegisterRangeInstruction -> loaded in instruction.startRegister until instruction.startRegister + instruction.registerCount
+                is FiveRegisterInstruction -> loaded in listOf(instruction.registerC, instruction.registerD, instruction.registerE,
+                    instruction.registerF, instruction.registerG).take(instruction.registerCount)
+                else -> false
+            }
+            if (!takes) {
+                val written = (instruction as? OneRegisterInstruction)?.registerA
+                assertTrue("$where writes over the name before handing it on", !(instruction.opcode.setsRegister() && written == loaded))
+            }
+            takes && instruction.opcode.name.startsWith("invoke")
+        }
+        val options = (code[call] as ReferenceInstruction).reference as MethodReference
+        assertEquals("$where hands the name to a constructor", "<init>", options.name)
+        val slot = when (val instruction = code[call]) {
+            is RegisterRangeInstruction -> loaded - instruction.startRegister
+            else -> (instruction as FiveRegisterInstruction).let {
+                listOf(it.registerC, it.registerD, it.registerE, it.registerF, it.registerG).indexOf(loaded)
+            }
+        }
+        val optionsClass = FixtureDex.classes(bundle, setOf(options.definingClass)).values.single()
+        val init = optionsClass.methods.single { it.sameAs(options) }
+        val ins = 1 + init.parameterTypes.sumOf { if (it.toString() == "J" || it.toString() == "D") 2 else 1 }
+        val held = mutableSetOf(init.implementation!!.registerCount - ins + slot)
+        val stored = init.code().firstNotNullOfOrNull { instruction ->
+            follows(instruction, held)
+            ((instruction as? ReferenceInstruction)?.takeIf { instruction.opcode == Opcode.IPUT_OBJECT }?.reference as? FieldReference)
+                ?.takeIf { (instruction as TwoRegisterInstruction).registerA in held && it.definingClass == options.definingClass }
+        } ?: throw AssertionError("$where: ${options.definingClass}'s constructor doesn't keep the name")
+        val made = code.drop(call + 1).firstNotNullOfOrNull { instruction ->
+            ((instruction as? ReferenceInstruction)?.reference as? MethodReference)?.takeIf {
+                instruction.opcode.name.startsWith("invoke-direct") && it.name == "<init>" &&
+                    it.parameterTypes.map(CharSequence::toString) == listOf(options.definingClass)
+            }
+        } ?: throw AssertionError("$where makes no entry from ${options.definingClass}")
+        val entryInit = FixtureDex.classes(bundle, setOf(made.definingClass)).values.single().methods.single { it.sameAs(made) }
+        val entryCode = entryInit.code()
+        val read = entryCode.indexOfFirst { it.opcode == Opcode.IGET_OBJECT && (it as ReferenceInstruction).reference.toString() == stored.toString() }
+        assertTrue("$where: ${made.definingClass}'s constructor doesn't read ${stored.name} off the options", read >= 0)
+        val copied = mutableSetOf((entryCode[read] as TwoRegisterInstruction).registerA)
+        return entryCode.drop(read + 1).firstNotNullOfOrNull { instruction ->
+            follows(instruction, copied)
+            ((instruction as? ReferenceInstruction)?.takeIf { instruction.opcode == Opcode.IPUT_OBJECT }?.reference as? FieldReference)
+                ?.takeIf { (instruction as TwoRegisterInstruction).registerA in copied && it.definingClass == made.definingClass }
+                ?.toString()
+        } ?: throw AssertionError("$where: ${made.definingClass}'s constructor doesn't keep the name")
+    }
+
+    @Test
+    fun `each declared build reads the top bar's name from the field it's stored in`() {
+        val checked = mutableSetOf<String>()
+        for ((version, bundles) in declaredBundles()) {
+            for (bundle in bundles) {
+                val topViews = topScrollAwayViews(nonExtension(bundle, SET_TOP_VIEWS))
+                val picked = scrollAwayEntryName(topViews).toString()
+                assertEquals("${bundle.name}: the hook reads the entry's name off another field",
+                    nameRoute(bundle, topViews, "app_header_container"), picked)
                 checked += version
             }
         }
