@@ -304,13 +304,15 @@ public final class DefaultCommentOrder {
                 return;
             }
             String selected = string(tree(rendering, SELECTED), TOKEN);
-            if (order.isNamedBy(selected)) {
+            List<String> offered = tokens(rendering);
+            String token = order.rowIn(offered);
+            // Answered when Facebook is on the row this menu would be picked at. On another of the
+            // order's rows while the usual one is offered, the usual one is picked.
+            if (token != null ? token.equals(selected) : order.isNamedBy(selected)) {
                 HookStatus.counted(FamilyNames.DEFAULT_COMMENT_ORDER, ANSWERED);
                 log("Facebook answered " + describe(selected) + " already.");
                 return;
             }
-            List<String> offered = tokens(rendering);
-            String token = order.rowIn(offered);
             if (token == null) {
                 HookStatus.counted(FamilyNames.DEFAULT_COMMENT_ORDER, NOT_OFFERED);
                 log("left a post whose menu offers " + offered + " in Facebook's order.");

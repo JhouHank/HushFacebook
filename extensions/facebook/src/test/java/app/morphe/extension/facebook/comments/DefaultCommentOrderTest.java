@@ -274,6 +274,9 @@ public class DefaultCommentOrderTest {
         assertEquals("the usual token first", Collections.singletonList(ALL), openMenu(POST, RELEVANT, RELEVANT, ALL_ROW, ALL));
         DefaultCommentOrder.requestedOrder(null, OTHER_POST, null);
         assertTrue("already on that row", openMenu(OTHER_POST, ALL_ROW, RELEVANT_ROW, ALL_ROW).isEmpty());
+        DefaultCommentOrder.requestedOrder(null, OTHER_POST, null);
+        assertEquals("on the other row while the usual one is offered", Collections.singletonList(ALL),
+                openMenu(OTHER_POST, ALL_ROW, RELEVANT, ALL_ROW, ALL));
         DefaultCommentOrder.requestedOrder(null, POST, null);
         assertTrue("Newest isn't All comments", openMenu(POST, RELEVANT_ROW, RELEVANT_ROW, NEWEST_ROW).isEmpty());
 
