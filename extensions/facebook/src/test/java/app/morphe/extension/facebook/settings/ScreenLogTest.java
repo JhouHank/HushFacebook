@@ -26,6 +26,7 @@ import org.robolectric.annotation.Config;
 import java.util.List;
 
 import app.morphe.extension.shared.SettingsContextRule;
+import app.morphe.extension.shared.diagnostics.DiagnosticRedactor;
 import app.morphe.extension.shared.settings.BaseSettings;
 
 /**
@@ -95,6 +96,18 @@ public class ScreenLogTest {
         for (String line : new String[]{ScreenLog.describe("X", null, Uri.parse("fb://profile/4")),
                 ScreenLog.describe("X", null, Uri.parse("fb://story/12345?story_fbid=1"))}) {
             assertFalse(line, line.matches(".*\\d.*"));
+        }
+    }
+
+    /**
+     * A web link to a Meta site is kept by host and path, so the report's redaction has to know
+     * every one of those sites; one it didn't know would put whose page was opened in the report.
+     */
+    @Test
+    public void everyMetaSiteKeptIsCutByTheRedaction() {
+        for (String site : ScreenLog.META_SITES) {
+            String line = ScreenLog.describe("X", null, Uri.parse("https://www." + site + "/janedoe"));
+            assertEquals(site, "X [host omitted]", DiagnosticRedactor.redact(line));
         }
     }
 

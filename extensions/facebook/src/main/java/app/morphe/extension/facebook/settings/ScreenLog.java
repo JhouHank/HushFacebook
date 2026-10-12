@@ -91,7 +91,8 @@ final class ScreenLog {
      * the host there, and the path holds the account, Page or group id ({@code fb://profile/4}).
      * The redaction only cuts ids of fifteen digits or more, and older accounts' and most Pages'
      * ids are shorter, so a report pasted on GitHub could say whose profile was opened. A web
-     * link's host and path are cut whole by the redaction's host rule.
+     * link's host and path are cut whole by the redaction's host rule, which knows every site in
+     * {@link #META_SITES}.
      */
     static String describe(String screen, @Nullable String action, @Nullable Uri link) {
         StringBuilder line = new StringBuilder(screen);
@@ -112,7 +113,7 @@ final class ScreenLog {
     }
 
     /** The web hosts Meta runs. */
-    private static final String[] META_SITES = {"facebook.com", "fb.com", "fb.me", "fb.watch", "fb.gg", "fbcdn.net",
+    static final String[] META_SITES = {"facebook.com", "fb.com", "fb.me", "fb.watch", "fb.gg", "fbcdn.net",
             "fbsbx.com", "messenger.com", "m.me", "instagram.com", "threads.net", "threads.com", "whatsapp.com",
             "meta.com"};
 
