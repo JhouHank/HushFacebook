@@ -10,7 +10,10 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.stringOption
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
+import app.morphe.patches.facebook.coexist.MAX_APP_NAME
+import app.morphe.patches.facebook.coexist.appLabelPatch
 import app.morphe.patches.facebook.coexist.clonedPackagePatch
 import app.morphe.patches.facebook.media.hdr.playbackFormatEvidencePatch
 import app.morphe.patches.facebook.misc.extension.FACEBOOK_APPLICATION
@@ -80,10 +83,21 @@ val settingsPatch = bytecodePatch(
     name = "Hushfacebook settings",
     description = "Adds Hushfacebook settings to Facebook, where you turn features on or off, pause Hushfacebook " +
         "and back up your choices. To open them, long-press the Facebook logo at the top of your feed or " +
-        "Facebook's app icon. Other patches need it, so keep it selected.",
+        "Facebook's app icon. Its App name option shows a name you pick under the icon. Other patches need it, " +
+        "so keep it selected.",
     default = true,
 ) {
     category("Settings")
+    val appName by stringOption(
+        key = "appName",
+        default = null,
+        title = "App name",
+        description = "A name to show under the app icon and in App info instead of Facebook, up to $MAX_APP_NAME " +
+            "characters, so this copy is easy to tell apart. Leave it empty to keep Facebook's name. It only changes " +
+            "the name. Clone app is what lets a copy install next to the official Facebook.",
+    )
+    // The name goes into the manifest and the resources, which only a resource patch can write.
+    dependsOn(appLabelPatch { appName })
     dependsOn(facebookExtensionPatch)
     // Every patch depends on this one, so a copy renamed with Clone app works whatever is picked,
     // and the patches Morphe runs before Clone app bring it in early enough. See ClonedPackage.kt.

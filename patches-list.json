@@ -2132,11 +2132,12 @@
     },
     {
       "name": "Hushfacebook settings",
-      "description": "Adds Hushfacebook settings to Facebook, where you turn features on or off, pause Hushfacebook and back up your choices. To open them, long-press the Facebook logo at the top of your feed or Facebook's app icon. Other patches need it, so keep it selected.",
+      "description": "Adds Hushfacebook settings to Facebook, where you turn features on or off, pause Hushfacebook and back up your choices. To open them, long-press the Facebook logo at the top of your feed or Facebook's app icon. Its App name option shows a name you pick under the icon. Other patches need it, so keep it selected.",
       "category": "Settings",
       "use": true,
       "dependencies": [
-        "BytecodePatch"
+        "BytecodePatch",
+        "ResourcePatch"
       ],
       "compatiblePackages": {
         "com.facebook.katana": [
@@ -2165,7 +2166,17 @@
           ]
         }
       ],
-      "options": []
+      "options": [
+        {
+          "key": "appName",
+          "title": "App name",
+          "description": "A name to show under the app icon and in App info instead of Facebook, up to 50 characters, so this copy is easy to tell apart. Leave it empty to keep Facebook's name. It only changes the name. Clone app is what lets a copy install next to the official Facebook.",
+          "required": false,
+          "type": "kotlin.String",
+          "default": null,
+          "values": null
+        }
+      ]
     },
     {
       "name": "Install beside Meta's apps",

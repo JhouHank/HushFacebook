@@ -5257,6 +5257,19 @@ try {
     Assert-Throws { Invoke-DeviceBuild -Apk $variantApkm } "*$variantBuild, which the bundle does not declare, at version code $variantCode*" `
         'patch-for-device.ps1 took another build of a declared version.'
     Assert-True (-not (Test-Path -LiteralPath $javaLog)) 'patch-for-device.ps1 started the CLI on another build of a declared version.'
+    # -PatchOptions only takes key=value options for a patch this build has, checked before the CLI starts.
+    $firstPatchHere = @((Get-Content -LiteralPath (Join-Path $releaseRepo 'patches-list.json') -Raw | ConvertFrom-Json).patches)[0].name
+    foreach ($badOptions in @(
+            @{ Options = @{ 'No such patch' = @('appName=HushBook') }; Pattern = "*No patch named 'No such patch' in this build to give options to*" },
+            @{ Options = @{ $firstPatchHere = @('no equals sign') }; Pattern = "*The option 'no equals sign' for*isn't key=value*" })) {
+        Remove-Item -LiteralPath $javaLog -Force -ErrorAction SilentlyContinue
+        Assert-Throws {
+            & (Join-Path $PSScriptRoot 'patch-for-device.ps1') -Root $releaseRepo -DesktopJar $stubJar -Java $stubJava `
+                -Aapt2 $stubAapt2 -OutDir $deviceOut -Apk $fixturePaths[$releaseTarget.PackageVersion] `
+                -PatchOptions $badOptions.Options 6> $null
+        } $badOptions.Pattern 'patch-for-device.ps1 took patch options it should have refused.'
+        Assert-True (-not (Test-Path -LiteralPath $javaLog)) 'patch-for-device.ps1 started the CLI with patch options it should have refused.'
+    }
 
     # Another Meta app at a build the catalog declares. Neither script may hand it to the CLI: each
     # refuses it by name before anything is patched. The builder gets it beside the newest declared

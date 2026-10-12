@@ -37,6 +37,10 @@ param(
     # Patch with the release bundle even when a source file is newer than it, for replaying
     # an earlier build on purpose. Without it a stale bundle stops the run.
     [switch]$AllowStaleBundle,
+    # Option values for a patch, keyed by patch name, each a list of key=value strings, for
+    # example @{ 'Hushfacebook settings' = @('appName=HushBook') }. They go in front of that
+    # patch's -e, which is where the desktop CLI reads them.
+    [hashtable]$PatchOptions = @{},
     [string]$Apk,
     [string]$DesktopJar,
     [string]$Java,
@@ -134,8 +138,17 @@ $result = Join-Path $OutDir 'result.json'
 if (Test-Path $out) { Remove-Item $out -Force }
 
 Write-Host "[device] $($names.Count) patches from $(Split-Path -Leaf $bundle) onto $(Split-Path -Leaf $Apk)"
+foreach ($optioned in $PatchOptions.Keys) {
+    if ($optioned -notin $names) { throw "No patch named '$optioned' in this build to give options to." }
+}
 $enable = @()
-foreach ($name in $names) { $enable += '-e'; $enable += $name }
+foreach ($name in $names) {
+    foreach ($option in @($PatchOptions[$name] | Where-Object { $_ })) {
+        if ([string]$option -notmatch '^[A-Za-z][A-Za-z0-9_]*=') { throw "The option '$option' for '$name' isn't key=value." }
+        $enable += '-O'; $enable += [string]$option
+    }
+    $enable += '-e'; $enable += $name
+}
 $arguments = @('patch', '--exclusive', '-p', $bundle, '-o', $out, '-t', $temp, '-r', $result,
     '--keystore', $Keystore, '--keystore-password', $keystorePassword,
     '--keystore-entry-alias', $KeyAlias, '--keystore-entry-password', $keystorePassword) + $enable + @($Apk)

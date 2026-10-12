@@ -482,6 +482,8 @@ Nothing in the repository points at a folder or a phone on anybody's machine. Th
 - `HUSHFACEBOOK_BUILD_WRAPPER` names a PowerShell script the pre-push hook runs Gradle through, called as `<wrapper> -ProjectDir <repository> -Tasks <task>...`. Unset, the hook runs `gradlew.bat` itself.
 - `HUSHFACEBOOK_DEVICE_SERIAL` is the adb serial of a test phone for `scripts/patch-for-device.ps1` and `scripts/phone-smoke.ps1`. Keep your own phone out of it: a re-signed Facebook can't install over the Play Store copy without uninstalling it, which signs you out.
 
+`scripts/patch-for-device.ps1 -PatchOptions` sets patch options for that build, keyed by patch name, for example `-PatchOptions @{ 'Hushfacebook settings' = @('appName=HushBook') }` to check the App name option on a phone.
+
 ## Source notices
 
 Keep every existing copyright, license, author credit and source-origin notice when you modify or move a file, and don't remove a notice unless the code it covers is gone from the file. Andrew Liang's and FroggoMorphePatches' code is GPL-3.0, and in this ecosystem a missing notice has already ended in DMCA takedowns more than once.
