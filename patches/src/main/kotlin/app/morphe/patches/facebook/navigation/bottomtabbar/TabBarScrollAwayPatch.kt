@@ -286,6 +286,9 @@ private fun movedDistance(method: Method): Int? {
 internal fun MutableMethod.holdsTopBar(entryName: FieldReference, distance: Int) {
     val self = implementation!!.registerCount - parameterTypes.sumOf { parameterSize(it.toString()) } - 1
     if (self > 15 || distance > 15) refuse("$definingClass->$name keeps this or its distance past v15")
+    // A jump back to the start would land past the hold and move the bar a second time.
+    val first = implementation!!.instructions[0] as BuilderInstruction
+    if (first.location.labels.isNotEmpty()) refuse("$definingClass->$name has a jump back to its start")
     val local = freeLocalsAt(PATCH, 0, 1, highest = 15).single()
     addInstructions(
         0,

@@ -144,6 +144,7 @@ public class TabBarScrollAwayTest {
         assertEquals("the top bar slid away", 0, TabBarScrollAway.topBarOffset(TabBarScrollAway.APP_HEADER, -120));
         assertEquals("the top bar with the tabs in it slid away", 0,
                 TabBarScrollAway.topBarOffset(TabBarScrollAway.TITLE_AND_TABS, -80));
+        // A move of nothing passes straight through, so it isn't counted: the count below stays 2.
         assertEquals("a top bar back home moved", 0, TabBarScrollAway.topBarOffset(TabBarScrollAway.APP_HEADER, 0));
         assertEquals("the bottom bar's entry was held", 96, TabBarScrollAway.topBarOffset("bottom_tabs_container", 96));
         assertEquals("an entry with no name was held", -50, TabBarScrollAway.topBarOffset(null, -50));
