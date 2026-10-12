@@ -698,8 +698,8 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_keep_progress_bar_time", TRUE);
 
     /**
-     * A tap anywhere on a reel's or video's progress bar jumps there, where Facebook's bar only takes
-     * a press on its thumb ({@link app.morphe.extension.facebook.media.ProgressBar#seeksFromAnywhere}).
+     * A tap anywhere on a reel's or video's progress bar jumps there, where Facebook's bar only seeks
+     * on a drag from its thumb ({@link app.morphe.extension.facebook.media.TapToSeek}).
      * Works with {@link #KEEP_PROGRESS_BAR} on or off. Off by default, and asked on every press, so
      * no restart.
      */

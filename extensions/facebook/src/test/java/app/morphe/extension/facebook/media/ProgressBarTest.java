@@ -368,65 +368,6 @@ public class ProgressBarTest {
                 PatchFamily.PROGRESS_BAR.switches.contains(Settings.KEEP_PROGRESS_BAR_TIME));
     }
 
-    private static SeekBar bar(int max) {
-        SeekBar bar = new SeekBar(RuntimeEnvironment.getApplication());
-        bar.setMax(max);
-        return bar;
-    }
-
-    @Test
-    public void withTapTheBarToSeekAPressOffTheThumbGoesToTheSeekBar() {
-        assertFalse("Tap the bar to seek doesn't start off", Settings.TAP_TO_SEEK.get());
-        assertFalse("off, a press off the thumb went to the SeekBar", ProgressBar.seeksFromAnywhere(bar(15_000)));
-
-        Settings.TAP_TO_SEEK.save(true);
-        try {
-            assertTrue("on, a press off the thumb stayed Facebook's", ProgressBar.seeksFromAnywhere(bar(15_000)));
-            assertTrue("it waited for Keep the progress bar", !Settings.KEEP_PROGRESS_BAR.get()
-                    && ProgressBar.seeksFromAnywhere(bar(1000)));
-            String line = statusLine();
-            assertTrue(line, line != null && line.contains(ProgressBar.SEEK_BAR_PRESSED + " 2"));
-        } finally {
-            Settings.TAP_TO_SEEK.resetToDefault();
-        }
-    }
-
-    @Test
-    public void aBarWithNoLengthOrTurnedOffKeepsFacebooksThumbCheck() {
-        Settings.TAP_TO_SEEK.save(true);
-        try {
-            assertFalse("a bar with no length yet took the press", ProgressBar.seeksFromAnywhere(bar(0)));
-            SeekBar off = bar(15_000);
-            off.setEnabled(false);
-            assertFalse("a bar Facebook turned off took the press", ProgressBar.seeksFromAnywhere(off));
-            assertFalse("no bar took the press", ProgressBar.seeksFromAnywhere(null));
-            String line = statusLine();
-            assertFalse("a press left to Facebook was counted: " + line, line != null && line.contains("Counted"));
-        } finally {
-            Settings.TAP_TO_SEEK.resetToDefault();
-        }
-    }
-
-    @Test
-    public void pausedOrNotReadyAPressOffTheThumbStaysFacebooks() {
-        Settings.TAP_TO_SEEK.save(true);
-        try {
-            for (HushfacebookPause.Reason reason : new HushfacebookPause.Reason[] {
-                    HushfacebookPause.Reason.SWITCH, HushfacebookPause.Reason.CRASH_LOOP,
-                    HushfacebookPause.Reason.MARKER_FILE}) {
-                PauseForTests.pause(reason);
-                assertFalse("a Hushfacebook paused by " + reason + " took the press", ProgressBar.seeksFromAnywhere(bar(15_000)));
-                PauseForTests.resume();
-            }
-            SeekBar bar = bar(15_000);
-            SettingsContextRule.withoutContext(() ->
-                    assertFalse("the press was taken before the settings were ready", ProgressBar.seeksFromAnywhere(bar)));
-            assertTrue("on again after the pause, the press stayed Facebook's", ProgressBar.seeksFromAnywhere(bar(15_000)));
-        } finally {
-            Settings.TAP_TO_SEEK.resetToDefault();
-        }
-    }
-
     @Test
     public void tapTheBarToSeekNeedsNoRestartAndTravelsWithItsFamily() {
         assertFalse(Settings.TAP_TO_SEEK.rebootApp);

@@ -14,6 +14,7 @@ import app.morphe.util.ControlFlow
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
@@ -24,11 +25,10 @@ import java.io.File
 
 /**
  * Tap the bar to seek on every Facebook build the bundle declares (issue #125): the scrubber's own
- * SeekBar class, found from the base's check of the bar it reads, has one press check on its
- * thumb-only path, whose other way is Facebook's call to Android's SeekBar. The hook goes on the
- * press way, hands the bar to the extension, and a yes lands on that call while a no goes on to
- * the thumb's bounds. Nothing of Facebook's code moves. Reads the fixture bundles from
- * HUSHFACEBOOK_FIXTURE_DIR and skips without it.
+ * SeekBar class, found from the base's check of the bar it reads, has its own touch handler, the
+ * one with the thumb check. The hook goes first in it and hands the extension the bar and the
+ * touch. A yes returns true, and a no runs Facebook's code from its start, none of it moved. Reads
+ * the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class TapToSeekFixtureTest {
     private fun bundles(check: (File) -> Unit) {
@@ -52,7 +52,7 @@ class TapToSeekFixtureTest {
     private fun Instruction.reference() = (this as? ReferenceInstruction)?.reference?.toString()
 
     @Test
-    fun `each declared build hands a press off the bar's thumb to the SeekBar when asked`() = bundles { bundle ->
+    fun `each declared build asks the extension first in the bar's touch handler`() = bundles { bundle ->
         val name = bundle.name
         val looks = vddScrubber(FixtureDex.classesHolding(bundle, SCRUBBER_PASSIVE).filterNot { it.type.startsWith(EXTENSION_CLASSES) })
         val progress = progressUpdate(
@@ -61,35 +61,35 @@ class TapToSeekFixtureTest {
         val barType = scrubberSeekBar(progress.base, looks.barField)
         val bar = FixtureDex.classes(bundle, setOf(barType)).values.single()
         assertTrue("$name: $barType isn't a SeekBar of Facebook's", bar.superclass == SEEK_BAR)
-        val press = thumbOnlyPress(bar)
+        assertTrue("$name: the patch's own check takes $barType as a SeekBar",
+            extendsType(barType, SEEK_BAR) { if (it == barType) bar.superclass else null })
+        val touch = barTouch(bar)
         val where = "$name: $barType->onTouchEvent"
-        val original = press.method.code()
-        assertEquals("$where: the press way reads the thumb", GET_THUMB, original[press.at].reference())
-        assertEquals("$where: the other way is Android's SeekBar", SEEK_BAR_TOUCH, original[press.toSeekBar].reference())
+        val original = touch.code()
+        assertTrue("$where doesn't read the thumb, so it isn't the handler with the thumb check",
+            original.any { it.reference() == "Landroid/widget/AbsSeekBar;->getThumb()Landroid/graphics/drawable/Drawable;" })
 
         val context = PatchContexts.of(listOf(bar))
-        val method = context.mutableClassDefBy(barType).methods.single { it.sameAs(press.method) }
-        method.seeksFromAnywhere(press)
+        val method = context.mutableClassDefBy(barType).methods.single { it.sameAs(touch) }
+        method.takesTapsToSeek()
         val patched = method.code()
-        val at = press.at
-        assertEquals("$where gains three instructions", original.size + 3, patched.size)
-        assertEquals("$where: Facebook's code up to the press way stays", original.take(at).map { it.opcode },
-            patched.take(at).map { it.opcode })
-        assertEquals("$where: the extension is asked", Opcode.INVOKE_STATIC_RANGE, patched[at].opcode)
-        assertEquals("$where: the extension is asked", SEEKS_FROM_ANYWHERE, patched[at].reference())
-        val self = method.implementation!!.registerCount - 2
-        assertEquals("$where: with the bar itself", self, (patched[at] as RegisterRangeInstruction).startRegister)
-        assertEquals("$where: its answer is kept", Opcode.MOVE_RESULT, patched[at + 1].opcode)
-        val register = (patched[at + 1] as OneRegisterInstruction).registerA
+        assertEquals("$where gains five instructions", original.size + 5, patched.size)
+        assertEquals("$where: the extension is asked first", Opcode.INVOKE_STATIC_RANGE, patched[0].opcode)
+        assertEquals("$where: the extension is asked first", TAKES_TOUCH, patched[0].reference())
+        val call = patched[0] as RegisterRangeInstruction
+        assertEquals("$where: with the bar and its touch, p0 and p1", method.implementation!!.registerCount - 2, call.startRegister)
+        assertEquals("$where: with the bar and its touch, p0 and p1", 2, call.registerCount)
+        assertEquals("$where: its answer is kept", Opcode.MOVE_RESULT, patched[1].opcode)
+        val register = (patched[1] as OneRegisterInstruction).registerA
         assertTrue("$where: the hook writes v$register, which isn't a local", register < method.localRegisterCount())
-        assertEquals("$where: a yes jumps", Opcode.IF_NEZ, patched[at + 2].opcode)
-        assertEquals("$where: from the same register", register, (patched[at + 2] as OneRegisterInstruction).registerA)
-        assertEquals("$where: Facebook's code after the hook stays", original.drop(at).map { it.opcode },
-            patched.drop(at + 3).map { it.opcode })
-
-        val toSeekBar = press.toSeekBar + 3
-        assertEquals("$where: a yes lands on Android's SeekBar", SEEK_BAR_TOUCH, patched[toSeekBar].reference())
-        assertEquals("$where: a no goes on to the thumb's bounds", setOf(at + 3, toSeekBar),
-            ControlFlow.of(method).normal[at + 2].toSet())
+        assertEquals("$where: a no jumps on to Facebook", Opcode.IF_EQZ, patched[2].opcode)
+        assertEquals("$where: from the same register", register, (patched[2] as OneRegisterInstruction).registerA)
+        assertEquals("$where: a yes answers true", Opcode.CONST_4, patched[3].opcode)
+        assertEquals("$where: a yes answers true", register, (patched[3] as OneRegisterInstruction).registerA)
+        assertEquals("$where: a yes answers true", 1, (patched[3] as NarrowLiteralInstruction).narrowLiteral)
+        assertEquals("$where: a yes answers true", Opcode.RETURN, patched[4].opcode)
+        assertEquals("$where: a yes answers true", register, (patched[4] as OneRegisterInstruction).registerA)
+        assertEquals("$where: a no runs Facebook's code from its start", setOf(3, 5), ControlFlow.of(method).normal[2].toSet())
+        assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(5).map { it.opcode })
     }
 }
