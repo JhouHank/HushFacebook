@@ -407,7 +407,7 @@ public class SettingsNavigationTest {
         TextView summary = list().getChildAt(0).findViewById(android.R.id.summary);
         String[] lines = summary.getText().toString().split("\n", 2);
         assertEquals("Tap Resume, then restart Facebook.", lines[0]);
-        assertEquals(HushfacebookPreferenceFragment.overviewBuildDetails(), lines[1]);
+        assertEquals(HushfacebookPreferenceFragment.overviewBuildDetails().replace('\n', ' '), lines[1]);
     }
 
     /**
@@ -551,7 +551,7 @@ public class SettingsNavigationTest {
             assertEquals(L10n.t("Back"), back.getContentDescription().toString());
             assertTrue(back.getWidth() >= 48 * density && back.getHeight() >= 48 * density);
             if (scale == 1f) {
-                assertEquals(24 * density, title.getTextSize(), 0.1f);
+                assertEquals(28 * density, title.getTextSize(), 0.1f);
                 assertEquals(View.INVISIBLE, clear.getVisibility());
                 assertEquals(4 * density, bar.getPaddingStart(), 0.1f);
                 assertEquals(16 * density, bar.getPaddingEnd(), 0.1f);
@@ -1157,7 +1157,14 @@ public class SettingsNavigationTest {
         capture("00-overview");
         for (Preference section : page.sections()) {
             page.navigation.open(section);
-            capture(section.getTitle().toString().toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z]+", "-"));
+            String name = section.getTitle().toString().toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z]+", "-");
+            capture(name);
+            assertUncutText(dialog.getView());
+            list().setSelection(list().getCount() - 1);
+            capture(name + "-end");
+            assertEquals("the last setting is reachable on " + section.getTitle(),
+                    list().getCount() - 1, list().getLastVisiblePosition());
+            assertUncutText(dialog.getView());
         }
         page.navigation.navigate("more");
         capture("more-settings");
@@ -1311,9 +1318,7 @@ public class SettingsNavigationTest {
         canvas.drawColor(0x99000000);
         canvas.translate((780 - content.getWidth()) / 2f, (1688 - content.getHeight()) / 2f);
         content.draw(canvas);
-        try (FileOutputStream out = new FileOutputStream(new File("build/reports/settings-design", name + ".png"))) {
-            assertTrue(image.compress(Bitmap.CompressFormat.PNG, 100, out));
-        }
+        writeCapture(image, name);
         image.recycle();
     }
 
@@ -1324,10 +1329,20 @@ public class SettingsNavigationTest {
         layout(root);
         Bitmap image = Bitmap.createBitmap(780, 1688, Bitmap.Config.ARGB_8888);
         root.draw(new Canvas(image));
-        try (FileOutputStream out = new FileOutputStream(new File(folder, name + ".png"))) {
-            assertTrue(image.compress(Bitmap.CompressFormat.PNG, 100, out));
-        }
+        writeCapture(image, name);
         image.recycle();
+    }
+
+    private static void writeCapture(Bitmap image, String name) throws Exception {
+        File folder = new File("build/reports/settings-design");
+        File sdk = new File(folder, "sdk-" + android.os.Build.VERSION.SDK_INT);
+        assertTrue(sdk.isDirectory() || sdk.mkdirs());
+        // The flat names remain convenient for documentation. Each SDK also keeps its own proof.
+        for (File file : new File[]{new File(folder, name + ".png"), new File(sdk, name + ".png")}) {
+            try (FileOutputStream out = new FileOutputStream(file)) {
+                assertTrue(image.compress(Bitmap.CompressFormat.PNG, 100, out));
+            }
+        }
     }
 
     private static void layout(View root) {

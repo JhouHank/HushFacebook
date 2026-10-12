@@ -163,9 +163,9 @@ public final class SettingsDialog extends DialogFragment {
         pageTitle = title;
         title.setText("Hushfacebook");
         title.setTextColor(foreground());
-        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 24);
-        title.setAutoSizeTextTypeUniformWithConfiguration(16, 24, 1, TypedValue.COMPLEX_UNIT_SP);
+        title.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
+        title.setAutoSizeTextTypeUniformWithConfiguration(16, 28, 1, TypedValue.COMPLEX_UNIT_SP);
         title.setMaxLines(1);
         title.setPaddingRelative(dp(8), 0, 0, 0);
         title.setAccessibilityHeading(true);
@@ -214,7 +214,7 @@ public final class SettingsDialog extends DialogFragment {
         search.setTextColor(palette.title);
         search.setHintTextColor(palette.summary);
         search.setPaddingRelative(dp(12), dp(12), 0, dp(12));
-        search.setMinimumHeight(dp(52));
+        search.setMinimumHeight(dp(48));
         searchBox.addView(search, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
         android.widget.ImageButton clear = new android.widget.ImageButton(getContext());
         clear.setImageDrawable(SettingsIcons.icon(getContext(), SettingsIcons.CLOSE, palette.summary));
@@ -243,7 +243,7 @@ public final class SettingsDialog extends DialogFragment {
         });
         LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT);
-        layout.setMargins(dp(16), 0, dp(16), dp(12));
+        layout.setMargins(dp(18), dp(4), dp(18), dp(14));
         root.addView(searchBox, layout);
         // Typed letters alone tell a screen reader nothing about the list below, so the count is
         // spoken from a polite live region, once the typing has settled.

@@ -85,14 +85,14 @@ final class ScreenColors {
     private ScreenColors() {
         light = false;
         background = Color.BLACK;
-        dialog = 0xFF11151D;
+        dialog = 0xFF10151D;
         title = 0xFFF3F5F9;
         summary = 0xFFA6AFBE;
         heading = 0xFF6AA7FF;
         accent = 0xFF236BE7;
         switchOff = 0xFF858D9C;
-        card = 0xFF11151D;
-        outline = 0xFF252B36;
+        card = 0xFF10151D;
+        outline = 0xFF222C3A;
         onAccent = Color.WHITE;
     }
 
@@ -184,7 +184,7 @@ final class ScreenColors {
         if (title != null) {
             title.setTextColor(dimmedWhenDisabled(this.title));
             title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
-            title.setTypeface(Typeface.create("sans-serif", Typeface.NORMAL));
+            title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
             if (title.getParent() instanceof View) {
                 View text = (View) title.getParent();
                 text.setPadding(0, 0, 0, 0);
@@ -194,7 +194,7 @@ final class ScreenColors {
         TextView summary = row.findViewById(android.R.id.summary);
         if (summary != null) {
             summary.setTextColor(dimmedWhenDisabled(this.summary));
-            summary.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+            summary.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
             summary.setLineSpacing(dp(row, 2), 1);
         }
         View widget = row.findViewById(android.R.id.switch_widget);
@@ -249,14 +249,14 @@ final class ScreenColors {
                 first ? radius : 0, first ? radius : 0,
                 last ? radius : 0, last ? radius : 0,
                 last ? radius : 0, last ? radius : 0});
-        Drawable inset = new InsetDrawable(surface, dp(row, 16), first ? dp(row, 6) : -dp(row, 1),
-                dp(row, 16), last ? dp(row, 6) : 0);
+        Drawable inset = new InsetDrawable(surface, dp(row, 18), first ? dp(row, 4) : -dp(row, 1),
+                dp(row, 18), last ? dp(row, 4) : 0);
         row.setBackground(preference.isSelectable()
                 ? new RippleDrawable(ColorStateList.valueOf(half(accent)), inset, null) : inset);
         // Explicit padding after the inset background prevents its padding from moving the text.
-        int vertical = preference.getIcon() == null ? 20 : 12;
-        row.setPaddingRelative(dp(row, 34), dp(row, vertical + (first ? 6 : 0)),
-                dp(row, 34), dp(row, vertical + (last ? 6 : 0)));
+        int vertical = preference.getIcon() == null ? 18 : 14;
+        row.setPaddingRelative(dp(row, 34), dp(row, vertical + (first ? 4 : 0)),
+                dp(row, 34), dp(row, vertical + (last ? 4 : 0)));
         row.setMinimumHeight(dp(row, 72));
     }
 
@@ -269,7 +269,7 @@ final class ScreenColors {
             title.setLetterSpacing(0.07f);
             title.setAllCaps(true);
         }
-        row.setPaddingRelative(dp(row, 20), dp(row, 20), dp(row, 20), dp(row, 8));
+        row.setPaddingRelative(dp(row, 22), dp(row, 22), dp(row, 22), dp(row, 10));
     }
 
     /** Marks the chevron a row was given, so a recycled row's can be found and taken off. */
@@ -642,5 +642,19 @@ final class ScreenColors {
             mask = new ColorDrawable(Color.WHITE);
         }
         button.setBackground(new RippleDrawable(ColorStateList.valueOf(half(color)), null, mask));
+    }
+
+    /** A quiet outlined action with the same touch target as the dialog buttons. */
+    void outlineAction(Button button) {
+        GradientDrawable surface = new GradientDrawable();
+        surface.setColor(card);
+        surface.setCornerRadius(dp(button, 6));
+        surface.setStroke(dp(button, 1), heading);
+        RippleDrawable background = new RippleDrawable(ColorStateList.valueOf(half(heading)), surface, null);
+        background.setLayerInsetRelative(0, 0, dp(button, 6), 0, dp(button, 6));
+        button.setBackground(background);
+        button.setTextColor(heading);
+        button.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        button.setPaddingRelative(dp(button, 14), 0, dp(button, 14), 0);
     }
 }

@@ -4,6 +4,11 @@ Every Hushfacebook release, newest first.
 
 ## Unreleased
 
+### Changed
+
+* **Facebook:** The settings pages have larger headings and blue navigation icons, with more space between category links. Controls stay grouped, and the version and build details sit below the current status with a quieter appearance. Pause, Resume and Undo have outlined buttons.
+* **Tooling:** Settings captures keep separate copies for each Android SDK and include the end of every category, so long pages are checked below the first screen too. Marketplace previews use the current page layout as well.
+
 ### Fixed
 
 * **Facebook:** With `Keep the progress bar` on, a reel goes where you drag it again (issue #120). Keeping the full-size look ran Facebook's time writer, which put the bar back at the player's old spot right before Facebook read it to seek. On reels that show preview frames while you drag, that sent the reel back to where the drag began. The same writer sent the bar to the start when the reel's length wasn't known yet.
