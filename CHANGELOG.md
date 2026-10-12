@@ -6,6 +6,7 @@ Every Hushfacebook release, newest first.
 
 ### Changed
 
+* **Facebook:** The known-issues notes now reflect reporter confirmations for Reels saving and ads. The original Xiaomi Gallery reporter also confirmed full-quality saves play with sound with Save videos other apps can open off.
 * **Facebook:** The settings pages have larger headings and blue navigation icons, with more space between category links. Controls stay grouped, and the version and build details sit below the current status with a quieter appearance. Pause, Resume and Undo have outlined buttons.
 * **Tooling:** Settings captures keep separate copies for each Android SDK and include the end of every category, so long pages are checked below the first screen too. Marketplace previews use the current page layout as well.
 
