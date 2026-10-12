@@ -864,6 +864,10 @@ Keep the progress bar	Manter a barra de progresso
 A reel's progress bar stays full size, ready to drag. A full-screen video's controls stay until you tap.	A barra de progresso de um Reel fica no tamanho cheio, pronta para arrastar. Os controles de um vídeo em tela cheia ficam até você tocar.
 Show a reel's time	Mostrar o tempo do Reel
 With Keep the progress bar on, a reel's elapsed and total time stay above the bar. Off, they show only while you drag it.	Com Manter a barra de progresso ativado, o tempo decorrido e o total do Reel ficam acima da barra. Desativado, eles só aparecem enquanto você arrasta a barra.
+# context: switch title under Playback, after Show a reel's time; a tap on the video's progress bar jumps to that point
+Tap the bar to seek	Tocar na barra para pular
+# context: description of that switch; the dot is the bar's round handle you drag
+Tap anywhere on a reel's or video's progress bar to jump there, instead of dragging the dot.	Toque em qualquer ponto da barra de progresso de um Reel ou vídeo para pular até ali, em vez de arrastar o ponto.
 # context: switch title under Marketplace; View profile is Facebook's own button on a seller's Marketplace page that opens their regular Facebook profile, so use Facebook's label for it in this language
 Show View profile on Marketplace sellers	Mostrar Ver perfil nos vendedores do Marketplace
 # context: summary of that switch

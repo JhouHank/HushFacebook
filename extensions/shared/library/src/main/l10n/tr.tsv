@@ -972,6 +972,10 @@ Keep the progress bar	İlerleme çubuğunu koru
 A reel's progress bar stays full size, ready to drag. A full-screen video's controls stay until you tap.	Bir reel'in ilerleme çubuğu tam boyutta kalır ve sürüklemeye hazırdır. Tam ekran bir videonun kontrolleri siz dokunana kadar kalır.
 Show a reel's time	Reel'in süresini göster
 With Keep the progress bar on, a reel's elapsed and total time stay above the bar. Off, they show only while you drag it.	İlerleme çubuğunu koru açıkken bir reel'in geçen ve toplam süresi çubuğun üstünde kalır. Kapalıyken yalnızca çubuğu sürüklerken görünür.
+# context: switch title under Playback, after Show a reel's time; a tap on the video's progress bar jumps to that point
+Tap the bar to seek	Atlamak için çubuğa dokun
+# context: description of that switch; the dot is the bar's round handle you drag
+Tap anywhere on a reel's or video's progress bar to jump there, instead of dragging the dot.	Bir reel'in ya da videonun ilerleme çubuğunda herhangi bir yere dokunarak oraya atlayın, noktayı sürüklemeden.
 # context: switch title under Marketplace; View profile is Facebook's own button on a seller's Marketplace page that opens their regular Facebook profile, so use Facebook's label for it in this language
 Show View profile on Marketplace sellers	Marketplace satıcılarında Profili gör'ü göster
 # context: summary of that switch

@@ -26,6 +26,7 @@ import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.ControlFlow
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.builder.BuilderInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -104,7 +105,13 @@ internal const val LIFTS_FOOTER = "$PROGRESS_BAR->liftsFooter()Z"
 internal const val NO_FADED_BAR = "$PROGRESS_BAR->noFadedBar()Z"
 internal const val COUNTS_LOOK = "$PROGRESS_BAR->look(Ljava/lang/Integer;)V"
 internal const val REPLACES_PARKED = "$PROGRESS_BAR->replacesParkedLook(Ljava/lang/Integer;Ljava/lang/Integer;)Z"
+internal const val SEEKS_FROM_ANYWHERE = "$PROGRESS_BAR->seeksFromAnywhere(Landroid/widget/SeekBar;)Z"
 internal const val VIEW_GROUP = "Landroid/view/ViewGroup;"
+
+internal const val ON_TOUCH = "onTouchEvent(Landroid/view/MotionEvent;)Z"
+internal const val GET_ACTION = "Landroid/view/MotionEvent;->getAction()I"
+internal const val GET_THUMB = "Landroid/widget/AbsSeekBar;->getThumb()Landroid/graphics/drawable/Drawable;"
+internal const val SEEK_BAR_TOUCH = "Landroid/widget/AbsSeekBar;->onTouchEvent(Landroid/view/MotionEvent;)Z"
 
 /**
  * Keeps a video's progress bar on screen, in the players that hide theirs a few seconds in.
@@ -181,6 +188,13 @@ internal const val VIEW_GROUP = "Landroid/view/ViewGroup;"
  * player. So the same hook goes first in this `run()`. A tap still hides the controls, as the tap
  * handler calls the controller's hide itself.
  *
+ * Tap the bar to seek (issue #125) is its own switch. The scrubber's SeekBar (582 `LX/9A0;`, found
+ * from the base's `instance-of` on the bar it reads) turns a press away in its own `onTouchEvent`
+ * unless it lands on the thumb, so only the thumb can be dragged. Facebook only skips that check
+ * in a drag-anywhere mode a server setting turns on. The extension goes in where the press check
+ * passes, and a yes sends the press to Android's SeekBar the way a bar with no thumb has it, which
+ * seeks to where the finger lifts, or follows a drag past the touch slop.
+ *
  * In the default selection with its switch off: it only acts once the switch is turned on.
  */
 @Suppress("unused")
@@ -188,8 +202,9 @@ val keepProgressBarPatch = bytecodePatch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Keep the progress bar",
     description = "Keeps every reel's progress bar full size and moving smoothly, with the time above it, so you can " +
-        "drag it without tapping first. Also keeps a full-screen video's controls on screen until you tap. Starts " +
-        "off. Turn it on in Hushfacebook settings > Playback.",
+        "drag it without tapping first. Also keeps a full-screen video's controls on screen until you tap, and " +
+        "another switch lets a tap anywhere on the bar jump there. Starts off. Turn it on in Hushfacebook settings > " +
+        "Playback.",
     default = true,
 ) {
     category("Playback")
@@ -254,6 +269,8 @@ val keepProgressBarPatch = bytecodePatch(
         val overrides = lengthCheckOverrides(checkHolders, scrubber.type, listOf(lengthCheck, shortCheck)) {
             classDefByOrNull(it)?.superclass
         }
+        val barType = scrubberSeekBar(progress.base, scrubber.barField)
+        val press = thumbOnlyPress(classDefByOrNull(barType) ?: refuse("$barType, the scrubber's SeekBar, isn't in this APK"))
 
         mutableClassDefBy(scrubber.type).methods.single { it.sameAs(scrubber.passive) }
             .activeInstead(scrubber)
@@ -281,6 +298,7 @@ val keepProgressBarPatch = bytecodePatch(
         mutableClassDefBy(controls.type).methods.single { it.sameAs(timer) }.noTimerWhileKept()
         mutableClassDefBy(extension.type).methods.single { it.sameAs(hide) }.noTimerWhileKept()
         mutableClassDefBy(hider.type).methods.single { it.sameAs(hiderRun) }.noTimerWhileKept()
+        mutableClassDefBy(barType).methods.single { it.sameAs(press.method) }.seeksFromAnywhere(press)
         enableStatus("keepProgressBar")
     }
 }
@@ -1147,5 +1165,80 @@ internal fun MutableMethod.noTimerWhileKept() {
             return-void
         """,
         ExternalLabel("facebook", getInstruction(0)),
+    )
+}
+
+/**
+ * The scrubber's own SeekBar class (582 `LX/9A0;`): the type the scrubber [base] checks the bar
+ * against with an `instance-of` straight after reading it from [barField]. The bar is inflated from
+ * a layout, so this is where the code names it. Refuses unless that's exactly one type.
+ */
+internal fun scrubberSeekBar(base: ClassDef, barField: String): String {
+    val types = base.methods.flatMap { method ->
+        val code = method.code()
+        code.indices.mapNotNull { at ->
+            val read = code[at].takeIf { it.opcode == Opcode.IGET_OBJECT && it.reference() == barField } ?: return@mapNotNull null
+            val check = code.getOrNull(at + 1)?.takeIf { it.opcode == Opcode.INSTANCE_OF } ?: return@mapNotNull null
+            val bar = (read as TwoRegisterInstruction).registerA
+            ((check as ReferenceInstruction).reference as TypeReference).type.takeIf { (check as TwoRegisterInstruction).registerB == bar }
+        }
+    }.distinct()
+    return types.singleOrNull() ?: refuse("${base.type} checks the bar it reads from $barField against ${types.size} types, expected one")
+}
+
+/**
+ * Where the bar's touch handler turns away a press that doesn't land on the thumb: in its
+ * [ON_TOUCH], the press check (a [GET_ACTION] whose result an `if-nez` tests) whose other way runs
+ * Facebook's [SEEK_BAR_TOUCH] and whose press way goes straight on to read the thumb's bounds
+ * ([GET_THUMB]). [at] is that press way's first instruction, and [toSeekBar] the call the other
+ * way lands on.
+ */
+internal class ThumbOnlyPress(val method: Method, val at: Int, val toSeekBar: Int)
+
+/**
+ * The bar's thumb-only press in [bar] (582 `LX/9A0;->onTouchEvent`). 582 takes it unless the
+ * scrubber turned on its drag-anywhere mode, which a server setting decides. A press outside the
+ * thumb then returns false, so the bar can only be dragged by the thumb. Refuses unless there's
+ * exactly one such press check.
+ */
+internal fun thumbOnlyPress(bar: ClassDef): ThumbOnlyPress {
+    val touch = bar.methods.singleOrNull { "${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" == ON_TOUCH }
+        ?: refuse("${bar.type} has no $ON_TOUCH of its own")
+    val code = touch.code()
+    val flow = ControlFlow.of(touch)
+    val presses = code.indices.filter { at ->
+        code[at].opcode == Opcode.INVOKE_VIRTUAL && code[at].reference() == GET_ACTION &&
+            code.getOrNull(at + 1)?.opcode == Opcode.MOVE_RESULT &&
+            code.getOrNull(at + 2)?.opcode == Opcode.IF_NEZ &&
+            (code[at + 1] as OneRegisterInstruction).registerA == (code[at + 2] as OneRegisterInstruction).registerA &&
+            code.getOrNull(at + 3)?.reference() == GET_THUMB
+    }.mapNotNull { at ->
+        val other = flow.normal[at + 2].singleOrNull { it != at + 3 } ?: return@mapNotNull null
+        ThumbOnlyPress(touch, at + 3, other).takeIf {
+            code[other].opcode == Opcode.INVOKE_SUPER && code[other].reference() == SEEK_BAR_TOUCH
+        }
+    }
+    return presses.singleOrNull()
+        ?: refuse("${bar.type}->onTouchEvent has ${presses.size} press checks that go on to the thumb's bounds, expected one")
+}
+
+/**
+ * At the thumb-only press: while the extension takes a tap anywhere on the bar, Facebook's
+ * [SEEK_BAR_TOUCH] gets the press, as it does every press with no thumb, and Android's SeekBar
+ * seeks to where the finger lifts or drags it from there. Otherwise Facebook checks the thumb's
+ * bounds. The press way is only reached from the check, so nothing jumps past the call.
+ */
+internal fun MutableMethod.seeksFromAnywhere(press: ThumbOnlyPress) {
+    val next = implementation!!.instructions[press.at] as BuilderInstruction
+    if (next.location.labels.isNotEmpty()) refuse("$definingClass->$name has a jump to its thumb check")
+    val register = freeLocalsAt(PATCH, press.at, 1, targets = listOf(press.toSeekBar), highest = 255).single()
+    addInstructionsWithLabels(
+        press.at,
+        """
+            invoke-static/range { p0 .. p0 }, $SEEKS_FROM_ANYWHERE
+            move-result v$register
+            if-nez v$register, :anywhere
+        """,
+        ExternalLabel("anywhere", getInstruction(press.toSeekBar)),
     )
 }

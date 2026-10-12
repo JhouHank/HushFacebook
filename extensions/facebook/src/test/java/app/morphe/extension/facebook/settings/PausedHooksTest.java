@@ -670,9 +670,11 @@ public class PausedHooksTest {
         probes.put(PatchFamily.HDR_BRIGHTNESS, Arrays.asList(
                 HdrBrightnessForTests::keepsAnHdrWindowInTheUsualRange, HdrBrightnessForTests::holdsTheHeadroom,
                 HdrBrightnessForTests::answersTheScreenAsShowingNoHdr));
-        // A reel's bar is kept full size, and a full-screen video sets no fade timer.
+        // A reel's bar is kept full size, a full-screen video sets no fade timer, and a press off the
+        // bar's thumb goes to the SeekBar.
         probes.put(PatchFamily.PROGRESS_BAR, Arrays.asList(ProgressBar::keepsReelBar, ProgressBar::keepsControls,
-                ProgressBar::liftsFooter, ProgressBar::noFadedBar));
+                ProgressBar::liftsFooter, ProgressBar::noFadedBar,
+                () -> ProgressBar.seeksFromAnywhere(new android.widget.SeekBar(RuntimeEnvironment.getApplication()))));
         // A tab asked for shows without its slide.
         probes.put(PatchFamily.SCREEN_TRANSITIONS, Collections.singletonList(() -> !ScreenTransitionsForTests.slides()));
         // The app icon benefit is answered yes, at the provider's check and at the picker's own look,

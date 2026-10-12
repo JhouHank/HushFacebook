@@ -7,6 +7,7 @@ package app.morphe.extension.facebook.media;
 import android.os.SystemClock;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.SeekBar;
 
 import androidx.annotation.Nullable;
 
@@ -41,6 +42,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * landscape mode opens runs on the Reels controls component, whose controller posts a runnable that
  * hides them about 3 seconds after a tap. The patch asks {@link #keepsControls} first in that
  * extension's timer and in that runnable, and a yes hides nothing. A tap still hides them.
+ *
+ * <p>The scrubber's SeekBar only takes a press on its thumb. With Tap the bar to seek on,
+ * {@link #seeksFromAnywhere} hands a press anywhere on it to Android's SeekBar, so a tap jumps there.
  *
  * <p>Off, paused, before the settings are ready, or when anything here fails, both answer no and
  * Facebook carries on with its own code.
@@ -83,6 +87,9 @@ public final class ProgressBar {
 
     /** Counted each time the bar, while kept, takes back the place of a look Facebook parked to hide it. */
     static final String PARKED_HIDE_REPLACED = "Reel bar kept over a parked hide";
+
+    /** Counted each time a press off the bar's thumb is handed to the SeekBar to seek. */
+    static final String SEEK_BAR_PRESSED = "Seek bar tapped off the thumb";
 
     /** The scrubber's looks that leave no bar on screen: 2 fades it out, 4 hides it. */
     static final int FADED = 2;
@@ -265,6 +272,27 @@ public final class ProgressBar {
         if (look == null || parked == null) return false;
         if (look == FADED || look == INVISIBLE || (parked != FADED && parked != INVISIBLE)) return false;
         return keeps("reel bar parked hide", PARKED_HIDE_REPLACED);
+    }
+
+    /**
+     * The hook in the scrubber SeekBar's touch handler, on a press it would only take on the thumb
+     * (#125). True, with Tap the bar to seek on, hands the press to Android's SeekBar, which jumps to
+     * where the finger lifts or follows a drag from there. False keeps Facebook's thumb check. A bar
+     * that's off or has no length yet (a max of 0) keeps it too, since there's nowhere to jump to.
+     */
+    public static boolean seeksFromAnywhere(@Nullable SeekBar bar) {
+        try {
+            if (bar == null) return false;
+            HookStatus.invoked(FAMILY);
+            if (!Utils.settingsReady() || !Settings.TAP_TO_SEEK.get()) return false;
+            if (!bar.isEnabled() || bar.getMax() <= 0) return false;
+            HookStatus.bound(FAMILY, "seek bar press");
+            HookStatus.counted(FAMILY, SEEK_BAR_PRESSED);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "seek bar press", failure);
+            return false;
+        }
     }
 
     /** Whether the reel's time label stays up: the bar is kept and the time switch is on. */

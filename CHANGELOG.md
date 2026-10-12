@@ -7,6 +7,7 @@ Changes in each Hushfacebook version, newest first.
 ### Added
 
 * **Facebook:** Two new switches under Appearance keep the bars on screen while you scroll, each on its own (issue #132). **Keep the tab bar on screen** stops the bottom tab bar from sliding away on accounts where Facebook does that by itself. It greys out while `Hide the tab bar while scrolling` is on, and needs a restart. **Keep the top bar on screen** holds the top bar with search and Messenger in place as you scroll down, with the tabs too when they sit at the top. It works on the next scroll, no restart needed. Both start off.
+* **Facebook:** `Keep the progress bar` has a new switch under Playback, **Tap the bar to seek** (issue #125). Facebook's bar on reels and videos only moves when you drag its dot, and a tap anywhere else on it did nothing. With the switch on, a tap jumps to that spot, and a drag can start anywhere on the bar. It works with or without `Keep the progress bar`, starts off and needs no restart.
 
 ### Changed
 

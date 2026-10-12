@@ -201,6 +201,7 @@ public final class SettingsBackup {
             Settings.TURN_OFF_HDR_BRIGHTNESS,
             Settings.KEEP_PROGRESS_BAR,
             Settings.KEEP_PROGRESS_BAR_TIME,
+            Settings.TAP_TO_SEEK,
             Settings.USE_SYSTEM_FONT,
             Settings.USE_SYSTEM_EMOJI,
             Settings.OPEN_LINKS_EXTERNALLY,

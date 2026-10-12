@@ -698,6 +698,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_keep_progress_bar_time", TRUE);
 
     /**
+     * A tap anywhere on a reel's or video's progress bar jumps there, where Facebook's bar only takes
+     * a press on its thumb ({@link app.morphe.extension.facebook.media.ProgressBar#seeksFromAnywhere}).
+     * Works with {@link #KEEP_PROGRESS_BAR} on or off. Off by default, and asked on every press, so
+     * no restart.
+     */
+    public static final BooleanSetting TAP_TO_SEEK =
+            new BooleanSetting("hushfacebook_tap_to_seek", FALSE);
+
+    /**
      * Facebook's own text, React Native screens' included, drawn in the font {@link #FONT_SOURCE}
      * names instead of Meta's Optimistic, at the same weight and slant. A typeface already on
      * screen keeps its font until Facebook restarts.
