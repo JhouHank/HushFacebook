@@ -586,7 +586,7 @@ Run `python scripts/test-build-identity-producer.py` with the build's JDK and re
 
 Fixture anchor scans reuse expanded DEX files in the test worker's temporary directory. The cache checks bundle content and reused DEX bytes, never relies on file names or timestamps, and removes its own files at worker shutdown. Every scan still reads one DEX at a time and runs the same anchor checks.
 
-Real-codec subprocesses have a 120-second deadline. Their output goes to a temporary file, remains in a failure's diagnostic text and is cleaned afterward. The runner doesn't wait for pipe EOF. Cleanup terminates only the process tree the runner owns, including descendants of an already exited parent on Windows and Linux.
+Real-codec subprocesses have a 120-second deadline. Their output goes to a temporary file, remains in a failure's diagnostic text and is cleaned afterward. The runner doesn't wait for pipe EOF. Cleanup terminates only the process tree the runner owns, including descendants of an already exited parent on Windows and Linux. Linux keeps a separate process group guard, so cleanup also works if the private launcher is killed.
 
 The MP4 join test also reads packets and decodes real H.264, AV1, VP9 and AAC tracks. Install FFmpeg with the `libx264`, `libsvtav1` and `libvpx-vp9` encoders, and put `ffmpeg` and `ffprobe` on PATH. To choose executable files explicitly, set `HUSHFACEBOOK_TEST_FFMPEG` and `HUSHFACEBOOK_TEST_FFPROBE` to their full paths. An explicit path that doesn't exist or isn't executable fails the test. Missing optional tools on a local checkout skip the named codec test and count as one skipped test. Release validation refuses skipped runtime tests, including this one.
 
