@@ -298,6 +298,9 @@ if "%3"=="uninstall" goto uninstall
 exit /b 0
 :package_path
 if "%FAKE_ADB_MODE%"=="check-fail" goto check_fail
+if "%FAKE_ADB_MODE%"=="offline" goto offline
+rem pm path answers a package that isn't installed with exit 1 and nothing printed (Android 16).
+if "%FAKE_ADB_MODE%"=="absent" exit /b 1
 if "%FAKE_ADB_MODE%"=="present" echo package:/data/app/example/base.apk
 if "%FAKE_ADB_MODE%"=="uninstall-fail" echo package:/data/app/example/base.apk
 exit /b 0
@@ -307,6 +310,9 @@ echo Success
 exit /b 0
 :check_fail
 exit /b 17
+:offline
+echo adb.exe: device 'BROKEN' not found 1>&2
+exit /b 1
 :uninstall_fail
 exit /b 19
 '@
@@ -334,6 +340,19 @@ exit /b 19
     } '*could not check*' 'An ADB transport failure was treated as an absent package.'
     $calls = @(Get-Content -LiteralPath $log)
     Assert-True ($calls.Count -eq 1) 'The check-failure path continued after ADB failed.'
+
+    # adb's own failure also exits 1, but says why, so it isn't read as pm's "not installed".
+    Remove-Item -LiteralPath $log -Force
+    [System.IO.File]::WriteAllText($mode, 'offline', [System.Text.Encoding]::ASCII)
+    Assert-Throws {
+        Remove-AndroidPackageIfInstalled -Adb $fakeAdb -Serial 'BROKEN' -PackageName 'com.example.app'
+    } "*could not check*device 'BROKEN' not found*" 'adb failing with exit 1 was treated as an absent package.'
+    [System.IO.File]::WriteAllText($mode, 'absent', [System.Text.Encoding]::ASCII)
+    Assert-True (@(Get-AndroidPackagePaths -Adb $fakeAdb -Serial 'CLEAN' -PackageName 'com.example.app').Count -eq 0) `
+        'pm path exiting 1 with nothing printed was not read as not installed.'
+    [System.IO.File]::WriteAllText($mode, 'present', [System.Text.Encoding]::ASCII)
+    Assert-True ((@(Get-AndroidPackagePaths -Adb $fakeAdb -Serial 'READY' -PackageName 'com.example.app') -join ',') -eq
+        'package:/data/app/example/base.apk') 'An installed package gave no path.'
 
     Remove-Item -LiteralPath $log -Force
     [System.IO.File]::WriteAllText($mode, 'uninstall-fail', [System.Text.Encoding]::ASCII)

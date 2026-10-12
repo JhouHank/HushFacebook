@@ -133,6 +133,7 @@ function Read-SmokeReport {
 if ($MyInvocation.InvocationName -eq '.') { return }
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'device-install.ps1')
 if (-not $Serial) { throw 'Pass -Serial or set HUSHFACEBOOK_DEVICE_SERIAL.' }
 if (-not $OutDir) {
     $OutDir = Join-Path ([IO.Path]::GetTempPath()) ("hushfacebook-smoke-" + (Get-Date -Format 'yyyyMMdd-HHmmss'))
@@ -191,7 +192,7 @@ function Invoke-TapLabel {
 }
 
 if (((Invoke-Adb get-state) -join '') -ne 'device') { throw "$Serial is not ready." }
-if (-not (((Invoke-Adb shell pm path $Package) -join '') -like 'package:*')) { throw "$Package is not installed on $Serial." }
+if (@(Get-AndroidPackagePaths -Adb $adb -Serial $Serial -PackageName $Package).Count -eq 0) { throw "$Package is not installed on $Serial." }
 
 if ($Apk) {
     Write-Host "[smoke] installing $(Split-Path -Leaf $Apk)"
