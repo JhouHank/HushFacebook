@@ -4,9 +4,18 @@
  */
 package app.morphe.patches.facebook.coexist
 
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.misc.extension.patchLog
+import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.builder.BuilderInstruction
+import com.android.tools.smali.dexlib2.iface.ClassDef
+import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import org.w3c.dom.Document
 import org.w3c.dom.Element
 import org.w3c.dom.NodeList
@@ -22,6 +31,10 @@ import org.w3c.dom.NodeList
  * entry and every screen labeled with the application's own label point at. A label written into
  * the manifest as text is read as a reference when it starts with @ or ?, and punctuation in it
  * is up to the manifest's own parsing, so the resource is quoted with escapes instead.
+ *
+ * The recent apps screen shows the task's own label, and Facebook sets it from its brand string,
+ * so Hushfacebook settings also swaps the label at each task description Facebook makes
+ * ([taskLabels]). Android 16 read "<name> Facebook" there before that (2026-10-12).
  *
  * Root mounting keeps the stock app's manifest, so a mounted install keeps Facebook's name.
  */
@@ -112,4 +125,51 @@ internal fun appLabelPatch(appName: () -> String?) = resourcePatch {
         document(STRINGS).use { it.putAppName(name) }
         patchLog.info("$OPTION: the app is called \"$name\" under its icon and in App info ($relabeled launcher entries and screens).")
     }
+}
+
+/** The extension's answer for the recent apps screen's label. */
+internal const val TASK_LABEL =
+    "Lapp/morphe/extension/facebook/coexist/AppName;->taskLabel(Ljava/lang/String;)Ljava/lang/String;"
+
+private const val TASK_DESCRIPTION = "Landroid/app/ActivityManager\$TaskDescription;"
+
+/** A task description Facebook makes from a label: the [method], the constructor at [at] and the label's register. */
+internal class TaskLabel(val method: Method, val at: Int, val label: Int)
+
+/**
+ * Every place in [holder] that makes a task description, which carries the label the recent apps
+ * screen shows, from a String: a TaskDescription constructor whose first parameter is the label.
+ * 582 makes its main task's in `LX/2NP;->run` from Facebook's brand string, the one its About and
+ * login screens show, so the label is swapped at the call and the string is left alone. Refuses a
+ * range call, whose label register isn't read here.
+ */
+internal fun taskLabels(holder: ClassDef): List<TaskLabel> = holder.methods.flatMap { method ->
+    val code = method.implementation?.instructions?.toList().orEmpty()
+    code.indices.mapNotNull { at ->
+        val called = (code[at] as? ReferenceInstruction)?.reference as? MethodReference ?: return@mapNotNull null
+        if (called.definingClass != TASK_DESCRIPTION || called.name != "<init>" ||
+            called.parameterTypes.firstOrNull()?.toString() != "Ljava/lang/String;"
+        ) return@mapNotNull null
+        if (code[at].opcode != Opcode.INVOKE_DIRECT) {
+            throw PatchException("$OPTION: ${holder.type}->${method.name} makes a task description with ${code[at].opcode.name}")
+        }
+        TaskLabel(method, at, (code[at] as FiveRegisterInstruction).registerD)
+    }
+}
+
+/**
+ * Right before the constructor at [at]: the label in [label] goes through [TASK_LABEL] and comes
+ * back as the app's own, so the recent apps screen shows the picked name. Refuses a jump straight
+ * to the constructor, which would skip the swap.
+ */
+internal fun MutableMethod.labelsTaskWithAppName(at: Int, label: Int) {
+    val call = implementation!!.instructions[at] as BuilderInstruction
+    if (call.location.labels.isNotEmpty()) throw PatchException("$OPTION: $definingClass->$name jumps straight to its task description")
+    addInstructions(
+        at,
+        """
+            invoke-static { v$label }, $TASK_LABEL
+            move-result-object v$label
+        """,
+    )
 }

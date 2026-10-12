@@ -13,8 +13,13 @@ import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.stringOption
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.coexist.MAX_APP_NAME
+import app.morphe.patches.facebook.coexist.TaskLabel
 import app.morphe.patches.facebook.coexist.appLabelPatch
 import app.morphe.patches.facebook.coexist.clonedPackagePatch
+import app.morphe.patches.facebook.coexist.labelsTaskWithAppName
+import app.morphe.patches.facebook.coexist.pickedAppName
+import app.morphe.patches.facebook.coexist.taskLabels
+import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.media.hdr.playbackFormatEvidencePatch
 import app.morphe.patches.facebook.misc.extension.FACEBOOK_APPLICATION
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
@@ -22,6 +27,7 @@ import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.resignedtrust.fbnsSignersPatch
 import app.morphe.patches.facebook.notifications.pushDiagnosticsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.findMutableMethodOf
 import app.morphe.util.superclassChain
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -92,7 +98,7 @@ val settingsPatch = bytecodePatch(
         key = "appName",
         default = null,
         title = "App name",
-        description = "A name to show under the app icon and in App info instead of Facebook, up to $MAX_APP_NAME " +
+        description = "A name to show under the app icon, in App info and in recent apps instead of Facebook, up to $MAX_APP_NAME " +
             "characters, so this copy is easy to tell apart. Leave it empty to keep Facebook's name. It only changes " +
             "the name. Clone app is what lets a copy install next to the official Facebook.",
     )
@@ -152,5 +158,18 @@ val settingsPatch = bytecodePatch(
         // Facebook too: the call that gives the feed's Facebook logo its touch listener goes
         // through the extension, which gives the logo a long press that opens the screen.
         hookLogoLongPress()
+
+        // A picked App name also goes on the task, the label the recent apps screen shows, which
+        // Facebook sets from its brand string. See AppLabel.kt.
+        if (pickedAppName(appName) != null) {
+            val labels = mutableListOf<TaskLabel>()
+            classDefForEach { if (!it.type.startsWith(EXTENSION_CLASSES)) labels += taskLabels(it) }
+            if (labels.isEmpty()) throw PatchException("Hushfacebook settings, App name: Facebook makes no task description from a label")
+            // Highest index first, so the ones before it in the same method stay where they were.
+            for (label in labels.sortedByDescending { it.at }) {
+                mutableClassDefBy(label.method.definingClass).findMutableMethodOf(label.method)
+                    .labelsTaskWithAppName(label.at, label.label)
+            }
+        }
     }
 }
