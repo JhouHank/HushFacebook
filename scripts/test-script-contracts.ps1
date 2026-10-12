@@ -4608,6 +4608,9 @@ try {
         'shift',
         'goto next',
         ':take',
+        'rem Each -O with the -e before it, the patch the CLI gives that option to.',
+        'if "!PREV!"=="-O" >>"!HERE!options.log" echo !ENABLED! !V!',
+        'if "!PREV!"=="-e" set "ENABLED=!V!"',
         'if "!PREV!"=="-o" set "OUT=!V!"',
         'if "!PREV!"=="-r" set "RESULT=!V!"',
         'if "!V!"=="-f" set "FORCED=1"',
@@ -5270,6 +5273,18 @@ try {
         } $badOptions.Pattern 'patch-for-device.ps1 took patch options it should have refused.'
         Assert-True (-not (Test-Path -LiteralPath $javaLog)) 'patch-for-device.ps1 started the CLI with patch options it should have refused.'
     }
+    # An option goes after its own patch's -e. The CLI gives an -O to the -e before it, so one put
+    # in front landed on the patch listed before, and App name never reached Hushfacebook settings.
+    $optionedHere = @((Get-Content -LiteralPath (Join-Path $releaseRepo 'patches-list.json') -Raw | ConvertFrom-Json).patches)[1].name
+    $optionsLog = Join-Path $tools 'options.log'
+    Remove-Item -LiteralPath $javaLog, $optionsLog -Force -ErrorAction SilentlyContinue
+    & (Join-Path $PSScriptRoot 'patch-for-device.ps1') -Root $releaseRepo -DesktopJar $stubJar -Java $stubJava `
+        -Aapt2 $stubAapt2 -OutDir $deviceOut -Apk $fixturePaths[$releaseTarget.PackageVersion] `
+        -PatchOptions @{ $optionedHere = @('appName=HushBook') } 6> $null
+    $null = @(Read-QueueLog)
+    $optionsSeen =@(Get-Content -LiteralPath $optionsLog -ErrorAction SilentlyContinue) -join '; '
+    Assert-True ($optionsSeen -eq "$optionedHere appName=HushBook") `
+        "patch-for-device.ps1 gave the option to the wrong patch: '$optionsSeen'"
 
     # Another Meta app at a build the catalog declares. Neither script may hand it to the CLI: each
     # refuses it by name before anything is patched. The builder gets it beside the newest declared

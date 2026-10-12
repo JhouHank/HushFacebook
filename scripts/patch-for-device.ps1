@@ -38,8 +38,9 @@ param(
     # an earlier build on purpose. Without it a stale bundle stops the run.
     [switch]$AllowStaleBundle,
     # Option values for a patch, keyed by patch name, each a list of key=value strings, for
-    # example @{ 'Hushfacebook settings' = @('appName=HushBook') }. They go in front of that
-    # patch's -e, which is where the desktop CLI reads them.
+    # example @{ 'Hushfacebook settings' = @('appName=HushBook') }. They go after that patch's
+    # -e: the desktop CLI gives an -O to the -e before it. The CLI reads 2026, true or 1.5 as a
+    # number or a yes/no, so quote a text value that looks like one: 'appName="2026"'.
     [hashtable]$PatchOptions = @{},
     [string]$Apk,
     [string]$DesktopJar,
@@ -143,11 +144,13 @@ foreach ($optioned in $PatchOptions.Keys) {
 }
 $enable = @()
 foreach ($name in $names) {
-    foreach ($option in @($PatchOptions[$name] | Where-Object { $_ })) {
+    $enable += '-e'; $enable += $name
+    # Matched by -eq, not an index, so a case-sensitive hashtable still finds its patch.
+    $given = @($PatchOptions.GetEnumerator() | Where-Object { $_.Key -eq $name } | ForEach-Object { $_.Value })
+    foreach ($option in @($given | Where-Object { $_ })) {
         if ([string]$option -notmatch '^[A-Za-z][A-Za-z0-9_]*=') { throw "The option '$option' for '$name' isn't key=value." }
         $enable += '-O'; $enable += [string]$option
     }
-    $enable += '-e'; $enable += $name
 }
 $arguments = @('patch', '--exclusive', '-p', $bundle, '-o', $out, '-t', $temp, '-r', $result,
     '--keystore', $Keystore, '--keystore-password', $keystorePassword,
