@@ -33,6 +33,7 @@ import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -102,6 +103,8 @@ internal const val CLEARS_LAST_REEL = "$PROGRESS_BAR->clearsLastReel()Z"
 internal const val LIST_CLEAR = "Ljava/util/List;->clear()V"
 internal const val SET_VISIBILITY = "Landroid/view/View;->setVisibility(I)V"
 internal const val SET_VIEW_ALPHA = "Landroid/view/View;->setAlpha(F)V"
+/** 1.0f's bits, the `const/high16` an alpha back to full loads. */
+internal const val FULL_ALPHA = 0x3f800000
 internal const val KEEPS_CONTROLS = "$PROGRESS_BAR->keepsControls()Z"
 internal const val HIDE_TIME_LABEL = "$PROGRESS_BAR->hideTimeLabel(Landroid/view/ViewGroup;)V"
 internal const val BARS_EVERY_REEL = "$PROGRESS_BAR->barsEveryReel()Z"
@@ -276,6 +279,7 @@ val keepProgressBarPatch = bytecodePatch(
         val controllers = mutableListOf<ClassDef>()
         val statusOwners = mutableListOf<ClassDef>()
         val checkHolders = mutableListOf<ClassDef>()
+        val mountHolders = mutableListOf<ClassDef>()
         classDefForEach {
             if (it.type.startsWith(EXTENSION_CLASSES)) return@classDefForEach
             if (takesUpdater(it, updater)) controllers += it
@@ -283,11 +287,18 @@ val keepProgressBarPatch = bytecodePatch(
             if (it.type != scrubber.type && it.methods.any { method -> method.sameAs(lengthCheck) || method.sameAs(shortCheck) }) {
                 checkHolders += it
             }
+            if (it.type != progress.base.type && it.methods.any { method -> method.sameAs(another.mount) }) mountHolders += it
         }
         val (hider, hiderRun) = controlsHideRunnable(controllers) { classDefByOrNull(it) }
         val footer = statusHolder(statusOwners, status)
         val overrides = lengthCheckOverrides(checkHolders, scrubber.type, listOf(lengthCheck, shortCheck)) {
             classDefByOrNull(it)?.superclass
+        }
+        val skippedMounts = mountOverridesSkippingBase(mountHolders, progress.base.type, another.mount) {
+            classDefByOrNull(it)?.superclass
+        }
+        if (skippedMounts.isNotEmpty()) {
+            refuse("${skippedMounts.joinToString()} override the light mount ${another.mount.name} without calling the base's, so the next reel's reset wouldn't run there")
         }
         val barType = scrubberSeekBar(progress.base, scrubber.barField)
         // The extension takes the bar as a SeekBar, and the verifier holds the class to that.
@@ -483,18 +494,26 @@ internal fun skipsDrawing(view: ClassDef?, flag: String): Boolean {
 /**
  * Facebook's reset of the chapter marks over the bar (582 `LX/9d9;->A0C`), which its chapter
  * callback runs for a reel with none: the one static `(scrubber)V` method of [scrubber] that clears
- * a list, sets a view's visibility (the marks go) and sets the alpha of a view after reading the
- * bar (the bar the marks drew over comes back, for the looks that show it). Refuses unless one.
+ * a list, sets a view's visibility (the marks go) and sets the alpha of a view to 1.0 after reading
+ * the bar (the bar the marks drew over comes back, for the looks that show it). Applying marks
+ * clears and hides too, but puts the bar's alpha at 0, so the 1.0 tells the two apart. Refuses
+ * unless there's one, and when it's private, since the scrubber base runs it.
  */
 internal fun chapterReset(scrubber: ClassDef, looks: ScrubberLooks): Method {
     val resets = scrubber.methods.filter { method ->
+        val code = method.implementation?.instructions ?: return@filter false
         AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "V" &&
             method.parameterTypes.map(CharSequence::toString) == listOf(scrubber.type) &&
             method.calls(LIST_CLEAR) && method.calls(SET_VISIBILITY) && method.calls(SET_VIEW_ALPHA) &&
-            method.implementation!!.instructions.any { it.reference() == looks.barField }
+            code.any { it.reference() == looks.barField } &&
+            code.any { (it as? NarrowLiteralInstruction)?.narrowLiteral == FULL_ALPHA }
     }
-    return resets.singleOrNull()
+    val reset = resets.singleOrNull()
         ?: refuse("${scrubber.type} has ${resets.size} static method(s) clearing its chapter marks and showing the bar again, expected one")
+    if (AccessFlags.PRIVATE.isSet(reset.accessFlags)) {
+        refuse("${scrubber.type}->${reset.name}, the chapter reset, is private, so the scrubber base can't run it")
+    }
+    return reset
 }
 
 /** The scrubber base's light mount and the index where its branch for another video starts. */
@@ -534,11 +553,32 @@ internal fun anotherVideo(base: ClassDef, barInfo: String): AnotherVideo {
     }
     if (!readsId) refuse("$where no longer reads the video id off its bar info $barInfo before comparing")
     val at = compare + 3
-    if (at >= code.size || code.indices.any { it != at - 1 && at in ControlFlow.of(mount).normal[it] }) {
+    val flow = ControlFlow.of(mount)
+    if (at >= code.size || code.indices.any { it != at - 1 && at in flow.normal[it] }) {
         refuse("$where has a jump onto its branch for another video")
     }
     return AnotherVideo(mount, at)
 }
+
+/**
+ * The classes extending the scrubber [base] that override its light [mount] without an
+ * `invoke-super` of it. Facebook runs the mount virtually, so the reset hooked into the base's
+ * mount would be skipped for any of them. 582 has none, as no class reaching `LX/9c4;` declares
+ * `A0m`. Uses [lengthCheckOverrides] to find the overrides among [candidates].
+ */
+internal fun mountOverridesSkippingBase(
+    candidates: List<ClassDef>,
+    base: String,
+    mount: Method,
+    superclassOf: (String) -> String?,
+): List<String> = lengthCheckOverrides(candidates, base, listOf(mount), superclassOf).filterNot { (_, override) ->
+    override.implementation!!.instructions.any {
+        val call = (it as? ReferenceInstruction)?.reference as? MethodReference
+        (it.opcode == Opcode.INVOKE_SUPER || it.opcode == Opcode.INVOKE_SUPER_RANGE) && call?.name == mount.name &&
+            call.returnType == mount.returnType &&
+            call.parameterTypes.map(CharSequence::toString) == mount.parameterTypes.map(CharSequence::toString)
+    }
+}.map { it.first }
 
 /**
  * The scrubber's instance `(IZ)Z` length checks loading [LENGTH_CHECK_SURFACE] that compare the
@@ -587,6 +627,7 @@ internal fun shortReelCheck(scrubber: ClassDef): Method {
  * checks virtually, so hooks on the scrubber's own checks never ran there. A reel under a minute
  * then had no passive look, and as the look selector skips a look equal to the current one, the
  * bar showed on every other such reel only (#73). Returns each override's class and method.
+ * [mountOverridesSkippingBase] finds the light mount's overrides with it too.
  */
 internal fun lengthCheckOverrides(
     candidates: List<ClassDef>,

@@ -12,14 +12,18 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction10x
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction11n
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction11x
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction35c
+import com.android.tools.smali.dexlib2.immutable.reference.ImmutableMethodReference
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
  * The scrubber's length checks overridden below it (#73): 582's Reels tab scrubber extends the one
  * the patch finds and answers both checks itself, so only hooks on those overrides reach its reels.
+ * An override of the base's light mount has to call the base's, or the next reel's reset is skipped.
  */
 class LengthCheckOverridesTest {
     private companion object {
@@ -92,5 +96,50 @@ class LengthCheckOverridesTest {
             check("Lfixture/ReelsScrubber;", "A1P"),
         )
         assertEquals(emptyList<String>(), overrides(reels))
+    }
+
+    private fun mount(owner: String, callsSuper: Boolean): Method = ImmutableMethod(
+        owner,
+        "A0m",
+        listOf(ImmutableMethodParameter("Lfixture/Video;", null, null)),
+        "V",
+        AccessFlags.PUBLIC.value,
+        null,
+        null,
+        ImmutableMethodImplementation(
+            2,
+            listOfNotNull(
+                if (callsSuper) {
+                    ImmutableInstruction35c(
+                        Opcode.INVOKE_SUPER, 2, 0, 1, 0, 0, 0,
+                        ImmutableMethodReference(BASE, "A0m", listOf("Lfixture/Video;"), "V"),
+                    )
+                } else {
+                    null
+                },
+                ImmutableInstruction10x(Opcode.RETURN_VOID),
+            ),
+            null,
+            null,
+        ),
+    )
+
+    private fun skippingBase(vararg candidates: ClassDef): List<String> {
+        val all = (listOf(type(BASE, "Ljava/lang/Object;")) + scrubber + candidates).associate { it.type to it.superclass }
+        return mountOverridesSkippingBase(candidates.toList(), BASE, mount(BASE, callsSuper = false)) { all[it] }
+    }
+
+    @Test
+    fun `a scrubber overriding the light mount without calling the base's is caught`() {
+        val own = type(SCRUBBER, BASE, mount(SCRUBBER, callsSuper = false))
+        val reels = type("Lfixture/ReelsScrubber;", SCRUBBER, mount("Lfixture/ReelsScrubber;", callsSuper = false))
+        assertEquals(listOf(SCRUBBER, "Lfixture/ReelsScrubber;"), skippingBase(own, reels))
+    }
+
+    @Test
+    fun `an override calling the base's light mount still gets the reset`() {
+        val own = type(SCRUBBER, BASE, mount(SCRUBBER, callsSuper = true))
+        val unrelated = type("Lfixture/Unrelated;", "Ljava/lang/Object;", mount("Lfixture/Unrelated;", callsSuper = false))
+        assertEquals(emptyList<String>(), skippingBase(own, unrelated))
     }
 }
