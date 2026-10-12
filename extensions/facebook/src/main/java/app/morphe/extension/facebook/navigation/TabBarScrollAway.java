@@ -9,6 +9,9 @@ import android.view.WindowInsets;
 
 import androidx.annotation.Nullable;
 
+import java.util.Map;
+import java.util.WeakHashMap;
+
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Logger;
@@ -119,20 +122,33 @@ public final class TabBarScrollAway {
      * always. With the bar staying put, that's the bar's height, but on a phone drawing under its
      * navigation bar the bar's holder covers the navigation bar too, so the bottom of each page, a
      * reel's progress bar with it, sat behind the tab bar. For a kept bar the pager then adds that
-     * overlap each time it's laid out, until Facebook sets a padding of its own.
+     * overlap each time it's laid out with Facebook's padding, and leaves any other padding alone.
+     * One listener per pager, however often Facebook sets it up.
      */
     public static void padsPager(@Nullable View pager, int left, int top, int right, int bottom) {
         if (pager == null) return;
         pager.setPadding(left, top, right, bottom);
         try {
             HookStatus.invoked(FAMILY);
-            if (!Utils.settingsReady() || Settings.TAB_BAR_SCROLL_AWAY.get() || !Settings.KEEP_TAB_BAR.get()) return;
+            if (bottom <= 0 || !Utils.settingsReady() || Settings.TAB_BAR_SCROLL_AWAY.get() || !Settings.KEEP_TAB_BAR.get()) return;
             HookStatus.bound(FAMILY, "tab bar kept pages");
-            pager.addOnLayoutChangeListener(new ClearsNavigationBar(bottom));
+            ClearsNavigationBar listening;
+            synchronized (CLEARED_PAGERS) {
+                listening = CLEARED_PAGERS.get(pager);
+                if (listening == null) {
+                    listening = new ClearsNavigationBar(bottom);
+                    CLEARED_PAGERS.put(pager, listening);
+                    pager.addOnLayoutChangeListener(listening);
+                }
+            }
+            listening.facebooks = bottom;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "tab bar kept pages", failure);
         }
     }
+
+    /** The pagers given a listener, so a second set-up doesn't add another. */
+    static final Map<View, ClearsNavigationBar> CLEARED_PAGERS = new WeakHashMap<>();
 
     /**
      * The bottom padding a kept bar's pager wants: [facebooks], plus as much of the navigation bar
@@ -145,8 +161,8 @@ public final class TabBarScrollAway {
         return facebooks + under;
     }
 
-    private static final class ClearsNavigationBar implements View.OnLayoutChangeListener {
-        private final int facebooks;
+    static final class ClearsNavigationBar implements View.OnLayoutChangeListener {
+        private volatile int facebooks;
         private int ours = -1;
 
         ClearsNavigationBar(int facebooks) {
@@ -162,13 +178,12 @@ public final class TabBarScrollAway {
                 int[] at = new int[2];
                 pager.getLocationInWindow(at);
                 int current = pager.getPaddingBottom();
+                int facebooks = this.facebooks;
                 int wanted = keptPadding(current, facebooks, ours, at[1] + pager.getHeight(),
                         pager.getRootView().getHeight(), insets.getInsets(WindowInsets.Type.navigationBars()).bottom);
-                if (wanted < 0) {
-                    pager.removeOnLayoutChangeListener(this);
-                    return;
-                }
-                if (wanted == current) return;
+                // A padding of Facebook's own for another kind of page stays, and the overlap comes
+                // back once Facebook puts the bar's padding back.
+                if (wanted < 0 || wanted == current) return;
                 ours = wanted;
                 // Not in the middle of this layout: the padding change asks for the next one.
                 pager.post(() -> {

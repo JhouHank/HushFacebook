@@ -215,4 +215,26 @@ public class TabBarScrollAwayTest {
         assertTrue(line, line != null && line.contains("invoked 2,"));
         assertFalse("a padding was counted without a window: " + line, line.contains(TabBarScrollAway.PAGES_CLEARED));
     }
+
+    @Test
+    public void aPagerSetUpAgainKeepsOneListenerAndOnlyAKeptBarsPaddingGetsOne() {
+        android.content.Context context = org.robolectric.RuntimeEnvironment.getApplication();
+        Settings.KEEP_TAB_BAR.save(true);
+        android.view.View pager = new android.widget.FrameLayout(context);
+        TabBarScrollAway.padsPager(pager, 0, 0, 0, 147);
+        TabBarScrollAway.ClearsNavigationBar first = TabBarScrollAway.CLEARED_PAGERS.get(pager);
+        assertTrue("a kept bar's pager got no listener", first != null);
+        TabBarScrollAway.padsPager(pager, 0, 0, 0, 147);
+        assertTrue("a second set-up added another listener", first == TabBarScrollAway.CLEARED_PAGERS.get(pager));
+
+        android.view.View unpadded = new android.widget.FrameLayout(context);
+        TabBarScrollAway.padsPager(unpadded, 0, 0, 0, 0);
+        assertNull("a pager Facebook gives no bottom padding got a listener", TabBarScrollAway.CLEARED_PAGERS.get(unpadded));
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        android.view.View paused = new android.widget.FrameLayout(context);
+        TabBarScrollAway.padsPager(paused, 0, 0, 0, 147);
+        assertNull("a paused Hushfacebook gave a pager a listener", TabBarScrollAway.CLEARED_PAGERS.get(paused));
+        assertEquals(147, paused.getPaddingBottom());
+    }
 }
