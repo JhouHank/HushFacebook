@@ -6,6 +6,8 @@ Every Hushfacebook release, newest first.
 
 ### Changed
 
+* **Facebook:** The install guide now points desktop-browser users to HushFacebook Web and its separate userscript instructions.
+
 * **Tooling:** Settings previews are refreshed from both Android SDK capture runs, with focus, disabled, validation and export-result states checked in all three themes.
 
 * **Facebook:** Settings controls have visible focus boundaries and distinct disabled actions in black, Material dark and Material light. Switches and button feedback follow the same small corner scale, and recovery spacing adapts to shorter screens and large text.

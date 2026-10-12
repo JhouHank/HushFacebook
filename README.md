@@ -45,6 +45,10 @@ There are 88 patches for `com.facebook.katana`. They're checked against the arm6
 
 Facebook releases a new version about once a week, and each one renames most of its code. Every patch here finds what it changes by names Facebook keeps (its GraphQL model classes, log strings, enum names, manifest components) rather than by the names that change, which is why most of them carry over from one build to the next. When one doesn't, patching stops with a message naming what it couldn't find, instead of producing an app that quietly does nothing. Four patches work down a list of separate targets instead: Block background ad prefetch, Block ad telemetry, Disable Audience Network and Hide suggested and promoted posts. They stop only when a build has none of the list. If it has some, they apply to what's there and name each missing target in the patch log. Facebook 582 doesn't have six of the feed units the suggested posts patch looks for, so patching it lists those six. Please report a stop, or a missing target beyond those six.
 
+## Desktop browsers
+
+[HushFacebook Web](https://github.com/SysAdminDoc/HushFacebookWeb) is a separate userscript for Facebook in a desktop browser. Follow its [install instructions](https://github.com/SysAdminDoc/HushFacebookWeb#install) with Tampermonkey or Violentmonkey. Both managers have been checked on Chrome; Firefox hasn't been checked yet. Its [feature comparison](https://github.com/SysAdminDoc/HushFacebookWeb/blob/main/docs/feature-parity.md) lists what it supports and what still needs testing.
+
 ## Keep your signing key
 
 Morphe Manager signs the patched Facebook with a key it makes on your phone. Android installs an update over your patched Facebook only when the update carries that same key, so the key is what lets you update without losing Facebook's data.
