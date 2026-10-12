@@ -1479,7 +1479,7 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         CharSequence[] values = new CharSequence[choices.length];
         for (int i = 0; i < choices.length; i++) {
             PlaybackQuality quality = choices[i].quality;
-            entries[i] = quality == null ? L10n.t("Same as videos") : playbackQualityLabel(quality);
+            entries[i] = quality == null ? L10n.t("Same as Playback quality") : playbackQualityLabel(quality);
             values[i] = choices[i].name();
         }
         row.setEntries(entries);
@@ -1489,11 +1489,18 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         return row;
     }
 
-    /** What the Reels ([reels]) or Stories quality row says [choice] does. A quality of their own is named as the list names it. */
+    /**
+     * What the Reels ([reels]) or Stories quality row says [choice] does. Both kinds say how the
+     * choice relates to Playback quality, which a bare label left unclear (#90).
+     */
     static String surfaceQualitySummary(SurfaceQuality choice, boolean reels) {
-        if (choice.quality != null) return playbackQualityLabel(choice.quality);
-        return reels ? L10n.t("Reels play at the playback quality above.")
-                : L10n.t("Video stories play at the playback quality above.");
+        if (choice.quality != null) {
+            String label = playbackQualityLabel(choice.quality);
+            return reels ? L10n.f("%1$s for reels, whatever Playback quality is set to.", label)
+                    : L10n.f("%1$s for video stories, whatever Playback quality is set to.", label);
+        }
+        return reels ? L10n.t("Reels follow the Playback quality row.")
+                : L10n.t("Video stories follow the Playback quality row.");
     }
 
     /** What the list calls [quality]: Auto, as Facebook's own quality menu calls it, and a ceiling by its label. */
@@ -1966,7 +1973,7 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         EditText field = row.getEditText();
         keepEditorInDialog(field, true);
         field.setMinLines(3);
-        field.setHint(L10n.t("One name, id or site per line"));
+        field.setHint(L10n.t("One name, ID or site per line"));
         row.setText(Settings.HIDDEN_SOURCES.savedValue());
         row.setOnPreferenceChangeListener((preference, typed) -> {
             String raw = typed == null ? "" : typed.toString();

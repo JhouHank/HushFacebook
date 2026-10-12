@@ -4,6 +4,11 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+### Changed
+
+* **Facebook:** `Reels quality` and `Stories quality` say how each choice relates to `Playback quality` (issue #90 asked). Their first choice is now called Same as Playback quality, and a quality of their own reads like "Highest for reels, whatever Playback quality is set to." instead of a bare "Highest".
+* **Facebook:** The `Unlock app icons` summary says plainly that the next row opens the App icon page, and the hint in the list editors writes ID in capitals like the rest of the settings.
+
 ### Fixed
 
 * **Facebook:** `Default comment order` set to All comments now also works on posts whose sort menu names that row differently. A diagnostic report on issue #110 showed some posts offering their own unfiltered row in All comments' place, and those stayed on Most relevant. Where a menu has both, the usual All comments row still wins.
