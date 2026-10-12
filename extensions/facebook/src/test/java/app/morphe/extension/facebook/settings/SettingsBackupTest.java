@@ -1839,7 +1839,7 @@ public class SettingsBackupTest {
         String file = SettingsBackup.create();
         Map<String, ?> before = store();
         for (String key : new String[]{SettingsBackup.REELS_QUALITY.key, SettingsBackup.STORIES_QUALITY.key}) {
-            for (Object refused : new Object[]{"SAME", "Same as videos", "DATA_SAVER", "480", " 720p", "", "1080p", 720,
+            for (Object refused : new Object[]{"SAME", "Same as Playback quality", "DATA_SAVER", "480", " 720p", "", "1080p", 720,
                     true, JSONObject.NULL, new JSONObject(), new org.json.JSONArray()}) {
                 JSONObject hostile = new JSONObject(file);
                 hostile.getJSONObject("settings").put(key, refused);
