@@ -9,6 +9,7 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.resourcePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.misc.extension.patchLog
+import app.morphe.util.RegisterLiveness
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.BuilderInstruction
 import com.android.tools.smali.dexlib2.iface.ClassDef
@@ -141,7 +142,8 @@ internal class TaskLabel(val method: Method, val at: Int, val label: Int)
  * screen shows, from a String: a TaskDescription constructor whose first parameter is the label.
  * 582 makes its main task's in `LX/2NP;->run` from Facebook's brand string, the one its About and
  * login screens show, so the label is swapped at the call and the string is left alone. Refuses a
- * range call, whose label register isn't read here.
+ * range call, whose label register isn't read here, and a call whose label register is another of
+ * its arguments too or is read again afterwards, since the swap writes the app's name into it.
  */
 internal fun taskLabels(holder: ClassDef): List<TaskLabel> = holder.methods.flatMap { method ->
     val code = method.implementation?.instructions?.toList().orEmpty()
@@ -150,10 +152,16 @@ internal fun taskLabels(holder: ClassDef): List<TaskLabel> = holder.methods.flat
         if (called.definingClass != TASK_DESCRIPTION || called.name != "<init>" ||
             called.parameterTypes.firstOrNull()?.toString() != "Ljava/lang/String;"
         ) return@mapNotNull null
-        if (code[at].opcode != Opcode.INVOKE_DIRECT) {
-            throw PatchException("$OPTION: ${holder.type}->${method.name} makes a task description with ${code[at].opcode.name}")
+        val where = "$OPTION: ${holder.type}->${method.name}"
+        if (code[at].opcode != Opcode.INVOKE_DIRECT) throw PatchException("$where makes a task description with ${code[at].opcode.name}")
+        val call = code[at] as FiveRegisterInstruction
+        val label = call.registerD
+        val others = listOf(call.registerC, call.registerE, call.registerF, call.registerG).take(call.registerCount - 1)
+        if (label in others) throw PatchException("$where passes its task's label register as another argument too")
+        if (at + 1 < code.size && label in RegisterLiveness.of(method).liveInto(at + 1)) {
+            throw PatchException("$where reads its task's label register again after the task description")
         }
-        TaskLabel(method, at, (code[at] as FiveRegisterInstruction).registerD)
+        TaskLabel(method, at, label)
     }
 }
 
