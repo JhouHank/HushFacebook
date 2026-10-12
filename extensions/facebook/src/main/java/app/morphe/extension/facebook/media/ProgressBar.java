@@ -81,6 +81,9 @@ public final class ProgressBar {
     /** Counted each time the bar, while kept, is still set to the look that hides it. */
     static final String INVISIBLE_LOOK = "Reel bar set to the invisible look";
 
+    /** Counted each time the bar, while kept, takes back the place of a look Facebook parked to hide it. */
+    static final String PARKED_HIDE_REPLACED = "Reel bar kept over a parked hide";
+
     /** The scrubber's looks that leave no bar on screen: 2 fades it out, 4 hides it. */
     static final int FADED = 2;
     static final int INVISIBLE = 4;
@@ -248,6 +251,20 @@ public final class ProgressBar {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "reel bar look", failure);
         }
+    }
+
+    /**
+     * The hook in the scrubber's look selector, when the look asked for is the one the bar already
+     * has, with the look Facebook parked to apply once a reel's player change ends. Facebook skips a
+     * look the bar has, so a hide parked as one reel left the screen still landed on the next reel to
+     * use the same scrubber, after that reel's own look had been skipped, and it played with no bar
+     * (#73). True, while the bar is kept, for a look that shows the bar over a parked hide: the
+     * selector goes on as for a new look and parks it in the hide's place. False keeps the skip.
+     */
+    public static boolean replacesParkedLook(@Nullable Integer look, @Nullable Integer parked) {
+        if (look == null || parked == null) return false;
+        if (look == FADED || look == INVISIBLE || (parked != FADED && parked != INVISIBLE)) return false;
+        return keeps("reel bar parked hide", PARKED_HIDE_REPLACED);
     }
 
     /** Whether the reel's time label stays up: the bar is kept and the time switch is on. */

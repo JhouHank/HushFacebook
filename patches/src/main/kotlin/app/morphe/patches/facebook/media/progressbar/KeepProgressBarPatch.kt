@@ -103,6 +103,7 @@ internal const val SMOOTHS_BAR = "$PROGRESS_BAR->smoothsBar()Z"
 internal const val LIFTS_FOOTER = "$PROGRESS_BAR->liftsFooter()Z"
 internal const val NO_FADED_BAR = "$PROGRESS_BAR->noFadedBar()Z"
 internal const val COUNTS_LOOK = "$PROGRESS_BAR->look(Ljava/lang/Integer;)V"
+internal const val REPLACES_PARKED = "$PROGRESS_BAR->replacesParkedLook(Ljava/lang/Integer;Ljava/lang/Integer;)Z"
 internal const val VIEW_GROUP = "Landroid/view/ViewGroup;"
 
 /**
@@ -135,8 +136,11 @@ internal const val VIEW_GROUP = "Landroid/view/ViewGroup;"
  * for some reels it flags on its servers, so the info's builder asks the extension, and while kept
  * a reel with a known length gets one. The scrubber's minimum length check answers
  * yes, so a reel Facebook finds too short for a bar gets one. Its other length check, which gives a
- * short reel the look that fades the bar out (alpha 0) when a server flag is on, answers no. The
- * scrubber's look selector reports the looks that still hide the bar, for the diagnostic report.
+ * short reel the look that fades the bar out (alpha 0) when a server flag is on, answers no. Both
+ * hooks go on the Reels tab's scrubber too, which overrides the two checks. The scrubber's look
+ * selector reports the looks that still hide the bar, for the diagnostic report, and skips a look
+ * the bar has only when no hide is parked: a hide parked during a player change otherwise landed on
+ * the next reel to reuse the scrubber.
  * And the wait before the scrubber's next progress update, Facebook's `defaultFrameDelayMs` of
  * 100 ms, drops to about a frame, so the bar moves smoothly instead of in visible steps.
  *
@@ -229,29 +233,45 @@ val keepProgressBarPatch = bytecodePatch(
         val info = barInfo(progress.base, lengthCheck)
         val delay = frameDelay(progress)
         val selector = lookSelector(progress.base, scrubber)
+        val skip = sameLookSkip(selector) { classDefByOrNull(it) }
         val status = seekBarStatus(
             classDefByStrings(STATUS_DRAGGING, StringComparisonType.EQUALS)
                 .filterNot { it.type.startsWith(EXTENSION_CLASSES) },
         )
         val controllers = mutableListOf<ClassDef>()
         val statusOwners = mutableListOf<ClassDef>()
+        val checkHolders = mutableListOf<ClassDef>()
         classDefForEach {
             if (it.type.startsWith(EXTENSION_CLASSES)) return@classDefForEach
             if (takesUpdater(it, updater)) controllers += it
             if (it.fields.any { field -> field.type == status.type }) statusOwners += it
+            if (it.type != scrubber.type && it.methods.any { method -> method.sameAs(lengthCheck) || method.sameAs(shortCheck) }) {
+                checkHolders += it
+            }
         }
         val (hider, hiderRun) = controlsHideRunnable(controllers) { classDefByOrNull(it) }
         val footer = statusHolder(statusOwners, status)
+        val overrides = lengthCheckOverrides(checkHolders, scrubber.type, listOf(lengthCheck, shortCheck)) {
+            classDefByOrNull(it)?.superclass
+        }
 
         mutableClassDefBy(scrubber.type).methods.single { it.sameAs(scrubber.passive) }
             .activeInstead(scrubber)
         mutableClassDefBy(scrubber.type).methods.single { it.sameAs(lengthCheck) }.longEnoughWhileKept()
         mutableClassDefBy(scrubber.type).methods.single { it.sameAs(shortCheck) }.notShortWhileKept()
+        for ((type, check) in overrides) {
+            val method = mutableClassDefBy(type).methods.single { it.sameAs(check) }
+            if (check.sameAs(lengthCheck)) method.longEnoughWhileKept() else method.notShortWhileKept()
+        }
         mutableClassDefBy(progress.base.type).methods.single { it.sameAs(info.builder) }.hasBarWhileKept(info.call)
         mutableClassDefBy(progress.base.type).methods.single { it.sameAs(progress.update) }
             .refreshesTimeWithBar(progress, scrubber)
         mutableClassDefBy(progress.base.type).methods.single { it.sameAs(delay) }.smoothWhileKept()
-        mutableClassDefBy(progress.base.type).methods.single { it.sameAs(selector) }.countsLook()
+        // The skip's index is the unpatched selector's, so its hook goes in before the one at the top.
+        mutableClassDefBy(progress.base.type).methods.single { it.sameAs(selector) }.apply {
+            replacesParkedLook(skip)
+            countsLook()
+        }
         mutableClassDefBy(footer.type).methods.single { it.sameAs(footer.constructor) }.startsLifted(footer, status)
         mutableClassDefBy(footer.type).methods.single { it.sameAs(footer.update) }.staysLifted(footer, status)
         if (plugin != null && sizes != null) {
@@ -399,6 +419,38 @@ internal fun shortReelCheck(scrubber: ClassDef): Method {
 }
 
 /**
+ * The overrides of the scrubber's length [checks] in classes extending it: each instance method of
+ * [candidates] with a check's name and signature, on a class whose superclasses, looked up through
+ * [superclassOf], reach [scrubber]. 582's Reels tab scrubber (`LX/9D6;`) extends `LX/9d9;` and
+ * overrides both checks with its own minimum of about a minute, and the bar info builder asks the
+ * checks virtually, so hooks on the scrubber's own checks never ran there. A reel under a minute
+ * then had no passive look, and as the look selector skips a look equal to the current one, the
+ * bar showed on every other such reel only (#73). Returns each override's class and method.
+ */
+internal fun lengthCheckOverrides(
+    candidates: List<ClassDef>,
+    scrubber: String,
+    checks: List<Method>,
+    superclassOf: (String) -> String?,
+): List<Pair<String, Method>> {
+    fun extendsScrubber(type: String): Boolean {
+        var current = superclassOf(type)
+        var depth = 0
+        while (current != null && depth++ < 64) {
+            if (current == scrubber) return true
+            current = superclassOf(current)
+        }
+        return false
+    }
+    return candidates.filter { it.type != scrubber && extendsScrubber(it.type) }.flatMap { holder ->
+        holder.methods.filter { method ->
+            !AccessFlags.STATIC.isSet(method.accessFlags) && method.implementation != null &&
+                checks.any { method.sameAs(it) }
+        }.map { holder.type to it }
+    }
+}
+
+/**
  * The scrubber base's look selector (582 `LX/9c4;->A1F`): the one instance `(Integer)V` method of
  * [base] calling both of [looks]' looks. Its Integer is the look, 0 passive, 1 or 3 active, 2 faded
  * out and 4 invisible. Refuses unless there's exactly one.
@@ -419,6 +471,63 @@ internal fun lookSelector(base: ClassDef, looks: ScrubberLooks): Method {
         ?: refuse("${base.type} has ${selectors.size} (Integer)V method(s) calling both scrubber looks, expected one")
 }
 
+/**
+ * The look selector's skip of a look the bar already has: the `if-eq` at [branch], the register
+ * [flow] holding the selector's state flow there and its [read] of the state, the state class
+ * [state] and its field [parked] holding the look Facebook parks while a reel's player changes
+ * (582 `LX/9DA;->A02`).
+ */
+internal class SameLookSkip(val branch: Int, val flow: Int, val read: String, val state: String, val parked: String)
+
+/**
+ * The look selector's skip of a look the bar already has (582 `LX/9c4;->A1F`, its second branch):
+ * the first `if-eq` of the look it's asked for, its parameter, and the look read straight off the
+ * selector's state, which Facebook takes from a flow (an `invoke-interface` of a `()Object` method,
+ * `move-result-object`, `check-cast` to the state class, `iget-object` of an Integer field). The
+ * state class has two instance Integer fields, the look the bar has and the one parked to apply once
+ * a reel's player change ends, which is the one the skip doesn't read. [stateClass] looks the state
+ * class up. Refuses unless all that holds, the skip jumps to a `return-void`, only the instruction
+ * before it leads onto it and the flow's register still holds the flow there.
+ */
+internal fun sameLookSkip(selector: Method, stateClass: (String) -> ClassDef?): SameLookSkip {
+    val where = "${selector.definingClass}->${selector.name}"
+    val code = selector.implementation!!.instructions.toList()
+    val look = selector.implementation!!.registerCount - 1
+    val branch = code.indices.firstOrNull { index ->
+        code[index].opcode == Opcode.IF_EQ && (code[index] as TwoRegisterInstruction).let { it.registerA == look || it.registerB == look }
+    } ?: refuse("$where has no if-eq of the look it's asked for")
+    if (branch < 4) refuse("$where compares the look before reading its state")
+    val read = code[branch - 4] as? FiveRegisterInstruction
+    val readCall = (read as? ReferenceInstruction)?.reference as? MethodReference
+    val result = code[branch - 3] as? OneRegisterInstruction
+    val cast = code[branch - 2]
+    val current = code[branch - 1]
+    val currentField = (current as? ReferenceInstruction)?.reference as? FieldReference
+    val state = cast.reference()
+    val held = (current as? TwoRegisterInstruction)?.registerA
+    val compared = (code[branch] as TwoRegisterInstruction).let { if (it.registerA == look) it.registerB else it.registerA }
+    if (read == null || read.opcode != Opcode.INVOKE_INTERFACE || read.registerCount != 1 || readCall == null ||
+        readCall.parameterTypes.isNotEmpty() || readCall.returnType != "Ljava/lang/Object;" ||
+        result == null || code[branch - 3].opcode != Opcode.MOVE_RESULT_OBJECT ||
+        cast.opcode != Opcode.CHECK_CAST || (cast as OneRegisterInstruction).registerA != result.registerA ||
+        current.opcode != Opcode.IGET_OBJECT || (current as TwoRegisterInstruction).registerB != result.registerA ||
+        currentField == null || currentField.definingClass != state || currentField.type != "Ljava/lang/Integer;" ||
+        held != compared || read.registerC == result.registerA || read.registerC == held
+    ) {
+        refuse("$where no longer reads the bar's look off its state right before comparing it with the one asked for")
+    }
+    val flow = ControlFlow.of(selector)
+    val target = flow.normal[branch].firstOrNull { it != branch + 1 }
+    if (target == null || code[target].opcode != Opcode.RETURN_VOID) refuse("$where no longer returns on a look the bar has")
+    if (code.indices.any { it != branch - 1 && branch in flow.normal[it] }) refuse("$where has a jump onto its skip of a look the bar has")
+    val integers = stateClass(state!!)?.fields
+        ?.filter { !AccessFlags.STATIC.isSet(it.accessFlags) && it.type == "Ljava/lang/Integer;" }
+        ?: refuse("$where reads its look off $state, which isn't in this APK")
+    val parked = integers.filter { it.name != currentField!!.name }
+    if (integers.size != 2 || parked.size != 1) refuse("$state has ${integers.size} Integer fields, expected the look and the parked one")
+    return SameLookSkip(branch, read.registerC, readCall.toString(), state, "$state->${parked.single().name}:Ljava/lang/Integer;")
+}
+
 /** The scrubber base's builder of a reel's bar info and the index of the info's constructor call in it. */
 internal class BarInfo(val builder: Method, val call: Int)
 
@@ -429,7 +538,8 @@ internal class BarInfo(val builder: Method, val call: Int)
  * all (582 `LX/AGr;->A04`), and on no the scrubber picks the invisible look before anything else.
  * Facebook works it out from the reel, and an ad, the viewer's config and a few kinds of reel it
  * flags on its servers get none, so a kept bar was missing from some reels (#73). The builder hands
- * the same flag to both length checks, which the hooks already answer while kept. Returns the
+ * the same flag to both length checks, which the hooks already answer while kept, on the scrubber
+ * and on any class overriding them ([lengthCheckOverrides]). Returns the
  * builder and its constructor call. Refuses unless there's one builder making one such object, by
  * the range form, right after its `new-instance`, with no jump or try block onto the call, and
  * unless the flag it passes is the one the length check gets.
@@ -914,6 +1024,31 @@ internal fun MutableMethod.notShortWhileKept() {
             return v0
         """,
         ExternalLabel("facebook", getInstruction(0)),
+    )
+}
+
+/**
+ * In the look selector, in front of its skip of a look the bar already has: read the look Facebook
+ * parked, and when the extension says the look asked for takes its place, go on past the skip, so
+ * Facebook parks this look in its stead (or applies it again). Otherwise the skip runs as before.
+ * One low local that nothing reads there carries the parked look and then the answer.
+ */
+internal fun MutableMethod.replacesParkedLook(skip: SameLookSkip) {
+    val free = freeLocalsAt(PATCH, skip.branch, 1).single()
+    val look = implementation!!.registerCount - 1
+    if (look > 15 || skip.flow > 15) refuse("$definingClass->$name keeps its look or its state flow past v15")
+    addInstructionsWithLabels(
+        skip.branch,
+        """
+            invoke-interface { v${skip.flow} }, ${skip.read}
+            move-result-object v$free
+            check-cast v$free, ${skip.state}
+            iget-object v$free, v$free, ${skip.parked}
+            invoke-static { v$look, v$free }, $REPLACES_PARKED
+            move-result v$free
+            if-nez v$free, :replaces
+        """,
+        ExternalLabel("replaces", getInstruction(skip.branch + 1)),
     )
 }
 
