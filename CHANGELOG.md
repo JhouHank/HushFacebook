@@ -7,7 +7,7 @@ Changes in each Hushfacebook version, newest first.
 ### Changed
 
 * **Facebook:** `Reels quality` and `Stories quality` say how each choice relates to `Playback quality` (issue #90 asked). Their first choice is now called Same as Playback quality, and a quality of their own reads like "Highest for reels, whatever Playback quality is set to." instead of a bare "Highest".
-* **Facebook:** The `Unlock app icons` summary says plainly that the next row opens the App icon page, and the hint in the list editors writes ID in capitals like the rest of the settings.
+* **Facebook:** The `Unlock app icons` summary names the `Pick an app icon` row that opens the App icon page, so it reads right in search results and in every language, and the hint in the list editors writes ID in capitals like the rest of the settings.
 
 ### Fixed
 
