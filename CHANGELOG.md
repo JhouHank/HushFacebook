@@ -15,6 +15,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** `Default comment order` set to All comments now also works on posts whose sort menu names that row differently. A diagnostic report on issue #110 showed some posts offering their own unfiltered row in All comments' place, and those stayed on Most relevant. Where a menu has both, the usual All comments row still wins.
 * **Facebook:** With `Use the system font` on, a phone font that draws Bengali or Devanagari vowel signs past its own line box now gets the extra room too (issue #96). Until now only Latin letters were measured, so a Bengali theme font whose y and g fit still lost the bottoms of its captions in reels and comments.
 * **Tooling:** The release script's publish step now checks that the receipt was made for the commit it's about to tag. It read the commit from a field the receipt doesn't have, so the check never ran.
+* **Tooling:** The release script's index step stops when it can't read the repository description. It used to leave the description as it was and still say the index was done.
 
 ## 0.11.1 (2026-10-12)
 

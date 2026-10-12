@@ -6225,6 +6225,14 @@ try {
             -Value ('<testsuite>' + ('<testcase/>' * $results.Cases) + '</testsuite>')
     }
     Remove-Item -LiteralPath (Join-Path $flowRepo 'release-receipt-1.2.3.json') -Force
+    # A description gh couldn't read stops the stage. Read as empty, it matched its own update, so
+    # nothing was edited and the stage still said the index was done.
+    Set-Content -LiteralPath $flowFails -Value 'repo view' -Encoding ASCII
+    Assert-Throws { & $flowScript -Stage index -Version 1.2.3 -ReadmeSummary $flowSummary -BundleSummary $flowSummary 6> $null 3> $null } `
+        "*couldn't read*description*" 'Index went on after gh could not read the repository description.'
+    Remove-Item -LiteralPath $flowFails -Force
+    Assert-True (-not (@(Read-FlowLog) -like 'gh repo edit*')) 'Index edited a description it could not read.'
+    Remove-Item -LiteralPath (Join-Path $flowRepo 'release-receipt-1.2.3.json') -Force -ErrorAction SilentlyContinue
     & $flowScript -Stage index -Version 1.2.3 -ReadmeSummary $flowSummary -BundleSummary $flowSummary 6> $null 3> $null
     $flow = @(Read-FlowLog)
     Assert-True ($flow.Count -eq 4 -and $flow[0] -eq 'gh release view v1.2.3 -R SysAdminDoc/HushFacebook --json publishedAt --jq .publishedAt' -and
