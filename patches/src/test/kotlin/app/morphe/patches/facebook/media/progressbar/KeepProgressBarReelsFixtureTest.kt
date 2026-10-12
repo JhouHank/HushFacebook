@@ -32,6 +32,7 @@ import java.io.File
 
 /**
  * Keep the progress bar's Reels hooks on every Facebook build the bundle declares: the scrubber's
+ * bar info builder asking the extension whether a reel has a bar at all (issue #73), its
  * minimum length check answering yes while kept, so a short reel gets a bar, its progress update
  * having Facebook's own time writer refresh the time label once the update has moved the bar (never
  * before its position checks, issue #120), the wait before its next update cut to a frame, the
@@ -104,6 +105,58 @@ class KeepProgressBarReelsFixtureTest {
         assertEquals("$where: from the same register", register, (patched[4] as OneRegisterInstruction).registerA)
         assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(5).map { it.opcode })
         assertEquals("$where: a no lands on Facebook's first instruction", setOf(3, 5), ControlFlow.of(method).normal[2].toSet())
+    }
+
+    @Test
+    fun `each declared build asks the extension whether a reel has a bar at all`() = bundles { bundle ->
+        val name = bundle.name
+        val found = scrubber(bundle)
+        val base = found.progress.base
+        val info = barInfo(base, minimumLengthCheck(found.scrubber))
+        val where = "$name: ${base.type}->${info.builder.name}"
+        val code = info.builder.code()
+        val init = code[info.call] as RegisterRangeInstruction
+        assertEquals("$where: the bar info's constructor", "${info.builder.returnType}->$BAR_INFO_INIT", code[info.call].reference())
+        val start = init.startRegister
+        // #73: the constructor's first flag is the one the scrubber reads before choosing a look, and a no is the
+        // invisible look, so the bar never showed on such a reel.
+        val selector = lookSelector(base, found.looks)
+        val infoClass = FixtureDex.classes(bundle, setOf(info.builder.returnType))[info.builder.returnType]
+            ?: error("$where: the bar info's class ${info.builder.returnType} isn't in the APK")
+        val constructor = infoClass.methods.single {
+            it.name == "<init>" && it.parameterTypes.joinToString("") == "ZZZILjava/lang/String;"
+        }
+        val hasField = constructor.code().first {
+            it.opcode == Opcode.IPUT_BOOLEAN && (it as TwoRegisterInstruction).registerA == constructor.implementation!!.registerCount - 6 + 1
+        }.reference()
+        assertTrue("$where: nothing on the base reads the info's first flag and then picks a look",
+            base.methods.any { method ->
+                val calls = method.implementation?.instructions?.toList().orEmpty()
+                calls.any { it.opcode == Opcode.IGET_BOOLEAN && it.reference() == hasField } &&
+                    calls.any { it.reference()?.contains("->${selector.name}(Ljava/lang/Integer;)V") == true }
+            })
+
+        val context = PatchContexts.of(listOf(base))
+        val method = context.mutableClassDefBy(base.type).methods.single { it.sameAs(info.builder) }
+        val original = method.code()
+        method.hasBarWhileKept(info.call)
+        val patched = method.code()
+        assertEquals("$where gains two instructions", original.size + 2, patched.size)
+        assertEquals("$where: Facebook's code up to the constructor stays", original.take(info.call).map { it.opcode },
+            patched.take(info.call).map { it.opcode })
+        assertEquals("$where: the info is still made right before", Opcode.NEW_INSTANCE, patched[info.call - 1].opcode)
+        assertEquals("$where: the extension is asked", HAS_BAR, patched[info.call].reference())
+        val ask = patched[info.call] as FiveRegisterInstruction
+        assertEquals("$where: with the has-a-bar flag and the length", listOf(2, start + 1, start + 4),
+            listOf(ask.registerCount, ask.registerC, ask.registerD))
+        assertEquals("$where: its answer replaces the flag", Opcode.MOVE_RESULT, patched[info.call + 1].opcode)
+        assertEquals("$where: in its own register", start + 1, (patched[info.call + 1] as OneRegisterInstruction).registerA)
+        assertEquals("$where: the constructor and the rest stay", original.drop(info.call).map { it.opcode },
+            patched.drop(info.call + 2).map { it.opcode })
+        val flow = ControlFlow.of(method)
+        val into = patched.indices.filter { info.call in flow.normal[it] }
+        assertEquals("$where: something reaches the hook other than the new-instance", listOf(info.call - 1), into)
+        assertTrue("$where: the hook is in a try block", flow.exceptional[info.call].isEmpty())
     }
 
     @Test

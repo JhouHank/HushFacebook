@@ -104,6 +104,31 @@ public class ProgressBarTest {
     }
 
     @Test
+    public void whileKeptAReelFacebookGaveNoBarGetsOneOnceItsLengthIsKnown() {
+        // Off: Facebook's answer stands either way.
+        assertFalse("off, a reel without a bar got one", ProgressBar.hasBar(false, 30_000));
+        assertTrue("off, a reel with a bar lost it", ProgressBar.hasBar(true, 30_000));
+
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("a paused Hushfacebook gave a reel a bar", ProgressBar.hasBar(false, 30_000));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() ->
+                assertFalse("a reel got a bar before the settings were ready", ProgressBar.hasBar(false, 30_000)));
+        String line = statusLine();
+        assertFalse("an answer that left it to Facebook was counted: " + line, line != null && line.contains("Counted"));
+
+        assertTrue("a reel Facebook had a bar for lost it", ProgressBar.hasBar(true, 30_000));
+        assertTrue("a reel Facebook gave no bar didn't get one", ProgressBar.hasBar(false, 30_000));
+        // A length not known yet (or a live video's) leaves Facebook's no, as the bar would have nothing to show.
+        assertFalse("a reel of unknown length got a bar", ProgressBar.hasBar(false, 0));
+        assertFalse("a reel of unknown length got a bar", ProgressBar.hasBar(false, -1));
+        line = statusLine();
+        assertTrue("only the reel given a bar was counted: " + line,
+                line != null && line.endsWith("Counted: " + ProgressBar.NO_BAR_REEL + " 1"));
+    }
+
+    @Test
     public void theSwitchNeedsNoRestartAndTravelsWithItsFamily() {
         assertFalse("each shrink and timer asks again, so no restart is needed", Settings.KEEP_PROGRESS_BAR.rebootApp);
         assertNull("nothing asks before the switch changes", Settings.KEEP_PROGRESS_BAR.userDialogMessage);

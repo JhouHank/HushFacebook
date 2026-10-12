@@ -57,6 +57,9 @@ public final class ProgressBar {
     /** Counted each time a reel's length check for a bar is answered yes, whatever the reel's length. */
     static final String SHORT_REEL_BAR = "Reel passed the bar's length check";
 
+    /** Counted each time a reel Facebook gave no bar at all gets one. */
+    static final String NO_BAR_REEL = "Reel without a bar given one";
+
     /** Counted each time the time label is shown after the active look. */
     static final String TIME_LABEL_SHOWN = "Reel time label shown";
 
@@ -148,6 +151,18 @@ public final class ProgressBar {
      */
     public static boolean barsEveryReel() {
         return keeps("short reel bar", SHORT_REEL_BAR);
+    }
+
+    /**
+     * The hook in the scrubber's bar info builder, with Facebook's answer to whether the reel has a
+     * bar at all and the reel's length in ms. Facebook answers no for an ad, for what the viewer's
+     * config rules out and for some reels it flags on its servers, and the scrubber then hides the bar
+     * (#73). While the bar is kept, a reel with a known length gets one; otherwise Facebook's answer
+     * stands.
+     */
+    public static boolean hasBar(boolean facebook, int lengthMs) {
+        if (facebook || lengthMs <= 0) return facebook;
+        return keeps("reel without a bar", NO_BAR_REEL);
     }
 
     /**

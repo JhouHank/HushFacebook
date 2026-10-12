@@ -23,6 +23,7 @@ import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.ControlFlow
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
@@ -30,9 +31,11 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.WideLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -71,6 +74,9 @@ internal const val TEXT_VIEW_SET_TEXT = "Landroid/widget/TextView;->setText(Ljav
 /** A kept class whose superclass is the full-screen video controls every such player builds on. */
 internal const val FULLSCREEN_CONTROLS = "Lcom/facebook/feed/video/fullscreen/orion/FeedFullscreenVideoControlsPlugin;"
 
+/** The constructor of a reel's bar info: has a bar, scrubbable, faded, length, video id (582 `LX/AGr;`). */
+internal const val BAR_INFO_INIT = "<init>(ZZZILjava/lang/String;)V"
+
 internal const val SEEK_BAR = "Landroid/widget/SeekBar;"
 internal const val GET_PROGRESS = "Landroid/widget/ProgressBar;->getProgress()I"
 internal const val SET_PROGRESS = "Landroid/widget/ProgressBar;->setProgress(I)V"
@@ -91,6 +97,7 @@ internal const val KEEPS_REEL_BAR = "$PROGRESS_BAR->keepsReelBar()Z"
 internal const val KEEPS_CONTROLS = "$PROGRESS_BAR->keepsControls()Z"
 internal const val HIDE_TIME_LABEL = "$PROGRESS_BAR->hideTimeLabel(Landroid/view/ViewGroup;)V"
 internal const val BARS_EVERY_REEL = "$PROGRESS_BAR->barsEveryReel()Z"
+internal const val HAS_BAR = "$PROGRESS_BAR->hasBar(ZI)Z"
 internal const val REFRESHES_TIME = "$PROGRESS_BAR->refreshesTime(Landroid/view/ViewGroup;Landroid/view/View;)Z"
 internal const val SMOOTHS_BAR = "$PROGRESS_BAR->smoothsBar()Z"
 internal const val LIFTS_FOOTER = "$PROGRESS_BAR->liftsFooter()Z"
@@ -123,7 +130,10 @@ internal const val VIEW_GROUP = "Landroid/view/ViewGroup;"
  * showing preview frames during the drag, whose player hasn't moved, the seek went back to where the
  * drag began, and where the reel's length wasn't known yet the bar went to the start.
  *
- * More hooks finish the Reels bar (582, issue #73). The scrubber's minimum length check answers
+ * More hooks finish the Reels bar (582, issue #73). The scrubber's bar info says first whether a
+ * reel has a bar at all, and Facebook says no for an ad, for what the viewer's config rules out and
+ * for some reels it flags on its servers, so the info's builder asks the extension, and while kept
+ * a reel with a known length gets one. The scrubber's minimum length check answers
  * yes, so a reel Facebook finds too short for a bar gets one. Its other length check, which gives a
  * short reel the look that fades the bar out (alpha 0) when a server flag is on, answers no. The
  * scrubber's look selector reports the looks that still hide the bar, for the diagnostic report.
@@ -216,6 +226,7 @@ val keepProgressBarPatch = bytecodePatch(
             refuse("${progress.base.type}, which updates the progress, isn't the base holding ${scrubber.type}'s views")
         }
         progress.update.freeLocalsAt(PATCH, dragCheck(progress.update, progress), 2)
+        val info = barInfo(progress.base, lengthCheck)
         val delay = frameDelay(progress)
         val selector = lookSelector(progress.base, scrubber)
         val status = seekBarStatus(
@@ -236,6 +247,7 @@ val keepProgressBarPatch = bytecodePatch(
             .activeInstead(scrubber)
         mutableClassDefBy(scrubber.type).methods.single { it.sameAs(lengthCheck) }.longEnoughWhileKept()
         mutableClassDefBy(scrubber.type).methods.single { it.sameAs(shortCheck) }.notShortWhileKept()
+        mutableClassDefBy(progress.base.type).methods.single { it.sameAs(info.builder) }.hasBarWhileKept(info.call)
         mutableClassDefBy(progress.base.type).methods.single { it.sameAs(progress.update) }
             .refreshesTimeWithBar(progress, scrubber)
         mutableClassDefBy(progress.base.type).methods.single { it.sameAs(delay) }.smoothWhileKept()
@@ -406,6 +418,61 @@ internal fun lookSelector(base: ClassDef, looks: ScrubberLooks): Method {
     return selectors.singleOrNull()
         ?: refuse("${base.type} has ${selectors.size} (Integer)V method(s) calling both scrubber looks, expected one")
 }
+
+/** The scrubber base's builder of a reel's bar info and the index of the info's constructor call in it. */
+internal class BarInfo(val builder: Method, val call: Int)
+
+/**
+ * The scrubber base's builder of a reel's bar info (582 `LX/9c4;->A03`, building `LX/AGr;`): the one
+ * static method of [base] that asks [lengthCheck] and returns an object it makes with a
+ * [BAR_INFO_INIT] constructor. That constructor's first boolean says whether the reel has a bar at
+ * all (582 `LX/AGr;->A04`), and on no the scrubber picks the invisible look before anything else.
+ * Facebook works it out from the reel, and an ad, the viewer's config and a few kinds of reel it
+ * flags on its servers get none, so a kept bar was missing from some reels (#73). The builder hands
+ * the same flag to both length checks, which the hooks already answer while kept. Returns the
+ * builder and its constructor call. Refuses unless there's one builder making one such object, by
+ * the range form, right after its `new-instance`, with no jump or try block onto the call, and
+ * unless the flag it passes is the one the length check gets.
+ */
+internal fun barInfo(base: ClassDef, lengthCheck: Method): BarInfo {
+    fun Method.asksLengthCheck() = implementation?.instructions?.any {
+        val call = (it as? ReferenceInstruction)?.reference as? MethodReference
+        it.opcode.name.startsWith("invoke-virtual") && call != null && call.name == lengthCheck.name &&
+            call.returnType == "Z" && call.parameterTypes.map(CharSequence::toString) == listOf("I", "Z")
+    } == true
+    val builders = base.methods.filter { method ->
+        AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType.startsWith("L") && method.asksLengthCheck() &&
+            method.calls("${method.returnType}->$BAR_INFO_INIT")
+    }
+    val builder = builders.singleOrNull()
+        ?: refuse("${base.type} has ${builders.size} static method(s) asking its length check and building a bar info, expected one")
+    val where = "${base.type}->${builder.name}"
+    val code = builder.implementation!!.instructions.toList()
+    val init = "${builder.returnType}->$BAR_INFO_INIT"
+    val calls = code.indices.filter { code[it].opcode.name.startsWith("invoke") && code[it].reference() == init }
+    val call = calls.singleOrNull() ?: refuse("$where builds its bar info ${calls.size} times, expected once")
+    val range = code[call] as? RegisterRangeInstruction
+        ?: refuse("$where no longer builds its bar info by the range form")
+    val made = code.getOrNull(call - 1)
+    if (made == null || made.opcode != Opcode.NEW_INSTANCE || made.reference() != builder.returnType ||
+        (made as OneRegisterInstruction).registerA != range.startRegister
+    ) {
+        refuse("$where no longer makes its bar info right before building it")
+    }
+    val flow = ControlFlow.of(builder)
+    if (code.indices.any { it != call - 1 && call in flow.normal[it] } || flow.exceptional[call].isNotEmpty()) {
+        refuse("$where has a jump or a try block onto its bar info's constructor")
+    }
+    val has = range.startRegister + 1
+    val asks = code.filter { it.opcode == Opcode.INVOKE_VIRTUAL && (it.reference()?.contains("->${lengthCheck.name}(IZ)Z") == true) }
+    if (asks.isEmpty() || asks.any { (it as FiveRegisterInstruction).registerE != has }) {
+        refuse("$where no longer hands its length check the bar info's first flag")
+    }
+    if (range.startRegister + 4 > 15) refuse("$where builds its bar info past v15")
+    return BarInfo(builder, call)
+}
+
+private fun Instruction.reference() = (this as? ReferenceInstruction)?.reference?.toString()
 
 /** The scrubber base's progress update and the method writing its time. */
 internal class ProgressUpdate(val base: ClassDef, val update: Method, val writeTime: Method)
@@ -761,6 +828,23 @@ internal fun MutableMethod.longEnoughWhileKept() {
             return v0
         """,
         ExternalLabel("facebook", getInstruction(0)),
+    )
+}
+
+/**
+ * In the scrubber base's bar info builder, between the info's `new-instance` and its constructor
+ * [call]: hand the extension the flag saying whether the reel has a bar, and the reel's length, and
+ * pass on its answer in the flag's register. The flag is the constructor's first boolean, its length
+ * the int, so the range's second and fifth registers. Nothing jumps between the two instructions.
+ */
+internal fun MutableMethod.hasBarWhileKept(call: Int) {
+    val start = getInstruction<RegisterRangeInstruction>(call).startRegister
+    addInstructions(
+        call,
+        """
+            invoke-static { v${start + 1}, v${start + 4} }, $HAS_BAR
+            move-result v${start + 1}
+        """,
     )
 }
 
