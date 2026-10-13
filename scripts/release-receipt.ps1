@@ -567,6 +567,26 @@ function Get-BundleIdentityFacts {
     return $facts
 }
 
+function Get-BundleInputMismatch {
+    <#
+    .SYNOPSIS
+        Why the bundle isn't a build of the producer inputs under -Root as they are now, or $null
+        when it is.
+    .DESCRIPTION
+        The input digest the bundle carries against the one Get-ProducerInputSha256 (common.ps1)
+        works out from the checkout. File times can't see a deleted or renamed input, or an edit
+        put back with an older time, and the digest covers every input's path and bytes.
+    #>
+    param([Parameter(Mandatory = $true)][string]$Root, [Parameter(Mandatory = $true)][string]$BundlePath)
+    $facts = Get-BundleIdentityFacts -BundlePath $BundlePath
+    if (-not $facts.Valid) { return 'it carries no intact record of the sources it was built from' }
+    $current = Get-ProducerInputSha256 -Root $Root
+    if ($facts.InputSha256 -cne $current) {
+        return "it was built from other sources (input digest $($facts.InputSha256), the checkout's now $current)"
+    }
+    return $null
+}
+
 function Resolve-Aapt2 {
     <#
     .SYNOPSIS

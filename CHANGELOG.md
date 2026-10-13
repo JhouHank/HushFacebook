@@ -46,6 +46,7 @@ Changes in each Hushfacebook version, newest first.
 * **Tooling:** `patch-for-device.ps1 -Replace` and the phone smoke test treat a phone without Facebook as not installed. `pm path` answers that with exit code 1 and no output, which the scripts took for an adb failure, so a replace install on a clean phone stopped before installing.
 * **Tooling:** The translation generator refuses a row for an extra plural form (like "|few") when its table lacks the row that form belongs to. Both checks used to pass, and every other count would have stayed in English.
 * **Tooling:** The two Python harnesses that copy the whole checkout delete the copy after a passing run. A failing run still leaves it in the temp folder to look at.
+* **Tooling:** `patch-for-device.ps1` holds the bundle to the sources it was built from instead of to file times. A deleted or renamed source, or an edit left with an older time, used to get through, so a phone could get a bundle that didn't match the checkout. The script now works out the same input digest the build stamps into the bundle and stops when the two differ. `-AllowStaleBundle` still patches anyway, and the output says it did.
 
 ## 0.11.1 (2026-10-12)
 

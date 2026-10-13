@@ -451,10 +451,57 @@ exit /b 19
     $newer = @(Get-SourcesNewerThanBundle -Root $staleRoot -Bundle $staleBundle)
     Assert-True ($newer.Count -eq 7 -and $newer[0].FullName -eq (Get-Item -LiteralPath $scopeManifest).FullName) `
         'A tooling coverage manifest written after the bundle was missed.'
-    $deviceScript = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'patch-for-device.ps1') -Raw
-    Assert-True ($deviceScript -match 'Get-SourcesNewerThanBundle' -and
-        $deviceScript -match '\[switch\]\$AllowStaleBundle') `
-        'patch-for-device.ps1 patches with a bundle without asking whether its sources are newer.'
+
+    # File times can't see an input deleted, renamed or edited behind an older time, so device
+    # patching holds the bundle to the digest patches/build.gradle.kts stamps instead. The same
+    # inputs, in the same order and the same layout, worked out here independently.
+    $inputPaths = @('NOTICE', 'extensions/app/build.gradle.kts', 'extensions/app/library/src/main/java/Hook.java',
+        'extensions/proguard-rules.pro', 'gradle/tooling-scopes.txt', 'patches/src/main/kotlin/Hook.kt',
+        'patches/stub/src/main/java/android/os/Build.java')
+    $layout = New-Object System.IO.MemoryStream
+    $header = [Text.Encoding]::ASCII.GetBytes("hushfacebook-source-inputs-1`n")
+    $layout.Write($header, 0, $header.Length)
+    foreach ($path in $inputPaths) {
+        $name = [Text.Encoding]::UTF8.GetBytes($path)
+        $bytes = [IO.File]::ReadAllBytes((Join-Path $staleRoot $path))
+        $fields = @([byte[]](0, 0, 0, $name.Length), $name, [byte[]](0, 0, 0, 0, 0, 0, 0, $bytes.Length), $bytes)
+        foreach ($field in $fields) { $layout.Write($field, 0, $field.Length) }
+    }
+    $expected = ([BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash($layout.ToArray())) -replace '-', '').ToLowerInvariant()
+    $inputs = Get-ProducerInputSha256 -Root $staleRoot
+    Assert-True ($inputs -ceq $expected) "The input digest isn't the one the build stamps: $inputs, expected $expected"
+    # Build output, Git's own files and anything outside the inputs leave it alone.
+    $outside = @('extensions/app/library/src/main/.gitignore', 'extensions/app/build/tmp/build.gradle.kts',
+        'extensions/app/notes.txt', 'patches/build/libs/build.gradle.kts', 'scripts/common.ps1', 'README.md',
+        'extensions/app/library/src/main/java/Hook.java~')
+    foreach ($path in $outside) {
+        $file = Join-Path $staleRoot $path
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $file) | Out-Null
+        [IO.File]::WriteAllText($file, 'z', [Text.Encoding]::ASCII)
+    }
+    Assert-True ((Get-ProducerInputSha256 -Root $staleRoot) -ceq $inputs) 'A file outside the producer inputs moved their digest.'
+    # An edit put back with its old time: the old check saw nothing, the digest does.
+    [IO.File]::WriteAllText($extensionSource, 'y', [Text.Encoding]::ASCII)
+    [IO.File]::SetLastWriteTimeUtc($extensionSource, $then)
+    Assert-True (-not (@(Get-SourcesNewerThanBundle -Root $staleRoot -Bundle $staleBundle) |
+        Where-Object { $_.FullName -eq (Get-Item -LiteralPath $extensionSource).FullName }))  `
+        'A backdated edit was expected to slip past the file-time check.'
+    Assert-True ((Get-ProducerInputSha256 -Root $staleRoot) -cne $inputs) 'A source edited behind an older file time kept its digest.'
+    [IO.File]::WriteAllText($extensionSource, 'x', [Text.Encoding]::ASCII)
+    Assert-True ((Get-ProducerInputSha256 -Root $staleRoot) -ceq $inputs) 'The same bytes back did not give the same digest.'
+    # Renamed, same bytes and time.
+    $renamed = Join-Path (Split-Path -Parent $extensionSource) 'Hook2.java'
+    Move-Item -LiteralPath $extensionSource -Destination $renamed
+    Assert-True ((Get-ProducerInputSha256 -Root $staleRoot) -cne $inputs) 'A renamed input kept its digest.'
+    Move-Item -LiteralPath $renamed -Destination $extensionSource
+    # Deleted, then a new one not yet built.
+    Remove-Item -LiteralPath $patchSource
+    Assert-True ((Get-ProducerInputSha256 -Root $staleRoot) -cne $inputs) 'A deleted input kept its digest.'
+    [IO.File]::WriteAllText($patchSource, 'x', [Text.Encoding]::ASCII)
+    Assert-True ((Get-ProducerInputSha256 -Root $staleRoot) -ceq $inputs) 'A restored input did not give the same digest.'
+    $added = Join-Path $staleRoot 'extensions/app/consumer-rules.pro'
+    [IO.File]::WriteAllText($added, 'x', [Text.Encoding]::ASCII)
+    Assert-True ((Get-ProducerInputSha256 -Root $staleRoot) -cne $inputs) 'A new R8 rules file kept the digest.'
 } finally {
     if ($caseRoot.StartsWith($requiredPrefix, [System.StringComparison]::OrdinalIgnoreCase) -and
         (Test-Path -LiteralPath $caseRoot)) {
@@ -759,18 +806,19 @@ try {
     $identityRoot = Join-Path $allowlistRoot 'identity'
     New-Item -ItemType Directory -Path $identityRoot -Force | Out-Null
     $identityBundle = Join-Path $identityRoot 'patches-9.9.9.mpp'
-    function New-IdentityBundle([string]$State = 'clean', [string]$Commit = $template.release.commit) {
+    function New-IdentityBundle([string]$State = 'clean', [string]$Commit = $template.release.commit,
+        [string]$InputSha256 = ('b' * 64), [string]$Path = $identityBundle) {
         $source = @{
             'Hushfacebook-Source-State' = $State; 'Hushfacebook-Source-Commit' = $Commit
-            'Hushfacebook-Source-Tree' = ('a' * 40); 'Hushfacebook-Input-SHA256' = ('b' * 64)
+            'Hushfacebook-Source-Tree' = ('a' * 40); 'Hushfacebook-Input-SHA256' = $InputSha256
         }
         if ($State -ceq 'unknown') { $source['Hushfacebook-Source-Commit'] = 'unknown'; $source['Hushfacebook-Source-Tree'] = 'unknown' }
-        New-TestBundle -Path $identityBundle -Source $source -Entries @{
+        New-TestBundle -Path $Path -Source $source -Entries @{
             'classes.dex' = "dex`n035 payload"; 'META-INF/hushfacebook-build.identity' = 'placeholder'
         }
-        $zip = [IO.Compression.ZipFile]::OpenRead($identityBundle)
+        $zip = [IO.Compression.ZipFile]::OpenRead($Path)
         try { $payload = Get-BundlePayloadSha256 -Archive $zip } finally { $zip.Dispose() }
-        $zip = [IO.Compression.ZipFile]::Open($identityBundle, [IO.Compression.ZipArchiveMode]::Update)
+        $zip = [IO.Compression.ZipFile]::Open($Path, [IO.Compression.ZipArchiveMode]::Update)
         try {
             $zip.GetEntry('META-INF/hushfacebook-build.identity').Delete()
             $writer = [IO.StreamWriter]::new($zip.CreateEntry('META-INF/hushfacebook-build.identity').Open())
@@ -826,6 +874,32 @@ try {
     try { $zip.GetEntry('META-INF/hushfacebook-build.identity').Delete() } finally { $zip.Dispose() }
     $identity = Get-BundleIdentityFacts -BundlePath $identityBundle
     Assert-True ($identity.Present -and -not $identity.Valid) 'Removing identity downgraded a new bundle to legacy.'
+    # What patch-for-device holds its bundle to before the CLI runs: the input digest it carries,
+    # against the checkout's as it is now. A bundle with no intact record is refused, not trusted.
+    Assert-True ((Get-BundleInputMismatch -Root $identityRoot -BundlePath $identityBundle) -like '*no intact record*') `
+        'A bundle whose identity record is gone was taken for a build of the checkout.'
+    Assert-True ((Get-BundleInputMismatch -Root $identityRoot -BundlePath $bundle) -like '*no intact record*') `
+        'A legacy bundle with no input digest was taken for a build of the checkout.'
+    $inputRoot = Join-Path $identityRoot 'inputs'
+    $inputFile = Join-Path $inputRoot 'patches/src/main/kotlin/Hook.kt'
+    New-Item -ItemType Directory -Path (Split-Path -Parent $inputFile) -Force | Out-Null
+    [IO.File]::WriteAllText($inputFile, 'x', [Text.Encoding]::ASCII)
+    $inputBundle = Join-Path $identityRoot 'inputs.mpp'
+    New-IdentityBundle -Path $inputBundle -InputSha256 (Get-ProducerInputSha256 -Root $inputRoot)
+    Assert-True ($null -eq (Get-BundleInputMismatch -Root $inputRoot -BundlePath $inputBundle)) `
+        'A bundle built from the checkout as it is was called stale.'
+    $time = [IO.File]::GetLastWriteTimeUtc($inputFile)
+    [IO.File]::WriteAllText($inputFile, 'y', [Text.Encoding]::ASCII)
+    [IO.File]::SetLastWriteTimeUtc($inputFile, $time.AddHours(-1))
+    $mismatch = Get-BundleInputMismatch -Root $inputRoot -BundlePath $inputBundle
+    Assert-True ($mismatch -like '*built from other sources*') "A source edited behind an older file time passed: $mismatch"
+    $deviceScript = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'patch-for-device.ps1') -Raw
+    $guard = $deviceScript.IndexOf('Get-BundleInputMismatch -Root $root -BundlePath $bundle')
+    Assert-True ($guard -gt 0 -and $guard -lt $deviceScript.IndexOf('Invoke-HeavyJob') -and
+        $deviceScript -match '\$staleBundle -and -not \$AllowStaleBundle\) \{\s+throw' -and
+        $deviceScript -match '\[switch\]\$AllowStaleBundle' -and
+        $deviceScript -match 'Write-Warning "\[device\] -AllowStaleBundle') `
+        'patch-for-device.ps1 patches without holding the bundle to the checkout first, or overrides it unannounced.'
 
     # Every fact the receipt exists to pin, put in front of the check one at a time. A gate that
     # has never been shown to fail is a gate nobody has tested.
@@ -5221,11 +5295,42 @@ try {
     # version now, the default fixture is still the newest build, and an undeclared build is
     # refused before the CLI starts. No -Serial, so nothing goes near adb.
     $deviceOut = Join-Path $releaseRoot 'device'
-    function Invoke-DeviceBuild([string]$Apk, [string]$OutDir = $deviceOut, [string]$DesktopJar = $stubJar) {
+    # patch-for-device holds the bundle to the input digest it carries, and the receipt runs' bundle
+    # carries none, so each device run gets that bundle stamped with this tree's digest (or the one
+    # given) and the receipt runs get it back as it was.
+    function Use-DeviceBundle([scriptblock]$Run, [string]$InputSha256) {
+        if (-not $InputSha256) { $InputSha256 = Get-ProducerInputSha256 -Root $releaseRepo }
+        $legacy = [IO.File]::ReadAllBytes($releaseBundle)
+        try {
+            $zip = [IO.Compression.ZipFile]::Open($releaseBundle, [IO.Compression.ZipArchiveMode]::Update)
+            try {
+                $manifest = $zip.GetEntry('META-INF/MANIFEST.MF')
+                $reader = [IO.StreamReader]::new($manifest.Open())
+                try { $text = $reader.ReadToEnd() } finally { $reader.Dispose() }
+                $manifest.Delete()
+                $writer = [IO.StreamWriter]::new($zip.CreateEntry('META-INF/MANIFEST.MF').Open())
+                try {
+                    $writer.Write($text.TrimEnd("`n") + "`nHushfacebook-Source-State: unknown`nHushfacebook-Source-Commit: unknown`n" +
+                        "Hushfacebook-Source-Tree: unknown`nHushfacebook-Input-SHA256: $InputSha256`n`n")
+                } finally { $writer.Dispose() }
+            } finally { $zip.Dispose() }
+            $zip = [IO.Compression.ZipFile]::OpenRead($releaseBundle)
+            try { $payload = Get-BundlePayloadSha256 -Archive $zip } finally { $zip.Dispose() }
+            $zip = [IO.Compression.ZipFile]::Open($releaseBundle, [IO.Compression.ZipArchiveMode]::Update)
+            try {
+                $writer = [IO.StreamWriter]::new($zip.CreateEntry('META-INF/hushfacebook-build.identity').Open())
+                try { $writer.Write("hushfacebook-bundle-1`n$payload`n") } finally { $writer.Dispose() }
+            } finally { $zip.Dispose() }
+            & $Run
+        } finally { [IO.File]::WriteAllBytes($releaseBundle, $legacy) }
+    }
+    function Invoke-DeviceBuild([string]$Apk, [string]$OutDir = $deviceOut, [string]$DesktopJar = $stubJar,
+        [string]$InputSha256, [switch]$AllowStaleBundle) {
         Remove-Item -LiteralPath $javaLog -Force -ErrorAction SilentlyContinue
         $arguments = @{ Root = $releaseRepo; DesktopJar = $DesktopJar; Java = $stubJava; Aapt2 = $stubAapt2; OutDir = $OutDir }
         if ($Apk) { $arguments['Apk'] = $Apk }
-        & (Join-Path $PSScriptRoot 'patch-for-device.ps1') @arguments 6> $null
+        if ($AllowStaleBundle) { $arguments['AllowStaleBundle'] = $true }
+        Use-DeviceBundle -InputSha256 $InputSha256 -Run { & (Join-Path $PSScriptRoot 'patch-for-device.ps1') @arguments 6> $null }
     }
     $deviceApk = Join-Path $deviceOut "hushfacebook-$releaseVersionHere-signed.apk"
     foreach ($build in $releaseTarget.PackageVersions) {
@@ -5268,9 +5373,11 @@ try {
             @{ Options = @{ $firstPatchHere = @('no equals sign') }; Pattern = "*The option 'no equals sign' for*isn't key=value*" })) {
         Remove-Item -LiteralPath $javaLog -Force -ErrorAction SilentlyContinue
         Assert-Throws {
-            & (Join-Path $PSScriptRoot 'patch-for-device.ps1') -Root $releaseRepo -DesktopJar $stubJar -Java $stubJava `
-                -Aapt2 $stubAapt2 -OutDir $deviceOut -Apk $fixturePaths[$releaseTarget.PackageVersion] `
-                -PatchOptions $badOptions.Options 6> $null
+            Use-DeviceBundle {
+                & (Join-Path $PSScriptRoot 'patch-for-device.ps1') -Root $releaseRepo -DesktopJar $stubJar -Java $stubJava `
+                    -Aapt2 $stubAapt2 -OutDir $deviceOut -Apk $fixturePaths[$releaseTarget.PackageVersion] `
+                    -PatchOptions $badOptions.Options 6> $null
+            }
         } $badOptions.Pattern 'patch-for-device.ps1 took patch options it should have refused.'
         Assert-True (-not (Test-Path -LiteralPath $javaLog)) 'patch-for-device.ps1 started the CLI with patch options it should have refused.'
     }
@@ -5279,13 +5386,39 @@ try {
     $optionedHere = @((Get-Content -LiteralPath (Join-Path $releaseRepo 'patches-list.json') -Raw | ConvertFrom-Json).patches)[1].name
     $optionsLog = Join-Path $tools 'options.log'
     Remove-Item -LiteralPath $javaLog, $optionsLog -Force -ErrorAction SilentlyContinue
-    & (Join-Path $PSScriptRoot 'patch-for-device.ps1') -Root $releaseRepo -DesktopJar $stubJar -Java $stubJava `
-        -Aapt2 $stubAapt2 -OutDir $deviceOut -Apk $fixturePaths[$releaseTarget.PackageVersion] `
-        -PatchOptions @{ $optionedHere = @('appName=HushBook') } 6> $null
+    Use-DeviceBundle {
+        & (Join-Path $PSScriptRoot 'patch-for-device.ps1') -Root $releaseRepo -DesktopJar $stubJar -Java $stubJava `
+            -Aapt2 $stubAapt2 -OutDir $deviceOut -Apk $fixturePaths[$releaseTarget.PackageVersion] `
+            -PatchOptions @{ $optionedHere = @('appName=HushBook') } 6> $null
+    }
     $null = @(Read-QueueLog)
     $optionsSeen =@(Get-Content -LiteralPath $optionsLog -ErrorAction SilentlyContinue) -join '; '
     Assert-True ($optionsSeen -eq "$optionedHere appName=HushBook") `
         "patch-for-device.ps1 gave the option to the wrong patch: '$optionsSeen'"
+
+    # A source edited behind an older file time, which the file-time check let through: refused
+    # before the CLI starts, and -AllowStaleBundle patches anyway and says so.
+    $builtInputs = Get-ProducerInputSha256 -Root $releaseRepo
+    $catalogBytes = [IO.File]::ReadAllBytes($touchedCatalog)
+    $catalogTime = [IO.File]::GetLastWriteTimeUtc($touchedCatalog)
+    try {
+        [IO.File]::AppendAllText($touchedCatalog, "`n# edited`n")
+        [IO.File]::SetLastWriteTimeUtc($touchedCatalog, $catalogTime.AddDays(-1))
+        Assert-Throws { Invoke-DeviceBuild -Apk $fixturePaths[$releaseTarget.PackageVersion] -InputSha256 $builtInputs } `
+            "*doesn't match this checkout: it was built from other sources (input digest $builtInputs*" `
+            'patch-for-device.ps1 patched with a bundle built before a backdated edit.'
+        Assert-True (-not (Test-Path -LiteralPath $javaLog)) 'patch-for-device.ps1 started the CLI with a stale bundle.'
+        $warned = @(Invoke-DeviceBuild -Apk $fixturePaths[$releaseTarget.PackageVersion] -InputSha256 $builtInputs `
+            -AllowStaleBundle 3>&1 | ForEach-Object { "$_" }) -join "`n"
+        Assert-True (@(Get-Content -LiteralPath $javaLog -ErrorAction SilentlyContinue).Count -eq 1 -and
+            $warned -like '*-AllowStaleBundle: patching with*built from other sources*' -and
+            $warned -like '*built with -AllowStaleBundle from a bundle that doesn''t match this checkout*') `
+            "patch-for-device.ps1 -AllowStaleBundle didn't patch, or didn't say the bundle was stale: $warned"
+        $null = @(Read-QueueLog)
+    } finally {
+        [IO.File]::WriteAllBytes($touchedCatalog, $catalogBytes)
+        [IO.File]::SetLastWriteTimeUtc($touchedCatalog, $catalogTime)
+    }
 
     # Another Meta app at a build the catalog declares. Neither script may hand it to the CLI: each
     # refuses it by name before anything is patched. The builder gets it beside the newest declared

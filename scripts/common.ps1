@@ -167,6 +167,97 @@ function Get-SourcesNewerThanBundle {
     return @($newer | Sort-Object LastWriteTimeUtc -Descending)
 }
 
+function Get-ProducerInputSha256 {
+    <#
+    .SYNOPSIS
+        The digest patches/build.gradle.kts stamps into a bundle as Hushfacebook-Input-SHA256,
+        worked out from the producer inputs as they are now.
+    .DESCRIPTION
+        The same files in the same order, hashed the same way, so a deleted, renamed or changed
+        input moves it whatever the file times say: patches/src/main, patches/stub/src/main and
+        gradle whole; under extensions every src/main tree, Gradle file and *.pro; the Gradle files
+        of the patches modules; and the root's build.gradle.kts, settings.gradle.kts,
+        gradle.properties, gradlew, gradlew.bat and NOTICE. Nothing in a build folder counts, nor
+        what Ant's default excludes leave out. Each file goes in as the UTF-8 length of its path
+        (4 bytes, big-endian), the path from the root with '/', its length (8 bytes) and its bytes,
+        in ordinal path order, after the line "hushfacebook-source-inputs-1". Keep it in step with
+        identityInputTrees in patches/build.gradle.kts.
+    #>
+    param([Parameter(Mandatory = $true)][string]$Root)
+
+    $Root = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Root)
+    $ignoredNames = @('.gitattributes', '.gitignore', '.gitmodules', '.hgignore', '.hgsub', '.hgsubstate',
+        '.hgtags', '.bzrignore', '.cvsignore', 'vssver.scc', '.DS_Store')
+    $ignoredDirs = @('.git', '.hg', '.bzr', '.svn', 'CVS', 'SCCS')
+    function Test-AntIgnored([string]$Name) {
+        return $Name -cin $ignoredNames -or $Name -cin $ignoredDirs -or $Name -cmatch '\A%.*%\z' -or
+            $Name -cmatch '\A\._' -or $Name -cmatch '\A#.*#\z' -or $Name -cmatch '\A\.#' -or $Name.EndsWith('~')
+    }
+    $paths = New-Object 'System.Collections.Generic.SortedSet[string]' ([StringComparer]::Ordinal)
+    # [relative tree, which of its files count, whether build folders are left out]
+    $trees = @(
+        @('patches/src/main', { param($parts) $true }, $false),
+        @('patches/stub/src/main', { param($parts) $true }, $false),
+        @('extensions', {
+            param($parts)
+            $name = $parts[$parts.Count - 1]
+            if ($name -ceq 'build.gradle.kts' -or $name.EndsWith('.pro')) { return $true }
+            for ($i = 0; $i -le $parts.Count - 3; $i++) {
+                if ($parts[$i] -ceq 'src' -and $parts[$i + 1] -ceq 'main') { return $true }
+            }
+            return $false
+        }, $true),
+        @('patches', { param($parts) $parts[$parts.Count - 1] -ceq 'build.gradle.kts' }, $true),
+        @('gradle', { param($parts) $true }, $false)
+    )
+    foreach ($tree in $trees) {
+        $base = Join-Path $Root $tree[0]
+        if (-not (Test-Path -LiteralPath $base -PathType Container)) { continue }
+        $pending = New-Object System.Collections.Generic.Stack[string]
+        $pending.Push($base)
+        while ($pending.Count -gt 0) {
+            $dir = $pending.Pop()
+            foreach ($sub in [System.IO.Directory]::GetDirectories($dir)) {
+                $name = [System.IO.Path]::GetFileName($sub)
+                if (Test-AntIgnored $name) { continue }
+                if ($tree[2] -and $name -ceq 'build') { continue }
+                $pending.Push($sub)
+            }
+            foreach ($file in [System.IO.Directory]::GetFiles($dir)) {
+                $name = [System.IO.Path]::GetFileName($file)
+                if ((Test-AntIgnored $name) -or ($tree[2] -and $name -ceq 'build')) { continue }
+                $relative = $file.Substring($base.Length).TrimStart('\', '/').Replace('\', '/')
+                if (& $tree[1] ($relative -split '/')) { [void]$paths.Add("$($tree[0])/$relative") }
+            }
+        }
+    }
+    foreach ($name in @('build.gradle.kts', 'settings.gradle.kts', 'gradle.properties', 'gradlew', 'gradlew.bat', 'NOTICE')) {
+        if (Test-Path -LiteralPath (Join-Path $Root $name) -PathType Leaf) { [void]$paths.Add($name) }
+    }
+
+    $hash = [System.Security.Cryptography.IncrementalHash]::CreateHash([System.Security.Cryptography.HashAlgorithmName]::SHA256)
+    try {
+        $header = [System.Text.Encoding]::ASCII.GetBytes("hushfacebook-source-inputs-1`n")
+        $hash.AppendData($header)
+        $buffer = New-Object byte[] 65536
+        foreach ($path in $paths) {
+            $name = [System.Text.Encoding]::UTF8.GetBytes($path)
+            $length = [BitConverter]::GetBytes([int]$name.Length)
+            if ([BitConverter]::IsLittleEndian) { [Array]::Reverse($length) }
+            $hash.AppendData($length)
+            $hash.AppendData($name)
+            $stream = [System.IO.File]::OpenRead((Join-Path $Root $path))
+            try {
+                $size = [BitConverter]::GetBytes([long]$stream.Length)
+                if ([BitConverter]::IsLittleEndian) { [Array]::Reverse($size) }
+                $hash.AppendData($size)
+                while (($read = $stream.Read($buffer, 0, $buffer.Length)) -gt 0) { $hash.AppendData($buffer, 0, $read) }
+            } finally { $stream.Dispose() }
+        }
+        return ([BitConverter]::ToString($hash.GetHashAndReset()) -replace '-', '').ToLowerInvariant()
+    } finally { $hash.Dispose() }
+}
+
 function Resolve-DesktopCli {
     <#
     .SYNOPSIS
