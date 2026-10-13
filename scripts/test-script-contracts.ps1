@@ -5057,7 +5057,10 @@ try {
         $stamp = Get-Content -LiteralPath (Join-Path $keptDir 'stamp.json') -Raw | ConvertFrom-Json
         Assert-True ($stamp.bundleSha256 -ceq (Get-Sha256Hex -Path $releaseBundle) -and $stamp.apkSha256 -ceq (Get-Sha256Hex -Path $fixture) -and
             $stamp.patchListSha256 -ceq $listHash -and $stamp.desktopJarSha256 -ceq (Get-Sha256Hex -Path $stubJar) -and
-            $stamp.versionName -ceq $build -and $stamp.forced -eq $forcedHere -and $stamp.merged -eq $true) `
+            $stamp.versionName -ceq $build -and $stamp.forced -eq $forcedHere -and $stamp.merged -eq $true -and $stamp.schema -eq 2 -and
+            $stamp.patchedSha256 -ceq (Get-Sha256Hex -Path (Join-Path $keptDir 'patched.apk')) -and
+            $stamp.resultSha256 -ceq (Get-Sha256Hex -Path (Join-Path $keptDir 'result.json')) -and
+            $stamp.mergedSha256 -ceq (Get-Sha256Hex -Path (Join-Path $keptDir 'stock-merged.apk'))) `
             "The kept run of $build is stamped with something else than what it patched: $($stamp | ConvertTo-Json -Compress)"
         Copy-Item -LiteralPath "$fixture.patched.txt" -Destination (Join-Path $keptDir 'patched.apk.xmltree')
     }
@@ -5077,14 +5080,22 @@ try {
     Assert-True ((Get-KeptHashes) -ceq $keptBefore) 'The receipt changed the kept runs it read.'
 
     # A kept run that doesn't match is patched again, that fixture alone: a stamp naming another
-    # bundle, one gone, and one that says a split bundle wasn't merged.
+    # bundle, one gone, one that says a split bundle wasn't merged, one from before stamps named
+    # the outputs, and one missing the hash of an output.
     $declaredFixture = $fixturePaths[$releaseTarget.PackageVersion]
     $declaredStamp = Join-Path $appliedRoot "$(Split-Path -Leaf $declaredFixture)/stamp.json"
     $stampText = [System.IO.File]::ReadAllText($declaredStamp)
+    function Get-StampWithout([string[]]$Fields) {
+        $older = $stampText | ConvertFrom-Json
+        foreach ($field in $Fields) { $older.PSObject.Properties.Remove($field) }
+        $older | ConvertTo-Json -Depth 4
+    }
     $staleStamps = @(
         @{ Name = 'another bundle'; Text = $stampText.Replace((Get-Sha256Hex -Path $releaseBundle), ('0' * 64)); Said = '*made with another bundle*' },
         @{ Name = 'no stamp'; Text = $null; Said = '*kept no run of*' },
-        @{ Name = 'no merge'; Text = ($stampText -replace '"merged":\s*true', '"merged": false'); Said = '*made with another bundle*' })
+        @{ Name = 'no merge'; Text = ($stampText -replace '"merged":\s*true', '"merged": false'); Said = '*made with another bundle*' },
+        @{ Name = 'an older stamp'; Text = (Get-StampWithout 'schema', 'patchedSha256', 'resultSha256', 'mergedSha256'); Said = '*older stamp*' },
+        @{ Name = 'no hash of the patched APK'; Text = (Get-StampWithout 'patchedSha256'); Said = '*no longer holds the patched.apk it checked*' })
     foreach ($stale in $staleStamps) {
         if ($null -eq $stale.Text) { Remove-Item -LiteralPath $declaredStamp -Force }
         else {
@@ -5101,8 +5112,30 @@ try {
         }
     }
 
-    # A run that fails leaves no stamp behind, and a keep folder holding anything else is left alone.
+    # An output changed after the gate checked it is patched again too, though the stamp still
+    # names the same bundle, APK, patch list and CLI. One byte more keeps a patched APK's manifest
+    # and the report readable, the way a changed dex payload would, and keeps the file's time.
     $declaredKept = Split-Path -Parent $declaredStamp
+    foreach ($output in @('patched.apk', 'result.json', 'stock-merged.apk')) {
+        $outputPath = Join-Path $declaredKept $output
+        $outputBytes = [System.IO.File]::ReadAllBytes($outputPath)
+        $outputTime = (Get-Item -LiteralPath $outputPath).LastWriteTimeUtc
+        [System.IO.File]::WriteAllBytes($outputPath, [byte[]]($outputBytes + [byte]10))
+        (Get-Item -LiteralPath $outputPath).LastWriteTimeUtc = $outputTime
+        try {
+            Invoke-ReceiptBuilder -Fixtures $allFixtures -AppliedDir $appliedRoot
+            Assert-True ((@(Get-Content -LiteralPath $javaLog -ErrorAction SilentlyContinue) -join "`n") -eq "patch $declaredFixture merged forced=0" -and
+                $builderSaid -like "*no longer holds the $output it checked*") `
+                "With its $output changed the receipt did not patch that fixture alone: $(@(Get-Content -LiteralPath $javaLog -ErrorAction SilentlyContinue) -join '; ')"
+        } finally {
+            [System.IO.File]::WriteAllBytes($outputPath, $outputBytes)
+        }
+    }
+    $null = @(Read-QueueLog)
+    Invoke-ReceiptBuilder -Fixtures $allFixtures -AppliedDir $appliedRoot
+    Assert-True (-not (Test-Path -LiteralPath $javaLog)) 'The receipt patched a fixture again once its kept outputs were put back.'
+
+    # A run that fails leaves no stamp behind, and a keep folder holding anything else is left alone.
     Remove-Item -LiteralPath (Join-Path $declaredKept 'patched.apk.xmltree') -Force
     Set-Content -LiteralPath (Join-Path $tools 'merge-fails.txt') -Value 'on' -Encoding ASCII
     try {

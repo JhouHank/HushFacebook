@@ -333,8 +333,9 @@ function Get-KeptRun {
     .DESCRIPTION
         It counts only when its stamp names the bundle, APK, patch list and CLI this receipt is cut
         from by SHA-256, the same version name, version code and forced flag, and a merge exactly
-        when the fixture is a split bundle, and when every file the stamp stands for is there.
-        Anything less and the fixture is patched here, as it would be with no kept runs at all.
+        when the fixture is a split bundle, and when every file the stamp stands for is there with
+        the SHA-256 the stamp gives it (stamp schema 2). Anything less and the fixture is patched
+        here, as it would be with no kept runs at all.
     #>
     param([string]$Apk, [object]$Stock, [bool]$Forced)
 
@@ -364,6 +365,21 @@ function Get-KeptRun {
     if (-not $same) {
         Write-Host "[receipt] the gate's run of $label was made with another bundle, APK, patch list or CLI, so it's patched here"
         return $null
+    }
+    # The checks below repeat only some of the gate's: its resource table and register checks ran on
+    # the outputs it kept, and the stamp names those by hash. A stamp from before it did, or an
+    # output changed since, can't vouch for them.
+    if ([string]$stamp.schema -cne '2') {
+        Write-Host "[receipt] the gate's run of $label has an older stamp that doesn't name its outputs, so it's patched here"
+        return $null
+    }
+    $hashes = @{ 'patched.apk' = 'patchedSha256'; 'result.json' = 'resultSha256'; 'stock-merged.apk' = 'mergedSha256' }
+    foreach ($file in $files) {
+        $want = [string]$stamp.($hashes[$file])
+        if (-not $want -or $want -cne (Get-Sha256Hex -Path (Join-Path $dir $file))) {
+            Write-Host "[receipt] the gate's run of $label no longer holds the $file it checked, so it's patched here"
+            return $null
+        }
     }
     return $dir
 }
