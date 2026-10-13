@@ -32,8 +32,9 @@ param(
     [string]$DesktopJar,
     # The JDK that runs it. Falls back to HUSHFACEBOOK_JAVA, then JAVA_HOME.
     [string]$Java,
-    # Only for running the rest of the checks with no network. Nothing in the repo
-    # passes it; the pre-push escape hatch is HUSHFACEBOOK_SKIP_PRE_PUSH=1.
+    # Skips the indexed URL, the add-source page and the repository description. The patch
+    # selection check still reads the published release from GitHub, so a run needs the network
+    # either way. Nothing in the repo passes it; the pre-push escape hatch is HUSHFACEBOOK_SKIP_PRE_PUSH=1.
     [switch]$SkipUrlCheck,
     # The published bundle description quotes a test count, which is a fact about the release it
     # describes rather than about the working tree. The two agree at the moment the description
@@ -336,12 +337,12 @@ if ($SkipUrlCheck) {
 } else {
     if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
         throw ('The gh CLI is needed to read the repository description of ' + $slug +
-            '. Install it, or pass -SkipUrlCheck to run the rest with no network.')
+            '. Install it, or pass -SkipUrlCheck to run the rest without it.')
     }
     $description = (& gh api "repos/$slug" --jq '.description' 2>$null)
     if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($description)) {
         throw ("Could not read the description of $slug through gh. Run gh auth login, or pass " +
-            '-SkipUrlCheck to run the rest with no network.')
+            '-SkipUrlCheck to run the rest without it.')
     }
     $description = $description.Trim()
 
