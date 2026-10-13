@@ -17,6 +17,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** A saved diagnostic report now goes in Download/Hushfacebook, the same folder as the crash files, so everything for a bug report is in one place. Reports saved before this stay in Download/Morphe.
 * **Facebook:** `Reels quality` and `Stories quality` say how each choice relates to `Playback quality` (issue #90 asked). Their first choice is now called Same as Playback quality, and a quality of their own reads like "Highest for reels, whatever Playback quality is set to." instead of a bare "Highest".
 * **Facebook:** The `Unlock app icons` summary names the `Pick an app icon` row that opens the App icon page, so it reads right in search results and in every language, and the hint in the list editors writes ID in capitals like the rest of the settings.
+* **Tooling:** The fingerprint calibration reads the retired 577 and 580 from a folder of their own, `HUSHFACEBOOK_FINGERPRINT_HISTORY_DIR`, now that the fixture folder only keeps 582. Each bundle has to match the SHA-256, version, ABI and Meta signers `scripts/fingerprint-history.txt` pins, or the run stops and says what's off. It doesn't skip. Two new lists hold the ranker to nine feed, Reels and story menu targets each from 580 to both 582 builds. CONTRIBUTING.md has the one-time setup.
 * **Tooling:** The build moves to Gradle 9.8.1, Kotlin 2.4.21, commons-lang3 3.21.0 and androidx.annotation 1.11.0. They're patch and minor releases, nothing in the patches changes, and the dependency checksums cover the new artifacts.
 
 ### Fixed

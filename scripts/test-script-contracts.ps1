@@ -2710,8 +2710,9 @@ try {
         'scripts/test-injected-register-device.ps1' = @('injected-register-device.ps1', 'script-wiring.ps1',
             'test-injected-register-device.ps1', 'verify-injected-registers.ps1')
         'scripts/test-fingerprint-candidates.ps1' = @('FingerprintCandidates.java', 'FingerprintFixture.java',
-            'fingerprint-calibration.txt', 'fingerprint-candidates.ps1', 'fingerprint-signature.schema.json',
-            'test-fingerprint-candidates.ps1')
+            'fingerprint-calibration.txt', 'fingerprint-calibration-582-arm64.txt', 'fingerprint-calibration-582-armv7.txt',
+            'fingerprint-candidates.ps1', 'fingerprint-history.ps1', 'fingerprint-history.txt',
+            'fingerprint-signature.schema.json', 'test-fingerprint-candidates.ps1')
         'scripts/test-facebook-sources.ps1' = @('audit-facebook-sources.ps1', 'facebook-sources.ps1', 'patch-target.ps1',
             'test-facebook-sources.ps1')
         'scripts/test-release-text.ps1' = @('release/release.ps1', 'test-release-text.ps1')

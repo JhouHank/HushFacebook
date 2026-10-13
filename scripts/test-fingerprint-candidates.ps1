@@ -16,11 +16,15 @@
     out. In "crowd-behind" it scores just under the crowd until its callers count, and the shortlist
     has to widen until it stands out.
 
-    Then fingerprint-candidates.ps1 -Calibrate runs over Facebook 577 and 580 from
-    HUSHFACEBOOK_FIXTURE_DIR, and every case of fingerprint-calibration.txt has to rank its known 580
-    method in the top five. The report has to show each candidate's prototype, strings, literals,
-    opcode sketch, references and call neighbourhood. The AMOLED resolver that split in two has two
-    real candidates, and that case has to fail closed.
+    Then fingerprint-candidates.ps1 -Calibrate runs over the retired Facebook 577 and 580 from
+    HUSHFACEBOOK_FINGERPRINT_HISTORY_DIR, each held first to its pins in fingerprint-history.txt,
+    and every case of fingerprint-calibration.txt has to rank its known 580 method in the top five.
+    A history that isn't set, overlaps the fixtures or the repository, lacks a build, or holds one
+    with other bytes, another version, another ABI or a signer that isn't Meta's has to be refused.
+    The report has to show each candidate's prototype, strings, literals, opcode sketch, references
+    and call neighbourhood. The AMOLED resolver that split in two has two real candidates, and that
+    case has to fail closed. The 580-to-582 lists then have to rank theirs in the top five on both
+    582 fixtures in HUSHFACEBOOK_FIXTURE_DIR.
 
     Through all of it, nothing under patches/ may change, and an output path there, or one ending in
     .kt or .java, has to be refused by both the tool and the wrapper. The tool has to refuse it
@@ -40,6 +44,8 @@ $ErrorActionPreference = 'Stop'
 if (-not $Root) { $Root = Split-Path -Parent $PSScriptRoot }
 . (Join-Path $PSScriptRoot 'Resolve-Java.ps1')
 . (Join-Path $PSScriptRoot 'common.ps1')
+. (Join-Path $PSScriptRoot 'release-receipt.ps1')
+. (Join-Path $PSScriptRoot 'fingerprint-history.ps1')
 
 function Assert-True {
     param([bool]$Condition, [string]$Message)
@@ -377,12 +383,63 @@ try {
         $env:HUSHFACEBOOK_FIXTURE_DIR = $fixtureDir
     }
 
+    # The calibration's builds are the retired 577 and 580, out of the fingerprint history and held to
+    # what fingerprint-history.txt pins, never out of the fixture folder. Without that history this
+    # throws, so the top-five claim fails rather than going unchecked.
     $fixtures = if ($env:HUSHFACEBOOK_FIXTURE_DIR) { $env:HUSHFACEBOOK_FIXTURE_DIR } else { Join-Path $Root 'fixtures' }
-    foreach ($version in '577.0.0.50.72', '580.0.0.51.74') {
-        Assert-True (@(Select-FixtureBuild -Folder $fixtures -Version $version).Count -eq 1) `
-            ("The calibration needs Facebook $version in $fixtures, the folder HUSHFACEBOOK_FIXTURE_DIR names. " +
-                'Without it the top-five claim is not checked, so this fails rather than skipping.')
+    $aapt2 = Resolve-Aapt2 -Root $Root
+    $history = Resolve-FingerprintHistory -Root $Root -Aapt2 $aapt2 -Work (Join-Path $caseRoot 'history')
+    Assert-True ($history.OldVersion -eq '577.0.0.50.72' -and $history.NewVersion -eq '580.0.0.51.74') `
+        "The fingerprint history pins $($history.OldVersion) and $($history.NewVersion), not the 577 and 580 fingerprint-calibration.txt names."
+
+    # A history that isn't set, overlaps the fixtures or the repository, lacks a build, or holds one
+    # that isn't the pinned one stops before java starts, and says which.
+    $historyDir = $env:HUSHFACEBOOK_FINGERPRINT_HISTORY_DIR
+    try {
+        Remove-Item -LiteralPath 'Env:\HUSHFACEBOOK_FINGERPRINT_HISTORY_DIR'
+        $unset = Invoke-Wrapper @('-Calibrate', '-ReportPath', (Join-Path $caseRoot 'unset.txt'),
+            '-Java', $Java, '-DesktopJar', $DesktopJar, '-Root', $Root)
+        Assert-True ($unset.ExitCode -ne 0 -and $unset.Text -match 'HUSHFACEBOOK_FINGERPRINT_HISTORY_DIR is not set' -and
+            $unset.Text -notmatch '\[fingerprint\] case ') "The wrapper calibrated with no fingerprint history.`n$($unset.Text)"
+    } finally {
+        $env:HUSHFACEBOOK_FINGERPRINT_HISTORY_DIR = $historyDir
     }
+    $historyManifest = [System.IO.File]::ReadAllText((Join-Path $PSScriptRoot 'fingerprint-history.txt'))
+    $emptyHistory = Join-Path $caseRoot 'history-empty'
+    $junkHistory = Join-Path $caseRoot 'history-junk'
+    New-Item -ItemType Directory -Force -Path $emptyHistory, $junkHistory | Out-Null
+    [System.IO.File]::WriteAllText((Join-Path $junkHistory 'facebook-577.0.0.50.72-arm64-v8a.apkm'), 'not a bundle')
+    $refusals = @(
+        @{ Name = 'the fixture folder'; Folder = $fixtures; Expect = 'overlaps the fixture folder' }
+        @{ Name = 'a folder in the repository'; Folder = (Join-Path $Root 'scripts'); Expect = 'overlaps the repository' }
+        @{ Name = 'a folder without the builds'; Folder = $emptyHistory; Expect = 'is missing facebook-577.0.0.50.72-arm64-v8a.apkm' }
+        @{ Name = 'a bundle with other bytes'; Folder = $junkHistory; Expect = 'not the pinned 452973bb' }
+        @{ Name = 'another version pinned'; Folder = $historyDir; Expect = 'is com.facebook.katana 577.0.0.50.72 \(474426275\), not the pinned'
+            From = ' 577.0.0.50.72 474426275 '; To = ' 577.0.0.50.73 474426275 ' }
+        @{ Name = 'another ABI pinned'; Folder = $historyDir; Expect = "carries native code for 'arm64-v8a', not the pinned armeabi-v7a"
+            From = '474426275 arm64-v8a'; To = '474426275 armeabi-v7a' }
+        # 577 carries only Meta's older certificate, so pinning the newer one alone has to refuse it.
+        @{ Name = 'a signer it lacks'; Folder = $historyDir; Expect = 'is signed by e3f9e1e0[0-9a-f]+, not by Meta alone'
+            From = "signer e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1`n"; To = '' }
+    )
+    foreach ($refusal in $refusals) {
+        $manifest = Join-Path $caseRoot 'history-manifest.txt'
+        $text = $historyManifest.Replace("`r`n", "`n")
+        if ($refusal.From) {
+            Assert-True ($text.Contains($refusal.From)) "fingerprint-history.txt no longer holds what the '$($refusal.Name)' case edits."
+            $text = $text.Replace($refusal.From, $refusal.To)
+        }
+        [System.IO.File]::WriteAllText($manifest, $text)
+        $message = $null
+        try {
+            $null = Resolve-FingerprintHistory -Root $Root -Aapt2 $aapt2 -Work (Join-Path $caseRoot 'history-refused') `
+                -Folder $refusal.Folder -ManifestPath $manifest
+        } catch {
+            $message = $_.Exception.Message
+        }
+        Assert-True ($message -match $refusal.Expect) "The fingerprint history was not refused for $($refusal.Name): $message"
+    }
+
     $calibrationReport = Join-Path $caseRoot 'calibration.txt'
     $calibrated = Invoke-Wrapper @('-Calibrate', '-ReportPath', $calibrationReport, '-Java', $Java, '-DesktopJar', $DesktopJar, '-Root', $Root)
     $lines = @($calibrated.Output | Where-Object { $_ -match '^\[fingerprint\] case \S+ rank \S+ score' })
@@ -417,6 +474,32 @@ try {
         }
     }
 
+    # From the history's 580 to each 582 fixture: feed, Reels and story menu targets found by hand on
+    # both, the armeabi-v7a list crossing ABIs as well. A missing 582 fixture fails here too.
+    $laterCases = 0
+    foreach ($later in @(@{ Abi = 'arm64-v8a'; List = 'fingerprint-calibration-582-arm64.txt' },
+            @{ Abi = 'armeabi-v7a'; List = 'fingerprint-calibration-582-armv7.txt' })) {
+        $listPath = Join-Path $PSScriptRoot $later.List
+        $listIds = @(Get-Content -LiteralPath $listPath | Where-Object { $_ -match '^case (\S+)$' } | ForEach-Object { $Matches[1] })
+        foreach ($id in 'feed-add-new-edge', 'feed-story-category', 'reels-insert-ads', 'reels-ad-break-tick', 'story-menu-builder') {
+            Assert-True ($listIds -contains $id) "$($later.List) lost the case $id."
+        }
+        $bundle = @(Select-FixtureBuild -Folder $fixtures -Version "582.0.0.50.54-$($later.Abi)")
+        Assert-True ($bundle.Count -eq 1) `
+            ("The 580-to-582 calibration needs Facebook 582.0.0.50.54 $($later.Abi) in $fixtures, the folder " +
+                'HUSHFACEBOOK_FIXTURE_DIR names, and fails rather than skipping without it.')
+        $laterRun = Invoke-Wrapper @('-Calibrate', '-CalibrationPath', $listPath, '-OldApk', $history.New, '-NewApk', $bundle[0].FullName,
+            '-ReportPath', (Join-Path $caseRoot "calibration-582-$($later.Abi).txt"), '-Java', $Java, '-DesktopJar', $DesktopJar, '-Root', $Root)
+        $laterLines = @($laterRun.Output | Where-Object { $_ -match '^\[fingerprint\] case \S+ rank \S+ score' })
+        Assert-True ($laterRun.ExitCode -eq 0 -and $laterLines.Count -eq $listIds.Count) `
+            "The 580-to-582 $($later.Abi) calibration did not run every case and pass.`n$($laterRun.Text)"
+        foreach ($line in $laterLines) {
+            Assert-True ($line -match '^\[fingerprint\] case (\S+) rank (\d+) score [0-9.]+ ok (stands-out|fails-closed)$' -and
+                [int]$Matches[2] -le 5) "A 580-to-582 $($later.Abi) case ranked its replacement outside the top five: $line"
+        }
+        $laterCases += $listIds.Count
+    }
+
     $after = Get-TreeSnapshot $patches
     Assert-True (@(Compare-Object $before $after).Count -eq 0) `
         ("Something under patches/ changed while the tool ran:`n" + (@(Compare-Object $before $after) | Out-String))
@@ -432,4 +515,5 @@ try {
 }
 
 $global:LASTEXITCODE = 0
-Write-Host "[scripts] fingerprint candidates passed ($($caseIds.Count) calibrated cases in the top five; ties and misses fail closed)"
+Write-Host ("[scripts] fingerprint candidates passed ($($caseIds.Count) 577-to-580 and $laterCases 580-to-582 calibrated cases " +
+    'in the top five; ties and misses fail closed)')
