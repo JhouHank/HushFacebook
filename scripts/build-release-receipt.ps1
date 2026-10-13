@@ -197,50 +197,6 @@ if (-not $toolingBound.Valid) { throw "The tooling report does not describe the 
 $toolingAuditStatus = Invoke-ToolingAdvisoryGate -Tooling $toolingDocument `
     -ExceptionsPath (Join-Path $PSScriptRoot 'tooling-advisory-exceptions.txt') -SkipAdvisoryCheck:$SkipAdvisoryCheck
 
-function Get-ExtensionPayloads {
-    <#
-    .SYNOPSIS
-        The extension DEX each bundle carries, by name, size and hash.
-    .DESCRIPTION
-        An .mpe is a bare Android DEX, checked here by its magic rather than by its extension,
-        so a bundle that shipped something else in that slot cannot pass as an extension.
-    #>
-    param([string]$BundlePath)
-
-    Add-Type -AssemblyName System.IO.Compression.FileSystem
-    $payloads = New-Object System.Collections.Generic.List[object]
-    $archive = [System.IO.Compression.ZipFile]::OpenRead($BundlePath)
-    try {
-        foreach ($entry in @($archive.Entries | Where-Object { $_.FullName -like 'extensions/*.mpe' } |
-                Sort-Object FullName)) {
-            $stream = $entry.Open()
-            try {
-                $memory = New-Object System.IO.MemoryStream
-                $stream.CopyTo($memory)
-                $bytes = $memory.ToArray()
-                $memory.Dispose()
-            } finally { $stream.Dispose() }
-
-            $magic = [System.Text.Encoding]::ASCII.GetString($bytes, 0, [Math]::Min(4, $bytes.Length))
-            if ($magic -ne "dex`n") {
-                throw "$($entry.FullName) in $BundlePath is not an Android DEX payload."
-            }
-            $sha = [System.Security.Cryptography.SHA256]::Create()
-            try { $hash = ($sha.ComputeHash($bytes) | ForEach-Object { '{0:X2}' -f $_ }) -join '' }
-            finally { $sha.Dispose() }
-
-            $payloads.Add([ordered]@{
-                name      = $entry.FullName
-                sizeBytes = [long]$bytes.Length
-                sha256    = $hash
-            })
-        }
-    } finally { $archive.Dispose() }
-
-    if ($payloads.Count -eq 0) { throw "The bundle carries no extension payload: $BundlePath" }
-    return ,$payloads.ToArray()
-}
-
 function Get-PatchVerdicts {
     <#
     .SYNOPSIS

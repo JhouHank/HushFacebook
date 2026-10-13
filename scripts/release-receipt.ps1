@@ -587,6 +587,51 @@ function Get-BundleInputMismatch {
     return $null
 }
 
+function Get-ExtensionPayloads {
+    <#
+    .SYNOPSIS
+        The extension DEX each bundle carries, by name, size and hash.
+    .DESCRIPTION
+        An .mpe is a bare Android DEX, checked here by its magic rather than by its extension,
+        so a bundle that shipped something else in that slot cannot pass as an extension. The
+        receipt builder records these, and Test-ReleaseReceipt holds a receipt's list to them.
+    #>
+    param([string]$BundlePath)
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $payloads = New-Object System.Collections.Generic.List[object]
+    $archive = [System.IO.Compression.ZipFile]::OpenRead($BundlePath)
+    try {
+        foreach ($entry in @($archive.Entries | Where-Object { $_.FullName -like 'extensions/*.mpe' } |
+                Sort-Object FullName)) {
+            $stream = $entry.Open()
+            try {
+                $memory = New-Object System.IO.MemoryStream
+                $stream.CopyTo($memory)
+                $bytes = $memory.ToArray()
+                $memory.Dispose()
+            } finally { $stream.Dispose() }
+
+            $magic = [System.Text.Encoding]::ASCII.GetString($bytes, 0, [Math]::Min(4, $bytes.Length))
+            if ($magic -ne "dex`n") {
+                throw "$($entry.FullName) in $BundlePath is not an Android DEX payload."
+            }
+            $sha = [System.Security.Cryptography.SHA256]::Create()
+            try { $hash = ($sha.ComputeHash($bytes) | ForEach-Object { '{0:X2}' -f $_ }) -join '' }
+            finally { $sha.Dispose() }
+
+            $payloads.Add([ordered]@{
+                name      = $entry.FullName
+                sizeBytes = [long]$bytes.Length
+                sha256    = $hash
+            })
+        }
+    } finally { $archive.Dispose() }
+
+    if ($payloads.Count -eq 0) { throw "The bundle carries no extension payload: $BundlePath" }
+    return ,$payloads.ToArray()
+}
+
 function Resolve-Aapt2 {
     <#
     .SYNOPSIS
@@ -1512,6 +1557,21 @@ function Test-ReleaseReceipt {
         if ([string]$payload.sha256 -notmatch '^[0-9A-F]{64}$') {
             return Fail "The recorded DEX payload $($payload.name) has no SHA-256."
         }
+    }
+    # And to the bundle when there is one: every extension payload it carries, once, by name, size
+    # and hash, and nothing else. Only the form was checked before, so a receipt could name
+    # payloads the bundle doesn't carry while the SBOM beside it named the right ones.
+    if ($BundlePath) {
+        # Not @(...): the list comes back as one object, which @() would wrap in another array.
+        try { $carried = Get-ExtensionPayloads -BundlePath $BundlePath }
+        catch { return Fail "The bundle's extension payloads can't be read: $($_.Exception.Message)" }
+        $recorded = @($payloads | ForEach-Object { '{0} ({1} bytes, {2})' -f $_.name, [long]$_.sizeBytes, [string]$_.sha256 })
+        $actual = @($carried | ForEach-Object { '{0} ({1} bytes, {2})' -f $_.name, $_.sizeBytes, $_.sha256 })
+        $extra = @($recorded | Where-Object { $actual -cnotcontains $_ })
+        if ($extra.Count -gt 0) { return Fail "The receipt records an extension payload the bundle doesn't carry: $($extra[0])." }
+        $missing = @($actual | Where-Object { $recorded -cnotcontains $_ })
+        if ($missing.Count -gt 0) { return Fail "The receipt leaves out an extension payload the bundle carries: $($missing[0])." }
+        if ($recorded.Count -ne $actual.Count) { return Fail 'The receipt records an extension payload more than once.' }
     }
 
     $targets = @(@($Receipt.targets) | Where-Object { $null -ne $_ })

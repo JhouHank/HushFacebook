@@ -761,8 +761,7 @@ try {
         tooling   = [ordered]@{ file = 'patches-9.9.9.tooling.json'; sha256 = Get-Sha256Hex -Path $toolingFile
             components = 1; scopes = 2; audit = [ordered]@{ status = 'checked' } }
         toolchain = [ordered]@{ patcherVersion = '1.12.0'; managerFloor = '1.29.0' }
-        extension = [ordered]@{ dexPayloads = @([ordered]@{
-            name = 'extensions/facebook.mpe'; sizeBytes = 10; sha256 = ('A' * 64) }) }
+        extension = [ordered]@{ dexPayloads = (Get-ExtensionPayloads -BundlePath $bundle) }
         targets   = @([ordered]@{
             source = [ordered]@{ file = 'stock.apkm'; package = 'com.example.host'
                 versionName = '46.7.3'; versionCode = '2024607030'; sha256 = ('B' * 64)
@@ -815,6 +814,8 @@ try {
         if ($State -ceq 'unknown') { $source['Hushfacebook-Source-Commit'] = 'unknown'; $source['Hushfacebook-Source-Tree'] = 'unknown' }
         New-TestBundle -Path $Path -Source $source -Entries @{
             'classes.dex' = "dex`n035 payload"; 'META-INF/hushfacebook-build.identity' = 'placeholder'
+            # The template receipt's payload, which the receipt check holds to the bundle.
+            'extensions/facebook.mpe' = "dex`n035 payload"
         }
         $zip = [IO.Compression.ZipFile]::OpenRead($Path)
         try { $payload = Get-BundlePayloadSha256 -Archive $zip } finally { $zip.Dispose() }
@@ -952,6 +953,44 @@ try {
         Assert-True (-not $result.Valid) "Receipt validation accepted $description."
         Assert-True ([bool]$result.Reason) "Receipt validation refused $description without saying why."
     }
+
+    # The payload list is held to the bundle it's checked with, not only to its form. Each of these
+    # kept the form and passed before.
+    $payloadCases = [ordered]@{
+        'a payload hash the bundle does not carry' = @{ Pattern = "*records an extension payload the bundle doesn't carry*"
+            Mutate = { param($r) $r.extension.dexPayloads[0].sha256 = ('C' * 64) } }
+        'a payload hash in lower case' = @{ Pattern = "*records an extension payload the bundle doesn't carry*"
+            Mutate = { param($r) $r.extension.dexPayloads[0].sha256 = ([string]$r.extension.dexPayloads[0].sha256).ToLowerInvariant() } }
+        'a payload size the bundle does not carry' = @{ Pattern = "*records an extension payload the bundle doesn't carry*"
+            Mutate = { param($r) $r.extension.dexPayloads[0].sizeBytes = 99 } }
+        'a payload the bundle does not carry' = @{ Pattern = "*records an extension payload the bundle doesn't carry: extensions/other.mpe*"
+            Mutate = { param($r)
+                $other = $r.extension.dexPayloads[0] | ConvertTo-Json | ConvertFrom-Json
+                $other.name = 'extensions/other.mpe'
+                $r.extension.dexPayloads = @($r.extension.dexPayloads[0], $other) } }
+        'the same payload twice' = @{ Pattern = '*extension payload more than once*'
+            Mutate = { param($r) $r.extension.dexPayloads = @($r.extension.dexPayloads[0], $r.extension.dexPayloads[0]) } }
+    }
+    foreach ($description in $payloadCases.Keys) {
+        $result = Test-TestReceipt -Receipt (New-TestReceipt -Mutate $payloadCases[$description].Mutate)
+        Assert-True (-not $result.Valid -and $result.Reason -like $payloadCases[$description].Pattern) `
+            "Receipt validation took $($description): $($result.Reason)"
+    }
+    # A bundle carrying two payloads: a receipt naming one leaves the other out, and one naming both
+    # passes, which is the control for the cases above.
+    $twoPayloads = Join-Path $allowlistRoot 'two-payloads.mpp'
+    New-TestBundle -Path $twoPayloads -Entries @{ 'extensions/facebook.mpe' = "dex`n035 payload"; 'extensions/messenger.mpe' = "dex`n035 other" }
+    $twoPayloadReceipt = New-TestReceipt -Mutate {
+        param($r)
+        $r.bundle.sha256 = Get-Sha256Hex -Path $twoPayloads
+        $r.bundle.sizeBytes = (Get-Item -LiteralPath $twoPayloads).Length
+    }
+    $result = Test-TestReceipt -Receipt $twoPayloadReceipt -BundlePath $twoPayloads
+    Assert-True (-not $result.Valid -and $result.Reason -like '*leaves out an extension payload the bundle carries: extensions/messenger.mpe*') `
+        "A receipt leaving out a payload the bundle carries passed: $($result.Reason)"
+    $twoPayloadReceipt.extension.dexPayloads = (Get-ExtensionPayloads -BundlePath $twoPayloads) | ConvertTo-Json -Depth 4 | ConvertFrom-Json
+    $result = Test-TestReceipt -Receipt $twoPayloadReceipt -BundlePath $twoPayloads
+    Assert-True $result.Valid "A receipt naming both of the bundle's payloads was refused: $($result.Reason)"
 
     # A receipt built only from forced runs against newer builds has to be refused for that
     # reason and name the target it is missing, not trip over some other field on the way.
