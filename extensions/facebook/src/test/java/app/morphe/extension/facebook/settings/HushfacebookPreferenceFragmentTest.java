@@ -28,6 +28,7 @@ import app.morphe.extension.facebook.download.SendLink;
 import app.morphe.extension.facebook.feed.PostWordsForTests;
 import app.morphe.extension.facebook.feed.SeenPostsForTests;
 import app.morphe.extension.facebook.media.PlaybackQuality;
+import app.morphe.extension.facebook.misc.ShareSheetItems;
 import app.morphe.extension.facebook.media.SurfaceQuality;
 import app.morphe.extension.facebook.navigation.FeedsSubtab;
 import app.morphe.extension.facebook.navigation.HiddenTabs;
@@ -744,6 +745,50 @@ public class HushfacebookPreferenceFragmentTest {
             ShadowLooper.idleMainLooper();
 
             assertFalse("the share sheet list outlived the page", list.isShowing());
+        }
+    }
+
+    /**
+     * An imported list can fill the share sheet list's room. Ticking one more then keeps the list
+     * open, says why and saves nothing, and unticking it lets Save keep every item still ticked.
+     */
+    @Test
+    public void theShareSheetListKeepsEveryTickOrSavesNothing() {
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.SHARE_SHEET_ITEMS);
+        StringBuilder one = new StringBuilder("A");
+        while (one.length() < ShareSheetItems.MAX_HIDDEN_CHARS) one.append('B');
+        String longType = one.toString();
+        Settings.HIDDEN_SHARE_ITEMS.save(longType);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            List<Preference> rows = rowsOf(controller);
+            Preference items = rows.get(indexOfKey(rows, AppPages.SHARE_ITEMS_ROW));
+            String summary = String.valueOf(items.getSummary());
+            ShadowAlertDialog.reset();
+            items.getOnPreferenceClickListener().onPreferenceClick(items);
+            AlertDialog list = ShadowAlertDialog.getLatestAlertDialog();
+            List<String> choices = ShareSheetItems.choices();
+            Shadows.shadowOf(list).clickOnItem(choices.indexOf("COPY_LINK"));
+            ShadowLooper.idleMainLooper();
+
+            list.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+            ShadowLooper.idleMainLooper();
+            assertTrue("a Save past the list's room closed it", list.isShowing());
+            assertEquals("This list needs more room than it has. Shorten it, then save again.",
+                    ShadowToast.getTextOfLatestToast());
+            assertEquals(longType, Settings.HIDDEN_SHARE_ITEMS.savedValue());
+            assertEquals(summary, String.valueOf(items.getSummary()));
+
+            // The dialog marks a row ticked from the start only once the row is drawn, which the long
+            // type's never is here, so the room comes back by unticking Copy link again.
+            Shadows.shadowOf(list).clickOnItem(choices.indexOf("COPY_LINK"));
+            ShadowLooper.idleMainLooper();
+            list.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+            ShadowLooper.idleMainLooper();
+            assertFalse(list.isShowing());
+            assertEquals("the imported type didn't stay picked", longType, Settings.HIDDEN_SHARE_ITEMS.savedValue());
+            assertEquals(AppPages.shareItemsSummary(ShareSheetItems.hidden()), String.valueOf(items.getSummary()));
+        } finally {
+            Settings.HIDDEN_SHARE_ITEMS.resetToDefault();
         }
     }
 
