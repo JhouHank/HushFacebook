@@ -106,7 +106,7 @@ public class FontFilePreference extends Preference implements ImmediateAction {
         /** The file or stream the worker has open, closed when the screen stops waiting. */
         @Nullable
         volatile Closeable open;
-        /** The worker has returned. */
+        /** The worker has returned, or never ran. Set by {@link #end}, under this run's lock. */
         volatile boolean ended;
         /** The screen stopped waiting. Guarded by this run. */
         private boolean abandoned;
@@ -134,11 +134,20 @@ public class FontFilePreference extends Preference implements ImmediateAction {
             return true;
         }
 
-        /** Whether the screen may stop waiting. After yes the copy can't name the font. */
+        /**
+         * Whether the screen may stop waiting. After yes the copy can't name the font. A worker that
+         * has already returned has its answer on the way, so the screen waits for that instead of
+         * saying the app took too long.
+         */
         synchronized boolean abandon() {
-            if (committing) return false;
+            if (committing || ended) return false;
             abandoned = true;
             return true;
+        }
+
+        /** The worker has returned. After this the screen can't stop waiting, so its answer is the one shown. */
+        synchronized void end() {
+            ended = true;
         }
     }
 
@@ -453,7 +462,7 @@ public class FontFilePreference extends Preference implements ImmediateAction {
 
     /** The worker queue was full, so nothing ran: the rows come back and the person hears why. */
     private static void notStarted(Run run) {
-        run.ended = true;
+        run.end();
         finish(run);
         Utils.showToastLong(L10n.t("Couldn't start that. Try again in a moment."));
     }
@@ -463,7 +472,7 @@ public class FontFilePreference extends Preference implements ImmediateAction {
      * stopped waiting for it: then it says nothing.
      */
     private static void ended(Run run, @Nullable Runnable result) {
-        run.ended = true;
+        run.end();
         Utils.runOnMainThread(() -> {
             if (!finish(run)) {
                 Logger.printInfo(() -> "Font file: the app answered after the screen stopped waiting");

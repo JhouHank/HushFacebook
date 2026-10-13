@@ -33,6 +33,7 @@ import org.robolectric.annotation.Implementation;
 import org.robolectric.annotation.Implements;
 import org.robolectric.shadows.ShadowActivity;
 import org.robolectric.shadows.ShadowLooper;
+import org.robolectric.shadows.ShadowSystemClock;
 import org.robolectric.shadows.ShadowToast;
 import org.robolectric.util.ReflectionHelpers;
 
@@ -41,6 +42,7 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -81,6 +83,9 @@ public class FontFilePreferenceTest {
     /** The read a test's app is holding, if any. */
     private volatile StallingStream stalledRead;
 
+    /** The read a test's app hands over late, if any. */
+    private volatile GatedStream gatedRead;
+
     @Before
     public void fontPatchIn() {
         PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.SYSTEM_FONT);
@@ -95,6 +100,8 @@ public class FontFilePreferenceTest {
         FontFileProvider.releaseAll();
         StallingStream read = stalledRead;
         if (read != null) read.close();
+        GatedStream late = gatedRead;
+        if (late != null) late.letGo();
         FontFilePreference.streamForTests = null;
         settle();
         PatchFamily.inBuildForTests = null;
@@ -636,6 +643,62 @@ public class FontFilePreferenceTest {
         }
     }
 
+    /**
+     * An app that hands the whole file over after the screen stopped waiting, and took no notice of
+     * the screen closing it: the copy reads it all and passes its checks, but the run was given up,
+     * so it can't name the font or move in. What's said stays the wait's message.
+     */
+    @Test
+    @Config(shadows = NonMappingTypefaceBuilder.class)
+    public void aCopyThatFinishesAfterTheWaitCantNameTheFont() throws Exception {
+        byte[] rubik = pickedBefore();
+        byte[] khmer = FontFileTest.font(FontFileTest.VARIABLE_FONT);
+        FontFilePreference.streamForTests = stream -> gatedRead = new GatedStream(stream);
+        Uri uri = FontFileProvider.put(KHMER, khmer, null);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            Activity activity = controller.get();
+            HushfacebookPreferenceFragment page = SettingsL10nTest.pageOf(SettingsL10nTest.show(activity));
+            pickHeld(activity, page, uri);
+            waitOut();
+            assertEquals(TIMEOUT, ShadowToast.getTextOfLatestToast());
+            assertBeforeKept(page, rubik);
+
+            gatedRead.letGo();
+            settle();
+            assertEquals("the late copy didn't read the whole file", khmer.length, gatedRead.bytesRead());
+            assertEquals("the late copy said more", TIMEOUT, ShadowToast.getTextOfLatestToast());
+            assertFalse("a part copied was left", partial().exists());
+            assertBeforeKept(page, rubik);
+        }
+    }
+
+    /**
+     * A copy turned down at the moment the wait runs out: the worker returned first, so the screen
+     * says why the file was turned down rather than that the app took too long.
+     */
+    @Test
+    public void aRefusalThatLandsAsTheWaitRunsOutIsTheOneSaid() throws Exception {
+        byte[] rubik = pickedBefore();
+        FontFilePreference.streamForTests = stream -> gatedRead = new GatedStream(stream);
+        Uri uri = FontFileProvider.put("content://font-test/documents/notes.txt",
+                "This is not a font".getBytes(java.nio.charset.StandardCharsets.US_ASCII), "notes.txt");
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            Activity activity = controller.get();
+            HushfacebookPreferenceFragment page = SettingsL10nTest.pageOf(SettingsL10nTest.show(activity));
+            pickHeld(activity, page, uri);
+            // The wait is due, but the main thread hasn't got to it when the worker returns.
+            ShadowSystemClock.advanceBy(Duration.ofMillis(FontFilePreference.timeoutMs + 1));
+            gatedRead.letGo();
+            Utils.awaitBackgroundTasksForTests();
+            ShadowLooper.idleMainLooper();
+
+            assertEquals(FontFilePreference.refusal(FontFile.Refusal.NOT_A_FONT), ShadowToast.getTextOfLatestToast());
+            assertBeforeKept(page, rubik);
+            // Nothing is left holding a worker, so the next pick opens the picker.
+            tap(activity, page);
+        }
+    }
+
     @Test
     public void aFileNameIsShownOnOneCleanLine() {
         assertEquals("Inter.ttf", FontFilePreference.cleanName("  Inter.ttf \n"));
@@ -770,6 +833,56 @@ public class FontFilePreferenceTest {
         public void close() throws IOException {
             closed.countDown();
             super.close();
+        }
+    }
+
+    /**
+     * Holds the first read until the test lets it go, and ignores a close before then, as an app
+     * that hands the file over late and takes no notice of the screen closing it does.
+     */
+    private static final class GatedStream extends FilterInputStream {
+        private final CountDownLatch go = new CountDownLatch(1);
+        private volatile boolean waited;
+        private volatile long read;
+
+        GatedStream(InputStream file) {
+            super(file);
+        }
+
+        void letGo() {
+            go.countDown();
+        }
+
+        long bytesRead() {
+            return read;
+        }
+
+        @Override
+        public int read() throws IOException {
+            byte[] one = new byte[1];
+            return read(one, 0, 1) < 0 ? -1 : one[0] & 0xFF;
+        }
+
+        @Override
+        public int read(byte[] buffer, int offset, int length) throws IOException {
+            if (!waited) {
+                waited = true;
+                FontFileProvider.holding.release();
+                try {
+                    if (!go.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("The test never let the read go");
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw new IOException("Interrupted while held");
+                }
+            }
+            int count = super.read(buffer, offset, length);
+            if (count > 0) read += count;
+            return count;
+        }
+
+        @Override
+        public void close() throws IOException {
+            if (go.getCount() == 0) super.close();
         }
     }
 
