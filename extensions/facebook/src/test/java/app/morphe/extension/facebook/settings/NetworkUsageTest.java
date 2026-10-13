@@ -70,11 +70,11 @@ public class NetworkUsageTest {
         fake.at(500_000, 0);
         // A second activity over the first, then it closes: still the same time in the foreground.
         NetworkUsage.activityStarted(MINUTE);
-        NetworkUsage.activityStopped(false);
+        NetworkUsage.activityStopped(false, MINUTE);
         fake.at(800_000, 40_000);
         assertEquals("this time in the foreground (2 min): 800 KB received, 40 KB sent", NetworkUsage.lines(2 * MINUTE).get(1));
 
-        NetworkUsage.activityStopped(false);
+        NetworkUsage.activityStopped(false, 2 * MINUTE);
         fake.at(2_000_000, 50_000);
         NetworkUsage.activityStarted(3 * MINUTE);
         fake.at(2_600_000, 70_000);
@@ -91,16 +91,29 @@ public class NetworkUsageTest {
         NetworkUsage.activityStarted(0);
         fake.at(500_000, 10_000);
         // Android stops the old copy before the new one starts.
-        NetworkUsage.activityStopped(true);
+        NetworkUsage.activityStopped(true, MINUTE - 300);
         NetworkUsage.activityStarted(MINUTE);
         fake.at(900_000, 30_000);
         assertEquals("this time in the foreground (2 min): 900 KB received, 30 KB sent", NetworkUsage.lines(2 * MINUTE).get(1));
 
         // Leaving for real afterwards still starts a new count on the way back.
-        NetworkUsage.activityStopped(false);
+        NetworkUsage.activityStopped(false, 2 * MINUTE);
         NetworkUsage.activityStarted(3 * MINUTE);
         fake.at(1_000_000, 40_000);
         assertEquals("this time in the foreground (1 min): 100 KB received, 10 KB sent", NetworkUsage.lines(4 * MINUTE).get(1));
+    }
+
+    @Test
+    public void aRebuildWhoseNewCopyNeverStartedDoesNotHideTheNextReturn() {
+        fake.at(0, 0);
+        NetworkUsage.started(0);
+        NetworkUsage.activityStarted(0);
+        // The old copy stops to be rebuilt, and the new one never starts: the phone went to sleep.
+        NetworkUsage.activityStopped(true, MINUTE);
+        fake.at(2_000_000, 50_000);
+        NetworkUsage.activityStarted(30 * MINUTE);
+        fake.at(2_300_000, 60_000);
+        assertEquals("this time in the foreground (2 min): 300 KB received, 10 KB sent", NetworkUsage.lines(32 * MINUTE).get(1));
     }
 
     @Test

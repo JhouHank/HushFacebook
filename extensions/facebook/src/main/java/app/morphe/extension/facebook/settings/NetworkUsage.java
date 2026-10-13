@@ -55,11 +55,19 @@ public final class NetworkUsage {
         @Override public long sent() { return TrafficStats.getUidTxBytes(Process.myUid()); }
     };
 
+    /**
+     * A rebuilt screen's new copy starts well under a second after the old one stopped, so a
+     * start later than this is coming back, not the rebuild.
+     */
+    static final long REBUILD_WINDOW = 10_000;
+
     private static final Object LOCK = new Object();
     private static Counter counter = UID;
     @Nullable private static Mark started, foreground;
     private static int startedActivities;
-    private static boolean watching, rebuilding;
+    private static boolean watching;
+    /** When the last screen stopped only to be rebuilt, or -1. */
+    private static long rebuildingSince = -1;
 
     private NetworkUsage() {
     }
@@ -87,12 +95,14 @@ public final class NetworkUsage {
 
     /**
      * Coming to the foreground is the first activity to start after none were, unless the last
-     * one only stopped to be rebuilt.
+     * one only stopped to be rebuilt. A rebuilt copy that never started doesn't hide the next
+     * real return: a start long after that stop is one.
      */
     static void activityStarted(long now) {
         synchronized (LOCK) {
-            if (startedActivities++ == 0 && !rebuilding) foreground = read(now);
-            rebuilding = false;
+            boolean rebuilt = rebuildingSince >= 0 && now - rebuildingSince <= REBUILD_WINDOW;
+            if (startedActivities++ == 0 && !rebuilt) foreground = read(now);
+            rebuildingSince = -1;
         }
     }
 
@@ -100,10 +110,10 @@ public final class NetworkUsage {
      * A screen rebuilt for a rotation, a dark mode or font change stops before its new copy
      * starts, which isn't leaving the foreground.
      */
-    static void activityStopped(boolean changingConfigurations) {
+    static void activityStopped(boolean changingConfigurations, long now) {
         synchronized (LOCK) {
             if (startedActivities > 0) startedActivities--;
-            if (startedActivities == 0) rebuilding = changingConfigurations;
+            if (startedActivities == 0) rebuildingSince = changingConfigurations ? now : -1;
         }
     }
 
@@ -163,7 +173,7 @@ public final class NetworkUsage {
             started = null;
             foreground = null;
             startedActivities = 0;
-            rebuilding = false;
+            rebuildingSince = -1;
         }
     }
 
@@ -179,7 +189,7 @@ public final class NetworkUsage {
 
         @Override public void onActivityStopped(@NonNull Activity activity) {
             try {
-                activityStopped(activity.isChangingConfigurations());
+                activityStopped(activity.isChangingConfigurations(), SystemClock.elapsedRealtime());
             } catch (Throwable ex) {
                 Logger.printException(() -> "Network usage: could not count a stop", ex);
             }
