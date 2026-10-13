@@ -12,7 +12,6 @@ Hides "Pages you may like" cards, cards promoting Facebook's own features, and s
 %1$s elapsed	%1$s decorridos
 %1$s. It was set when you patched, so Pause can't turn it off. To rule it out, patch again and leave out that patch.	%1$s. Isso foi definido quando você aplicou os patches, então a pausa não pode desativá-lo. Para descartar essa possibilidade, aplique os patches novamente sem esse patch.
 %1$s. They were set when you patched, so Pause can't turn them off. To rule one out, patch again and leave out the patch in brackets after it.	%1$s. Esses itens foram definidos quando você aplicou os patches, então a pausa não pode desativá-los. Para descartar um deles, aplique os patches novamente sem o patch entre parênteses depois dele.
-A change here applies after Facebook restarts.	Uma alteração daqui vale depois que o Facebook reiniciar.
 Add a Download button to reels, using your download quality. Off or paused, Facebook's own buttons return.	Adiciona um botão Baixar aos Reels, usando sua qualidade de download. Desativado ou pausado, os botões do próprio Facebook voltam.
 A file named %1$s in %2$s paused Hushfacebook.	Um arquivo chamado %1$s em %2$s pausou o Hushfacebook.
 About	Sobre
@@ -1318,3 +1317,28 @@ The saved copy of %1$s is missing. Choose the file again.	A cópia salva de %1$s
 The video wasn't saved. Try again.	O vídeo não foi salvo. Tente de novo.
 This list needs more room than it has. Shorten it, then save again.	Esta lista precisa de mais espaço do que o disponível. Reduza a lista e salve de novo.
 Your settings already match that file, so nothing will change.	Suas configurações já correspondem às desse arquivo, então nada será alterado.
+# context: title of the row that restarts Facebook, shown while one change waits for a restart
+Restart Facebook to apply this change	Reinicie o Facebook para aplicar esta alteração
+# context: the same row with two or more changes waiting
+Restart Facebook to apply %1$d changes	Reinicie o Facebook para aplicar %1$d alterações
+# context: summary of that row; after the restart the settings screen opens again on the same page
+Facebook closes and reopens on this page.	O Facebook fecha e reabre nesta página.
+# context: row near the end of the settings home page; opens a new bug report on GitHub
+Report a problem	Relatar um problema
+Opens a GitHub report with your versions and settings filled in. Add what happened.	Abre um relatório no GitHub com suas versões e configurações já preenchidas. Conte o que aconteceu.
+# context: row near the top of the settings home page; a list of ready-made sets of switches
+Quick setups	Configurações rápidas
+Turn on a set of switches in one tap, or put every switch back the way it started.	Ative um conjunto de opções com um toque ou volte cada opção para como estava no início.
+# context: name of a Quick setups choice that hides ads and nags; an adjective, as in a quiet feed
+Quiet	Tranquilo
+Hides ads, suggestions, promos and prompts, and stops nagging notifications.	Oculta anúncios, sugestões, promoções e convites, e para as notificações insistentes.
+# context: what the Privacy choice of Quick setups turns on; camera roll scans are Hold back camera roll processing
+Holds back usage reports and camera roll scans, removes link tracking, and hides your typing and screenshots.	Segura relatórios de uso e varreduras do rolo da câmera, remove o rastreamento de links e oculta quando você digita e faz capturas.
+# context: name of the Quick setups choice that puts the switches back as they were after install
+Back to defaults	Voltar ao padrão
+# context: Lock Facebook is the name of the app lock switch, left as it is
+Puts every feature switch but Lock Facebook back the way it started.	Volta cada opção de recurso, exceto Bloquear o Facebook, para como estava no início.
+# context: toast after a Quick setups choice changed one switch
+Changed %1$d setting	%1$d configuração alterada
+# context: the same toast for none, or for two or more
+Changed %1$d settings	%1$d configurações alteradas

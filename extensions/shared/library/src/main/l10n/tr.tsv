@@ -12,7 +12,6 @@ Hides "Pages you may like" cards, cards promoting Facebook's own features, and s
 %1$s elapsed	%1$s geçti
 %1$s. It was set when you patched, so Pause can't turn it off. To rule it out, patch again and leave out that patch.	%1$s. Yamaladığında ayarlandığı için Duraklatma bunu kapatamaz. Bunu elemek için yeniden yamala ve o yamayı dışarıda bırak.
 %1$s. They were set when you patched, so Pause can't turn them off. To rule one out, patch again and leave out the patch in brackets after it.	%1$s. Yamaladığında ayarlandıkları için Duraklatma bunları kapatamaz. Birini elemek için yeniden yamala ve onun ardından parantez içinde yazan yamayı dışarıda bırak.
-A change here applies after Facebook restarts.	Buradaki bir değişiklik Facebook yeniden başladıktan sonra geçerli olur.
 Add a Download button to reels, using your download quality. Off or paused, Facebook's own buttons return.	Reels'e indirme kalitenizle İndir düğmesi ekler. Kapalı veya duraklatılmışken Facebook'un kendi düğmeleri geri gelir.
 A file named %1$s in %2$s paused Hushfacebook.	%2$s içindeki %1$s adlı bir dosya Hushfacebook'u duraklattı.
 About	Hakkında
@@ -1426,3 +1425,28 @@ The saved copy of %1$s is missing. Choose the file again.	%1$s dosyasının kay�
 The video wasn't saved. Try again.	Video kaydedilmedi. Tekrar dene.
 This list needs more room than it has. Shorten it, then save again.	Bu liste ayrılan alana sığmıyor. Kısaltıp tekrar kaydet.
 Your settings already match that file, so nothing will change.	Ayarların zaten bu dosyayla aynı, bu yüzden hiçbir şey değişmeyecek.
+# context: title of the row that restarts Facebook, shown while one change waits for a restart
+Restart Facebook to apply this change	Bu değişikliği uygulamak için Facebook'u yeniden başlatın
+# context: the same row with two or more changes waiting
+Restart Facebook to apply %1$d changes	%1$d değişikliği uygulamak için Facebook'u yeniden başlatın
+# context: summary of that row; after the restart the settings screen opens again on the same page
+Facebook closes and reopens on this page.	Facebook kapanır ve bu sayfada yeniden açılır.
+# context: row near the end of the settings home page; opens a new bug report on GitHub
+Report a problem	Sorun bildir
+Opens a GitHub report with your versions and settings filled in. Add what happened.	Sürümleriniz ve ayarlarınız doldurulmuş bir GitHub raporu açar. Ne olduğunu ekleyin.
+# context: row near the top of the settings home page; a list of ready-made sets of switches
+Quick setups	Hızlı kurulumlar
+Turn on a set of switches in one tap, or put every switch back the way it started.	Bir grup anahtarı tek dokunuşla açın veya her anahtarı başlangıçtaki hâline döndürün.
+# context: name of a Quick setups choice that hides ads and nags; an adjective, as in a quiet feed
+Quiet	Sakin
+Hides ads, suggestions, promos and prompts, and stops nagging notifications.	Reklamları, önerileri, tanıtımları ve yönlendirmeleri gizler, rahatsız eden bildirimleri durdurur.
+# context: what the Privacy choice of Quick setups turns on; camera roll scans are Hold back camera roll processing
+Holds back usage reports and camera roll scans, removes link tracking, and hides your typing and screenshots.	Kullanım raporlarını ve film rulosu taramalarını bekletir, bağlantı izlemeyi kaldırır, yazmanızı ve ekran görüntülerinizi gizler.
+# context: name of the Quick setups choice that puts the switches back as they were after install
+Back to defaults	Varsayılanlara dön
+# context: Lock Facebook is the name of the app lock switch, left as it is
+Puts every feature switch but Lock Facebook back the way it started.	Facebook'u kilitle dışındaki her özellik anahtarını başlangıçtaki hâline döndürür.
+# context: toast after a Quick setups choice changed one switch
+Changed %1$d setting	%1$d ayar değiştirildi
+# context: the same toast for none, or for two or more
+Changed %1$d settings	%1$d ayar değiştirildi

@@ -55,6 +55,8 @@ The overview groups the main pages in one list, with search and **Pause** above 
 
 Switches act straight away, with no restart and no new patching, but what's already on screen stays as it was until Facebook draws it again. A reel keeps the buttons it was built with, and rows already in the feed stay until it loads fresh posts. The Stories tray switch shows the next time you pull the feed down to refresh. A row that tells you to restart Facebook, such as the font and tab switches, waits for that restart.
 
+Changing one of those brings up a **Restart Facebook** row at the top of the page, and a tap reopens Facebook on the same page. **Quick setups** turns on a ready-made set of switches at once, and **Report a problem** opens a GitHub bug report with your versions and switches filled in.
+
 **Pause Hushfacebook** turns every switch off from the next start without forgetting your choices. A few things stay in, Lock Facebook among them, and the screen lists them. If Facebook crashes or freezes within a minute of starting three times in a row, Hushfacebook pauses itself and the screen says so.
 
 Morphe Manager can back up your patch choices but not these switches. **Export settings** saves them to a JSON file, word lists included, and **Import settings** reads one back on this phone or a new one. It shows what the file would change before anything does. **Check for new Hushfacebook releases** under Updates is off until you turn it on. Then it asks GitHub once a day and tells you when there's a newer release, and you update through Morphe Manager as usual.

@@ -12,7 +12,6 @@ Hides "Pages you may like" cards, cards promoting Facebook's own features, and s
 %1$s elapsed	%1$s berlalu
 %1$s. It was set when you patched, so Pause can't turn it off. To rule it out, patch again and leave out that patch.	%1$s. Ini diatur saat Anda menambal, jadi Jeda tidak dapat mematikannya. Untuk memastikan bukan ini penyebabnya, tambal ulang tanpa tambalan yang tertera dalam kurung setelahnya.
 %1$s. They were set when you patched, so Pause can't turn them off. To rule one out, patch again and leave out the patch in brackets after it.	%1$s. Ini diatur saat Anda menambal, jadi Jeda tidak dapat mematikannya. Untuk memastikan bukan ini penyebabnya, tambal ulang tanpa tambalan yang tertera dalam kurung setelahnya.
-A change here applies after Facebook restarts.	Perubahan di sini berlaku setelah Facebook dimulai ulang.
 Add a Download button to reels, using your download quality. Off or paused, Facebook's own buttons return.	Tambahkan tombol Unduh ke reel dengan kualitas unduhan Anda. Saat mati atau dijeda, tombol asli Facebook kembali.
 A file named %1$s in %2$s paused Hushfacebook.	File bernama %1$s di %2$s menjeda Hushfacebook.
 About	Tentang
@@ -1426,3 +1425,28 @@ The saved copy of %1$s is missing. Choose the file again.	Salinan tersimpan dari
 The video wasn't saved. Try again.	Video tidak tersimpan. Coba lagi.
 This list needs more room than it has. Shorten it, then save again.	Daftar ini membutuhkan lebih banyak ruang dari yang tersedia. Persingkat, lalu simpan lagi.
 Your settings already match that file, so nothing will change.	Pengaturan Anda sudah sesuai dengan file itu, jadi tidak ada yang akan berubah.
+# context: title of the row that restarts Facebook, shown while one change waits for a restart
+Restart Facebook to apply this change	Mulai ulang Facebook untuk menerapkan perubahan ini
+# context: the same row with two or more changes waiting
+Restart Facebook to apply %1$d changes	Mulai ulang Facebook untuk menerapkan %1$d perubahan
+# context: summary of that row; after the restart the settings screen opens again on the same page
+Facebook closes and reopens on this page.	Facebook ditutup lalu dibuka lagi di halaman ini.
+# context: row near the end of the settings home page; opens a new bug report on GitHub
+Report a problem	Laporkan masalah
+Opens a GitHub report with your versions and settings filled in. Add what happened.	Membuka laporan GitHub dengan versi dan pengaturan Anda yang sudah terisi. Tambahkan apa yang terjadi.
+# context: row near the top of the settings home page; a list of ready-made sets of switches
+Quick setups	Pengaturan cepat
+Turn on a set of switches in one tap, or put every switch back the way it started.	Nyalakan sekumpulan sakelar dengan sekali ketuk, atau kembalikan setiap sakelar seperti semula.
+# context: name of a Quick setups choice that hides ads and nags; an adjective, as in a quiet feed
+Quiet	Tenang
+Hides ads, suggestions, promos and prompts, and stops nagging notifications.	Menyembunyikan iklan, saran, promosi, dan ajakan, serta menghentikan notifikasi yang mengganggu.
+# context: what the Privacy choice of Quick setups turns on; camera roll scans are Hold back camera roll processing
+Holds back usage reports and camera roll scans, removes link tracking, and hides your typing and screenshots.	Menahan laporan penggunaan dan pemindaian rol kamera, menghapus pelacakan tautan, serta menyembunyikan status mengetik dan tangkapan layar Anda.
+# context: name of the Quick setups choice that puts the switches back as they were after install
+Back to defaults	Kembali ke bawaan
+# context: Lock Facebook is the name of the app lock switch, left as it is
+Puts every feature switch but Lock Facebook back the way it started.	Mengembalikan setiap sakelar fitur kecuali Kunci Facebook seperti semula.
+# context: toast after a Quick setups choice changed one switch
+Changed %1$d setting	%1$d pengaturan diubah
+# context: the same toast for none, or for two or more
+Changed %1$d settings	%1$d pengaturan diubah

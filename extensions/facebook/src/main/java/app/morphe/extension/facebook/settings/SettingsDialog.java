@@ -51,6 +51,8 @@ public final class SettingsDialog extends DialogFragment {
      * carries an id.
      */
     static final int CONTAINER_ID = 0x48464301;
+    /** The argument naming the page the screen opens on: a route of {@link SettingsNavigation}. */
+    static final String START_PAGE = "hushfacebook_start_page";
 
     private TextView pageTitle;
     private TextView pageContext;
@@ -68,6 +70,26 @@ public final class SettingsDialog extends DialogFragment {
     /** The page's colours, or null for the black page. Read when the dialog is created. */
     @Nullable
     private ScreenColors colors;
+
+    /**
+     * The screen, opening on [page] when nothing saved says otherwise: the page a restart from the
+     * restart row left. Null or empty opens the first page.
+     */
+    static SettingsDialog onPage(@Nullable String page) {
+        SettingsDialog dialog = new SettingsDialog();
+        if (page != null && !page.isEmpty()) {
+            Bundle arguments = new Bundle();
+            arguments.putString(START_PAGE, page);
+            dialog.setArguments(arguments);
+        }
+        return dialog;
+    }
+
+    /** The page this screen was asked to open on, or "" for the first page. */
+    String startPage() {
+        Bundle arguments = getArguments();
+        return arguments == null ? "" : arguments.getString(START_PAGE, "");
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {

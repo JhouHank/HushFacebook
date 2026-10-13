@@ -245,7 +245,7 @@ public class FontFilePreferenceTest {
             page.navigation.navigate("Appearance");
             ShadowLooper.idleMainLooper();
             android.widget.ListView list = dialog.getView().findViewById(android.R.id.list);
-            assertEquals("A change here applies after Facebook restarts.",
+            assertEquals("Restart Facebook to apply this change",
                     String.valueOf(((Preference) list.getItemAtPosition(0)).getTitle()));
 
             dialog.dismissAllowingStateLoss();
@@ -255,7 +255,7 @@ public class FontFilePreferenceTest {
             page.navigation.navigate("Appearance");
             ShadowLooper.idleMainLooper();
             list = dialog.getView().findViewById(android.R.id.list);
-            assertEquals("A change here applies after Facebook restarts.",
+            assertEquals("Restart Facebook to apply this change",
                     String.valueOf(((Preference) list.getItemAtPosition(0)).getTitle()));
         }
     }
