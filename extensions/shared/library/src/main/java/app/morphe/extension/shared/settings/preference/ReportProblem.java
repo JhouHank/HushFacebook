@@ -1,6 +1,9 @@
 /*
- * Copyright 2026 Hushfacebook contributors
- * https://github.com/SysAdminDoc/Hushfacebook
+ * Modified for Hushfacebook (Facebook), 2026.
+ * Copyright 2026 HushPinterest contributors
+ * https://github.com/SysAdminDoc/HushPinterest
+ *
+ * Built on SysAdminDoc/hushfeed (GPL-3.0).
  */
 package app.morphe.extension.shared.settings.preference;
 
