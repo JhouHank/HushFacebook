@@ -25,10 +25,12 @@ import app.morphe.extension.shared.settings.preference.LogBufferManager;
 
 /**
  * How much Facebook downloaded and uploaded, for the diagnostic report's [NETWORK] section: since
- * this process started, and since Facebook last came to the foreground. Android already counts
- * every app's bytes ({@link TrafficStats#getUidRxBytes}), so nothing is hooked and nothing leaves
- * the phone. The count is per app, so it covers all of Facebook's processes (games, ads), and it
- * includes Hushfacebook's own saves.
+ * Hushfacebook started in this process (at the end of Facebook's application start, so bytes
+ * that start moved are left out), and since Facebook last came to the foreground. Android already
+ * counts every app's bytes ({@link TrafficStats#getUidRxBytes}), so nothing is hooked and nothing
+ * leaves the phone: the counters are read at that start, each time a Facebook screen starts after
+ * none were showing, and when the report is made. The count is per app, so it covers all of
+ * Facebook's processes (games, ads), and it includes Hushfacebook's own saves.
  */
 public final class NetworkUsage {
     /** The app's byte counters, or a negative number where the phone doesn't keep them. */
@@ -57,7 +59,7 @@ public final class NetworkUsage {
     private static Counter counter = UID;
     @Nullable private static Mark started, foreground;
     private static int startedActivities;
-    private static boolean watching;
+    private static boolean watching, rebuilding;
 
     private NetworkUsage() {
     }
@@ -83,16 +85,25 @@ public final class NetworkUsage {
         }
     }
 
-    /** Coming to the foreground is the first activity to start after none were. */
+    /**
+     * Coming to the foreground is the first activity to start after none were, unless the last
+     * one only stopped to be rebuilt.
+     */
     static void activityStarted(long now) {
         synchronized (LOCK) {
-            if (startedActivities++ == 0) foreground = read(now);
+            if (startedActivities++ == 0 && !rebuilding) foreground = read(now);
+            rebuilding = false;
         }
     }
 
-    static void activityStopped() {
+    /**
+     * A screen rebuilt for a rotation, a dark mode or font change stops before its new copy
+     * starts, which isn't leaving the foreground.
+     */
+    static void activityStopped(boolean changingConfigurations) {
         synchronized (LOCK) {
             if (startedActivities > 0) startedActivities--;
+            if (startedActivities == 0) rebuilding = changingConfigurations;
         }
     }
 
@@ -119,7 +130,10 @@ public final class NetworkUsage {
         }
         List<String> lines = new ArrayList<>(2);
         lines.add(line("since start", since, current));
-        if (front != null) lines.add(line("this time in the foreground", front, current));
+        // A mark the phone answered -1 for would count everything since the phone started.
+        if (front != null && front.received >= 0 && front.sent >= 0) {
+            lines.add(line("this time in the foreground", front, current));
+        }
         return lines;
     }
 
@@ -149,12 +163,28 @@ public final class NetworkUsage {
             started = null;
             foreground = null;
             startedActivities = 0;
+            rebuilding = false;
         }
     }
 
+    /** Runs inside Facebook's own activity starts and stops, so nothing may escape it. */
     private static final class Foreground implements Application.ActivityLifecycleCallbacks {
-        @Override public void onActivityStarted(@NonNull Activity activity) { activityStarted(SystemClock.elapsedRealtime()); }
-        @Override public void onActivityStopped(@NonNull Activity activity) { activityStopped(); }
+        @Override public void onActivityStarted(@NonNull Activity activity) {
+            try {
+                activityStarted(SystemClock.elapsedRealtime());
+            } catch (Throwable ex) {
+                Logger.printException(() -> "Network usage: could not mark the foreground", ex);
+            }
+        }
+
+        @Override public void onActivityStopped(@NonNull Activity activity) {
+            try {
+                activityStopped(activity.isChangingConfigurations());
+            } catch (Throwable ex) {
+                Logger.printException(() -> "Network usage: could not count a stop", ex);
+            }
+        }
+
         @Override public void onActivityCreated(@NonNull Activity activity, @Nullable Bundle state) { }
         @Override public void onActivityResumed(@NonNull Activity activity) { }
         @Override public void onActivityPaused(@NonNull Activity activity) { }
