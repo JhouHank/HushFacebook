@@ -266,6 +266,7 @@ public final class SettingsBackup {
             Settings.HIDE_EDITS_UPSELLS,
             Settings.HIDE_THREADS_CROSS_POSTING,
             Settings.HIDE_THREADS_SHARE_BUTTON,
+            Settings.HIDE_MUSE_SHARE_BUTTON,
             Settings.HIDE_META_VERIFIED_UPSELLS,
             Settings.HIDE_AVATAR_UPSELLS,
             Settings.HIDE_META_AI_IMAGINE,

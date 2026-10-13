@@ -189,7 +189,7 @@ public enum PatchFamily {
             Settings.HIDE_MENU_UPGRADES, Settings.HIDE_MENU_ALSO_FROM_META, Settings.HIDE_MENU_MUSE),
     META_UPSELLS(FamilyNames.META_UPSELLS, "metaUpsells", null,
             Settings.HIDE_EDITS_UPSELLS, Settings.HIDE_THREADS_CROSS_POSTING, Settings.HIDE_THREADS_SHARE_BUTTON,
-            Settings.HIDE_META_VERIFIED_UPSELLS, Settings.HIDE_AVATAR_UPSELLS, Settings.HIDE_META_AI_IMAGINE,
+            Settings.HIDE_MUSE_SHARE_BUTTON, Settings.HIDE_META_VERIFIED_UPSELLS, Settings.HIDE_AVATAR_UPSELLS, Settings.HIDE_META_AI_IMAGINE,
             Settings.HIDE_META_AI_POST_BUTTONS),
     SHARE_SHEET_ITEMS(FamilyNames.SHARE_SHEET_ITEMS, "shareSheetItems", Settings.HIDDEN_SHARE_ITEMS,
             new BooleanSetting[]{Settings.HIDE_SHARE_GROUP_BUTTONS}),

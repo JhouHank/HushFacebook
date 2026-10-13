@@ -58,7 +58,7 @@ public class MetaUpsellsTest {
     private static final List<StoryTool> TOOLS = Arrays.asList(StoryTool.values());
 
     /** Stands in for Facebook's enum of share sheet items, which names its constants the same way. */
-    private enum ShareItem { SHARE_NOW, SHARE_TO_THREADS, OFF_PLATFORM_WHATSAPP, COPY_LINK }
+    private enum ShareItem { SHARE_NOW, SHARE_TO_HATCH, SHARE_TO_THREADS, OFF_PLATFORM_WHATSAPP, COPY_LINK }
 
     private static final List<ShareItem> SHARE_ITEMS = Arrays.asList(ShareItem.values());
 
@@ -68,7 +68,8 @@ public class MetaUpsellsTest {
     @Before
     public void start() {
         switches = new BooleanSetting[] {Settings.HIDE_EDITS_UPSELLS, Settings.HIDE_THREADS_CROSS_POSTING,
-                Settings.HIDE_THREADS_SHARE_BUTTON, Settings.HIDE_META_VERIFIED_UPSELLS, Settings.HIDE_AVATAR_UPSELLS, Settings.HIDE_META_AI_IMAGINE,
+                Settings.HIDE_THREADS_SHARE_BUTTON, Settings.HIDE_MUSE_SHARE_BUTTON, Settings.HIDE_META_VERIFIED_UPSELLS,
+                Settings.HIDE_AVATAR_UPSELLS, Settings.HIDE_META_AI_IMAGINE,
                 Settings.HIDE_META_AI_POST_BUTTONS};
         HookStatus.clear();
     }
@@ -89,13 +90,17 @@ public class MetaUpsellsTest {
 
     /**
      * Whether each part hides, in the switches' order: Edits, Threads cross-posting, Threads in the
-     * share sheet, Meta Verified, avatar stickers, Imagine, the other Meta AI post buttons.
+     * share sheet, Muse in the share sheet, Meta Verified, avatar stickers, Imagine, the other Meta AI
+     * post buttons.
      */
     private static boolean[] hiding() {
         boolean edits = !MetaUpsells.editsHeader(true) && !MetaUpsells.fetchEditsPill(true)
                 && Boolean.FALSE.equals(MetaUpsells.fetchEditsPill(Boolean.TRUE));
         boolean threads = !MetaUpsells.threadsOnboarding(1);
-        boolean threadsShare = !MetaUpsells.shareTargets(SHARE_ITEMS).contains(ShareItem.SHARE_TO_THREADS);
+        // One ask for both share switches, so each is counted once a round like the rest.
+        List<?> shared = MetaUpsells.shareTargets(SHARE_ITEMS);
+        boolean threadsShare = !shared.contains(ShareItem.SHARE_TO_THREADS);
+        boolean museShare = !shared.contains(ShareItem.SHARE_TO_HATCH);
         boolean verified = Boolean.FALSE.equals(MetaUpsells.metaVerifiedSheet(Boolean.TRUE))
                 && MetaUpsells.metaVerifiedLabel("Meta Verified") == null;
         boolean avatar = MetaUpsells.hidesAvatarUpsell();
@@ -104,13 +109,13 @@ public class MetaUpsellsTest {
         boolean metaAiButtons = true;
         for (String plugin : MetaUpsells.META_AI_POST_PLUGINS) metaAiButtons &= MetaUpsells.hidesImagineCta(plugin);
         metaAiButtons &= MetaUpsells.hidesDeepDiveBelowCaption();
-        return new boolean[] {edits, threads, threadsShare, verified, avatar, imagine, metaAiButtons};
+        return new boolean[] {edits, threads, threadsShare, museShare, verified, avatar, imagine, metaAiButtons};
     }
 
     @Test
     public void everySwitchStartsOffAndFacebookDecides() {
         for (BooleanSetting setting : switches) assertFalse(setting.key + " starts on", setting.get());
-        assertTrue(Arrays.toString(hiding()), Arrays.equals(new boolean[7], hiding()));
+        assertTrue(Arrays.toString(hiding()), Arrays.equals(new boolean[8], hiding()));
         assertSame("Create story's tools were copied with the switch off", TOOLS, MetaUpsells.storyTools(TOOLS));
         assertSame("the share sheet's items were copied with the switch off", SHARE_ITEMS, MetaUpsells.shareTargets(SHARE_ITEMS));
         assertEquals("Meta Verified", MetaUpsells.metaVerifiedLabel("Meta Verified"));
@@ -121,7 +126,7 @@ public class MetaUpsellsTest {
     public void eachSwitchHidesOnlyItsOwnAndIsCounted() {
         for (int on = 0; on < switches.length; on++) {
             for (BooleanSetting setting : switches) setting.save(setting == switches[on]);
-            boolean[] expected = new boolean[7];
+            boolean[] expected = new boolean[8];
             expected[on] = true;
             // Asked once per switch: each ask counts, so the counts below are one round of asks.
             boolean[] hid = hiding();
@@ -134,6 +139,7 @@ public class MetaUpsellsTest {
         assertTrue(line, line.contains(MetaUpsells.AVATAR_HIDDEN + " 1"));
         assertTrue(line, line.contains(MetaUpsells.IMAGINE_HIDDEN + " 3"));
         assertTrue(line, line.contains(MetaUpsells.THREADS_SHARE_HIDDEN + " 1"));
+        assertTrue(line, line.contains(MetaUpsells.MUSE_SHARE_HIDDEN + " 1"));
         assertTrue(line, line.contains(MetaUpsells.META_AI_BUTTON_HIDDEN + " 5"));
         assertTrue(line, line.contains(MetaUpsells.CAPTION_DEEP_DIVE_HIDDEN + " 1"));
     }
@@ -142,13 +148,32 @@ public class MetaUpsellsTest {
     public void theShareSheetKeepsItsOtherItemsInOrder() {
         Settings.HIDE_THREADS_SHARE_BUTTON.save(true);
         assertEquals("the share sheet's other items moved",
-                Arrays.asList(ShareItem.SHARE_NOW, ShareItem.OFF_PLATFORM_WHATSAPP, ShareItem.COPY_LINK),
+                Arrays.asList(ShareItem.SHARE_NOW, ShareItem.SHARE_TO_HATCH, ShareItem.OFF_PLATFORM_WHATSAPP, ShareItem.COPY_LINK),
                 MetaUpsells.shareTargets(SHARE_ITEMS));
         List<ShareItem> without = Arrays.asList(ShareItem.SHARE_NOW, ShareItem.COPY_LINK);
         assertSame("a sheet with no Threads item was copied", without, MetaUpsells.shareTargets(without));
         assertSame(Collections.emptyList(), MetaUpsells.shareTargets(Collections.emptyList()));
         assertNull(MetaUpsells.shareTargets(null));
         assertFalse("a sheet with no Threads item was counted", statusLine().contains(MetaUpsells.THREADS_SHARE_HIDDEN + " 2"));
+    }
+
+    @Test
+    public void museLeavesTheShareSheetOnItsOwnOrWithThreads() {
+        Settings.HIDE_MUSE_SHARE_BUTTON.save(true);
+        assertEquals("Muse's switch took more than Muse",
+                Arrays.asList(ShareItem.SHARE_NOW, ShareItem.SHARE_TO_THREADS, ShareItem.OFF_PLATFORM_WHATSAPP, ShareItem.COPY_LINK),
+                MetaUpsells.shareTargets(SHARE_ITEMS));
+        List<ShareItem> noMuse = Arrays.asList(ShareItem.SHARE_NOW, ShareItem.SHARE_TO_THREADS);
+        assertSame("a sheet with no Muse item was copied", noMuse, MetaUpsells.shareTargets(noMuse));
+        assertFalse("a sheet with no Muse item was counted", statusLine().contains(MetaUpsells.MUSE_SHARE_HIDDEN + " 2"));
+
+        Settings.HIDE_THREADS_SHARE_BUTTON.save(true);
+        assertEquals("both switches on left one in or moved the rest",
+                Arrays.asList(ShareItem.SHARE_NOW, ShareItem.OFF_PLATFORM_WHATSAPP, ShareItem.COPY_LINK),
+                MetaUpsells.shareTargets(SHARE_ITEMS));
+        String line = statusLine();
+        assertTrue(line, line.contains(MetaUpsells.MUSE_SHARE_HIDDEN + " 2"));
+        assertTrue(line, line.contains(MetaUpsells.THREADS_SHARE_HIDDEN + " 1"));
     }
 
     @Test

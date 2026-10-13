@@ -135,6 +135,9 @@ final class AppPages {
             upsells.addPreference(toggle(context, Settings.HIDE_THREADS_SHARE_BUTTON,
                     L10n.t("Removes the Threads button when you share something. All other ways to share stay, in the same "
                             + "order.")));
+            upsells.addPreference(toggle(context, Settings.HIDE_MUSE_SHARE_BUTTON,
+                    L10n.t("Removes Muse, Meta's AI agent app, when you share something. All other ways to share stay, in "
+                            + "the same order.")));
             upsells.addPreference(toggle(context, Settings.HIDE_META_VERIFIED_UPSELLS,
                     L10n.t("No Meta Verified offer after you post, and no Meta Verified label under the names on "
                             + "posts. Posting works as usual.")));

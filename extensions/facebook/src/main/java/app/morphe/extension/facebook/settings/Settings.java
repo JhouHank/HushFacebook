@@ -837,6 +837,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_threads_share_button", FALSE);
 
     /**
+     * The share sheet's Muse button, Meta's AI agent app, wherever Facebook's one list of share
+     * items reaches. Off until it's turned on.
+     */
+    public static final BooleanSetting HIDE_MUSE_SHARE_BUTTON =
+            new BooleanSetting("hushfacebook_hide_muse_share_button", FALSE);
+
+    /**
      * The share sheet items Share sheet items keeps out, as the item enum's constant names separated
      * by commas. Empty, every sheet is Facebook's own.
      */

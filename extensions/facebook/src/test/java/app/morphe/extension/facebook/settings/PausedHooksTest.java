@@ -208,7 +208,7 @@ public class PausedHooksTest {
     private enum StoryTool { TEXT_BASE, IMAGINE }
 
     /** Stands in for Facebook's enum of share sheet items, named the same way. */
-    private enum ShareItem { SHARE_NOW, SHARE_TO_THREADS }
+    private enum ShareItem { SHARE_NOW, SHARE_TO_HATCH, SHARE_TO_THREADS }
 
     @After
     public void restore() {
@@ -627,7 +627,7 @@ public class PausedHooksTest {
                 MenuSectionsForTests::hidesServerUpgrades,
                 MenuSectionsForTests::hidesServerAlsoFromMeta));
         // Edits' header flag and both shapes of its pill request, the Threads cross-posting
-        // onboarding and the share sheet's Threads item, the Meta Verified sheet and label, an avatar
+        // onboarding and the share sheet's Threads and Muse items, the Meta Verified sheet and label, an avatar
         // sticker upsell, Imagine's post button, composer capability and Create story tile, and the
         // other Meta AI post buttons, with the deep dive under a caption.
         probes.put(PatchFamily.META_UPSELLS, Arrays.asList(
