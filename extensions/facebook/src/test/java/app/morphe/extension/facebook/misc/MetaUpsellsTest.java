@@ -32,7 +32,7 @@ import app.morphe.extension.shared.settings.HushfacebookPause;
 import app.morphe.extension.shared.settings.PauseForTests;
 
 /**
- * Hide Meta upsells: each of the seven switches starts off, and on it answers away only its own
+ * Hide Meta upsells: each of the eight switches starts off, and on it answers away only its own
  * promotions, counted. A no stays a no, Kotlin's suspend marker passes the Meta Verified hook
  * untouched, other post buttons, story tools and share targets stay in order, and off or paused every
  * answer is Facebook's.
@@ -43,7 +43,7 @@ public class MetaUpsellsTest {
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 
     /**
-     * The seven switches, filled in once the rule has set the context: naming Settings in a static
+     * The eight switches, filled in once the rule has set the context: naming Settings in a static
      * field loads it at class init, before any context, and leaves BaseSettings broken for every
      * test that runs after it in this sandbox.
      */
@@ -230,7 +230,7 @@ public class MetaUpsellsTest {
                 HushfacebookPause.Reason.SWITCH, HushfacebookPause.Reason.CRASH_LOOP}) {
             PauseForTests.pause(reason);
             assertTrue("a Hushfacebook paused by " + reason + " hid " + Arrays.toString(hiding()),
-                    Arrays.equals(new boolean[7], hiding()));
+                    Arrays.equals(new boolean[8], hiding()));
             PauseForTests.resume();
         }
     }

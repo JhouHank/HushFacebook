@@ -28,7 +28,7 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * What the share sheet's item list hook asks. Facebook builds every share sheet from one method
  * that answers a list of item types, constants of one enum: SHARE_NOW, COPY_LINK, SEND_IN_WHATSAPP
  * and about ninety more. The hook goes in when Hide Meta upsells or Share sheet items is picked, and
- * each list it's handed comes here: Hide Meta upsells' Threads switch first, when that patch is in,
+ * each list it's handed comes here: Hide Meta upsells' Threads and Muse switches first, when that patch is in,
  * then the items picked in Share sheet items' list, when that one is. What's left keeps Facebook's
  * order.
  *
