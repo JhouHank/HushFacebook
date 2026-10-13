@@ -893,8 +893,14 @@ public class FontFilePreferenceTest {
 
         @Override
         public void close() throws IOException {
-            closeAsked.countDown();
-            if (go.getCount() == 0) super.close();
+            // Decided before the test hears of it, so a letGo that follows can't turn an ignored
+            // close into one that lands mid-read.
+            boolean late = go.getCount() == 0;
+            try {
+                if (late) super.close();
+            } finally {
+                closeAsked.countDown();
+            }
         }
     }
 
