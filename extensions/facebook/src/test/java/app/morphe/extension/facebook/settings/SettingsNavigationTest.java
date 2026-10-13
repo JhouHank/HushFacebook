@@ -797,6 +797,46 @@ public class SettingsNavigationTest {
         assertFalse(contains(HushfacebookPreferenceFragment.MISSING_DEFAULTS));
     }
 
+    /** A re-signed clone checks its own key, not that of Meta's Facebook installed beside it. */
+    @Test public void aCloneBesideStockFacebookIsCheckedForItsOwnKey() {
+        controller.close();
+        PatchFamily.inBuildForTests = EnumSet.allOf(PatchFamily.class);
+        PatchFamily.inBuildForTests.remove(PatchFamily.MATERIAL_YOU_THEME);
+        PatchFamily.inBuildForTests.remove(PatchFamily.RESTORE_TRUST);
+        install("com.facebook.katana", metaCertificate());
+        install(CloneActivity.PACKAGE, new Signature("308201a0b1c2d3"));
+        ActivityController<CloneActivity> clone = Robolectric.buildActivity(CloneActivity.class).setup().visible();
+        try {
+            dialog = SettingsL10nTest.show(clone.get());
+            page = page(dialog);
+            assertEquals(1, position(HushfacebookPreferenceFragment.MISSING_RESTORE_TRUST));
+        } finally {
+            clone.close();
+        }
+        controller = Robolectric.buildActivity(Activity.class).setup().visible();
+    }
+
+    /** Pausing turns the controls off, but the build still needs patching again, so the warning stays. */
+    @Test public void pauseLeavesTheMissingRestoreScreensWarningUp() {
+        controller.close();
+        PatchFamily.inBuildForTests = EnumSet.allOf(PatchFamily.class);
+        PatchFamily.inBuildForTests.remove(PatchFamily.MATERIAL_YOU_THEME);
+        PatchFamily.inBuildForTests.remove(PatchFamily.RESTORE_TRUST);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        controller = Robolectric.buildActivity(Activity.class).setup().visible();
+        dialog = SettingsL10nTest.show(controller.get());
+        page = page(dialog);
+
+        assertEquals(1, position(HushfacebookPreferenceFragment.MISSING_RESTORE_TRUST));
+        assertEquals("Profiles, photos and posts won't open",
+                String.valueOf(((Preference) list().getItemAtPosition(1)).getTitle()));
+    }
+
+    public static class CloneActivity extends Activity {
+        static final String PACKAGE = "com.facebook.katana.hushfacebook";
+        @Override public String getPackageName() { return PACKAGE; }
+    }
+
     /**
      * A build patched before 32 patches joined the default selection lacks them all, and the opened
      * row named every one. Past nine it names eight and counts the rest, and nine are all named.
@@ -1535,10 +1575,14 @@ public class SettingsNavigationTest {
     }
 
     private static void installSelf(Signature certificate) {
+        install(RuntimeEnvironment.getApplication().getPackageName(), certificate);
+    }
+
+    private static void install(String packageName, Signature certificate) {
         Context context = RuntimeEnvironment.getApplication();
         ShadowPackageManager packages = shadowOf(context.getPackageManager());
         PackageInfo info = new PackageInfo();
-        info.packageName = context.getPackageName();
+        info.packageName = packageName;
         ApplicationInfo app = new ApplicationInfo();
         app.packageName = info.packageName;
         app.uid = Process.myUid();
