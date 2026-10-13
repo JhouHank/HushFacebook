@@ -1601,6 +1601,60 @@ public class HushfacebookPreferenceFragmentTest {
         }
     }
 
+    /**
+     * No time limit only works with Keep feed position on return on, so it's greyed out with that
+     * switch off and names it, and turning the switch off keeps what No time limit was set to (#130).
+     */
+    @Test
+    public void noTimeLimitFollowsKeepFeedPositionOnReturn() {
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.RETURN_REFRESH);
+        String plain = "With the switch above on, your place stays however long you're away. Pull to refresh and a fresh "
+                + "start still load new posts.";
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            List<Preference> rows = rowsOf(controller);
+            int switchAt = indexOfKey(rows, Settings.BLOCK_RETURN_REFRESH.key);
+            assertTrue("no Keep feed position on return switch", switchAt >= 0);
+            SwitchPreference keep = (SwitchPreference) rows.get(switchAt);
+            SwitchPreference noLimit = (SwitchPreference) rows.get(switchAt + 1);
+            assertEquals(Settings.RETURN_REFRESH_NO_LIMIT.key, noLimit.getKey());
+
+            assertFalse("No time limit is open with Keep feed position on return off", noLimit.isEnabled());
+            String greyed = String.valueOf(noLimit.getSummary());
+            assertTrue("the greyed No time limit doesn't say why: " + greyed,
+                    greyed.startsWith(plain + " Turn on") && greyed.contains(SwitchLabels.title(Settings.BLOCK_RETURN_REFRESH))
+                            && greyed.endsWith("to use this."));
+
+            keep.setChecked(true);
+            ShadowLooper.idleMainLooper();
+            assertTrue(Settings.BLOCK_RETURN_REFRESH.savedValue());
+            assertTrue(noLimit.isEnabled());
+            assertEquals(plain, String.valueOf(noLimit.getSummary()));
+            noLimit.setChecked(true);
+            ShadowLooper.idleMainLooper();
+            assertTrue(Settings.RETURN_REFRESH_NO_LIMIT.savedValue());
+
+            keep.setChecked(false);
+            ShadowLooper.idleMainLooper();
+            assertFalse(noLimit.isEnabled());
+            assertTrue("the greyed row lost its note on the way back", String.valueOf(noLimit.getSummary()).endsWith("to use this."));
+            assertTrue("turning the switch off changed No time limit", Settings.RETURN_REFRESH_NO_LIMIT.savedValue());
+        } finally {
+            Settings.BLOCK_RETURN_REFRESH.resetToDefault();
+            Settings.RETURN_REFRESH_NO_LIMIT.resetToDefault();
+        }
+
+        // Opened again with the switch still off, it starts greyed out rather than as it was built.
+        Settings.RETURN_REFRESH_NO_LIMIT.save(true);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            List<Preference> rows = rowsOf(controller);
+            Preference noLimit = rows.get(indexOfKey(rows, Settings.RETURN_REFRESH_NO_LIMIT.key));
+            assertFalse("No time limit opened again as open with its switch off", noLimit.isEnabled());
+            assertTrue(String.valueOf(noLimit.getSummary()).endsWith("to use this."));
+        } finally {
+            Settings.RETURN_REFRESH_NO_LIMIT.resetToDefault();
+        }
+    }
+
     private static List<Preference> rowsOf(ActivityController<Activity> controller) {
         HushfacebookPreferenceFragment fragment = new HushfacebookPreferenceFragment();
         controller.get().getFragmentManager().beginTransaction()
