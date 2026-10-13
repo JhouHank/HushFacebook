@@ -149,6 +149,7 @@ $patchProbes = @('fingerprint-probe.json', 'src\fingerprint-probe.json', 'finger
 $tempBase = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
 $caseRoot = [System.IO.Path]::GetFullPath((Join-Path $tempBase ("hushfacebook-fingerprint-test-" + [guid]::NewGuid().ToString('N'))))
 $junction = Join-Path $caseRoot 'reports'
+$historyJunction = Join-Path $caseRoot 'history-linked'
 Add-Type -AssemblyName System.IO.Compression
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 try {
@@ -409,8 +410,10 @@ try {
     $junkHistory = Join-Path $caseRoot 'history-junk'
     New-Item -ItemType Directory -Force -Path $emptyHistory, $junkHistory | Out-Null
     [System.IO.File]::WriteAllText((Join-Path $junkHistory 'facebook-577.0.0.50.72-arm64-v8a.apkm'), 'not a bundle')
+    New-Item -ItemType Junction -Path $historyJunction -Target $fixtures | Out-Null
     $refusals = @(
         @{ Name = 'the fixture folder'; Folder = $fixtures; Expect = 'overlaps the fixture folder' }
+        @{ Name = 'a junction into the fixture folder'; Folder = $historyJunction; Expect = 'overlaps the fixture folder' }
         @{ Name = 'a folder in the repository'; Folder = (Join-Path $Root 'scripts'); Expect = 'overlaps the repository' }
         @{ Name = 'a folder without the builds'; Folder = $emptyHistory; Expect = 'is missing facebook-577.0.0.50.72-arm64-v8a.apkm' }
         @{ Name = 'a bundle with other bytes'; Folder = $junkHistory; Expect = 'not the pinned 452973bb' }
@@ -439,6 +442,7 @@ try {
         }
         Assert-True ($message -match $refusal.Expect) "The fingerprint history was not refused for $($refusal.Name): $message"
     }
+    [System.IO.Directory]::Delete($historyJunction)
 
     $calibrationReport = Join-Path $caseRoot 'calibration.txt'
     $calibrated = Invoke-Wrapper @('-Calibrate', '-ReportPath', $calibrationReport, '-Java', $Java, '-DesktopJar', $DesktopJar, '-Root', $Root)
@@ -507,8 +511,10 @@ try {
     foreach ($probe in $patchProbes) {
         if (Test-Path -LiteralPath $probe) { Remove-Item -LiteralPath $probe -Force }
     }
-    # The junction goes first, on its own: a recursive delete can follow it into its target.
-    if (Test-Path -LiteralPath $junction) { [System.IO.Directory]::Delete($junction) }
+    # The junctions go first, on their own: a recursive delete can follow one into its target.
+    foreach ($link in $junction, $historyJunction) {
+        if (Test-Path -LiteralPath $link) { [System.IO.Directory]::Delete($link) }
+    }
     if ($caseRoot.StartsWith($tempBase, [System.StringComparison]::OrdinalIgnoreCase) -and (Test-Path -LiteralPath $caseRoot)) {
         Remove-Item -LiteralPath $caseRoot -Recurse -Force
     }

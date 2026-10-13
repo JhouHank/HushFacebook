@@ -6,6 +6,29 @@
     Dot-sourced by fingerprint-candidates.ps1 and test-fingerprint-candidates.ps1, after
     common.ps1, whose Get-BaseApk it uses. fingerprint-history.txt says what each build has to be.
 #>
+
+# A folder's path with every junction or symbolic link along it followed, so a link into the
+# fixture folder compares as the fixture folder. A part that isn't there is kept as written.
+function Resolve-RealFolder {
+    param([string]$Path)
+    $full = [System.IO.Path]::GetFullPath($Path).TrimEnd('\', '/')
+    $drive = [System.IO.Path]::GetPathRoot($full)
+    $real = $drive.TrimEnd('\', '/')
+    foreach ($part in $full.Substring($drive.Length).Split([char[]]'\/', [System.StringSplitOptions]::RemoveEmptyEntries)) {
+        $next = Join-Path ($real + '\') $part
+        $item = Get-Item -LiteralPath $next -Force -ErrorAction SilentlyContinue
+        $hops = 0
+        while ($item -and $item.LinkType -in 'Junction', 'SymbolicLink' -and $hops++ -lt 32) {
+            $target = "$(@($item.Target)[0])" -replace '^\\\?\?\\', ''
+            if (-not $target) { break }
+            $next = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine((Split-Path -Parent $next), $target))
+            $item = Get-Item -LiteralPath $next -Force -ErrorAction SilentlyContinue
+        }
+        $real = $next.TrimEnd('\', '/')
+    }
+    return $real
+}
+
 function Resolve-FingerprintHistory {
     <#
     .SYNOPSIS
@@ -40,15 +63,20 @@ function Resolve-FingerprintHistory {
         throw "HUSHFACEBOOK_FINGERPRINT_HISTORY_DIR names $Folder, which is not a folder. $setUp"
     }
     $full = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $Folder).ProviderPath).TrimEnd('\', '/')
+    $spellings = @($full, (Resolve-RealFolder $full)) | Select-Object -Unique
     $fixtures = if ($env:HUSHFACEBOOK_FIXTURE_DIR) { $env:HUSHFACEBOOK_FIXTURE_DIR } else { Join-Path $Root 'fixtures' }
     foreach ($other in @(@{ Path = $fixtures; Name = 'the fixture folder' }, @{ Path = $Root; Name = 'the repository' })) {
         $otherFull = [System.IO.Path]::GetFullPath(
             $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($other.Path)).TrimEnd('\', '/')
-        $inside = ($full + '\').StartsWith($otherFull + '\', [System.StringComparison]::OrdinalIgnoreCase)
-        $around = ($otherFull + '\').StartsWith($full + '\', [System.StringComparison]::OrdinalIgnoreCase)
-        if ($inside -or $around) {
-            throw ("HUSHFACEBOOK_FINGERPRINT_HISTORY_DIR names $full, which overlaps $($other.Name) ($otherFull). " +
-                "It has to be a folder of its own. $setUp")
+        foreach ($history in $spellings) {
+            foreach ($otherSpelling in @($otherFull, (Resolve-RealFolder $otherFull)) | Select-Object -Unique) {
+                $inside = ($history + '\').StartsWith($otherSpelling + '\', [System.StringComparison]::OrdinalIgnoreCase)
+                $around = ($otherSpelling + '\').StartsWith($history + '\', [System.StringComparison]::OrdinalIgnoreCase)
+                if ($inside -or $around) {
+                    throw ("HUSHFACEBOOK_FINGERPRINT_HISTORY_DIR names $full, which overlaps $($other.Name) ($otherFull). " +
+                        "It has to be a folder of its own. $setUp")
+                }
+            }
         }
     }
 

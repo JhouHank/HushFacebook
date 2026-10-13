@@ -8,8 +8,9 @@
 # signer <SHA-256 of a certificate Meta signs Facebook with>
 # old|new <file> <SHA-256 of the file> <package> <version name> <version code> <ABI>
 #
-# Resolve-FingerprintHistory in common.ps1 holds each bundle to its hash, and its base.apk to the
-# package, version and ABI aapt2 reads and to signers apksigner reads, which have to be Meta's.
+# Resolve-FingerprintHistory in fingerprint-history.ps1 holds each bundle to its hash, and its
+# base.apk to the package, version and ABI aapt2 reads and to signers apksigner reads, which have
+# to be Meta's.
 
 signer 911d604446084ca7f4760b775bfc160fa8702441240a7258645d7a72c4312d27
 signer e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1
