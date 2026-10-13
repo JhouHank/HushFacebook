@@ -92,6 +92,13 @@ public final class JavaCrashReport {
         String report;
         final List<Saved> waiting;
 
+        /**
+         * Undo has put this back. A later step of that Undo can fail and leave it to be tapped
+         * again, and a second put back would take the report the first one restored for what a
+         * waiting save wrote over.
+         */
+        boolean restored;
+
         Cleared(String report, List<Saved> waiting) {
             this.report = report;
             this.waiting = waiting;
@@ -118,10 +125,16 @@ public final class JavaCrashReport {
                 LogBufferManager.persistCrashReport(context, report);
                 PENDING.add(saved);
             }
-            if (CrashFile.wanted()) {
-                synchronized (FILE_LOCK) {
-                    saved.file = CrashFile.write(context, report, System.currentTimeMillis());
+            // The save waits in PENDING already, so it's answered even when the file can't be had:
+            // left without an answer, it would stay there for good.
+            try {
+                if (CrashFile.wanted()) {
+                    synchronized (FILE_LOCK) {
+                        saved.file = CrashFile.write(context, report, System.currentTimeMillis());
+                    }
                 }
+            } catch (Throwable noFile) {
+                // The report holds the crash; only the copy in Download/Hushfacebook is missing.
             }
             return saved;
         } catch (Throwable ignored) {
@@ -211,15 +224,19 @@ public final class JavaCrashReport {
      * cleared. While its place is empty it goes straight back. A crash saved since keeps the place,
      * and while that one waits on its handlers the cleared report goes in under it: the oldest save
      * since takes it as what it wrote over, so it comes back if they all live on. It used to stay
-     * with the clear, and the report ended empty. Throws when the report can't be written.
+     * with the clear, and the report ended empty. Once only for each clear. Throws when the report
+     * can't be written.
      */
     static void putBack(@Nullable Context context, Cleared cleared) throws Exception {
         synchronized (LogBufferManager.CLEAR_UNDO_LOCK) {
+            if (cleared.restored) return;
             if (!LogBufferManager.restoreJavaCrashIfMissing(context, cleared.report)) {
-                // The clear took every save waiting before it, so these all came after.
+                // The clear took every save waiting before it, and this is its first put back, so
+                // these all came after.
                 if (PENDING.isEmpty()) return;
                 PENDING.get(0).before = cleared.report;
             }
+            cleared.restored = true;
             for (Saved saved : cleared.waiting) saved.cleared = null;
             PENDING.addAll(0, cleared.waiting);
             cleared.waiting.clear();

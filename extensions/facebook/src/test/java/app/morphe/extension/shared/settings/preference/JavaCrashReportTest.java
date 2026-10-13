@@ -246,6 +246,29 @@ public class JavaCrashReportTest {
         }
     }
 
+    /**
+     * Undo tapped again after a later step of the first one failed leaves the report as the first
+     * put it back. The second tap took the report the first had restored for what the waiting
+     * worker wrote over, so the worker living on left its own exception in place of the earlier crash.
+     */
+    @Test
+    public void undoAgainAfterAPartlyFailedOneChangesNothing() throws Exception {
+        LogBufferManager.persistCrashReport(context, "an earlier start's crash");
+        Thread worker = new Thread("CombinedTP3");
+        JavaCrashReport.Saved swallowed = JavaCrashReport.save(worker, new IllegalStateException("swallowed"));
+        // What Clear diagnostic data does to the Java crash, and the first Undo's Java crash step.
+        JavaCrashReport.Cleared cleared = JavaCrashReport.clear(context);
+        LogBufferManager.persistCrashReport(context, "");
+        JavaCrashReport.putBack(context, cleared);
+        assertTrue(LogBufferManager.readCrashReport(context).contains("swallowed"));
+        // A later step of that Undo failed, so the next tap runs it again.
+        JavaCrashReport.putBack(context, cleared);
+        JavaCrashReport.survived(worker, swallowed);
+        String kept = LogBufferManager.readCrashReport(context);
+        assertTrue(kept, kept.contains("an earlier start's crash"));
+        assertFalse("the second Undo left the swallowed exception in: " + kept, kept.contains("swallowed"));
+    }
+
     @Test
     public void nothingToKeepLeavesTheNextCrashItsPlace() {
         JavaCrashReport.save(Thread.currentThread(), null);
