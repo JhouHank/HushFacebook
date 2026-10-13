@@ -2791,6 +2791,12 @@ try {
     $catalogFixtureIndexBytes = [IO.File]::ReadAllBytes($catalogFixtureIndexPath)
     $catalogFixtureReadmePath = Join-Path $factsRoot 'README.md'
     $catalogFixtureReadmeBytes = [IO.File]::ReadAllBytes($catalogFixtureReadmePath)
+    # A release's source commit has no Unreleased section, since the cut renames it to the version.
+    # The cases below record a change against the fixture's own version, and the note for that is
+    # read from Unreleased, so a copy without the section gets an empty one for these cases.
+    if ((Get-Content -LiteralPath (Join-Path $factsRoot 'CHANGELOG.md') -Raw) -notmatch '(?m)^## Unreleased\s*$') {
+        Set-FactsFile 'CHANGELOG.md' { param($text) ([regex]'(?m)^## ').Replace($text, "## Unreleased`n`n## ", 1) }
+    }
     $catalogFixtureChangelog = [IO.File]::ReadAllBytes((Join-Path $factsRoot 'CHANGELOG.md'))
     $catalogFixtureList = Get-Content -LiteralPath $catalogFixturePath -Raw | ConvertFrom-Json
     $catalogFixtureVersion = $catalogFixtureList.version.Substring(1)
@@ -2906,6 +2912,7 @@ try {
     } finally {
         $factsCatalogUnavailable = $null
         Restore-CatalogFixture
+        Reset-FactsFile 'CHANGELOG.md'
         if (Test-Path -LiteralPath $catalogFixtureBundle) { Remove-Item -LiteralPath $catalogFixtureBundle -Force }
     }
 
