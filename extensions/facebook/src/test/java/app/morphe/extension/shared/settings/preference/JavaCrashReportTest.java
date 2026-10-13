@@ -146,6 +146,72 @@ public class JavaCrashReportTest {
         }
     }
 
+    /**
+     * Clear diagnostic data empties the report, and a worker's exception saved before the clear
+     * that lives on after it leaves it empty. It used to write the earlier crash back. A crash
+     * after the clear still takes the place.
+     */
+    @Test
+    public void aClearHoldsWhenAWorkerLivesOnAfterIt() throws Exception {
+        LogBufferManager.persistCrashReport(context, "an earlier start's crash");
+        Thread worker = new Thread("CombinedTP3");
+        JavaCrashReport.Saved swallowed = JavaCrashReport.save(worker, new IllegalStateException("swallowed"));
+        LogBufferManager.clearLogBuffer();
+        JavaCrashReport.survived(worker, swallowed);
+        assertEquals("the worker wrote a cleared report back", "", LogBufferManager.readCrashReport(context));
+
+        JavaCrashReport.save(new Thread("Background"), new IllegalArgumentException("after the clear"));
+        assertTrue(LogBufferManager.readCrashReport(context).contains("java.lang.IllegalArgumentException: after the clear"));
+    }
+
+    /** Undo after the worker lived on puts back what the report would hold without the clear. */
+    @Test
+    public void undoAfterTheWorkerLivesOnPutsTheEarlierCrashBack() throws Exception {
+        LogBufferManager.persistCrashReport(context, "an earlier start's crash");
+        Thread worker = new Thread("CombinedTP3");
+        JavaCrashReport.Saved swallowed = JavaCrashReport.save(worker, new IllegalStateException("swallowed"));
+        LogBufferManager.clearLogBuffer();
+        JavaCrashReport.survived(worker, swallowed);
+        assertEquals(LogBufferManager.UndoResult.RESTORED, LogBufferManager.undoClear());
+        String kept = LogBufferManager.readCrashReport(context);
+        assertTrue(kept, kept.contains("an earlier start's crash"));
+        assertFalse("Undo put the swallowed exception back: " + kept, kept.contains("swallowed"));
+    }
+
+    /** Undo before the worker lives on puts its exception back, and it then takes back as it would have. */
+    @Test
+    public void undoBeforeTheWorkerLivesOnLetsItTakeBackAsBefore() throws Exception {
+        LogBufferManager.persistCrashReport(context, "an earlier start's crash");
+        Thread worker = new Thread("CombinedTP3");
+        JavaCrashReport.Saved swallowed = JavaCrashReport.save(worker, new IllegalStateException("swallowed"));
+        LogBufferManager.clearLogBuffer();
+        assertEquals(LogBufferManager.UndoResult.RESTORED, LogBufferManager.undoClear());
+        assertTrue(LogBufferManager.readCrashReport(context).contains("swallowed"));
+        JavaCrashReport.survived(worker, swallowed);
+        String kept = LogBufferManager.readCrashReport(context);
+        assertTrue(kept, kept.contains("an earlier start's crash"));
+        assertFalse(kept, kept.contains("swallowed"));
+    }
+
+    /**
+     * A crash saved after the clear keeps the place through Undo, and the worker saved before the
+     * clear living on leaves it there.
+     */
+    @Test
+    public void aCrashAfterTheClearOutlastsUndoAndTheOldWorker() throws Exception {
+        LogBufferManager.persistCrashReport(context, "an earlier start's crash");
+        Thread worker = new Thread("CombinedTP3");
+        JavaCrashReport.Saved swallowed = JavaCrashReport.save(worker, new IllegalStateException("swallowed"));
+        LogBufferManager.clearLogBuffer();
+        JavaCrashReport.save(new Thread("Background"), new IllegalArgumentException("the fatal one"));
+        LogBufferManager.undoClear();
+        JavaCrashReport.survived(worker, swallowed);
+        String kept = LogBufferManager.readCrashReport(context);
+        assertTrue("the newer crash was pushed out: " + kept, kept.contains("java.lang.IllegalArgumentException: the fatal one"));
+        assertFalse(kept, kept.contains("an earlier start's crash"));
+        assertFalse(kept, kept.contains("swallowed"));
+    }
+
     @Test
     public void nothingToKeepLeavesTheNextCrashItsPlace() {
         JavaCrashReport.save(Thread.currentThread(), null);

@@ -40,7 +40,8 @@ import app.morphe.extension.shared.diagnostics.DiagnosticRedactor;
  *
  * <p>Each save answers its own {@link Saved}, so a swallowed exception takes back only what it
  * wrote. While another thread's crash saved after it is still waiting on its handlers, the report
- * is that crash's, and it stays.
+ * is that crash's, and it stays. Clear diagnostic data takes the waiting saves out with the report
+ * ({@link #clear}), so one that lives on after it can't write a cleared report back.
  */
 public final class JavaCrashReport {
     /** How much of the diagnostic event log goes in after the trace. */
@@ -51,7 +52,9 @@ public final class JavaCrashReport {
 
     /**
      * The saves whose handlers haven't let the process live on, oldest first, each in the report
-     * after the one before it. A main thread's stays, as its report does. Guarded by itself.
+     * after the one before it. A main thread's stays, as its report does. Guarded by
+     * {@link LogBufferManager#CLEAR_UNDO_LOCK}, which Clear diagnostic data and its Undo hold too,
+     * so a clear can't land between a save reading the report and writing over it.
      */
     private static final List<Saved> PENDING = new ArrayList<>();
 
@@ -63,9 +66,28 @@ public final class JavaCrashReport {
         @Nullable
         final Uri file;
 
+        /** What a clear took this save out with, or null while it waits in {@link #PENDING}. */
+        @Nullable
+        Cleared cleared;
+
         Saved(String before, @Nullable Uri file) {
             this.before = before;
             this.file = file;
+        }
+    }
+
+    /**
+     * What Clear diagnostic data took out of the report: the report, and the saves still waiting in
+     * it, oldest first. One of them living on after the clear takes back into this, and the cleared
+     * report stays cleared. Undo puts the report back with them waiting in it again ({@link #putBack}).
+     */
+    static final class Cleared {
+        String report;
+        final List<Saved> waiting;
+
+        Cleared(String report, List<Saved> waiting) {
+            this.report = report;
+            this.waiting = waiting;
         }
     }
 
@@ -83,7 +105,7 @@ public final class JavaCrashReport {
             if (context == null || throwable == null || lastSaved.get() == throwable) return null;
             lastSaved = new WeakReference<>(throwable);
             String report = build(context, thread, throwable);
-            synchronized (PENDING) {
+            synchronized (LogBufferManager.CLEAR_UNDO_LOCK) {
                 String before = LogBufferManager.readCrashReport(context);
                 LogBufferManager.persistCrashReport(context, report);
                 Uri file = CrashFile.wanted() ? CrashFile.write(context, report, System.currentTimeMillis()) : null;
@@ -100,20 +122,24 @@ public final class JavaCrashReport {
     /**
      * The handlers after ours returned for [thread]'s exception, so the process lives on. Off the
      * main thread, its file goes, and the report goes back to what it held before [saved], unless a
-     * newer save is in it. That one then goes back there when it lives on too. Never throws.
+     * newer save is in it. That one then goes back there when it lives on too. After a clear, all
+     * of that happens to what the clear took out, not the report. Never throws.
      */
     public static void survived(@Nullable Thread thread, @Nullable Saved saved) {
         try {
             Context context = Utils.getContext();
             if (context == null || saved == null || thread == null || thread == Looper.getMainLooper().getThread()) return;
-            synchronized (PENDING) {
-                int at = PENDING.indexOf(saved);
+            synchronized (LogBufferManager.CLEAR_UNDO_LOCK) {
+                List<Saved> chain = saved.cleared == null ? PENDING : saved.cleared.waiting;
+                int at = chain.indexOf(saved);
                 if (at < 0) return;
-                PENDING.remove(at);
-                if (at == PENDING.size()) {
-                    LogBufferManager.persistCrashReport(context, saved.before);
+                chain.remove(at);
+                if (at < chain.size()) {
+                    chain.get(at).before = saved.before;
+                } else if (saved.cleared != null) {
+                    saved.cleared.report = saved.before;
                 } else {
-                    PENDING.get(at).before = saved.before;
+                    LogBufferManager.persistCrashReport(context, saved.before);
                 }
                 if (saved.file != null) CrashFile.takeBack(context, saved.file);
             }
@@ -150,10 +176,39 @@ public final class JavaCrashReport {
         return text.toString();
     }
 
+    /**
+     * For Clear diagnostic data, before it deletes the report: the report as it stands and the saves
+     * waiting in it, taken out together, so none of them can write it back.
+     */
+    static Cleared clear(@Nullable Context context) {
+        synchronized (LogBufferManager.CLEAR_UNDO_LOCK) {
+            // No context, no report to delete either: the saves keep writing to it.
+            if (context == null) return new Cleared("", new ArrayList<>());
+            Cleared cleared = new Cleared(LogBufferManager.readCrashReport(context), new ArrayList<>(PENDING));
+            for (Saved saved : cleared.waiting) saved.cleared = cleared;
+            PENDING.clear();
+            return cleared;
+        }
+    }
+
+    /**
+     * Undo of a clear: the report goes back while its place is still empty, with its saves waiting
+     * in it again as if it was never cleared. A crash saved since keeps the place, and the saves
+     * stay with the clear. Throws when the report can't be written.
+     */
+    static void putBack(@Nullable Context context, Cleared cleared) throws Exception {
+        synchronized (LogBufferManager.CLEAR_UNDO_LOCK) {
+            if (!LogBufferManager.restoreJavaCrashIfMissing(context, cleared.report)) return;
+            for (Saved saved : cleared.waiting) saved.cleared = null;
+            PENDING.addAll(0, cleared.waiting);
+            cleared.waiting.clear();
+        }
+    }
+
     /** Forgets the exception kept last and the saves waiting, as in a new process. Called by the pause module's reset. */
     public static void resetForTests() {
         lastSaved = new WeakReference<>(null);
-        synchronized (PENDING) {
+        synchronized (LogBufferManager.CLEAR_UNDO_LOCK) {
             PENDING.clear();
         }
     }
