@@ -184,7 +184,7 @@ public enum PatchFamily {
     CHAT_LIST(FamilyNames.CHAT_LIST, "chatListCleanup", null,
             Settings.HIDE_CHAT_NOTES_TRAY, Settings.HIDE_CHAT_PROMOTIONS),
     MESSENGER_ICON(FamilyNames.MESSENGER_ICON, "messengerIcon", null,
-            Settings.OPEN_MESSENGER_APP),
+            Settings.OPEN_MESSENGER_APP, Settings.LEAVE_CALLS_AND_CHATS_TO_MESSENGER),
     MENU_PROMOTIONS(FamilyNames.MENU_PROMOTIONS, "menuPromotions", null,
             Settings.HIDE_MENU_UPGRADES, Settings.HIDE_MENU_ALSO_FROM_META, Settings.HIDE_MENU_MUSE),
     META_UPSELLS(FamilyNames.META_UPSELLS, "metaUpsells", null,

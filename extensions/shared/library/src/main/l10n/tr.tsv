@@ -393,6 +393,10 @@ Hides the banners at the top of Chats, like the one asking you to turn on notifi
 Open the Messenger app	Messenger uygulamasını aç
 # context: summary of that switch; Messenger is the app's name, Chats is Facebook's own chat screen as named above
 Tapping the Messenger icon at the top of Facebook opens the Messenger app instead of Chats. Without Messenger, Chats opens as before.	Facebook'un üstündeki Messenger simgesine dokunmak Sohbetler yerine Messenger uygulamasını açar. Messenger yoksa Sohbetler eskisi gibi açılır.
+# context: switch title under Chats; on, Facebook leaves ringing for calls and notifying about chats to the Messenger app
+Leave calls and chats to Messenger	Aramaları ve sohbetleri Messenger'a bırak
+# context: summary of that switch; signed out means not logged in to the Messenger app, turned off means the app is disabled in Android's settings
+Facebook stops ringing for calls and notifying you about chats while Messenger is installed, so only Messenger does. Without Messenger, or with it turned off, Facebook rings and notifies as before. If you're signed out of Messenger, you'll miss calls and messages.	Messenger yüklü olduğu sürece Facebook aramalarda çalmayı ve sohbetler için bildirim göndermeyi bırakır, böylece bunu yalnızca Messenger yapar. Messenger yoksa veya kapalıysa Facebook eskisi gibi çalar ve bildirim gönderir. Messenger'da oturumunuz kapalıysa aramaları ve mesajları kaçırırsınız.
 # context: settings section heading for the Tap to play switch
 Playback	Oynatma
 # context: switch title; on, videos and music wait for a tap before they play

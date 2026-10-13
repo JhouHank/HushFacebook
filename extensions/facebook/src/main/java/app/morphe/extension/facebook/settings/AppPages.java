@@ -43,7 +43,7 @@ final class AppPages {
     private AppPages() {
     }
 
-    /** Chats: the Get Messenger card, the chat list clean-up and the Messenger icon. */
+    /** Chats: the Get Messenger card, the chat list clean-up, the Messenger icon and leaving calls to Messenger. */
     static void chats(HushfacebookPreferenceFragment page, PreferenceScreen screen, Context context,
             Set<PatchFamily> build) {
         if (build.contains(PatchFamily.MESSENGER_CARD) || build.contains(PatchFamily.CHAT_LIST)
@@ -65,6 +65,11 @@ final class AppPages {
                 chats.addPreference(toggle(context, Settings.OPEN_MESSENGER_APP,
                         L10n.t("Tapping the Messenger icon at the top of Facebook opens the Messenger app instead of Chats. Without "
                                 + "Messenger, Chats opens as before.")));
+                // Read on every call and chat notification, so a change applies without a restart.
+                chats.addPreference(toggle(context, Settings.LEAVE_CALLS_AND_CHATS_TO_MESSENGER,
+                        L10n.t("Facebook stops ringing for calls and notifying you about chats while Messenger is installed, "
+                                + "so only Messenger does. Without Messenger, or with it turned off, Facebook rings and notifies "
+                                + "as before. If you're signed out of Messenger, you'll miss calls and messages.")));
             }
             if (build.contains(PatchFamily.ORIGINAL_CHAT_MEDIA)) {
                 chats.addPreference(toggle(context, Settings.ORIGINAL_CHAT_MEDIA,

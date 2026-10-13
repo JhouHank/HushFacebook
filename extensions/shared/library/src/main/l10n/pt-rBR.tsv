@@ -373,6 +373,10 @@ Hide chat list promotions	Ocultar promoções da lista de conversas
 Hides the banners at the top of Chats, like the one asking you to turn on notifications.	Oculta os avisos no topo de Conversas, como o que pede para você ativar as notificações.
 Open the Messenger app	Abrir o aplicativo Messenger
 Tapping the Messenger icon at the top of Facebook opens the Messenger app instead of Chats. Without Messenger, Chats opens as before.	Tocar no ícone do Messenger no topo do Facebook abre o app Messenger em vez de Conversas. Sem o Messenger, Conversas abre como antes.
+# context: switch title under Chats; on, Facebook leaves ringing for calls and notifying about chats to the Messenger app
+Leave calls and chats to Messenger	Deixar chamadas e conversas com o Messenger
+# context: summary of that switch; signed out means not logged in to the Messenger app, turned off means the app is disabled in Android's settings
+Facebook stops ringing for calls and notifying you about chats while Messenger is installed, so only Messenger does. Without Messenger, or with it turned off, Facebook rings and notifies as before. If you're signed out of Messenger, you'll miss calls and messages.	O Facebook para de tocar nas chamadas e de avisar sobre conversas enquanto o Messenger estiver instalado, então só o Messenger faz isso. Sem o Messenger, ou com ele desativado, o Facebook toca e avisa como antes. Se você estiver desconectado do Messenger, vai perder chamadas e mensagens.
 Playback	Reprodução
 Tap to play	Tocar para reproduzir
 Videos, reels, stories and music wait for your tap instead of playing by themselves. Facebook's own Autoplay setting shows Off while this is on.	Vídeos, reels, stories e músicas esperam o seu toque, em vez de tocar sozinhos. A configuração Reprodução automática do próprio Facebook mostra Desativada enquanto isto estiver ligado.
