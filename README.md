@@ -22,7 +22,7 @@ Each row in the [patch table](#patches) says how its switch starts. The ad filte
 
 This project has no connection to Meta or to the Morphe project. Neither endorses it, and neither wrote it.
 
-The latest release is [v0.11.0](https://github.com/SysAdminDoc/Hushfacebook/releases/tag/v0.11.0), with 88 patches. It includes all changes since v0.10.0, among them the new Frame step patch, switches that hide comments with shop links or your words, a Home that shows just Friends, Favorites, Groups or Pages, and fixes for the kept reel progress bar and Material You's Menu, as the [changelog](CHANGELOG.md) describes.
+The latest release is [v0.12.0](https://github.com/SysAdminDoc/Hushfacebook/releases/tag/v0.12.0), with 88 patches. It includes all changes since v0.11.0, among them a switch that leaves calls and chat notifications to Messenger, switches that keep the top bar and the tab bar on screen, tap to seek on the progress bar, Quick setups and a restart row in settings, an app name you choose when you patch, and fixes for the kept reel progress bar, as the [changelog](CHANGELOG.md) describes.
 
 [Add to Morphe](https://morphe.software/add-source?github=SysAdminDoc%2FHushfacebook) | [Download a release](https://github.com/SysAdminDoc/Hushfacebook/releases/latest) | [Browse the patches](#patches)
 
