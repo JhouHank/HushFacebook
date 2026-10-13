@@ -101,6 +101,24 @@ public final class MediaDownload {
     }
 
     /**
+     * Whether every save slot is taken, saying so on screen when it is. The post menu items ask this
+     * before they save, so a tap while saves fill every slot hears why nothing started instead of a
+     * guess at a missing file. A slot that frees or fills in between only means the save's own
+     * answer stands, and so does anything that fails in here. Never throws.
+     */
+    static boolean busy(Context application) {
+        try {
+            if (SAVE_SLOTS.availablePermits() > 0) return false;
+            info(() -> "a tap found every save slot taken, so nothing started");
+            Feedback.show(application, L10n.t(application, "Too many saves at once. Try again when one finishes."), true);
+            return true;
+        } catch (Throwable t) {
+            failure(() -> "could not say that every save slot was taken", t);
+            return false;
+        }
+    }
+
+    /**
      * Save the media of the story that is open.
      *
      * <p>[host] is the story card. Its address is read by value, because the fields that hold it

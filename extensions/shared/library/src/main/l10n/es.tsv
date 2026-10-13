@@ -1051,6 +1051,7 @@ Save photo	Guardar foto
 Save all photos	Guardar todas las fotos
 # context: short message shown when the photos of a post could not start saving
 Couldn't save this post's photos. Try again in a moment.	No se pudieron guardar las fotos de esta publicación. Vuelve a intentarlo en un momento.
+Too many saves at once. Try again when one finishes.	Hay demasiadas descargas en curso. Vuelve a intentarlo cuando termine una.
 # context: settings switch under Block Instant Games ads that makes a game's rewarded ad count as watched
 Answer rewarded game ads as watched	Dar por vistos los anuncios con recompensa de los juegos
 # context: description under that switch
