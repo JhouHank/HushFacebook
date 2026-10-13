@@ -19,10 +19,12 @@
     bundle     From the pushed, clean source commit: the bundle with its SBOM and tooling list,
                the receipt over every declared build (reading the runs the gate kept in
                patches/build/fixture-apply) and SHA256SUMS.txt, into build/release-assets/<version>.
-    publish    Notes from the whole CHANGELOG section with -Checked as What was checked, a
-               lightweight tag, the GitHub release with the five assets, each downloaded back and
-               compared. -Checked must say "applied ... to Facebook <version>" with "Facebook"
-               right after "to": the app's update check reads the target from that phrase.
+    publish    A copy of the five assets, held to SHA256SUMS.txt and the receipt (the bundle, SBOM
+               and tooling report it names, at the source commit) before anything else runs. Then
+               notes from the whole CHANGELOG section with -Checked as What was checked, a
+               lightweight tag, and the GitHub release with that checked copy, each file downloaded
+               back and compared. -Checked must say "applied ... to Facebook <version>" with
+               "Facebook" right after "to": the app's update check reads the target from that phrase.
     index      patches-bundle.json, the README's latest-release sentence and the bug form, from the
                published release and the gate's test results, and the repository description. Then
                commit "chore(release): point Manager to the verified X.Y.Z bundle" and push.
@@ -58,6 +60,7 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 . (Join-Path $root 'scripts/common.ps1')
 . (Join-Path $root 'scripts/patch-target.ps1')
+. (Join-Path $root 'scripts/release-receipt.ps1')
 
 $tag = "v$Version"
 $assets = Join-Path $root "build/release-assets/$Version"
@@ -285,29 +288,41 @@ try {
                 throw "The receipt is for $(if ($receiptCommit) { $receiptCommit } else { 'no commit' }), and HEAD is $head."
             }
 
-            $notes = Join-Path $assets 'notes.md'
-            Invoke-ReleaseText 'The release notes' @('github-notes', '--version', $Version, '--checked', $Checked, '--out', $notes)
-            if (-not (& git -C $root tag --list $tag)) { Invoke-Native 'The tag' { & git -C $root tag $tag $head } }
-            if (([string](& git -C $root rev-parse "$tag^{commit}")).Trim() -ne $head) { throw "$tag doesn't point at $head." }
-            Invoke-Native 'The tag push' { & git -C $root push --quiet origin $tag }
-
-            Step "publishing $tag"
-            Invoke-Native 'gh release create' {
-                & gh release create $tag -R $Repository --verify-tag --title $tag --notes-file $notes `
-                    (($assetNames + 'SHA256SUMS.txt') | ForEach-Object { Join-Path $assets $_ })
-            }
-            $check = Join-Path ([IO.Path]::GetTempPath()) "hushfacebook-published-$Version"
-            Remove-Item -LiteralPath $check -Recurse -Force -ErrorAction SilentlyContinue
+            # What goes out is a copy taken now and checked, so a staged file changed after the
+            # check can't be uploaded in its place, and the download back is held to the same bytes.
+            $publishing = Join-Path ([IO.Path]::GetTempPath()) "hushfacebook-publishing-$Version"
+            Remove-Item -LiteralPath $publishing -Recurse -Force -ErrorAction SilentlyContinue
+            New-Item -ItemType Directory -Path $publishing | Out-Null
             try {
-                Invoke-Native 'The download back' { & gh release download $tag -R $Repository -D $check }
-                foreach ($name in $assetNames + 'SHA256SUMS.txt') {
-                    $local = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $assets $name)).Hash
-                    $hostedPath = Join-Path $check $name
-                    if (-not (Test-Path -LiteralPath $hostedPath -PathType Leaf)) { throw "The release has no $name." }
-                    if ((Get-FileHash -Algorithm SHA256 -LiteralPath $hostedPath).Hash -ne $local) { throw "The hosted $name differs from the local one." }
-                    Step "$name matches the hosted copy"
+                Copy-Item -LiteralPath (($assetNames + 'SHA256SUMS.txt') | ForEach-Object { Join-Path $assets $_ }) -Destination $publishing
+                Step 'holding the staged assets to SHA256SUMS.txt and the receipt'
+                $staged = Test-StagedReleaseAt -Root $root -Folder $publishing -Version $Version -Commit $head
+                if (-not $staged.Valid) { throw "The staged release doesn't hold together, so nothing was tagged: $($staged.Reason)" }
+
+                $notes = Join-Path $assets 'notes.md'
+                Invoke-ReleaseText 'The release notes' @('github-notes', '--version', $Version, '--checked', $Checked, '--out', $notes)
+                if (-not (& git -C $root tag --list $tag)) { Invoke-Native 'The tag' { & git -C $root tag $tag $head } }
+                if (([string](& git -C $root rev-parse "$tag^{commit}")).Trim() -ne $head) { throw "$tag doesn't point at $head." }
+                Invoke-Native 'The tag push' { & git -C $root push --quiet origin $tag }
+
+                Step "publishing $tag"
+                Invoke-Native 'gh release create' {
+                    & gh release create $tag -R $Repository --verify-tag --title $tag --notes-file $notes `
+                        (($assetNames + 'SHA256SUMS.txt') | ForEach-Object { Join-Path $publishing $_ })
                 }
-            } finally { Remove-Item -LiteralPath $check -Recurse -Force -ErrorAction SilentlyContinue }
+                $check = Join-Path ([IO.Path]::GetTempPath()) "hushfacebook-published-$Version"
+                Remove-Item -LiteralPath $check -Recurse -Force -ErrorAction SilentlyContinue
+                try {
+                    Invoke-Native 'The download back' { & gh release download $tag -R $Repository -D $check }
+                    foreach ($name in $assetNames + 'SHA256SUMS.txt') {
+                        $local = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $publishing $name)).Hash
+                        $hostedPath = Join-Path $check $name
+                        if (-not (Test-Path -LiteralPath $hostedPath -PathType Leaf)) { throw "The release has no $name." }
+                        if ((Get-FileHash -Algorithm SHA256 -LiteralPath $hostedPath).Hash -ne $local) { throw "The hosted $name differs from the local one." }
+                        Step "$name matches the hosted copy"
+                    }
+                } finally { Remove-Item -LiteralPath $check -Recurse -Force -ErrorAction SilentlyContinue }
+            } finally { Remove-Item -LiteralPath $publishing -Recurse -Force -ErrorAction SilentlyContinue }
             Step 'published. Write the README and bundle summaries, then run -Stage index'
         }
         'index' {

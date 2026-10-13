@@ -1605,3 +1605,120 @@ function Test-ReleaseReceipt {
 
     return [pscustomobject]@{ Valid = $true; Reason = $null }
 }
+
+function Test-StagedRelease {
+    <#
+    .SYNOPSIS
+        Whether a staged release folder is the release its checksums and its receipt describe,
+        before any of it is tagged or uploaded.
+    .DESCRIPTION
+        The publish stage used to look only for the five files and the commit the receipt names.
+        A bundle, SBOM, tooling report or receipt changed after the bundle stage went out under
+        SHA256SUMS.txt hashes that no longer matched, and the download-back comparison held the
+        hosted copies to the same changed files. The index check catches that, once the release
+        is public.
+
+        SHA256SUMS.txt has to list the four assets for -Version and nothing else, each once, with
+        the hash of the file staged beside it. The receipt then has to pass Test-ReleaseReceipt
+        against the staged bundle, SBOM and tooling report, with its advisory audit run, and with
+        -Expected giving the rest of Test-ReleaseReceipt's parameters. Answers @{ Valid; Reason }.
+    #>
+    param(
+        [Parameter(Mandatory = $true)][string]$Folder,
+        [Parameter(Mandatory = $true)][string]$Version,
+        [Parameter(Mandatory = $true)][hashtable]$Expected
+    )
+
+    function Fail { param([string]$Reason) return [pscustomobject]@{ Valid = $false; Reason = $Reason } }
+
+    $bundleName = "patches-$Version.mpp"
+    $sbomName = "patches-$Version.cdx.json"
+    $toolingName = "patches-$Version.tooling.json"
+    $receiptName = "release-receipt-$Version.json"
+    $assets = @($bundleName, $sbomName, $toolingName, $receiptName)
+    foreach ($name in $assets + 'SHA256SUMS.txt') {
+        if (-not (Test-Path -LiteralPath (Join-Path $Folder $name) -PathType Leaf)) { return Fail "The staged release has no $name." }
+    }
+
+    # As the bundle stage writes it: one "<sha256>  <name>" line per asset, lower-case hex.
+    $listed = @{}
+    foreach ($line in ([IO.File]::ReadAllText((Join-Path $Folder 'SHA256SUMS.txt')) -split "`r?`n")) {
+        if (-not $line) { continue }
+        $entry = [regex]::Match($line, '^([0-9a-f]{64}) [ *](.+)$')
+        if (-not $entry.Success) { return Fail "SHA256SUMS.txt has a line that isn't a checksum: $line" }
+        $name = $entry.Groups[2].Value
+        if ($assets -cnotcontains $name) { return Fail "SHA256SUMS.txt lists $name, which isn't one of the release's assets." }
+        if ($listed.ContainsKey($name)) { return Fail "SHA256SUMS.txt lists $name twice." }
+        $listed[$name] = $entry.Groups[1].Value
+    }
+    foreach ($name in $assets) {
+        if (-not $listed.ContainsKey($name)) { return Fail "SHA256SUMS.txt has no entry for $name." }
+        $staged = (Get-Sha256Hex -Path (Join-Path $Folder $name)).ToLowerInvariant()
+        if ($listed[$name] -cne $staged) {
+            return Fail "SHA256SUMS.txt lists $($listed[$name]) for $name, but the staged $name hashes to $staged."
+        }
+    }
+
+    try {
+        $receipt = [IO.File]::ReadAllText((Join-Path $Folder $receiptName)) | ConvertFrom-Json
+    } catch {
+        return Fail "The staged $receiptName can't be read: $($_.Exception.Message)"
+    }
+    if ($null -eq $receipt) { return Fail "The staged $receiptName is empty." }
+    $arguments = @{} + $Expected
+    return Test-ReleaseReceipt @arguments -Receipt $receipt -ExpectedVersion $Version -BundlePath (Join-Path $Folder $bundleName) `
+        -SbomPath (Join-Path $Folder $sbomName) -ToolingPath (Join-Path $Folder $toolingName) -RequireToolingAudit
+}
+
+function Test-StagedReleaseAt {
+    <#
+    .SYNOPSIS
+        Test-StagedRelease, held to what the release commit carries.
+    .DESCRIPTION
+        The patch list, the toolchain pins, the tooling scope manifest and the commit's time come
+        out of -Commit through git, and the reviewed manifest changes the way
+        Resolve-ReceiptManifestAllowlist reads them, with -AllowlistPath (the checkout's own by
+        default) for a commit that carries none. So the staged release is held to the commit its
+        tag will name, and the receipt to that same commit. Answers @{ Valid; Reason }.
+    #>
+    param(
+        [Parameter(Mandatory = $true)][string]$Root,
+        [Parameter(Mandatory = $true)][string]$Folder,
+        [Parameter(Mandatory = $true)][string]$Version,
+        [Parameter(Mandatory = $true)][string]$Commit,
+        [string]$AllowlistPath
+    )
+
+    function Fail { param([string]$Reason) return [pscustomobject]@{ Valid = $false; Reason = $Reason } }
+
+    if ($Commit -notmatch '^[0-9a-f]{40}$') { return Fail "$Commit isn't a full commit to hold the staged release to." }
+    if (-not $AllowlistPath) { $AllowlistPath = Join-Path $Root 'scripts/manifest-delta-allowlist.txt' }
+    $short = $Commit.Substring(0, 8)
+    try {
+        $listText = @(Invoke-RepoGit -Root $Root -Arguments @('show', "${Commit}:patches-list.json")) -join "`n"
+        if (-not $listText.Trim()) { return Fail "Commit $short carries no patches-list.json." }
+        $list = $listText | ConvertFrom-Json
+        $target = Get-PatchTarget -PatchList $list
+        $toolchain = Read-CatalogToolchain -Source "gradle/libs.versions.toml at $short" `
+            -Text (@(Invoke-RepoGit -Root $Root -Arguments @('show', "${Commit}:gradle/libs.versions.toml")) -join "`n")
+        $allowlist = Resolve-ReceiptManifestAllowlist -Root $Root -Commit $Commit -WorkingPath $AllowlistPath
+        $scopeText = @(Invoke-RepoGit -Root $Root -Arguments @('show', "${Commit}:gradle/tooling-scopes.txt")) -join "`n"
+        if (-not $scopeText.Trim()) { return Fail "Commit $short carries no gradle/tooling-scopes.txt." }
+        $seconds = "$(Invoke-RepoGit -Root $Root -Arguments @('log', '-1', '--format=%ct', $Commit) | Select-Object -First 1)".Trim()
+        if ($seconds -notmatch '^\d+$') { return Fail "git can't say when commit $short was made." }
+    } catch {
+        return Fail "What commit $short carries can't be read: $($_.Exception.Message)"
+    }
+    return Test-StagedRelease -Folder $Folder -Version $Version -Expected @{
+        ExpectedPatchNames          = @($list.patches | ForEach-Object { [string]$_.name })
+        ExpectedPatcherVersion      = $toolchain.PatcherVersion
+        ExpectedManagerFloor        = $toolchain.ManagerFloor
+        ExpectedPackageName         = $target.PackageName
+        ExpectedPackageVersions     = $target.PackageVersions
+        ExpectedPackageVersionCodes = $target.PackageVersionCodes
+        ApprovedManifestDelta       = @($allowlist.Entries)
+        ActualCommitTimestamp       = [long]$seconds
+        ExpectedCommit              = $Commit
+        ToolingScopeManifestText    = $scopeText
+    }
+}

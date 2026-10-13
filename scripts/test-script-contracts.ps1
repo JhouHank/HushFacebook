@@ -1325,6 +1325,69 @@ try {
     $oneWithSbom = Test-ReceiptWithSbom $schemaOne -Schema 1
     Assert-True ($oneWithSbom.Reason -like '*schema 1 receipt names no SBOM to hold*') `
         "A schema 1 receipt was held to an SBOM it can't name: $($oneWithSbom.Reason)"
+
+    # What the publish stage holds its copy of the staged release to before it tags anything: the
+    # four assets, SHA256SUMS.txt over them, and the receipt over the other three. A staged file
+    # changed on its own is refused by SHA256SUMS.txt, and changed with SHA256SUMS.txt written over
+    # again, by the receipt, so neither check can go missing behind the other.
+    $stagedRoot = Join-Path $allowlistRoot 'staged'
+    $stagedNames = @('patches-9.9.9.mpp', 'patches-9.9.9.cdx.json', 'patches-9.9.9.tooling.json', 'release-receipt-9.9.9.json')
+    $stagedExpected = @{ ExpectedPatchNames = @('Alpha', 'Beta'); ExpectedPatcherVersion = '1.12.0'; ExpectedManagerFloor = '1.29.0'
+        ExpectedPackageName = 'com.example.host'; ExpectedPackageVersions = $declaredBuilds; ExpectedPackageVersionCodes = $declaredCodes
+        ToolingScopeManifestText = $scopeText }
+    function Get-StagedSums {
+        @($stagedNames | ForEach-Object { '{0}  {1}' -f (Get-Sha256Hex -Path (Join-Path $stagedRoot $_)).ToLowerInvariant(), $_ })
+    }
+    function Write-StagedSums([string[]]$Lines = (Get-StagedSums)) {
+        [IO.File]::WriteAllText((Join-Path $stagedRoot 'SHA256SUMS.txt'), (($Lines -join "`n") + "`n"))
+    }
+    function New-StagedRelease {
+        Remove-Item -LiteralPath $stagedRoot -Recurse -Force -ErrorAction SilentlyContinue
+        New-Item -ItemType Directory -Path $stagedRoot -Force | Out-Null
+        Copy-Item -LiteralPath $bundle, $sbomFile, $toolingFile -Destination $stagedRoot
+        Set-Content -LiteralPath (Join-Path $stagedRoot 'release-receipt-9.9.9.json') -Encoding UTF8 -Value ((New-TestReceipt) | ConvertTo-Json -Depth 12)
+        Write-StagedSums
+    }
+    function Test-Staged { Test-StagedRelease -Folder $stagedRoot -Version '9.9.9' -Expected $stagedExpected }
+    New-StagedRelease
+    $stagedResult = Test-Staged
+    Assert-True $stagedResult.Valid "A complete staged release was refused: $($stagedResult.Reason)"
+    $stagedBound = @{
+        'patches-9.9.9.mpp' = '*The receipt says the bundle is*bytes*'
+        'patches-9.9.9.cdx.json' = '*The receipt says patches-9.9.9.cdx.json hashes to*'
+        'patches-9.9.9.tooling.json' = '*tooling report changed after its advisory audit*'
+        'release-receipt-9.9.9.json' = '*The receipt says the bundle hashes to CCCC*' }
+    foreach ($name in $stagedNames) {
+        foreach ($resummed in @($false, $true)) {
+            New-StagedRelease
+            $path = Join-Path $stagedRoot $name
+            if ($name -like 'release-receipt-*') {
+                Set-Content -LiteralPath $path -Encoding UTF8 -Value ((New-TestReceipt -Mutate { param($r) $r.bundle.sha256 = ('C' * 64) }) | ConvertTo-Json -Depth 12)
+            } else {
+                [IO.File]::WriteAllBytes($path, [byte[]]([IO.File]::ReadAllBytes($path) + [byte]10))
+            }
+            if ($resummed) { Write-StagedSums }
+            $result = Test-Staged
+            $pattern = if ($resummed) { $stagedBound[$name] } else { "*SHA256SUMS.txt lists * for $name, but the staged $name hashes to*" }
+            Assert-True (-not $result.Valid -and $result.Reason -like $pattern) `
+                "A staged $name changed$(if ($resummed) { ' with SHA256SUMS.txt over it' }) was not refused for it: $($result.Reason)"
+        }
+    }
+    foreach ($sums in @(
+            @{ Name = 'an asset left out'; Lines = { @(Get-StagedSums)[0..2] }; Pattern = '*has no entry for release-receipt-9.9.9.json*' },
+            @{ Name = 'a file that is no asset'; Lines = { @(Get-StagedSums) + "$('0' * 64)  notes.md" }; Pattern = "*lists notes.md, which isn't one of the release's assets*" },
+            @{ Name = 'an asset twice'; Lines = { @(Get-StagedSums) + @(Get-StagedSums)[0] }; Pattern = '*lists patches-9.9.9.mpp twice*' },
+            @{ Name = 'another hash'; Lines = { @("$('1' * 64)  patches-9.9.9.mpp") + @(Get-StagedSums)[1..3] }; Pattern = "*lists $('1' * 64) for patches-9.9.9.mpp*" },
+            @{ Name = 'a line that is no checksum'; Lines = { @(Get-StagedSums) + 'see the release notes' }; Pattern = "*a line that isn't a checksum: see the release notes*" })) {
+        New-StagedRelease
+        Write-StagedSums (& $sums.Lines)
+        $result = Test-Staged
+        Assert-True (-not $result.Valid -and $result.Reason -like $sums.Pattern) "SHA256SUMS.txt with $($sums.Name) was not refused for it: $($result.Reason)"
+    }
+    New-StagedRelease
+    Remove-Item -LiteralPath (Join-Path $stagedRoot 'patches-9.9.9.cdx.json') -Force
+    $result = Test-Staged
+    Assert-True ($result.Reason -like '*staged release has no patches-9.9.9.cdx.json*') "A staged release with no SBOM was not refused for it: $($result.Reason)"
 } finally {
     Remove-Item -LiteralPath $allowlistRoot -Recurse -Force -ErrorAction SilentlyContinue
 }
@@ -4934,6 +4997,24 @@ try {
     $builtProved = "the receipt proves $($releaseNames.Count) patches on $($builtVersions -join ', ') " +
         "from commit $($releaseCommit.Substring(0, 8))"
     Assert-True ($said -like "*$builtProved*") "The release check did not accept the receipt the builder wrote: $said"
+    # And the publish stage's check takes it, staged as the bundle stage stages it and held to what
+    # the release commit carries. The fixture commits no allowlist, so the checked-in one stands in.
+    $stagedHere = Join-Path $releaseRoot 'staged'
+    New-Item -ItemType Directory -Path $stagedHere -Force | Out-Null
+    try {
+        Copy-Item -LiteralPath $releaseBundle, $releaseSbom, $releaseTooling, $releaseReceipt -Destination $stagedHere
+        $stagedSumLines = @(Get-ChildItem -LiteralPath $stagedHere -File | Sort-Object Name |
+            ForEach-Object { '{0}  {1}' -f (Get-Sha256Hex -Path $_.FullName).ToLowerInvariant(), $_.Name })
+        [IO.File]::WriteAllText((Join-Path $stagedHere 'SHA256SUMS.txt'), (($stagedSumLines -join "`n") + "`n"))
+        $stagedCheck = Test-StagedReleaseAt -Root $releaseRepo -Folder $stagedHere -Version $releaseVersionHere -Commit $releaseCommit `
+            -AllowlistPath (Join-Path $PSScriptRoot 'manifest-delta-allowlist.txt')
+        Assert-True $stagedCheck.Valid "The publish stage's check refused the release the builder staged: $($stagedCheck.Reason)"
+        $otherCommit = Test-StagedReleaseAt -Root $releaseRepo -Folder $stagedHere -Version $releaseVersionHere -Commit ('f' * 40) `
+            -AllowlistPath (Join-Path $PSScriptRoot 'manifest-delta-allowlist.txt')
+        Assert-True (-not $otherCommit.Valid) 'The publish stage held the staged release to a commit the fixture lacks.'
+    } finally {
+        Remove-Item -LiteralPath $stagedHere -Recurse -Force -ErrorAction SilentlyContinue
+    }
 
     # A merge that fails, and one that exits 0 and writes nothing, stop the run before the CLI
     # patches anything. base.apk is not what the CLI patches, so there's no receipt to fall back to.
@@ -6289,6 +6370,16 @@ try {
         "    ""skipResults=`$SkipTestResults priority=`$env:BUILD_QUEUE_PRIORITY"")",
         "if ((Get-Content -LiteralPath '$failLiteral' -ErrorAction SilentlyContinue) -eq 'facts') { exit 1 }",
         'exit 0')
+    # The publish stage's check of its copy of the staged release logs the folder it was handed and
+    # what's in it, and refuses it when fail.txt says staged.
+    Set-Content -LiteralPath (Join-Path $flowRepo 'scripts/release-receipt.ps1') -Encoding UTF8 -Value @(
+        'function Test-StagedReleaseAt([string]$Root, [string]$Folder, [string]$Version, [string]$Commit) {',
+        "    Add-Content -LiteralPath '$logLiteral' -Value (""staged version=`$Version commit=`$Commit folder=`$Folder files="" +",
+        '        ((Get-ChildItem -LiteralPath $Folder -File | ForEach-Object { $_.Name } | Sort-Object) -join '',''))',
+        "    if ((Get-Content -LiteralPath '$failLiteral' -ErrorAction SilentlyContinue) -eq 'staged') {",
+        '        return [pscustomobject]@{ Valid = $false; Reason = ''the stand-in refused it'' } }',
+        '    return [pscustomobject]@{ Valid = $true; Reason = $null }',
+        '}')
     $flowWrapper = Join-Path $releaseFlow 'wrapper.ps1'
     Set-Content -LiteralPath $flowWrapper -Encoding UTF8 -Value @(
         'param([string]$ProjectDir, [string[]]$Tasks)',
@@ -6478,14 +6569,31 @@ try {
     Set-Content -LiteralPath $flowReceipt -Value $keptReceipt -Encoding ASCII -NoNewline
     Assert-True (@(Read-FlowLog).Count -eq 0) 'Publish ran a step before refusing the receipt.'
     Assert-True (-not (& git -C $flowRepo tag --list v1.2.3)) 'Publish tagged the commit before refusing the receipt.'
+    # A staged release its check refuses stops the stage before the notes, the tag or GitHub, and
+    # the copy it checked goes.
+    Set-Content -LiteralPath $flowFails -Value 'staged' -Encoding ASCII
+    Assert-Throws { & $flowScript -Stage publish -Version 1.2.3 -Checked $flowChecked 6> $null 3> $null } '*nothing was tagged: the stand-in refused it*' `
+        'Publish went ahead with a staged release its check refused.'
+    Remove-Item -LiteralPath $flowFails -Force
+    $flow = @(Read-FlowLog)
+    Assert-True ($flow.Count -eq 1 -and $flow[0] -like 'staged *') "Publish ran a step past a refused staged release: $($flow -join ' | ')"
+    Assert-True (-not (& git -C $flowRepo tag --list v1.2.3) -and -not (& git -C $flowOrigin tag --list v1.2.3)) 'Publish tagged a staged release its check refused.'
+    $refusedCopy = [regex]::Match($flow[0], ' folder=(.+) files=').Groups[1].Value
+    Assert-True ($refusedCopy -and -not (Test-Path -LiteralPath $refusedCopy)) 'A refused publish left the copy it checked behind.'
+    $flowHead = "$(& git -C $flowRepo rev-parse HEAD)".Trim()
     & $flowScript -Stage publish -Version 1.2.3 -Checked $flowChecked 6> $null 3> $null
     $flow = @(Read-FlowLog)
-    Assert-True ($flow.Count -eq 3 -and $flow[0] -like "py * github-notes --version 1.2.3 --checked $flowChecked --out *notes.md" -and
-        $flow[1] -like 'gh release create v1.2.3 -R SysAdminDoc/HushFacebook --verify-tag --title v1.2.3 --notes-file *notes.md *' -and
-        $flow[2] -like 'gh release download v1.2.3 -R SysAdminDoc/HushFacebook -D *') "Publish did not write, create and download back: $($flow -join ' | ')"
+    Assert-True ($flow.Count -eq 4 -and $flow[0] -like ("staged version=1.2.3 commit=$flowHead folder=* files=patches-1.2.3.cdx.json," +
+            'patches-1.2.3.mpp,patches-1.2.3.tooling.json,release-receipt-1.2.3.json,SHA256SUMS.txt') -and
+        $flow[1] -like "py * github-notes --version 1.2.3 --checked $flowChecked --out *notes.md" -and
+        $flow[2] -like 'gh release create v1.2.3 -R SysAdminDoc/HushFacebook --verify-tag --title v1.2.3 --notes-file *notes.md *' -and
+        $flow[3] -like 'gh release download v1.2.3 -R SysAdminDoc/HushFacebook -D *') "Publish did not check, write, create and download back: $($flow -join ' | ')"
+    # The release goes out from the copy that was checked, which is gone once the stage ends.
+    $checkedCopy = [regex]::Match($flow[0], ' folder=(.+) files=').Groups[1].Value
     foreach ($name in 'patches-1.2.3.mpp', 'patches-1.2.3.cdx.json', 'patches-1.2.3.tooling.json', 'release-receipt-1.2.3.json', 'SHA256SUMS.txt') {
-        Assert-True ($flow[1].Contains($name)) "Publish created the release without $name."
+        Assert-True ($flow[2].Contains((Join-Path $checkedCopy $name))) "Publish created the release without the checked $name."
     }
+    Assert-True (-not (Test-Path -LiteralPath $checkedCopy)) 'Publish left the copy it checked behind.'
     Assert-True ((& git -C $flowOrigin rev-parse 'v1.2.3^{commit}') -eq (& git -C $flowRepo rev-parse HEAD)) `
         'Publish did not push a v1.2.3 tag on the source commit.'
     $flowTamper = 'patches-1.2.3.mpp'
