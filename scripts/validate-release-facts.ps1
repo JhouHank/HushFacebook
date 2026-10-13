@@ -14,6 +14,8 @@
     has to list and which has to be the receipt checked here. It also refuses a release whose Facebook-family source
     census (sources/facebook-sources.json, refreshed by audit-facebook-sources.ps1) is more than
     14 days old, breaks the ledger's rules, or lacks a listing or dated submission on an index.
+    Every run, receipt or none, also holds each published patch's name and default to the catalog
+    the published release shipped, unless scripts/patch-catalog-compatibility.json declares the change.
 #>
 [CmdletBinding()]
 param(
@@ -1141,6 +1143,97 @@ function Test-ReleaseReceiptHere {
     }
 }
 
+function Test-ReleaseCatalogCompatibilityHere {
+    <#
+    .SYNOPSIS
+        Holds the patch names and "use" defaults to the catalog the published release shipped.
+    .DESCRIPTION
+        Morphe Manager keeps someone's patch choices by name, so a rename or removal resets them and
+        a flipped default changes what a new install gets. Every run checks this, with or without a
+        local receipt or built bundle, since the receipt only exists on the machine that cut the
+        release. The baseline is read from GitHub: the hosted receipt and SHA256SUMS.txt beside the
+        indexed bundle, and the tags `git ls-remote --tags origin` lists (Resolve-PublishedCatalogBaseline).
+        An intentional change is declared in scripts/patch-catalog-compatibility.json.
+
+        The index push that publishes a release has already pointed patches-bundle.json at it, so
+        that run reads the predecessor index at the release's own tagged commit instead
+        (Resolve-CatalogBaselineIndex), or it would compare the release with itself.
+    #>
+    $selectionIndex = Resolve-CatalogBaselineIndex -Root $rootPath -WorkingIndex $bundle `
+        -CandidateCommit $releaseCommit -VerifyPublishedAsset:$VerifyPublishedAsset
+    $tagLines = @(Invoke-RepoGit -Root $rootPath -Arguments @('ls-remote', '--tags', 'origin'))
+    $tagStatus = $LASTEXITCODE
+    if ($tagStatus -ne 0) {
+        throw 'The published tags could not be read with git ls-remote --tags origin, so the patch selection check has no baseline.'
+    }
+    $receiptBytes = $null
+    $checksumText = $null
+    $temporaryFiles = New-Object System.Collections.Generic.List[string]
+    try {
+        if (-not $selectionIndex.PredecessorIndexAbsent) {
+            $priorVersion = [string](Get-SelectionProperty $selectionIndex.Index 'version')
+            $priorUri = $null
+            # Held to the same shape Resolve-PublishedCatalogBaseline holds it to, before anything is
+            # fetched from it.
+            if ($priorVersion -notmatch '^\d+\.\d+\.\d+$' -or
+                -not [Uri]::TryCreate([string](Get-SelectionProperty $selectionIndex.Index 'download_url'),
+                    [UriKind]::Absolute, [ref]$priorUri) -or
+                $priorUri.Scheme -cne 'https' -or $priorUri.Host -cne 'github.com' -or
+                $priorUri.Port -ne 443 -or $priorUri.UserInfo -or $priorUri.Query -or $priorUri.Fragment -or
+                $priorUri.AbsolutePath -notmatch ('^/[^/]+/[^/]+/releases/download/v' +
+                    [regex]::Escape($priorVersion) + '/patches-' + [regex]::Escape($priorVersion) + '\.mpp$')) {
+                throw 'The predecessor index does not name its exact hosted bundle.'
+            }
+            $baseUri = $priorUri.AbsoluteUri.Substring(0, $priorUri.AbsoluteUri.LastIndexOf('/'))
+            # -OutFile keeps the receipt's bytes as served in both shells. Decoding Content and
+            # encoding it again could move a byte order mark or other text before the checksum.
+            $priorReceiptFile = [IO.Path]::GetTempFileName()
+            $temporaryFiles.Add($priorReceiptFile)
+            $priorChecksumFile = [IO.Path]::GetTempFileName()
+            $temporaryFiles.Add($priorChecksumFile)
+            try {
+                $selectionAssetUri = "$baseUri/release-receipt-$priorVersion.json"
+                Invoke-WebRequest -Uri $selectionAssetUri -OutFile $priorReceiptFile `
+                    -MaximumRedirection 5 -TimeoutSec 60 -UseBasicParsing | Out-Null
+                $selectionAssetUri = "$baseUri/SHA256SUMS.txt"
+                Invoke-WebRequest -Uri $selectionAssetUri -OutFile $priorChecksumFile `
+                    -MaximumRedirection 5 -TimeoutSec 60 -UseBasicParsing | Out-Null
+            } catch {
+                throw ("The hosted predecessor receipt or checksum list couldn't be downloaded from $selectionAssetUri, " +
+                    "so the patch selection check has no baseline. $($_.Exception.Message)")
+            }
+            $receiptBytes = [IO.File]::ReadAllBytes($priorReceiptFile)
+            $checksumText = [Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes($priorChecksumFile))
+        }
+        $baseline = Resolve-PublishedCatalogBaseline -Root $rootPath -WorkingPatchList $patchList `
+            -CandidateVersion $releaseVersion -Index $selectionIndex.Index `
+            -PredecessorIndexAbsent:$selectionIndex.PredecessorIndexAbsent -ReceiptBytes $receiptBytes `
+            -ChecksumText $checksumText -RemoteTagsText ($tagLines -join "`n") -RemoteTagsExitCode $tagStatus
+        $compatibilityPath = Join-Path $rootPath 'scripts/patch-catalog-compatibility.json'
+        $compatibility = $null
+        if (Test-Path -LiteralPath $compatibilityPath) {
+            $compatibility = Read-JsonFile $compatibilityPath
+            if ($null -eq $compatibility) { throw 'The compatibility file cannot contain JSON null.' }
+        }
+        $selectionCheck = Test-PatchCatalogCompatibility -BaselinePatchList $baseline.PatchList `
+            -BaselineVersion $baseline.Version -BaselineCommit $baseline.Commit `
+            -CandidatePatchList $patchList -CandidateVersion $releaseVersion -Compatibility $compatibility `
+            -Changelog (Get-Content -LiteralPath (Join-Path $rootPath 'CHANGELOG.md') -Raw) `
+            -FirstRelease:$baseline.FirstRelease
+        if (-not $selectionCheck.Valid) {
+            throw "The patch names and defaults don't hold to the published release. $($selectionCheck.Reason)"
+        }
+        $baselineDescription = if ($baseline.FirstRelease) { 'a verified first release' } else {
+            "published v$($baseline.Version) at $($baseline.Commit.Substring(0, 8))"
+        }
+        Write-Host "[release] patch names and defaults are compatible with $baselineDescription"
+    } finally {
+        foreach ($file in $temporaryFiles) {
+            Remove-Item -LiteralPath $file -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
 
 $bundlePath = if ($ArtifactPath) { $ArtifactPath } else {
     Get-ReleaseBundlePath -Root $rootPath -Version $releaseVersion
@@ -1157,8 +1250,9 @@ if (-not (Test-Path -LiteralPath $bundlePath -PathType Leaf)) {
     Write-Host ("[release] no built bundle at $bundlePath, so its patcher stamp is not compared " +
         "against the catalog pin $pinnedPatcher")
     # No bundle to compare bytes against, but everything else the receipt says is
-    # still checked.
+    # still checked, and the published patch selections need neither.
     Test-ReleaseReceiptHere
+    Test-ReleaseCatalogCompatibilityHere
     Write-Host ("[facts] " + $sourceVersion + ": " + $patchCount + " patches for " + $targetPackage + " " + $targetVersion + "; " + $testFacts)
     exit 0
 }
@@ -1187,6 +1281,7 @@ if ($stampMatch.Groups[1].Value -ne $pinnedPatcher) {
 Write-Host "[release] the bundle stamps patcher $pinnedPatcher, as the catalog pins"
 
 Test-ReleaseReceiptHere -BundleForComparison $(if ($VerifyPublishedAsset) { $bundlePath } else { $null })
+Test-ReleaseCatalogCompatibilityHere
 
 Write-Host ("[facts] " + $sourceVersion + ": " + $patchCount + " patches for " + $targetPackage + " " + $targetVersion + "; " + $testFacts)
 

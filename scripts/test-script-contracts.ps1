@@ -2118,6 +2118,368 @@ try {
 
 Write-Host '[scripts] advisory gate contracts passed'
 
+# --- published patch selection compatibility --------------------------------------------------
+#
+# Morphe Manager keeps a patch choice by name and starts an untouched patch at its use default, so
+# a rename, a removal or a flipped default changes what people get without a word. Each case below
+# starts from a comparison that passes and moves one fact.
+
+& {
+    function Copy-Document($Object) { return $Object | ConvertTo-Json -Depth 20 | ConvertFrom-Json }
+    function Catalog([string]$Version, [object[]]$Patches) {
+        return [pscustomobject]@{ version = "v$Version"; patches = $Patches }
+    }
+    function Patch([string]$Name, [bool]$Use) {
+        return [pscustomobject]@{ name = $Name; use = $Use; compatiblePackages = [pscustomobject]@{ 'com.example' = @('1.0.0') } }
+    }
+    $baseline = Catalog '0.6.0' @((Patch 'Alpha' $false), (Patch 'Beta' $true))
+    $baselineCommit = 'a' * 40
+    $candidate = Copy-Document $baseline
+    $compatibility = $null
+    $notes = ''
+    function Compare-Here {
+        return Test-PatchCatalogCompatibility -BaselinePatchList $baseline -BaselineVersion '0.6.0' `
+            -BaselineCommit $baselineCommit -CandidatePatchList $candidate `
+            -CandidateVersion $candidate.version.Substring(1) -Compatibility $compatibility -Changelog $notes
+    }
+    function Assert-Accept([string]$Message) {
+        $result = Compare-Here
+        Assert-True $result.Valid "$Message $($result.Reason)"
+    }
+    function Assert-Refuse([string]$Pattern, [string]$Message) {
+        $result = Compare-Here
+        Assert-True (-not $result.Valid -and $result.Reason -like $Pattern) "$Message Got: $($result.Valid) / $($result.Reason)"
+    }
+    function Declaration($Before, $After, [string]$Note) {
+        $beforeState = [pscustomobject]@{ name = $Before.name; use = $Before.use }
+        $afterState = if ($null -eq $After) { $null } else { [pscustomobject]@{ name = $After.name; use = $After.use } }
+        return [pscustomobject]@{ before = $beforeState; after = $afterState; migrationNote = $Note }
+    }
+    function Allow([object[]]$Changes, [string]$Version = '0.6.0') {
+        return [pscustomobject]@{ baselineVersion = '0.6.0'; baselineCommit = $baselineCommit; candidateVersion = $Version; changes = $Changes }
+    }
+
+    Assert-Accept 'An unchanged held catalog failed.'
+    $candidate.patches += Patch 'New patch' $true
+    Assert-Accept 'An addition failed.'
+    $candidate = Copy-Document $baseline
+    $candidate.patches[0].use = $true
+    Assert-Refuse '*without compatibility metadata*' 'A default flip passed without metadata.'
+    $flipNote = 'Alpha is now included by default.'
+    $compatibility = Allow @((Declaration $baseline.patches[0] $candidate.patches[0] $flipNote))
+    $notes = "## Unreleased`n- $flipNote`n## 0.6.0 (2026-09-30)`nOlder release."
+    Assert-Accept 'An intentional held default flip failed.'
+    $notes = "## 0.6.0 (2026-09-30)`n- $flipNote"
+    Assert-Refuse '*section for Unreleased*' 'A held default flip used the shipped changelog section.'
+    $notes = "## Unreleased`n- $($flipNote.ToLowerInvariant())"
+    Assert-Refuse '*exact migration note*' 'A case-changed migration note passed.'
+    $notes = "## Unreleased`n- $flipNote`n## Unreleased`n- $flipNote"
+    Assert-Refuse '*exactly one CHANGELOG section*' 'A duplicate changelog section passed.'
+
+    $candidate = Copy-Document $baseline
+    $candidate.patches[0].name = 'Gamma'
+    $compatibility = $null
+    $notes = ''
+    Assert-Refuse '*without compatibility metadata*' 'A rename passed without metadata.'
+    $renameNote = 'Alpha is now Gamma. This causes a selection reset and requires manual re-selection.'
+    $compatibility = Allow @((Declaration $baseline.patches[0] $candidate.patches[0] $renameNote))
+    $notes = "## Unreleased`n- $renameNote"
+    Assert-Accept 'A documented rename failed.'
+    $notes = "## Unreleased`n<!-- - $renameNote -->"
+    Assert-Refuse '*exact migration note*' 'A rename warning hidden in an HTML comment passed.'
+    $notes = "## Unreleased`n<!-- - $renameNote"
+    Assert-Refuse '*exact migration note*' 'A rename warning hidden in an unclosed HTML comment passed.'
+    $notes = "## Unreleased`n<!-- unrelated comment -->`n- $renameNote"
+    Assert-Accept 'A visible rename note after a comment failed.'
+    $candidate.patches[0].use = $true
+    Assert-Refuse '*after state*' 'A rename allowance covered a different use flag.'
+    $candidate.patches[0].use = $false
+    $compatibility.changes[0].migrationNote = 'Alpha is now Gamma.'
+    $notes = '## Unreleased' + "`n- Alpha is now Gamma."
+    Assert-Refuse '*selection reset*manual re-selection*' 'A rename without a reset warning passed.'
+    $candidate = Catalog '0.6.0' @((Patch 'alpha' $false), (Patch 'Beta' $true))
+    $compatibility = $null
+    Assert-Refuse '*without compatibility metadata*' 'Case-only renaming was treated as unchanged.'
+    $caseNote = 'Alpha is now alpha. This causes a selection reset and requires manual re-selection.'
+    $compatibility = Allow @((Declaration $baseline.patches[0] $candidate.patches[0] $caseNote))
+    $notes = "## Unreleased`n- $caseNote"
+    Assert-Accept 'An explicit case-only rename failed.'
+
+    $candidate = Catalog '0.6.0' @((Patch 'Beta' $true))
+    $compatibility = $null
+    Assert-Refuse '*without compatibility metadata*' 'A removal passed without metadata.'
+    $removeNote = 'Alpha was removed. This causes a selection reset and requires manual re-selection.'
+    $compatibility = Allow @((Declaration $baseline.patches[0] $null $removeNote))
+    $notes = "## Unreleased`n- $removeNote"
+    Assert-Accept 'A documented removal failed.'
+    $compatibility.changes += Copy-Document $compatibility.changes[0]
+    Assert-Refuse '*duplicates Alpha*' 'Duplicate allowances passed.'
+    $candidate = Copy-Document $baseline
+    $compatibility = Allow @((Declaration $baseline.patches[0] $baseline.patches[0] $flipNote))
+    $notes = "## Unreleased`n- $flipNote"
+    Assert-Refuse '*no-op*' 'An unused no-op allowance passed.'
+    $compatibility = Allow @((Declaration $baseline.patches[0] $null $removeNote))
+    $notes = "## Unreleased`n- $removeNote"
+    Assert-Refuse '*unused*' 'A removal allowance for a surviving patch passed.'
+    $candidate = Catalog '0.6.0' @((Patch 'Beta' $true))
+    $compatibility = Allow @((Declaration $baseline.patches[0] $candidate.patches[0] $renameNote))
+    $notes = "## Unreleased`n- $renameNote"
+    Assert-Refuse '*collides*' 'A rename colliding with an existing baseline name passed.'
+
+    $candidate = Copy-Document $baseline
+    $candidate.patches[0].use = $true
+    $compatibility = Allow @((Declaration $baseline.patches[0] $candidate.patches[0] $flipNote))
+    $notes = "## Unreleased`n- $flipNote"
+    foreach ($field in @('baselineVersion', 'baselineCommit', 'candidateVersion')) {
+        $saved = $compatibility.$field
+        $compatibility.$field = 'wrong'
+        Assert-Refuse '*exact baseline and candidate*' "A mismatched $field passed."
+        $compatibility.$field = $true
+        Assert-Refuse '*exact baseline and candidate*' "A Boolean $field passed."
+        $compatibility.$field = $saved
+    }
+    $compatibility.changes[0].before.use = $true
+    Assert-Refuse '*before state*' 'An allowance with the wrong published default passed.'
+    $compatibility.changes[0].before.use = 'false'
+    Assert-Refuse '*Boolean use*' 'An allowance with a string use passed.'
+    $compatibility.changes[0].before.use = $false
+    $compatibility.changes[0].after = 'Gamma'
+    Assert-Refuse '*exactly name and use*' 'A scalar after state passed.'
+    $compatibility.changes[0].after = [pscustomobject]@{ name = 'Alpha'; use = $true; extra = 'field' }
+    Assert-Refuse '*exactly name and use*' 'An unexpected after field passed.'
+    $compatibility.changes[0].after = [pscustomobject]@{ name = 'Alpha'; use = $true }
+    $compatibility.changes[0].PSObject.Properties.Remove('after')
+    Assert-Refuse '*malformed fields*' 'An omitted after field passed as a removal.'
+    $compatibility = Allow @()
+    Assert-Refuse '*nonempty array*' 'Empty compatibility declarations passed.'
+
+    $compatibility = $null
+    $candidate = Copy-Document $baseline
+    $candidate.patches += Patch 'Alpha' $false
+    Assert-Refuse '*duplicates patch Alpha*' 'An exact duplicate patch name passed.'
+    $candidate = Copy-Document $baseline
+    $candidate.patches += Patch 'alpha' $false
+    Assert-Accept 'Ordinal names collapsed distinct Alpha and alpha additions.'
+    foreach ($badUse in @('false', 0, $null)) {
+        $candidate = Copy-Document $baseline
+        $candidate.patches[0].use = $badUse
+        Assert-Refuse '*Boolean use*' 'A non-Boolean catalog default passed.'
+    }
+    $candidate = Copy-Document $baseline
+    $candidate.patches[0].name = ' Alpha'
+    Assert-Refuse '*invalid patch name*' 'A padded patch name passed.'
+    $candidate = Copy-Document $baseline
+    $baseline.patches[0].use = 'false'
+    Assert-Refuse '*Published catalog*Boolean use*' 'A malformed baseline default passed.'
+    $baseline.patches[0].use = $false
+
+    # Publication compares the candidate to its predecessor. The next ordinary source push
+    # sees that candidate as the published baseline and must remove the consumed allowance.
+    $candidate = Catalog '0.7.0' @((Patch 'Gamma' $false), (Patch 'Beta' $true))
+    $compatibility = Allow @((Declaration $baseline.patches[0] $candidate.patches[0] $renameNote)) '0.7.0'
+    $notes = "## 0.7.0 (2026-10-02)`n* **Facebook:** $renameNote`n## Unreleased`nOther changes."
+    Assert-Accept 'Publication did not compare to the predecessor.'
+    $stale = Test-PatchCatalogCompatibility -BaselinePatchList $candidate -BaselineVersion '0.7.0' `
+        -BaselineCommit ('b' * 40) -CandidatePatchList $candidate -CandidateVersion '0.7.0' -Compatibility $compatibility -Changelog $notes
+    Assert-True (-not $stale.Valid -and $stale.Reason -like '*exact baseline and candidate*') 'A consumed predecessor allowance survived the next source push.'
+    $cleaned = Test-PatchCatalogCompatibility -BaselinePatchList $candidate -BaselineVersion '0.7.0' `
+        -BaselineCommit ('b' * 40) -CandidatePatchList $candidate -CandidateVersion '0.7.0' -Changelog $notes
+    Assert-True $cleaned.Valid 'Removing the consumed allowance did not restore an ordinary source push.'
+    $notes = "## 0.6.0 (2026-09-30)`n- $renameNote`n## 0.7.0 (2026-10-02)`nNo migration."
+    Assert-Refuse '*exact migration note*0.7.0*' 'A migration note from the wrong release passed.'
+
+    $first = Catalog '0.1.0' @((Patch 'First' $true))
+    $result = Test-PatchCatalogCompatibility -CandidatePatchList $first -CandidateVersion '0.1.0' -FirstRelease
+    Assert-True $result.Valid 'A verified first release catalog failed.'
+    $result = Test-PatchCatalogCompatibility -CandidatePatchList $first -CandidateVersion '0.1.0' -FirstRelease -Compatibility @{}
+    Assert-True (-not $result.Valid) 'A first release accepted malformed compatibility metadata.'
+    $result = Test-PatchCatalogCompatibility -CandidatePatchList $first -CandidateVersion '0.1.0'
+    Assert-True (-not $result.Valid) 'A missing baseline became a first release without evidence.'
+
+    # Local fixture history tests the strict resolver and hosted-baseline identity without a
+    # network or optional working receipt. Its reported applied flags are deliberately different.
+    $fixtureRoot = Join-Path ([IO.Path]::GetTempPath()) ('hushfacebook-selection-' + [Guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $fixtureRoot | Out-Null
+    try {
+    function Fixture-Git([string[]]$Arguments) {
+        $answer = @(Invoke-RepoGit -Root $fixtureRoot -Arguments $Arguments)
+        if ($LASTEXITCODE -ne 0) { throw "Fixture git failed: $($Arguments -join ' ')" }
+        return $answer
+    }
+    Fixture-Git @('init', '--quiet') | Out-Null
+    $selectionGitDir = (Fixture-Git @('rev-parse', '--absolute-git-dir') | Select-Object -First 1).Trim()
+    Assert-True ([IO.Path]::GetFullPath($selectionGitDir).TrimEnd('\', '/') -ieq [IO.Path]::GetFullPath((Join-Path $fixtureRoot '.git')).TrimEnd('\', '/')) `
+        'The selection fixture resolved outside its temporary repository. Refusing to write.'
+    Fixture-Git @('config', 'user.name', 'Contracts') | Out-Null
+    Fixture-Git @('config', 'user.email', 'contracts@example.invalid') | Out-Null
+    Fixture-Git @('commit', '--allow-empty', '-m', 'initial history', '--quiet') | Out-Null
+    $emptyCommit = (Fixture-Git @('rev-parse', 'HEAD') | Select-Object -First 1).Trim()
+    $absent = @(Fixture-Git @('ls-tree', '--name-only', $emptyCommit, '--', 'patches-bundle.json'))
+    Assert-True ($absent.Count -eq 0) 'The first-release fixture does not prove actual index absence.'
+    Set-Content -LiteralPath (Join-Path $fixtureRoot 'patches-list.json') -Value ($baseline | ConvertTo-Json -Depth 6) -Encoding UTF8
+    Fixture-Git @('add', '--', 'patches-list.json') | Out-Null
+    Fixture-Git @('commit', '-m', 'published catalog', '--quiet') | Out-Null
+    $publishedCommit = (Fixture-Git @('rev-parse', 'HEAD') | Select-Object -First 1).Trim()
+    $legacy = Resolve-ReceiptCatalog -Root $fixtureRoot -Commit '' -WorkingPatchList $candidate
+    Assert-True ($legacy.PatchList -eq $candidate -and $null -eq $legacy.Note) 'Legacy missing-commit behavior changed.'
+    $legacy = Resolve-ReceiptCatalog -Root $fixtureRoot -Commit $emptyCommit -WorkingPatchList $candidate
+    Assert-True ($legacy.PatchList -eq $candidate -and $legacy.Note -like '*no patch list*') 'Legacy missing-catalog behavior changed.'
+    Assert-Throws { Resolve-ReceiptCatalog -Root $fixtureRoot -Commit '' -WorkingPatchList $candidate -RequireHistory } '*exact historical commit*' 'Strict mode fell back for a missing commit.'
+    Assert-Throws { Resolve-ReceiptCatalog -Root $fixtureRoot -Commit ('f' * 40) -WorkingPatchList $candidate -RequireHistory } '*unavailable*' 'Strict mode accepted an unavailable commit.'
+    Assert-Throws { Resolve-ReceiptCatalog -Root $fixtureRoot -Commit $emptyCommit -WorkingPatchList $candidate -RequireHistory } '*no readable patches-list*' 'Strict mode fell back for a missing historical catalog.'
+    $strict = Resolve-ReceiptCatalog -Root $fixtureRoot -Commit $publishedCommit -WorkingPatchList $candidate -RequireHistory
+    Assert-True ($strict.PatchList.patches[0].name -ceq 'Alpha' -and $strict.PatchList.patches[0].use -eq $false) 'Strict history read working names/defaults.'
+
+    $receiptDocument = [pscustomobject]@{ release = [pscustomobject]@{ version = '0.6.0'; commit = $publishedCommit }
+        bundle = [pscustomobject]@{ file = 'patches-0.6.0.mpp'; sha256 = ('d' * 64) }; patches = @([pscustomobject]@{ name = 'Alpha'; applied = $true }) }
+    function Receipt-Bytes { return ,[Text.Encoding]::UTF8.GetBytes(($receiptDocument | ConvertTo-Json -Depth 5 -Compress)) }
+    function Receipt-Checksum([byte[]]$Bytes, [string]$Version = '0.6.0') {
+        $sha = [Security.Cryptography.SHA256]::Create()
+        try { $hash = ([BitConverter]::ToString($sha.ComputeHash($Bytes))).Replace('-', '').ToLowerInvariant() }
+        finally { $sha.Dispose() }
+        return "$hash  release-receipt-$Version.json`n$('d' * 64)  patches-$Version.mpp"
+    }
+    $receiptBytes = Receipt-Bytes
+    $checksum = Receipt-Checksum $receiptBytes
+    $index = [pscustomobject]@{ version = '0.6.0'; download_url = 'https://github.com/fixture/catalog/releases/download/v0.6.0/patches-0.6.0.mpp' }
+    $tagObject = 'c' * 40
+    $tagsText = $tagObject + "`trefs/tags/v0.6.0"
+    $tagsText += "`n$publishedCommit`trefs/tags/v0.6.0^{}"
+    function Baseline-Here {
+        Resolve-PublishedCatalogBaseline -Root $fixtureRoot -WorkingPatchList $candidate -CandidateVersion '0.7.0' `
+            -Index $index -ReceiptBytes $receiptBytes -ChecksumText $checksum -RemoteTagsText $tagsText -RemoteTagsExitCode 0
+    }
+    $published = Baseline-Here
+    Assert-True ($published.Commit -ceq $publishedCommit -and $published.PatchList.patches[0].use -eq $false) 'The baseline used an unpeeled tag or receipt applied verdict as default.'
+    $savedDownloadUrl = $index.download_url
+    foreach ($invalidUrl in @(
+        'https://someone@github.com/fixture/catalog/releases/download/v0.6.0/patches-0.6.0.mpp',
+        'https://github.com:444/fixture/catalog/releases/download/v0.6.0/patches-0.6.0.mpp',
+        'https://github.com/fixture/catalog/releases/download/v0.6.0/patches-0.6.0.mpp?cache=1',
+        'https://github.com/fixture/catalog/releases/download/v0.6.0/patches-0.6.0.mpp#part')) {
+        $index.download_url = $invalidUrl
+        Assert-Throws { Baseline-Here } '*exact hosted bundle*' 'A predecessor URL with userinfo, port, query or fragment passed.'
+    }
+    $index.download_url = $savedDownloadUrl
+    $savedBytes = $receiptBytes
+    $receiptBytes = $null
+    Assert-Throws { Baseline-Here } '*hosted predecessor receipt or checksum is unavailable*' 'An unavailable predecessor asset passed.'
+    $receiptBytes = $savedBytes
+    $savedChecksum = $checksum
+    $checksum = ('0' * 64) + '  release-receipt-0.6.0.json'
+    Assert-Throws { Baseline-Here } '*checksum does not match*' 'Tampered hosted receipt bytes passed.'
+    $checksum = "$savedChecksum`n$savedChecksum"
+    Assert-Throws { Baseline-Here } '*exactly one*' 'Duplicate hosted checksum records passed.'
+    $checksum = $savedChecksum
+    foreach ($field in @('file', 'sha256')) {
+        $saved = $receiptDocument.bundle.$field
+        $receiptDocument.bundle.$field = if ($field -ceq 'file') { 'different.mpp' } else { 'e' * 64 }
+        $receiptBytes = Receipt-Bytes; $checksum = Receipt-Checksum $receiptBytes
+        Assert-Throws { Baseline-Here } '*indexed bundle checksum*' "A predecessor receipt with the wrong bundle $field passed."
+        $receiptDocument.bundle.$field = $true
+        $receiptBytes = Receipt-Bytes; $checksum = Receipt-Checksum $receiptBytes
+        Assert-Throws { Baseline-Here } '*indexed bundle checksum*' "A Boolean bundle $field passed."
+        $receiptDocument.bundle.$field = $saved
+    }
+    $receiptBytes = Receipt-Bytes; $checksum = Receipt-Checksum $receiptBytes
+    $savedChecksum = $checksum
+    $checksum = $savedChecksum -replace '(?m)^.*patches-0\.6\.0\.mpp$', ''
+    Assert-Throws { Baseline-Here } '*exactly one patches-0.6.0.mpp*' 'A checksum missing the indexed bundle passed.'
+    $checksum = "$savedChecksum`n$('d' * 64)  patches-0.6.0.mpp"
+    Assert-Throws { Baseline-Here } '*exactly one patches-0.6.0.mpp*' 'Duplicate indexed bundle checksums passed.'
+    $checksum = "$savedChecksum`nmalformed  patches-0.6.0.mpp"
+    Assert-Throws { Baseline-Here } '*exactly one patches-0.6.0.mpp*' 'A malformed duplicate indexed bundle checksum was hidden.'
+    $checksum = $savedChecksum -replace '(?m)^[d]{64}  patches-0\.6\.0\.mpp$', 'malformed  patches-0.6.0.mpp'
+    Assert-Throws { Baseline-Here } '*malformed*' 'A malformed indexed bundle checksum passed.'
+    $checksum = $savedChecksum
+    foreach ($field in @('version', 'commit')) {
+        $saved = $receiptDocument.release.$field
+        $receiptDocument.release.$field = 'wrong'
+        $receiptBytes = Receipt-Bytes; $checksum = Receipt-Checksum $receiptBytes
+        Assert-Throws { Baseline-Here } '*version/commit*peeled published tag*' "A wrong receipt $field passed."
+        $receiptDocument.release.$field = $true
+        $receiptBytes = Receipt-Bytes; $checksum = Receipt-Checksum $receiptBytes
+        Assert-Throws { Baseline-Here } '*version/commit*peeled published tag*' "A Boolean receipt $field passed."
+        $receiptDocument.release.$field = $saved
+    }
+    $receiptBytes = Receipt-Bytes; $checksum = Receipt-Checksum $receiptBytes
+    $tagsText = "$publishedCommit`trefs/tags/v0.6.0"
+    Assert-True ((Baseline-Here).Commit -ceq $publishedCommit) 'A lightweight published tag failed.'
+    $tagsText = ''
+    Assert-Throws { Baseline-Here } '*tag v0.6.0 is missing*' 'An unavailable published tag passed.'
+    Assert-Throws { Resolve-PublishedCatalogBaseline -Root $fixtureRoot -WorkingPatchList $first -CandidateVersion '0.1.0' -RemoteTagsText '' -RemoteTagsExitCode 0 } '*not confirmed absent*' 'A missing index became a first release.'
+    Assert-Throws { Resolve-PublishedCatalogBaseline -Root $fixtureRoot -WorkingPatchList $first -CandidateVersion '0.1.0' -PredecessorIndexAbsent -RemoteTagsText '' -RemoteTagsExitCode 1 } '*history is unavailable*' 'Failed remote history became a first release.'
+    $firstBaseline = Resolve-PublishedCatalogBaseline -Root $fixtureRoot -WorkingPatchList $first -CandidateVersion '0.1.0' -PredecessorIndexAbsent -RemoteTagsText '' -RemoteTagsExitCode 0
+    Assert-True $firstBaseline.FirstRelease 'Confirmed absence and no earlier version history failed first release.'
+    $earlierText = "$publishedCommit`trefs/tags/v0.0.9"
+    Assert-Throws { Resolve-PublishedCatalogBaseline -Root $fixtureRoot -WorkingPatchList $first -CandidateVersion '0.1.0' -PredecessorIndexAbsent -RemoteTagsText $earlierText -RemoteTagsExitCode 0 } '*earlier version history exists*' 'A 404-style absent index hid prior release history.'
+    $earlierText = ('d' * 64) + "`trefs/tags/v0.0.9"
+    Assert-Throws { Resolve-PublishedCatalogBaseline -Root $fixtureRoot -WorkingPatchList $first -CandidateVersion '0.1.0' -PredecessorIndexAbsent -RemoteTagsText $earlierText -RemoteTagsExitCode 0 } '*earlier version history exists*' 'An earlier 64-character tag hash was ignored.'
+
+    # Route publication through the predecessor index at the candidate's verified source commit.
+    # The working index is already 0.7.0, as it is on the later publication/index push.
+    $candidate = Catalog '0.7.0' @((Patch 'Gamma' $false), (Patch 'Beta' $true))
+    $compatibility = Allow @((Declaration $baseline.patches[0] $candidate.patches[0] $renameNote)) '0.7.0'
+    $notes = "## 0.7.0 (2026-10-02)`n* **Facebook:** $renameNote"
+    Set-Content -LiteralPath (Join-Path $fixtureRoot 'patches-list.json') -Value ($candidate | ConvertTo-Json -Depth 6) -Encoding UTF8
+    Set-Content -LiteralPath (Join-Path $fixtureRoot 'patches-bundle.json') -Value ($index | ConvertTo-Json -Depth 5) -Encoding UTF8
+    Fixture-Git @('add', '--', 'patches-list.json', 'patches-bundle.json') | Out-Null
+    Fixture-Git @('commit', '-m', 'candidate over predecessor index', '--quiet') | Out-Null
+    $candidateCommit = (Fixture-Git @('rev-parse', 'HEAD') | Select-Object -First 1).Trim()
+    $workingIndex = [pscustomobject]@{ version = '0.7.0'; download_url = 'https://github.com/fixture/catalog/releases/download/v0.7.0/patches-0.7.0.mpp' }
+    Set-Content -LiteralPath (Join-Path $fixtureRoot 'patches-bundle.json') -Value ($workingIndex | ConvertTo-Json -Depth 5) -Encoding UTF8
+    Fixture-Git @('add', '--', 'patches-bundle.json') | Out-Null
+    Fixture-Git @('commit', '-m', 'published candidate index', '--quiet') | Out-Null
+    $selected = Resolve-CatalogBaselineIndex -Root $fixtureRoot -WorkingIndex $workingIndex -CandidateCommit $candidateCommit -VerifyPublishedAsset
+    Assert-True ($selected.Index.version -ceq '0.6.0' -and -not $selected.PredecessorIndexAbsent) 'Publication self-compared using the working index instead of the source-commit predecessor.'
+    $tagsText = "$publishedCommit`trefs/tags/v0.6.0`n$candidateCommit`trefs/tags/v0.7.0"
+    $receiptBytes = Receipt-Bytes; $checksum = Receipt-Checksum $receiptBytes
+    $pubBaseline = Resolve-PublishedCatalogBaseline -Root $fixtureRoot -WorkingPatchList $candidate -CandidateVersion '0.7.0' `
+        -Index $selected.Index -ReceiptBytes $receiptBytes -ChecksumText $checksum -RemoteTagsText $tagsText -RemoteTagsExitCode 0
+    $compatibility.baselineCommit = $pubBaseline.Commit
+    $comparison = Test-PatchCatalogCompatibility -BaselinePatchList $pubBaseline.PatchList -BaselineVersion $pubBaseline.Version `
+        -BaselineCommit $pubBaseline.Commit -CandidatePatchList $candidate -CandidateVersion '0.7.0' -Compatibility $compatibility -Changelog $notes
+    Assert-True $comparison.Valid "The publication predecessor comparison failed: $($comparison.Reason)"
+    $ordinary = Resolve-CatalogBaselineIndex -Root $fixtureRoot -WorkingIndex $workingIndex -CandidateCommit $candidateCommit
+    Assert-True ($ordinary.Index.version -ceq '0.7.0') 'An ordinary source push used the older source-commit index.'
+    $candidateReceiptBytes = [Text.Encoding]::UTF8.GetBytes((@{ release = @{ version = '0.7.0'; commit = $candidateCommit }
+        bundle = @{ file = 'patches-0.7.0.mpp'; sha256 = ('d' * 64) } } | ConvertTo-Json -Compress -Depth 4))
+    $candidateReceiptHash = Receipt-Checksum $candidateReceiptBytes '0.7.0'
+    $nextBaseline = Resolve-PublishedCatalogBaseline -Root $fixtureRoot -WorkingPatchList $candidate -CandidateVersion '0.7.0' `
+        -Index $ordinary.Index -ReceiptBytes $candidateReceiptBytes -ChecksumText $candidateReceiptHash -RemoteTagsText $tagsText -RemoteTagsExitCode 0
+    $consumed = Test-PatchCatalogCompatibility -BaselinePatchList $nextBaseline.PatchList -BaselineVersion $nextBaseline.Version `
+        -BaselineCommit $nextBaseline.Commit -CandidatePatchList $candidate -CandidateVersion '0.7.0' -Compatibility $compatibility -Changelog $notes
+    Assert-True (-not $consumed.Valid -and $consumed.Reason -like '*exact baseline and candidate*') 'Index routing allowed a consumed predecessor declaration on an ordinary source push.'
+    $removed = Test-PatchCatalogCompatibility -BaselinePatchList $nextBaseline.PatchList -BaselineVersion $nextBaseline.Version `
+        -BaselineCommit $nextBaseline.Commit -CandidatePatchList $candidate -CandidateVersion '0.7.0' -Changelog $notes
+    Assert-True $removed.Valid 'The next ordinary push still failed after removing consumed declarations.'
+    $absentIndex = Resolve-CatalogBaselineIndex -Root $fixtureRoot -WorkingIndex $workingIndex -CandidateCommit $emptyCommit -VerifyPublishedAsset
+    Assert-True ($absentIndex.PredecessorIndexAbsent -and $null -eq $absentIndex.Index) 'A real missing source-commit predecessor was not identified.'
+    Assert-Throws { Resolve-CatalogBaselineIndex -Root $fixtureRoot -WorkingIndex $workingIndex -CandidateCommit ('f' * 40) -VerifyPublishedAsset } '*source commit is unavailable*' 'An unavailable source commit became an absent predecessor.'
+    Set-Content -LiteralPath (Join-Path $fixtureRoot 'patches-bundle.json') -Value '{bad json' -Encoding UTF8
+    Set-Content -LiteralPath (Join-Path $fixtureRoot 'patches-list.json') -Value '{bad json' -Encoding UTF8
+    Fixture-Git @('add', '--', 'patches-bundle.json', 'patches-list.json') | Out-Null
+    Fixture-Git @('commit', '-m', 'malformed historical metadata', '--quiet') | Out-Null
+    $badCommit = (Fixture-Git @('rev-parse', 'HEAD') | Select-Object -First 1).Trim()
+    Assert-Throws { Resolve-CatalogBaselineIndex -Root $fixtureRoot -WorkingIndex $workingIndex -CandidateCommit $badCommit -VerifyPublishedAsset } '*not readable JSON*' 'Malformed predecessor metadata passed.'
+    Assert-Throws { Resolve-ReceiptCatalog -Root $fixtureRoot -Commit $badCommit -WorkingPatchList $candidate -RequireHistory } '*not readable*' 'Malformed historical catalog passed strict mode.'
+
+    } finally {
+        if (Test-Path -LiteralPath $fixtureRoot) {
+            $resolved = [IO.Path]::GetFullPath((Resolve-Path -LiteralPath $fixtureRoot).ProviderPath)
+            $expected = [IO.Path]::GetFullPath($fixtureRoot)
+            $temporary = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
+            if (-not [StringComparer]::OrdinalIgnoreCase.Equals($resolved, $expected) -or
+                -not $resolved.StartsWith($temporary, [StringComparison]::OrdinalIgnoreCase)) {
+                throw 'The selection fixture resolved outside its temporary directory.'
+            }
+            Remove-Item -LiteralPath $resolved -Recurse -Force
+        }
+    }
+}
+
+Write-Host '[scripts] published patch selection contracts passed'
+
 # --- validate-release-facts.ps1 -------------------------------------------------------------
 #
 # The gate the pre-push hook runs on every push that touches a published file, and the one a
@@ -2131,6 +2493,7 @@ Write-Host '[scripts] advisory gate contracts passed'
 
 $factsScript = Join-Path $PSScriptRoot 'validate-release-facts.ps1'
 $factsRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("hushfacebook-facts-" + [guid]::NewGuid().ToString('N'))
+$factsPreviousWebRequest = Get-Item Function:\Invoke-WebRequest -ErrorAction SilentlyContinue
 try {
     New-Item -ItemType Directory -Path $factsRoot -Force | Out-Null
     foreach ($relative in @('patches-list.json', 'patches-bundle.json', 'gradle.properties', 'README.md', 'CHANGELOG.md',
@@ -2143,6 +2506,81 @@ try {
     $bugFormRelative = '.github/ISSUE_TEMPLATE/bug_report.yml'
     New-Item -ItemType Directory -Path (Join-Path $factsRoot '.github/ISSUE_TEMPLATE') -Force | Out-Null
     Copy-Item -LiteralPath (Join-Path $Root $bugFormRelative) -Destination (Join-Path $factsRoot $bugFormRelative)
+
+    # Every run of the check compares the patch names and defaults with the published release's
+    # catalog, read through the hosted receipt, SHA256SUMS.txt and the tags on origin. Here each of
+    # those is local: a bare repository answers for origin through url.insteadOf, and a stand-in for
+    # Invoke-WebRequest serves the receipt and checksum list. The published catalog is this
+    # checkout's own, frozen at the start, so a case can move the working catalog away from it.
+    $factsPublishedCatalog = Get-Content -LiteralPath (Join-Path $Root 'patches-list.json') -Raw | ConvertFrom-Json
+    $factsPublishedCatalogs = @{}
+    $factsCatalogRequests = New-Object System.Collections.Generic.List[string]
+    $factsCatalogUnavailable = $null
+    Invoke-FixtureGit -Root $factsRoot -Arguments @('init', '--quiet') | Out-Null
+    $factsGitDir = "$(Invoke-FixtureGit -Root $factsRoot -Arguments @('rev-parse', '--absolute-git-dir') | Select-Object -First 1)".Trim()
+    Assert-True ([IO.Path]::GetFullPath($factsGitDir).TrimEnd('\', '/') -ieq [IO.Path]::GetFullPath((Join-Path $factsRoot '.git')).TrimEnd('\', '/')) `
+        'The facts catalog fixture resolved outside its temporary repository. Refusing to write.'
+    Invoke-FixtureGit -Root $factsRoot -Arguments @('config', 'user.name', 'Contracts') | Out-Null
+    Invoke-FixtureGit -Root $factsRoot -Arguments @('config', 'user.email', 'contracts@example.invalid') | Out-Null
+    Invoke-FixtureGit -Root $factsRoot -Arguments @('add', '--', 'patches-list.json', 'patches-bundle.json', 'gradle.properties',
+        'README.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'gradle/libs.versions.toml', $bugFormRelative) | Out-Null
+    Invoke-FixtureGit -Root $factsRoot -Arguments @('commit', '-m', 'facts fixture', '--quiet') | Out-Null
+    $factsPublishedRemote = (Join-Path $factsGitDir 'catalog-published.git').Replace('\', '/')
+    Invoke-FixtureGit -Root $factsRoot -Arguments @('init', '--bare', '--quiet', $factsPublishedRemote) | Out-Null
+    $factsSourceIndex = Get-Content -LiteralPath (Join-Path $Root 'patches-bundle.json') -Raw | ConvertFrom-Json
+    $factsSourceUri = [Uri]$factsSourceIndex.download_url
+    $factsCatalogSlug = (@($factsSourceUri.AbsolutePath.Trim('/') -split '/') | Select-Object -First 2) -join '/'
+    $factsCatalogRemoteUrl = "https://github.com/$factsCatalogSlug.git"
+    Invoke-FixtureGit -Root $factsRoot -Arguments @('config', "url.$factsPublishedRemote.insteadOf", $factsCatalogRemoteUrl) | Out-Null
+    Invoke-FixtureGit -Root $factsRoot -Arguments @('remote', 'add', 'origin', $factsCatalogRemoteUrl) | Out-Null
+
+    # Publishes the frozen catalog as release $Version: a commit beside the branch, its tag on the
+    # bare origin and the receipt the stand-in serves for it. The receipt's applied verdict is the
+    # opposite of the default on purpose, so a check reading defaults off the receipt shows.
+    function Register-FactsCatalogVersion([string]$Version) {
+        if ($Version -notmatch '^\d+\.\d+\.\d+$' -or $factsPublishedCatalogs.ContainsKey($Version)) { return }
+        $catalogPath = Join-Path $factsRoot 'patches-list.json'
+        $savedCatalog = [IO.File]::ReadAllBytes($catalogPath)
+        $frozen = $factsPublishedCatalog | ConvertTo-Json -Depth 15 | ConvertFrom-Json
+        $frozen.version = "v$Version"
+        try {
+            [IO.File]::WriteAllText($catalogPath, ($frozen | ConvertTo-Json -Depth 15), (New-Object Text.UTF8Encoding($false)))
+            Invoke-FixtureGit -Root $factsRoot -Arguments @('add', '--', 'patches-list.json') | Out-Null
+            $tree = "$(Invoke-FixtureGit -Root $factsRoot -Arguments @('write-tree') | Select-Object -First 1)".Trim()
+            $commit = "$(Invoke-FixtureGit -Root $factsRoot -Arguments @('commit-tree', $tree, '-m', "published selections $Version") | Select-Object -First 1)".Trim()
+            Invoke-FixtureGit -Root $factsRoot -Arguments @('push', '--quiet', $factsPublishedRemote, "${commit}:refs/tags/v$Version") | Out-Null
+            $receiptPath = Join-Path $factsGitDir "catalog-receipt-$Version.json"
+            [IO.File]::WriteAllText($receiptPath, (@{ release = @{ version = $Version; commit = $commit }
+                bundle = @{ file = "patches-$Version.mpp"; sha256 = ('d' * 64) }
+                patches = @(@{ name = $frozen.patches[0].name; applied = -not $frozen.patches[0].use }) } | ConvertTo-Json -Depth 5),
+                (New-Object Text.UTF8Encoding($false)))
+            $factsPublishedCatalogs[$Version] = [pscustomobject]@{ Commit = $commit; Receipt = $receiptPath }
+        } finally {
+            [IO.File]::WriteAllBytes($catalogPath, $savedCatalog)
+            Invoke-FixtureGit -Root $factsRoot -Arguments @('reset', '--quiet') | Out-Null
+        }
+    }
+
+    function Invoke-WebRequest {
+        param([Uri]$Uri, $Method, $OutFile, $MaximumRedirection, $TimeoutSec, [switch]$PassThru, [switch]$UseBasicParsing)
+        if (-not $UseBasicParsing) { throw "Invoke-WebRequest $Uri without -UseBasicParsing" }
+        $factsCatalogRequests.Add($Uri.AbsoluteUri)
+        $match = [regex]::Match($Uri.AbsolutePath, '/releases/download/v(\d+\.\d+\.\d+)/(release-receipt-\1\.json|SHA256SUMS\.txt)$')
+        if (-not $match.Success -or -not $factsPublishedCatalogs.ContainsKey($match.Groups[1].Value)) {
+            throw "No local facts catalog response for $Uri"
+        }
+        $version = $match.Groups[1].Value
+        if ($factsCatalogUnavailable -ceq $match.Groups[2].Value) { throw (New-NotFoundAnswer) }
+        $record = $factsPublishedCatalogs[$version]
+        $bytes = if ($match.Groups[2].Value -ceq 'SHA256SUMS.txt') {
+            [Text.Encoding]::UTF8.GetBytes("$(Get-Sha256Hex $record.Receipt)  release-receipt-$version.json`n$('d' * 64)  patches-$version.mpp`n")
+        } else { [IO.File]::ReadAllBytes($record.Receipt) }
+        if ($OutFile) { [IO.File]::WriteAllBytes($OutFile, $bytes) }
+        return [pscustomobject]@{ StatusCode = 200; Content = $bytes }
+    }
+
+    # The release this checkout's index publishes, which the lag windows below copy back in.
+    Register-FactsCatalogVersion ([string]$factsSourceIndex.version)
 
     function Invoke-Facts {
         param([switch]$WithUrls)
@@ -2201,6 +2639,8 @@ try {
         if ($indexBuild.Success -and $indexBuild.Groups[1].Value -ne $fixtureBuild) {
             $synced = $synced -replace ('(?<![\d.])' + [regex]::Escape($indexBuild.Groups[1].Value) + '(?!\d)'), $fixtureBuild
         }
+        # The index now names the fixture's version, so that version needs a published catalog.
+        Register-FactsCatalogVersion $fixtureVersion
         if ($synced -ceq $indexText) { return }
         Set-FactsFile 'patches-bundle.json' { param($text) $synced }
     }
@@ -2244,6 +2684,135 @@ try {
     Sync-FixtureIndex
     Sync-FixtureBugForm
     Sync-FixtureReadme
+
+    # The published patch selections, through the real check and both of its success exits, with
+    # no receipt and then a built bundle. Neither may skip the comparison, and the lenient path the
+    # hook runs may not either. Each change to the catalog copy (a flipped default, a rename, a
+    # removal) comes after a run that passes, is refused naming the patch, and passes again once
+    # scripts/patch-catalog-compatibility.json records it and the CHANGELOG carries its note.
+    $catalogFixturePath = Join-Path $factsRoot 'patches-list.json'
+    $catalogFixtureBytes = [IO.File]::ReadAllBytes($catalogFixturePath)
+    $catalogFixtureIndexPath = Join-Path $factsRoot 'patches-bundle.json'
+    $catalogFixtureIndexBytes = [IO.File]::ReadAllBytes($catalogFixtureIndexPath)
+    $catalogFixtureReadmePath = Join-Path $factsRoot 'README.md'
+    $catalogFixtureReadmeBytes = [IO.File]::ReadAllBytes($catalogFixtureReadmePath)
+    $catalogFixtureChangelog = [IO.File]::ReadAllBytes((Join-Path $factsRoot 'CHANGELOG.md'))
+    $catalogFixtureList = Get-Content -LiteralPath $catalogFixturePath -Raw | ConvertFrom-Json
+    $catalogFixtureVersion = $catalogFixtureList.version.Substring(1)
+    $catalogFixtureBaseline = $factsPublishedCatalogs[$catalogFixtureVersion]
+    Assert-True ($null -ne $catalogFixtureBaseline) "The facts fixture has no published catalog for $catalogFixtureVersion."
+    $catalogFixtureBefore = $catalogFixtureList.patches[0]
+    $catalogFixtureBundle = Get-ReleaseBundlePath -Root $factsRoot -Version $catalogFixtureVersion
+    $catalogFixtureMetadata = Join-Path $factsRoot 'scripts/patch-catalog-compatibility.json'
+    $catalogFixtureWrongPath = Join-Path $factsRoot 'patch-catalog-compatibility.json'
+    Assert-True (-not (Test-Path -LiteralPath (Join-Path $factsRoot "release-receipt-$catalogFixtureVersion.json")) -and
+        -not (Test-Path -LiteralPath $catalogFixtureBundle)) 'The no-receipt/no-bundle catalog fixture is not empty.'
+    function Restore-CatalogFixture {
+        [IO.File]::WriteAllBytes($catalogFixturePath, $catalogFixtureBytes)
+        [IO.File]::WriteAllBytes($catalogFixtureIndexPath, $catalogFixtureIndexBytes)
+        [IO.File]::WriteAllBytes($catalogFixtureReadmePath, $catalogFixtureReadmeBytes)
+        [IO.File]::WriteAllBytes((Join-Path $factsRoot 'CHANGELOG.md'), $catalogFixtureChangelog)
+        foreach ($path in @($catalogFixtureMetadata, $catalogFixtureWrongPath)) {
+            if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path -Force }
+        }
+    }
+    try {
+        New-Item -ItemType Directory -Path (Split-Path -Parent $catalogFixtureMetadata) -Force | Out-Null
+        Set-Content -LiteralPath $catalogFixtureMetadata -Value 'null' -Encoding UTF8
+        Assert-Throws { Invoke-Facts } '*compatibility*null*' 'A literal null compatibility file passed the facts gate.'
+        Remove-Item -LiteralPath $catalogFixtureMetadata -Force
+        $originalUrl = (Get-Content -LiteralPath $catalogFixtureIndexPath -Raw | ConvertFrom-Json).download_url
+        foreach ($invalidUrl in @(
+            $originalUrl.Replace('https://github.com/', 'https://someone@github.com/'),
+            $originalUrl.Replace('https://github.com/', 'https://github.com:444/'),
+            ($originalUrl + '?cache=1'), ($originalUrl + '#part'))) {
+            Set-FactsFile 'patches-bundle.json' { param($text) $text.Replace($originalUrl, $invalidUrl) }
+            $factsCatalogRequests.Clear()
+            $invalidUri = [Uri]$invalidUrl
+            $expectedUrlError = if ($invalidUri.Query -or $invalidUri.Fragment) {
+                '*download URL does not match the generated release facts*'
+            } else { '*exact hosted bundle*' }
+            Assert-Throws { Invoke-Facts } $expectedUrlError 'A malformed predecessor URL passed the facts gate.'
+            Assert-True ($factsCatalogRequests.Count -eq 0) 'The facts gate requested a predecessor URL before validating it.'
+            [IO.File]::WriteAllBytes($catalogFixtureIndexPath, $catalogFixtureIndexBytes)
+        }
+        foreach ($case in @(
+                @{ Kind = 'default'; Built = $false }, @{ Kind = 'default'; Built = $true },
+                @{ Kind = 'rename'; Built = $false }, @{ Kind = 'removal'; Built = $false })) {
+            $label = "$($case.Kind) (built=$($case.Built))"
+            if ($case.Built) {
+                New-Item -ItemType Directory -Path (Split-Path -Parent $catalogFixtureBundle) -Force | Out-Null
+                Add-Type -AssemblyName System.IO.Compression
+                Add-Type -AssemblyName System.IO.Compression.FileSystem
+                $archive = [IO.Compression.ZipFile]::Open($catalogFixtureBundle, [IO.Compression.ZipArchiveMode]::Create)
+                try {
+                    $writer = New-Object IO.StreamWriter(($archive.CreateEntry('META-INF/MANIFEST.MF')).Open())
+                    try {
+                        $pin = (Read-CatalogToolchain -Text (Get-Content -LiteralPath (Join-Path $factsRoot 'gradle/libs.versions.toml') -Raw) -Source 'catalog fixture').PatcherVersion
+                        $writer.Write("Manifest-Version: 1.0`nPatcher-Version: $pin`n`n")
+                    } finally { $writer.Dispose() }
+                } finally { $archive.Dispose() }
+            }
+            try {
+                # The positive control: the unchanged copy passes, and only after asking for the
+                # published receipt and its checksum list.
+                $factsCatalogRequests.Clear()
+                Invoke-Facts
+                Assert-True (@($factsCatalogRequests | Where-Object { $_ -like "*/release-receipt-$catalogFixtureVersion.json" }).Count -gt 0 -and
+                    @($factsCatalogRequests | Where-Object { $_ -like '*/SHA256SUMS.txt' }).Count -gt 0) `
+                    "The facts script's $label control skipped published selection history without a local receipt."
+                $name = [string]$catalogFixtureBefore.name
+                $edited = Get-Content -LiteralPath $catalogFixturePath -Raw | ConvertFrom-Json
+                switch ($case.Kind) {
+                    'default' {
+                        $edited.patches[0].use = -not $catalogFixtureBefore.use
+                        $after = @{ name = $name; use = $edited.patches[0].use }
+                        $note = "$name changes its default selection."
+                    }
+                    'rename' {
+                        $edited.patches[0].name = "$name renamed"
+                        $after = @{ name = $edited.patches[0].name; use = $catalogFixtureBefore.use }
+                        $note = "$name is now $name renamed. This causes a selection reset and requires manual re-selection."
+                    }
+                    'removal' {
+                        $edited.patches = @($edited.patches | Select-Object -Skip 1)
+                        $after = $null
+                        $note = "$name was removed. This causes a selection reset and requires manual re-selection."
+                    }
+                }
+                Set-Content -LiteralPath $catalogFixturePath -Value ($edited | ConvertTo-Json -Depth 15) -Encoding UTF8
+                # A removal moves the count, which the index and the README are held to first.
+                if ($case.Kind -eq 'removal') { Sync-FixtureIndex; Sync-FixtureReadme }
+                $refusal = "*Patch $([Management.Automation.WildcardPattern]::Escape($name)) was removed, renamed or changed its default without compatibility metadata*"
+                Assert-Throws { Invoke-Facts } $refusal "The facts check accepted an undocumented $label."
+                Assert-Throws { & $factsScript -Root $factsRoot -SkipDescriptionTestCount -SkipUrlCheck -AllowPublishedIndexLag 6> $null } `
+                    $refusal "AllowPublishedIndexLag bypassed the selection check for a $label."
+                $metadata = @{ baselineVersion = $catalogFixtureVersion; baselineCommit = $catalogFixtureBaseline.Commit
+                    candidateVersion = $catalogFixtureVersion; changes = @(@{ before = @{ name = $name; use = $catalogFixtureBefore.use }
+                        after = $after; migrationNote = $note }) }
+                Set-Content -LiteralPath $catalogFixtureWrongPath -Value ($metadata | ConvertTo-Json -Depth 6) -Encoding UTF8
+                Assert-Throws { Invoke-Facts } $refusal "A root-level compatibility file bypassed the scripts path for a $label."
+                Remove-Item -LiteralPath $catalogFixtureWrongPath -Force
+                Set-Content -LiteralPath $catalogFixtureMetadata -Value ($metadata | ConvertTo-Json -Depth 6) -Encoding UTF8
+                Assert-Throws { Invoke-Facts } "*no exact migration note in Unreleased*" `
+                    "A recorded $label passed with no CHANGELOG note."
+                Set-FactsFile 'CHANGELOG.md' { param($text) $text -replace '(?m)^## Unreleased\s*$', ("## Unreleased`n`n- " + $note) }
+                $global:LASTEXITCODE = 0
+                try { Invoke-Facts } catch { throw "The facts check refused a recorded and documented $label`: $($_.Exception.Message)" }
+                Assert-True ($LASTEXITCODE -eq 0 -or $null -eq $LASTEXITCODE) "The facts check refused a recorded and documented $label."
+            } finally {
+                Restore-CatalogFixture
+                if (Test-Path -LiteralPath $catalogFixtureBundle) { Remove-Item -LiteralPath $catalogFixtureBundle -Force }
+            }
+        }
+        $factsCatalogUnavailable = "release-receipt-$catalogFixtureVersion.json"
+        Assert-Throws { Invoke-Facts } "*release-receipt-$catalogFixtureVersion.json*" 'Unavailable published history passed the actual facts gate.'
+        $factsCatalogUnavailable = $null
+    } finally {
+        $factsCatalogUnavailable = $null
+        Restore-CatalogFixture
+        if (Test-Path -LiteralPath $catalogFixtureBundle) { Remove-Item -LiteralPath $catalogFixtureBundle -Force }
+    }
 
     # The control. Everything below is this same tree with one fact moved, so a failure there is
     # the moved fact talking and not the fixture being wrong.
@@ -2710,6 +3279,8 @@ try {
     Assert-True ($LASTEXITCODE -eq 0 -or $null -eq $LASTEXITCODE) `
         'The release facts check refused the fixture after every change was put back.'
 } finally {
+    if ($factsPreviousWebRequest) { Set-Item Function:\Invoke-WebRequest -Value $factsPreviousWebRequest.ScriptBlock }
+    else { Remove-Item Function:\Invoke-WebRequest -ErrorAction SilentlyContinue }
     Remove-Item -LiteralPath $factsRoot -Recurse -Force -ErrorAction SilentlyContinue
 }
 
@@ -2856,6 +3427,12 @@ try {
         'A push that changed only the manifest delta allowlist ran no release check.'
     Assert-True (Test-Path -LiteralPath $contractsMarker) `
         'A push that changed the manifest delta allowlist skipped the script contract tests.'
+
+    Invoke-Hook -Paths @('scripts/patch-catalog-compatibility.json')
+    Assert-True (Test-Path -LiteralPath $factsMarker) `
+        'A push changing only scripts/patch-catalog-compatibility.json skipped the release facts gate.'
+    Assert-True ((Get-Content -LiteralPath $factsMarker -Raw) -like 'lag=True*') `
+        'A compatibility-only push took the strict published-index path.'
 
     # Any script change runs the contract tests, and a gate that finds them gone stops the push
     # instead of noting it and carrying on, which is how this suite was missing for Hushfacebook's
@@ -4694,6 +5271,37 @@ try {
         if ($Schema -lt 3) { $document.Remove('tooling') }
         Set-Content -LiteralPath $releaseReceipt -Encoding UTF8 -Value ($document | ConvertTo-Json -Depth 12)
     }
+    # Every release check also holds the patch names and defaults to the published release's
+    # catalog. That release is this fixture's own commit, published through a bare repository that
+    # answers for origin, with its hosted receipt and checksum list frozen here before the cases
+    # below edit the working receipt. The receipt's applied verdict is the opposite of the default.
+    $releaseCatalogPreviousWeb = Get-Item Function:\Invoke-WebRequest -ErrorAction SilentlyContinue
+    $releaseCatalogRemote = (Join-Path $releaseRoot 'published.git').Replace('\', '/')
+    Invoke-FixtureGit -Root $releaseRoot -Arguments @('init', '--bare', '--quiet', $releaseCatalogRemote) | Out-Null
+    $releaseCatalogUrl = [Uri]($releaseIndexText | ConvertFrom-Json).download_url
+    $releaseCatalogRepository = 'https://github.com/' + ((@($releaseCatalogUrl.AbsolutePath.Trim('/') -split '/') | Select-Object -First 2) -join '/') + '.git'
+    Invoke-FixtureGit -Root $releaseRepo -Arguments @('config', "url.$releaseCatalogRemote.insteadOf", $releaseCatalogRepository) | Out-Null
+    Invoke-FixtureGit -Root $releaseRepo -Arguments @('remote', 'add', 'origin', $releaseCatalogRepository) | Out-Null
+    Invoke-FixtureGit -Root $releaseRepo -Arguments @('push', '--quiet', $releaseCatalogRemote, "refs/tags/v$indexVersionHere") | Out-Null
+    $releaseCatalogReceiptPath = Join-Path $releaseRoot "catalog-release-receipt-$indexVersionHere.json"
+    [IO.File]::WriteAllText($releaseCatalogReceiptPath, (@{
+        release = @{ version = $indexVersionHere; commit = $releaseCommit }
+        bundle = @{ file = "patches-$indexVersionHere.mpp"; sha256 = ('d' * 64) }
+        patches = @(@{ name = $releaseNames[0]; applied = -not $releaseCatalog.patches[0].use })
+    } | ConvertTo-Json -Depth 5), (New-Object Text.UTF8Encoding($false)))
+    function Invoke-WebRequest {
+        param([Uri]$Uri, $Method, $OutFile, $MaximumRedirection, $TimeoutSec, [switch]$PassThru, [switch]$UseBasicParsing)
+        if (-not $UseBasicParsing) { throw "Invoke-WebRequest $Uri without -UseBasicParsing" }
+        $receiptUri = $releaseCatalogUrl.AbsoluteUri -replace '[^/]+$', "release-receipt-$indexVersionHere.json"
+        $checksumUri = $releaseCatalogUrl.AbsoluteUri -replace '[^/]+$', 'SHA256SUMS.txt'
+        $bytes = if ($Uri.AbsoluteUri -ceq $receiptUri) { [IO.File]::ReadAllBytes($releaseCatalogReceiptPath) }
+        elseif ($Uri.AbsoluteUri -ceq $checksumUri) {
+            [Text.Encoding]::UTF8.GetBytes("$(Get-Sha256Hex $releaseCatalogReceiptPath)  release-receipt-$indexVersionHere.json`n$('d' * 64)  patches-$indexVersionHere.mpp`n")
+        } else { throw "No local release catalog response for $Uri" }
+        if ($OutFile) { [IO.File]::WriteAllBytes($OutFile, $bytes) }
+        return [pscustomobject]@{ StatusCode = 200; Content = $bytes }
+    }
+
     # The run the hook makes for a push that carries a receipt: lenient, since the index may lag
     # the source, and with no network. What it says is kept, to tell a receipt it compared from
     # one it never found.
@@ -5822,6 +6430,11 @@ try {
     $servedTooling = $cleanServedTooling
     $servedSums = $null
     $servedReceipt = $null
+    # Assets a case serves under their own address, ahead of everything above, and one address a
+    # case answers 404 for. The publication history cases below put a predecessor release here.
+    $catalogPublishedAssets = @{}
+    $catalogPublishedRequests = New-Object System.Collections.Generic.List[string]
+    $catalogPublishedUnavailable = $null
     $publishedStandIns = {
         function Invoke-WebRequest {
             param($Uri, $Method, $OutFile, $MaximumRedirection, $TimeoutSec, [switch]$PassThru, [switch]$UseBasicParsing)
@@ -5829,20 +6442,31 @@ try {
             # without -UseBasicParsing to the IE parser, and since its 2025 security update it asks
             # first. A hook can't answer, so every index push through it stopped at the download.
             if (-not $UseBasicParsing) { throw "Invoke-WebRequest $Uri without -UseBasicParsing" }
-            $receiptServed = if ($servedReceipt) { $servedReceipt } else { $releaseReceipt }
-            if ($OutFile) {
-                $served = if ("$Uri" -like '*.cdx.json') { $servedSbom } elseif ("$Uri" -like '*.tooling.json') {
-                    $servedTooling } elseif ("$Uri" -like '*/release-receipt-*.json') {
-                    $receiptServed } else { $servedBundle }
-                Copy-Item -LiteralPath $served -Destination $OutFile -Force
+            $uriText = [string]$Uri
+            $catalogPublishedRequests.Add($uriText)
+            if ($catalogPublishedUnavailable -ceq $uriText) { throw (New-NotFoundAnswer) }
+            if ($catalogPublishedAssets.ContainsKey($uriText)) {
+                $body = [IO.File]::ReadAllBytes($catalogPublishedAssets[$uriText])
+            } else {
+                $receiptServed = if ($servedReceipt) { $servedReceipt } else { $releaseReceipt }
+                $sums = if ($servedSums) { $servedSums } else {
+                    "$((Get-FileHash -LiteralPath $servedBundle -Algorithm SHA256).Hash.ToLowerInvariant())  patches-$indexVersionHere.mpp`n" +
+                        "$((Get-FileHash -LiteralPath $servedSbom -Algorithm SHA256).Hash.ToLowerInvariant())  patches-$indexVersionHere.cdx.json`n" +
+                        "$(Get-Sha256Hex -Path $servedTooling)  patches-$indexVersionHere.tooling.json`n" +
+                        "$((Get-FileHash -LiteralPath $receiptServed -Algorithm SHA256).Hash.ToLowerInvariant())  release-receipt-$releaseVersionHere.json`n"
+                }
+                # The checksum list is fetched both ways: into memory by the asset check, and to a
+                # file by the patch selection check, which keeps the bytes exactly as served.
+                if ($uriText -like '*/SHA256SUMS.txt') { $body = [Text.Encoding]::UTF8.GetBytes($sums) }
+                else {
+                    $served = if ($uriText -like '*.cdx.json') { $servedSbom } elseif ($uriText -like '*.tooling.json') {
+                        $servedTooling } elseif ($uriText -like '*/release-receipt-*.json') {
+                        $receiptServed } else { $servedBundle }
+                    $body = [IO.File]::ReadAllBytes($served)
+                }
             }
-            $sums = if ($servedSums) { $servedSums } else {
-                "$((Get-FileHash -LiteralPath $servedBundle -Algorithm SHA256).Hash.ToLowerInvariant())  patches-$indexVersionHere.mpp`n" +
-                    "$((Get-FileHash -LiteralPath $servedSbom -Algorithm SHA256).Hash.ToLowerInvariant())  patches-$indexVersionHere.cdx.json`n" +
-                    "$(Get-Sha256Hex -Path $servedTooling)  patches-$indexVersionHere.tooling.json`n" +
-                    "$((Get-FileHash -LiteralPath $receiptServed -Algorithm SHA256).Hash.ToLowerInvariant())  release-receipt-$releaseVersionHere.json`n"
-            }
-            [pscustomobject]@{ StatusCode = 200; Content = [Text.Encoding]::UTF8.GetBytes($sums) }
+            if ($OutFile) { [IO.File]::WriteAllBytes($OutFile, $body) }
+            [pscustomobject]@{ StatusCode = 200; Content = $body }
         }
         function gh {
             $global:LASTEXITCODE = 0
@@ -6193,6 +6817,166 @@ try {
             }
         }
 
+        # The patch selections at publication. The index push has already pointed patches-bundle.json
+        # at the release it publishes, so the comparison reads the predecessor index at the release's
+        # own tagged commit, which still names the release before it. Here that predecessor is a
+        # commit published as the version before this one, and the candidate flips one default and
+        # records it. All metadata, assets and tags are local.
+        & {
+            $catalogOriginalFiles = @{}
+            foreach ($relative in @('patches-list.json', 'patches-bundle.json', 'CHANGELOG.md')) {
+                $catalogOriginalFiles[$relative] = [IO.File]::ReadAllBytes((Join-Path $releaseRepo $relative))
+            }
+            $catalogOriginalReceipt = [IO.File]::ReadAllBytes($releaseReceipt)
+            $catalogPublishedAssets = @{}
+            $catalogPublishedRequests.Clear()
+            $catalogCurrent = [version]$releaseVersionHere
+            $catalogPreviousVersion = if ($catalogCurrent.Build -gt 0) {
+                "$($catalogCurrent.Major).$($catalogCurrent.Minor).$($catalogCurrent.Build - 1)"
+            } elseif ($catalogCurrent.Minor -gt 0) { "$($catalogCurrent.Major).$($catalogCurrent.Minor - 1).0" }
+            elseif ($catalogCurrent.Major -gt 0) { "$($catalogCurrent.Major - 1).0.0" }
+            else { throw 'The publication history fixture needs an earlier version.' }
+            $catalogMetadataPath = Join-Path $releaseRepo 'scripts/patch-catalog-compatibility.json'
+            Assert-True (-not (Test-Path -LiteralPath $catalogMetadataPath)) 'The publication fixture already has compatibility metadata.'
+            $catalogCaseDir = Join-Path $releaseRoot 'catalog-compatibility-cases'
+            New-Item -ItemType Directory -Path $catalogCaseDir -Force | Out-Null
+            # A commit beside the branch carrying this list, index (none for $null), metadata and notes.
+            function New-CatalogFixtureCommit($List, $Index, $Metadata, [string]$Notes) {
+                try {
+                    Set-Content -LiteralPath (Join-Path $releaseRepo 'patches-list.json') -Value ($List | ConvertTo-Json -Depth 15) -Encoding UTF8
+                    if ($null -eq $Index) {
+                        Invoke-FixtureGit -Root $releaseRepo -Arguments @('rm', '--cached', '--quiet', '--', 'patches-bundle.json') | Out-Null
+                    } else {
+                        Set-Content -LiteralPath (Join-Path $releaseRepo 'patches-bundle.json') -Value ($Index | ConvertTo-Json -Depth 8) -Encoding UTF8
+                        Invoke-FixtureGit -Root $releaseRepo -Arguments @('add', '--', 'patches-bundle.json') | Out-Null
+                    }
+                    Set-Content -LiteralPath (Join-Path $releaseRepo 'CHANGELOG.md') -Value $Notes -Encoding UTF8
+                    Invoke-FixtureGit -Root $releaseRepo -Arguments @('add', '--', 'patches-list.json', 'CHANGELOG.md') | Out-Null
+                    if ($null -ne $Metadata) {
+                        New-Item -ItemType Directory -Path (Split-Path -Parent $catalogMetadataPath) -Force | Out-Null
+                        Set-Content -LiteralPath $catalogMetadataPath -Value ($Metadata | ConvertTo-Json -Depth 6) -Encoding UTF8
+                        Invoke-FixtureGit -Root $releaseRepo -Arguments @('add', '--', 'scripts/patch-catalog-compatibility.json') | Out-Null
+                    }
+                    $tree = "$(Invoke-FixtureGit -Root $releaseRepo -Arguments @('write-tree') | Select-Object -First 1)".Trim()
+                    return "$(Invoke-FixtureGit -Root $releaseRepo -Arguments @('commit-tree', $tree, '-p', $releaseCommit,
+                        '-m', 'catalog publication history') | Select-Object -First 1)".Trim()
+                } finally {
+                    Invoke-FixtureGit -Root $releaseRepo -Arguments @('reset', '--quiet') | Out-Null
+                    foreach ($relative in $catalogOriginalFiles.Keys) {
+                        [IO.File]::WriteAllBytes((Join-Path $releaseRepo $relative), $catalogOriginalFiles[$relative])
+                    }
+                    if (Test-Path -LiteralPath $catalogMetadataPath) { Remove-Item -LiteralPath $catalogMetadataPath -Force }
+                }
+            }
+            # The candidate published at that commit: a bundle stamped with its time, its SBOM and
+            # tooling report, a receipt naming it, and the working tree the index push runs on.
+            function Serve-CatalogCandidate([string]$Commit, $List, $Metadata, [string]$Notes) {
+                $seconds = [long]"$(Invoke-FixtureGit -Root $releaseRepo -Arguments @('log', '-1', '--format=%ct', $Commit) | Select-Object -First 1)".Trim()
+                $bundle = Join-Path $catalogCaseDir "patches-$releaseVersionHere.mpp"
+                if (Test-Path -LiteralPath $bundle) { Remove-Item -LiteralPath $bundle -Force }
+                New-TestBundleArchive -Path $bundle -Entries ([ordered]@{
+                    'META-INF/MANIFEST.MF' = ("Manifest-Version: 1.0`nVersion: $releaseVersionHere`nTimestamp: $($seconds * 1000)`n" +
+                        "Patcher-Version: $($releaseToolchain.PatcherVersion)`n`n")
+                    'classes.dex' = "dex`n035" + ('patches' * 8)
+                    'extensions/facebook.mpe' = "dex`n035" + ('payload' * 8) })
+                $sbom = [IO.Path]::ChangeExtension($bundle, '.cdx.json')
+                New-TestSbom -Path $sbom -Bundle $bundle
+                $tooling = [IO.Path]::ChangeExtension($bundle, '.tooling.json')
+                New-TestTooling -Path $tooling -Bundle $bundle -Commit $Commit -ScopeText $releaseScopeText
+                $document = [Text.Encoding]::UTF8.GetString($catalogOriginalReceipt).TrimStart([char]0xFEFF) | ConvertFrom-Json
+                $document.release.commit = $Commit
+                $document.release.commitTimestamp = $seconds
+                $document.bundle.timestamp = $seconds * 1000
+                $document.bundle.sha256 = Get-Sha256Hex $bundle
+                $document.bundle.sizeBytes = (Get-Item -LiteralPath $bundle).Length
+                $document.sbom.sha256 = Get-Sha256Hex $sbom
+                $report = Read-ReleaseTooling $tooling
+                $document.tooling.sha256 = $report.Sha256
+                $document.tooling.components = $report.Components.Count
+                $document.tooling.scopes = $report.Scopes.Count
+                Set-Content -LiteralPath $releaseReceipt -Value ($document | ConvertTo-Json -Depth 16) -Encoding UTF8
+                Set-Content -LiteralPath (Join-Path $releaseRepo 'patches-list.json') -Value ($List | ConvertTo-Json -Depth 15) -Encoding UTF8
+                Set-Content -LiteralPath (Join-Path $releaseRepo 'CHANGELOG.md') -Value $Notes -Encoding UTF8
+                if ($null -ne $Metadata) {
+                    New-Item -ItemType Directory -Path (Split-Path -Parent $catalogMetadataPath) -Force | Out-Null
+                    Set-Content -LiteralPath $catalogMetadataPath -Value ($Metadata | ConvertTo-Json -Depth 6) -Encoding UTF8
+                } elseif (Test-Path -LiteralPath $catalogMetadataPath) { Remove-Item -LiteralPath $catalogMetadataPath -Force }
+                Invoke-FixtureGit -Root $releaseRepo -Arguments @('push', '--force', '--quiet', $publishedRepo,
+                    "${Commit}:refs/tags/v$indexVersionHere") | Out-Null
+                return [pscustomobject]@{ Bundle = $bundle; Sbom = $sbom; Tooling = $tooling }
+            }
+            try {
+                $catalogPrevious = [Text.Encoding]::UTF8.GetString($catalogOriginalFiles['patches-list.json']).TrimStart([char]0xFEFF) | ConvertFrom-Json
+                $catalogPrevious.version = "v$catalogPreviousVersion"
+                $catalogOldIndex = [Text.Encoding]::UTF8.GetString($catalogOriginalFiles['patches-bundle.json']).TrimStart([char]0xFEFF) | ConvertFrom-Json
+                $catalogOldIndex.version = $catalogPreviousVersion
+                $catalogOldIndex.download_url = "https://github.com/$((@($indexUrl.AbsolutePath.Trim('/') -split '/') | Select-Object -First 2) -join '/')/releases/download/v$catalogPreviousVersion/patches-$catalogPreviousVersion.mpp"
+                $catalogOldNotes = [Text.Encoding]::UTF8.GetString($catalogOriginalFiles['CHANGELOG.md']).TrimStart([char]0xFEFF)
+                $catalogPreviousCommit = New-CatalogFixtureCommit $catalogPrevious $catalogOldIndex $null $catalogOldNotes
+                Invoke-FixtureGit -Root $releaseRepo -Arguments @('push', '--quiet', $publishedRepo,
+                    "${catalogPreviousCommit}:refs/tags/v$catalogPreviousVersion") | Out-Null
+                $catalogPriorReceipt = Join-Path $catalogCaseDir "release-receipt-$catalogPreviousVersion.json"
+                Set-Content -LiteralPath $catalogPriorReceipt -Value (@{ release = @{ version = $catalogPreviousVersion; commit = $catalogPreviousCommit }
+                    bundle = @{ file = "patches-$catalogPreviousVersion.mpp"; sha256 = ('d' * 64) }
+                    patches = @(@{ name = $catalogPrevious.patches[0].name; applied = -not $catalogPrevious.patches[0].use }) } | ConvertTo-Json -Depth 5) -Encoding UTF8
+                $catalogPriorSums = Join-Path $catalogCaseDir 'prior-SHA256SUMS.txt'
+                Set-Content -LiteralPath $catalogPriorSums -Value ("$(Get-Sha256Hex $catalogPriorReceipt)  release-receipt-$catalogPreviousVersion.json`n$('d' * 64)  patches-$catalogPreviousVersion.mpp") -Encoding UTF8
+                $catalogPriorBase = ([Uri]$catalogOldIndex.download_url).AbsoluteUri -replace '[^/]+$', ''
+                $catalogPublishedAssets[$catalogPriorBase + "release-receipt-$catalogPreviousVersion.json"] = $catalogPriorReceipt
+                $catalogPublishedAssets[$catalogPriorBase + 'SHA256SUMS.txt'] = $catalogPriorSums
+                $catalogCandidate = [Text.Encoding]::UTF8.GetString($catalogOriginalFiles['patches-list.json']).TrimStart([char]0xFEFF) | ConvertFrom-Json
+                $catalogBefore = $catalogCandidate.patches[0] | ConvertTo-Json -Depth 10 | ConvertFrom-Json
+                $catalogCandidate.patches[0].use = -not $catalogBefore.use
+                $catalogNote = "$($catalogBefore.name) changes its default selection."
+                $catalogNotes = $catalogOldNotes -replace ('(?m)^(##\s+\[?v?' + [regex]::Escape($releaseVersionHere) + '(?:\]|\s|$)[^\r\n]*)'), ("`$1`n`n* **Facebook:** $catalogNote")
+                Assert-True ($catalogNotes -cne $catalogOldNotes) "The publication fixture's CHANGELOG has no $releaseVersionHere heading to carry the note."
+                $catalogMetadata = @{ baselineVersion = $catalogPreviousVersion; baselineCommit = $catalogPreviousCommit
+                    candidateVersion = $releaseVersionHere; changes = @(@{ before = @{ name = $catalogBefore.name; use = $catalogBefore.use }
+                        after = @{ name = $catalogCandidate.patches[0].name; use = $catalogCandidate.patches[0].use }; migrationNote = $catalogNote }) }
+                $catalogCandidateCommit = New-CatalogFixtureCommit $catalogCandidate $catalogOldIndex $catalogMetadata $catalogNotes
+                $assets = Serve-CatalogCandidate $catalogCandidateCommit $catalogCandidate $catalogMetadata $catalogNotes
+                $servedBundle = $assets.Bundle; $servedSbom = $assets.Sbom; $servedTooling = $assets.Tooling; $servedReceipt = $null; $servedSums = $null
+                $catalogRun = $publishedRun.Clone(); $catalogRun['ArtifactPath'] = $assets.Bundle
+                $catalogPublishedRequests.Clear()
+                $said = Invoke-IndexPushCheck $catalogRun
+                Assert-True (@($catalogPublishedRequests | Where-Object { $_ -ceq ($catalogPriorBase + "release-receipt-$catalogPreviousVersion.json") }).Count -gt 0) `
+                    'Publication used the working candidate index instead of the source-commit predecessor receipt.'
+                Assert-True ($said -like "*patch names and defaults are compatible with published v$catalogPreviousVersion at $($catalogPreviousCommit.Substring(0, 8))*") `
+                    "Publication did not say which published catalog it held the candidate to: $said"
+                $sourceRun = @{ SkipDescriptionTestCount = $true; SkipUrlCheck = $true; AllowPublishedIndexLag = $true; ArtifactPath = $assets.Bundle }
+                Assert-Throws { Invoke-IndexPushCheck $sourceRun } '*exact baseline and candidate*' 'The next source push retained a consumed predecessor allowance.'
+                Remove-Item -LiteralPath $catalogMetadataPath -Force
+                Invoke-IndexPushCheck $sourceRun | Out-Null
+                Set-Content -LiteralPath $catalogMetadataPath -Value ($catalogMetadata | ConvertTo-Json -Depth 6) -Encoding UTF8
+                $catalogPublishedUnavailable = $catalogPriorBase + "release-receipt-$catalogPreviousVersion.json"
+                Assert-Throws { Invoke-IndexPushCheck $catalogRun } "*release-receipt-$catalogPreviousVersion.json*" 'An unavailable predecessor receipt passed publication.'
+                $catalogPublishedUnavailable = $null
+                $catalogNoIndexCommit = New-CatalogFixtureCommit $catalogCandidate $null $null $catalogNotes
+                $assets = Serve-CatalogCandidate $catalogNoIndexCommit $catalogCandidate $null $catalogNotes
+                $servedBundle = $assets.Bundle; $servedSbom = $assets.Sbom; $servedTooling = $assets.Tooling
+                $catalogRun['ArtifactPath'] = $assets.Bundle
+                Assert-Throws { Invoke-IndexPushCheck $catalogRun } '*earlier version history*' 'An absent predecessor index hid earlier published releases.'
+                Invoke-FixtureGit -Root $releaseRepo -Arguments @('push', '--quiet', $publishedRepo, '--delete', "v$catalogPreviousVersion") | Out-Null
+                $catalogPublishedRequests.Clear()
+                $said = Invoke-IndexPushCheck $catalogRun
+                Assert-True (@($catalogPublishedRequests | Where-Object { $_ -ceq ($catalogPriorBase + "release-receipt-$catalogPreviousVersion.json") }).Count -eq 0) `
+                    'A verified first release fetched a nonexistent predecessor asset.'
+                Assert-True ($said -like '*patch names and defaults are compatible with a verified first release*') `
+                    "A verified first release did not say so: $said"
+            } finally {
+                foreach ($relative in $catalogOriginalFiles.Keys) { [IO.File]::WriteAllBytes((Join-Path $releaseRepo $relative), $catalogOriginalFiles[$relative]) }
+                [IO.File]::WriteAllBytes($releaseReceipt, $catalogOriginalReceipt)
+                if (Test-Path -LiteralPath $catalogMetadataPath) { Remove-Item -LiteralPath $catalogMetadataPath -Force }
+                Invoke-FixtureGit -Root $releaseRepo -Arguments @('push', '--force', '--quiet', $publishedRepo,
+                    "${releaseCommit}:refs/tags/v$indexVersionHere") | Out-Null
+                $catalogRemoteTags = @(Invoke-FixtureGit -Root $releaseRepo -Arguments @('ls-remote', $publishedRepo, "refs/tags/v$catalogPreviousVersion"))
+                if ($catalogRemoteTags.Count -gt 0) {
+                    Invoke-FixtureGit -Root $releaseRepo -Arguments @('push', '--quiet', $publishedRepo, '--delete', "v$catalogPreviousVersion") | Out-Null
+                }
+                Invoke-FixtureGit -Root $releaseRepo -Arguments @('reset', '--quiet') | Out-Null
+            }
+        }
+
         # Schema 2 is held to the policy its release used. Its hosted payload-only receipt still
         # works, including the explicit historical offline path, without inventing tooling data.
         $schemaTwoScript = Join-Path $releaseRoot 'schema-two-release-receipt.ps1'
@@ -6277,6 +7061,12 @@ try {
         Invoke-FixtureGit -Root $releaseRepo -Arguments @('config', '--unset', "url.$publishedRepo.insteadOf") | Out-Null
     }
 
+    # The published catalog the remaining release checks compare with is still local, after the
+    # cases above took away the rewrite and left the bare tag on the deliberately broken re-cut.
+    Invoke-FixtureGit -Root $releaseRepo -Arguments @('push', '--force', '--quiet', $releaseCatalogRemote,
+        "${releaseCommit}:refs/tags/v$indexVersionHere") | Out-Null
+    Invoke-FixtureGit -Root $releaseRepo -Arguments @('config', "url.$releaseCatalogRemote.insteadOf", $releaseCatalogRepository) | Out-Null
+
     # A release cut before the receipt named an SBOM, which is where the checkout that cut 0.1.1
     # stands until the next release: its commit's receipt script writes schema 1, and its receipt
     # names no SBOM. An ordinary push holds that receipt to schema 1 and says so, and a schema 2
@@ -6355,6 +7145,8 @@ try {
     Assert-True ($said -like "*tag v$indexVersionHere isn't in this clone, so the Manager floor the index names wasn't checked*") `
         "A lag window without the index version's tag did not say the floor went unchecked: $said"
 } finally {
+    if ($releaseCatalogPreviousWeb) { Set-Item Function:\Invoke-WebRequest -Value $releaseCatalogPreviousWeb.ScriptBlock }
+    else { Remove-Item Function:\Invoke-WebRequest -ErrorAction SilentlyContinue }
     Remove-Item -LiteralPath $releaseRoot -Recurse -Force -ErrorAction SilentlyContinue
 }
 

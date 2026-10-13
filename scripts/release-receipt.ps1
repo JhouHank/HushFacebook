@@ -1285,6 +1285,43 @@ function Resolve-IndexManagerFloor {
     return [pscustomobject]@{ Floor = $atTag.ManagerFloor; Source = $source; Note = $null }
 }
 
+function Get-SelectionProperty {
+    <#
+    .SYNOPSIS
+        One field of a parsed JSON object or a hashtable, matched by its exact name.
+    .DESCRIPTION
+        PowerShell's own member access ignores case, so "Use" would answer for "use" and a
+        compatibility file could name a field the check never meant to read. An array value comes
+        back whole: assign the answer directly, never inside @(...), which nests it.
+    #>
+    param($Object, [string]$Name)
+    if ($null -eq $Object) { return $null }
+    if ($Object -is [System.Collections.IDictionary]) {
+        foreach ($key in $Object.Keys) {
+            if ([string]$key -ceq $Name) { return ,$Object[$key] }
+        }
+    } else {
+        foreach ($property in $Object.PSObject.Properties) {
+            if ($property.Name -ceq $Name) { return ,$property.Value }
+        }
+    }
+    return $null
+}
+
+function Test-SelectionFields {
+    <#
+    .SYNOPSIS
+        Whether an object carries exactly these field names, in any order and no others.
+    #>
+    param($Object, [string[]]$Names)
+    if ($Object -is [System.Collections.IDictionary]) { $actual = @($Object.Keys) }
+    elseif ($Object -is [pscustomobject]) { $actual = @($Object.PSObject.Properties.Name) }
+    else { return $false }
+    if ($actual.Count -ne $Names.Count) { return $false }
+    foreach ($name in $Names) { if ($actual -cnotcontains $name) { return $false } }
+    return $true
+}
+
 function Resolve-ReceiptCatalog {
     <#
     .SYNOPSIS
@@ -1297,6 +1334,10 @@ function Resolve-ReceiptCatalog {
         machine that has a receipt. On Hushfeed that read: "The receipt reports com.zhiliaoapp.musically
         46.2.3 patch Hide quick comment reactions, which the catalog does not list."
 
+        -RequireHistory refuses missing history instead of falling back to the working list. The
+        patch selection check needs the published catalog itself, receipt or no receipt here, and a
+        fallback would compare the working list with itself and pass.
+
         On a release push the receipt's commit is the release commit, so this reads the list the
         working tree has and nothing is relaxed.
 
@@ -1306,15 +1347,27 @@ function Resolve-ReceiptCatalog {
     param(
         [Parameter(Mandatory = $true)][string]$Root,
         [string]$Commit,
-        [Parameter(Mandatory = $true)]$WorkingPatchList
+        [Parameter(Mandatory = $true)]$WorkingPatchList,
+        [switch]$RequireHistory
     )
 
     if ($Commit -notmatch '^[0-9a-f]{40}$') {
+        if ($RequireHistory) { throw 'The published catalog needs an exact historical commit.' }
         return [pscustomobject]@{ PatchList = $WorkingPatchList; Note = $null }
     }
+    if ($RequireHistory) {
+        $kind = Invoke-RepoGit -Root $Root -Arguments @('cat-file', '-t', $Commit)
+        if ($LASTEXITCODE -ne 0 -or "$kind".Trim() -cne 'commit') {
+            throw "The published catalog commit $Commit is unavailable in this clone."
+        }
+    }
     $listAtCommit = (Invoke-RepoGit -Root $Root -Arguments @('show', "${Commit}:patches-list.json")) -join "`n"
+    if ($RequireHistory -and $LASTEXITCODE -ne 0) {
+        throw "Published commit $Commit has no readable patches-list.json."
+    }
     $short = $Commit.Substring(0, 8)
     if ([string]::IsNullOrWhiteSpace($listAtCommit)) {
+        if ($RequireHistory) { throw "Published commit $short has no readable patches-list.json." }
         return [pscustomobject]@{
             PatchList = $WorkingPatchList
             Note = "commit $short has no patch list, so the receipt is held to the working one"
@@ -1325,7 +1378,10 @@ function Resolve-ReceiptCatalog {
     } catch {
         throw "patches-list.json at $short is not readable: $($_.Exception.Message)"
     }
-    $namesThen = @($atCommit.patches | ForEach-Object { [string]$_.name } | Sort-Object) -join "`n"
+    if ($RequireHistory -and ($null -eq $atCommit -or @($atCommit.patches).Count -eq 0)) {
+        throw "Published commit $short has no usable patch catalog."
+    }
+    $namesThen =@($atCommit.patches | ForEach-Object { [string]$_.name } | Sort-Object) -join "`n"
     $namesNow = @($WorkingPatchList.patches | ForEach-Object { [string]$_.name } | Sort-Object) -join "`n"
     $targetsThen = ($atCommit.patches | ForEach-Object { $_.compatiblePackages | ConvertTo-Json -Compress -Depth 4 } | Sort-Object -Unique) -join "`n"
     $targetsNow = ($WorkingPatchList.patches | ForEach-Object { $_.compatiblePackages | ConvertTo-Json -Compress -Depth 4 } | Sort-Object -Unique) -join "`n"
@@ -1337,6 +1393,293 @@ function Resolve-ReceiptCatalog {
         Note = ("the receipt is held to the $(@($atCommit.patches).Count) patches and the target its " +
             "own commit $short carried; the working list has $(@($WorkingPatchList.patches).Count)")
     }
+}
+
+function Resolve-PublishedCatalogBaseline {
+    <#
+    .SYNOPSIS
+        The patch catalog the last published release shipped, proved from what that release hosts.
+    .DESCRIPTION
+        Morphe Manager remembers which patches someone picked by name, and starts a patch they never
+        touched at its "use" default. A rename or removal drops their choice and a flipped default
+        changes what a new install gets, so the next release is compared with the catalog people
+        actually have. That catalog is read at the commit the published tag names, and the tag is
+        held to the hosted receipt: the receipt's checksum has to be the one SHA256SUMS.txt lists,
+        its version and commit have to be the tag's (peeled when annotated), and its bundle name and
+        hash have to be the ones the same checksum list gives the indexed bundle.
+
+        -Index is the published index (patches-bundle.json) naming the predecessor. With
+        -PredecessorIndexAbsent the caller has proved there is no index at all, and that is a first
+        release only while the remote has no earlier version tag either. An asset that can't be
+        downloaded is never read as a first release.
+
+        Answers @{ FirstRelease; PatchList; Version; Commit }, or throws naming what didn't line up.
+    #>
+    param(
+        [Parameter(Mandatory = $true)][string]$Root,
+        [Parameter(Mandatory = $true)]$WorkingPatchList,
+        [Parameter(Mandatory = $true)][string]$CandidateVersion,
+        [AllowNull()]$Index,
+        [switch]$PredecessorIndexAbsent,
+        [AllowNull()][byte[]]$ReceiptBytes,
+        [string]$ChecksumText,
+        [Parameter(Mandatory = $true)][AllowEmptyString()][string]$RemoteTagsText,
+        [Parameter(Mandatory = $true)][int]$RemoteTagsExitCode
+    )
+    if ($CandidateVersion -notmatch '^\d+\.\d+\.\d+$') { throw 'The candidate version is invalid.' }
+    if ($RemoteTagsExitCode -ne 0) { throw 'Published tag history is unavailable.' }
+    $tags = @([regex]::Matches($RemoteTagsText,
+        '(?m)^([0-9a-f]{40}|[0-9a-f]{64})\s+refs/tags/v(\d+\.\d+\.\d+)(-[0-9A-Za-z.-]+)?(\^\{\})?\s*$'))
+    if ($PredecessorIndexAbsent) {
+        if ($null -ne $Index) { throw 'A first release cannot have a predecessor index.' }
+        $earlier = @($tags | Where-Object {
+            [version]$_.Groups[2].Value -lt [version]$CandidateVersion -or
+            ($_.Groups[2].Value -ceq $CandidateVersion -and $_.Groups[3].Success)
+        })
+        if ($earlier.Count -gt 0) { throw 'The predecessor index is absent but earlier version history exists.' }
+        return [pscustomobject]@{ FirstRelease = $true; PatchList = $null; Version = $null; Commit = $null }
+    }
+    if ($null -eq $Index) { throw 'The predecessor index is unavailable, not confirmed absent.' }
+    $version = [string](Get-SelectionProperty $Index 'version')
+    if ($version -notmatch '^\d+\.\d+\.\d+$' -or [version]$version -gt [version]$CandidateVersion) {
+        throw 'The predecessor index names an invalid or newer version.'
+    }
+    $uri = $null
+    if (-not [Uri]::TryCreate([string](Get-SelectionProperty $Index 'download_url'), [UriKind]::Absolute, [ref]$uri) -or
+        $uri.Scheme -cne 'https' -or $uri.Host -cne 'github.com' -or $uri.Port -ne 443 -or
+        $uri.UserInfo -or $uri.Query -or $uri.Fragment -or
+        $uri.AbsolutePath -notmatch ('^/[^/]+/[^/]+/releases/download/v' + [regex]::Escape($version) + '/patches-' + [regex]::Escape($version) + '\.mpp$')) {
+        throw 'The predecessor index does not name its exact hosted bundle.'
+    }
+    $named = @($tags | Where-Object { $_.Groups[2].Value -ceq $version -and -not $_.Groups[3].Success })
+    $plain = @($named | Where-Object { -not $_.Groups[4].Success })
+    $peeled = @($named | Where-Object { $_.Groups[4].Success })
+    if ($plain.Count -ne 1 -or $peeled.Count -gt 1) { throw "Published tag v$version is missing or ambiguous." }
+    $commit = if ($peeled.Count -eq 1) { $peeled[0].Groups[1].Value } else { $plain[0].Groups[1].Value }
+    if ($null -eq $ReceiptBytes -or $ReceiptBytes.Length -eq 0 -or [string]::IsNullOrWhiteSpace($ChecksumText)) {
+        throw 'The hosted predecessor receipt or checksum is unavailable.'
+    }
+    function Read-HostedChecksum([string]$Name) {
+        $ending = '(?:^|[\t ])\*?' + [regex]::Escape($Name) + '[\t ]*$'
+        $lines = @($ChecksumText.TrimStart([char]0xFEFF) -split '\r?\n' | Where-Object { $_ -cmatch $ending })
+        if ($lines.Count -ne 1) { throw "The hosted checksum must list exactly one $Name." }
+        $line = [regex]::Match($lines[0], '^[\t ]*([0-9a-fA-F]{64})[\t ]+\*?' + [regex]::Escape($Name) + '[\t ]*$')
+        if (-not $line.Success) { throw "The hosted checksum entry for $Name is malformed." }
+        return $line.Groups[1].Value.ToLowerInvariant()
+    }
+    $filename = "release-receipt-$version.json"
+    $listedHash = Read-HostedChecksum $filename
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try { $hash = ([BitConverter]::ToString($sha.ComputeHash($ReceiptBytes))).Replace('-', '').ToLowerInvariant() }
+    finally { $sha.Dispose() }
+    if ($hash -cne $listedHash) { throw 'The hosted predecessor receipt checksum does not match.' }
+    try { $receipt = [Text.Encoding]::UTF8.GetString($ReceiptBytes).TrimStart([char]0xFEFF) | ConvertFrom-Json }
+    catch { throw 'The hosted predecessor receipt is not readable JSON.' }
+    $release = Get-SelectionProperty $receipt 'release'
+    $receiptVersion = Get-SelectionProperty $release 'version'
+    $receiptCommit = Get-SelectionProperty $release 'commit'
+    if ($receiptVersion -isnot [string] -or $receiptCommit -isnot [string] -or
+        $receiptVersion -cne $version -or $receiptCommit -cne $commit) {
+        throw 'The hosted predecessor receipt version/commit does not match the peeled published tag.'
+    }
+    $bundleName = "patches-$version.mpp"
+    $bundle = Get-SelectionProperty $receipt 'bundle'
+    $bundleFile = Get-SelectionProperty $bundle 'file'
+    $bundleHash = Get-SelectionProperty $bundle 'sha256'
+    $listedBundleHash = Read-HostedChecksum $bundleName
+    if ($bundleFile -isnot [string] -or $bundleFile -cne $bundleName -or
+        $bundleHash -isnot [string] -or $bundleHash -notmatch '^[0-9a-fA-F]{64}$' -or
+        $bundleHash.ToLowerInvariant() -cne $listedBundleHash) {
+        throw 'The predecessor receipt bundle filename/hash does not match the indexed bundle checksum.'
+    }
+    $resolved = Resolve-ReceiptCatalog -Root $Root -Commit $commit -WorkingPatchList $WorkingPatchList -RequireHistory
+    if ([string]$resolved.PatchList.version -cne "v$version") { throw 'The historical catalog version does not match the published receipt.' }
+    return [pscustomobject]@{ FirstRelease = $false; PatchList = $resolved.PatchList; Version = $version; Commit = $commit }
+}
+
+function Resolve-CatalogBaselineIndex {
+    <#
+    .SYNOPSIS
+        Which published index names the release the patch selection check compares with.
+    .DESCRIPTION
+        An ordinary push compares with the working patches-bundle.json, the release people have now.
+        The index push that publishes a release has already pointed that file at the new release,
+        so comparing with it would hold the release to itself and always pass. That run reads the
+        index at the candidate's verified source commit instead, which still names the release
+        before it. An index missing there answers PredecessorIndexAbsent, and only a commit git
+        can read counts: an unavailable commit or an unreadable file throws.
+    #>
+    param(
+        [Parameter(Mandatory = $true)][string]$Root,
+        [AllowNull()]$WorkingIndex,
+        [string]$CandidateCommit,
+        [switch]$VerifyPublishedAsset
+    )
+    if (-not $VerifyPublishedAsset) {
+        if ($null -eq $WorkingIndex) { throw 'The working published index is unavailable.' }
+        return [pscustomobject]@{ Index = $WorkingIndex; PredecessorIndexAbsent = $false }
+    }
+    if ($CandidateCommit -notmatch '^[0-9a-f]{40}$') { throw 'A published candidate needs its verified source commit.' }
+    $kind = Invoke-RepoGit -Root $Root -Arguments @('cat-file', '-t', $CandidateCommit)
+    if ($LASTEXITCODE -ne 0 -or "$kind".Trim() -cne 'commit') { throw 'The verified candidate source commit is unavailable.' }
+    $entries = @(Invoke-RepoGit -Root $Root -Arguments @('ls-tree', '--name-only', $CandidateCommit, '--', 'patches-bundle.json'))
+    if ($LASTEXITCODE -ne 0) { throw 'The predecessor index could not be probed at the candidate source commit.' }
+    if ($entries.Count -eq 0) {
+        return [pscustomobject]@{ Index = $null; PredecessorIndexAbsent = $true }
+    }
+    if ($entries.Count -ne 1 -or [string]$entries[0] -cne 'patches-bundle.json') { throw 'The predecessor index tree entry is ambiguous.' }
+    $text = (Invoke-RepoGit -Root $Root -Arguments @('show', "${CandidateCommit}:patches-bundle.json")) -join "`n"
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($text)) { throw 'The predecessor index is unreadable at the candidate source commit.' }
+    try { $index = $text | ConvertFrom-Json } catch { throw 'The predecessor index at the candidate source commit is not readable JSON.' }
+    if ($null -eq $index) { throw 'The predecessor index at the candidate source commit is empty.' }
+    return [pscustomobject]@{ Index = $index; PredecessorIndexAbsent = $false }
+}
+
+function Test-PatchCatalogCompatibility {
+    <#
+    .SYNOPSIS
+        Whether every published patch keeps its name and its "use" default, or the change is declared.
+    .DESCRIPTION
+        Adding a patch is always fine. A rename, a removal or a flipped default has to be listed in
+        scripts/patch-catalog-compatibility.json for this exact published version and commit and
+        this candidate version, each with a migration note that appears word for word in the
+        candidate's CHANGELOG section (Unreleased while the version is held at the published one).
+        A rename or removal also has to warn about the selection reset and the manual re-selection,
+        since Morphe doesn't carry a choice across a new name. Declarations that duplicate, don't
+        match the catalogs or change nothing are refused, so a consumed one can't linger.
+
+        Names compare ordinally, so a change of case is a rename. Answers @{ Valid; Reason }.
+    #>
+    param(
+        [AllowNull()]$BaselinePatchList,
+        [string]$BaselineVersion,
+        [string]$BaselineCommit,
+        [Parameter(Mandatory = $true)]$CandidatePatchList,
+        [Parameter(Mandatory = $true)][string]$CandidateVersion,
+        [AllowNull()]$Compatibility,
+        [AllowEmptyString()][string]$Changelog,
+        [switch]$FirstRelease
+    )
+    function Fail([string]$Reason) { return [pscustomobject]@{ Valid = $false; Reason = $Reason } }
+    function Read-Selections($Catalog, [string]$Label) {
+        $patches = Get-SelectionProperty $Catalog 'patches'
+        if ($patches -isnot [array] -and $patches -isnot [System.Collections.IList]) { throw "$Label patches is not an array." }
+        if ($patches.Count -eq 0) { throw "$Label contains no patches." }
+        $map = [System.Collections.Generic.Dictionary[string,object]]::new([StringComparer]::Ordinal)
+        foreach ($patch in $patches) {
+            $name = Get-SelectionProperty $patch 'name'
+            $use = Get-SelectionProperty $patch 'use'
+            if ($name -isnot [string] -or [string]::IsNullOrWhiteSpace($name) -or $name.Trim() -cne $name -or $name -match '[\r\n]') {
+                throw "$Label has an invalid patch name."
+            }
+            if ($use -isnot [bool]) { throw "$Label patch $name has no Boolean use field." }
+            if ($map.ContainsKey($name)) { throw "$Label duplicates patch $name." }
+            $map.Add($name, [pscustomobject]@{ name = $name; use = $use })
+        }
+        return ,$map
+    }
+    function Read-SelectionState($State, [string]$Label) {
+        if (-not (Test-SelectionFields $State @('name', 'use'))) { throw "$Label must contain exactly name and use." }
+        $name = Get-SelectionProperty $State 'name'
+        $use = Get-SelectionProperty $State 'use'
+        if ($name -isnot [string] -or [string]::IsNullOrWhiteSpace($name) -or $name.Trim() -cne $name -or $name -match '[\r\n]' -or $use -isnot [bool]) {
+            throw "$Label must have an exact name and Boolean use."
+        }
+        return [pscustomobject]@{ name = $name; use = $use }
+    }
+    try {
+        if ($CandidateVersion -notmatch '^\d+\.\d+\.\d+$' -or
+            [string](Get-SelectionProperty $CandidatePatchList 'version') -cne "v$CandidateVersion") {
+            throw 'The candidate catalog version is invalid or mismatched.'
+        }
+        $now = Read-Selections $CandidatePatchList 'Candidate catalog'
+        if ($FirstRelease) {
+            if ($null -ne $BaselinePatchList -or $null -ne $Compatibility -or $BaselineVersion -or $BaselineCommit) {
+                throw 'A first-release comparison cannot carry a baseline or compatibility declarations.'
+            }
+            return [pscustomobject]@{ Valid = $true; Reason = $null }
+        }
+        if ($BaselineVersion -notmatch '^\d+\.\d+\.\d+$' -or $BaselineCommit -notmatch '^[0-9a-f]{40}$' -or
+            [string](Get-SelectionProperty $BaselinePatchList 'version') -cne "v$BaselineVersion" -or
+            [version]$CandidateVersion -lt [version]$BaselineVersion) {
+            throw 'A comparison needs the exact published baseline version and commit.'
+        }
+        $then = Read-Selections $BaselinePatchList 'Published catalog'
+        $declared = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+        $destinations = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+        if ($null -ne $Compatibility) {
+            foreach ($field in @('baselineVersion', 'baselineCommit', 'candidateVersion')) {
+                if ((Get-SelectionProperty $Compatibility $field) -isnot [string]) {
+                    throw 'Compatibility metadata does not identify this exact baseline and candidate.'
+                }
+            }
+            if (-not (Test-SelectionFields $Compatibility @('baselineVersion', 'baselineCommit', 'candidateVersion', 'changes')) -or
+                (Get-SelectionProperty $Compatibility 'baselineVersion') -cne $BaselineVersion -or
+                (Get-SelectionProperty $Compatibility 'baselineCommit') -cne $BaselineCommit -or
+                (Get-SelectionProperty $Compatibility 'candidateVersion') -cne $CandidateVersion) {
+                throw 'Compatibility metadata does not identify this exact baseline and candidate.'
+            }
+            $changes = Get-SelectionProperty $Compatibility 'changes'
+            if (($changes -isnot [array] -and $changes -isnot [System.Collections.IList]) -or $changes.Count -eq 0) {
+                throw 'Compatibility changes must be a nonempty array.'
+            }
+            $section = if ($BaselineVersion -ceq $CandidateVersion) { 'Unreleased' } else { $CandidateVersion }
+            # Only what a reader sees counts. A note inside an HTML comment, closed or not, is no warning.
+            $visibleChangelog = [regex]::Replace($Changelog, '(?s)<!--.*?(?:-->|\z)', '')
+            $bodies = New-Object System.Collections.Generic.List[string]
+            $headings = @([regex]::Matches($visibleChangelog, '(?m)^##\s+[^\r\n]+'))
+            for ($i = 0; $i -lt $headings.Count; $i++) {
+                $heading = $headings[$i].Value
+                $matchesSection = if ($section -ceq 'Unreleased') { $heading -cmatch '^##\s+Unreleased\s*$' } else {
+                    $v = [regex]::Match($heading, '^##\s+\[?v?(\d+\.\d+\.\d+)(?:\]|\s|$)')
+                    $v.Success -and $v.Groups[1].Value -ceq $section
+                }
+                if ($matchesSection) {
+                    $start = $headings[$i].Index + $headings[$i].Length
+                    $end = if ($i + 1 -lt $headings.Count) { $headings[$i + 1].Index } else { $visibleChangelog.Length }
+                    $bodies.Add($visibleChangelog.Substring($start, $end - $start))
+                }
+            }
+            if ($bodies.Count -ne 1) { throw "Compatibility notes need exactly one CHANGELOG section for $section." }
+            foreach ($change in $changes) {
+                if (-not (Test-SelectionFields $change @('before', 'after', 'migrationNote'))) { throw 'A compatibility change has malformed fields.' }
+                $before = Read-SelectionState (Get-SelectionProperty $change 'before') 'Before'
+                $afterValue = Get-SelectionProperty $change 'after'
+                $after = if ($null -eq $afterValue) { $null } else { Read-SelectionState $afterValue 'After' }
+                if (-not $declared.Add($before.name)) { throw "Compatibility duplicates $($before.name)." }
+                if (-not $then.ContainsKey($before.name) -or $then[$before.name].use -ne $before.use) {
+                    throw "Compatibility before state does not match published $($before.name)."
+                }
+                $renamed = $null -ne $after -and $after.name -cne $before.name
+                if ($null -eq $after -or $renamed) {
+                    if ($now.ContainsKey($before.name)) { throw "Compatibility removal/rename of $($before.name) is unused." }
+                } elseif ($before.use -eq $after.use) { throw "Compatibility for $($before.name) is a no-op." }
+                if ($null -ne $after) {
+                    if (-not $destinations.Add($after.name) -or ($renamed -and $then.ContainsKey($after.name))) {
+                        throw "Compatibility destination $($after.name) collides."
+                    }
+                    if (-not $now.ContainsKey($after.name) -or $now[$after.name].use -ne $after.use) {
+                        throw "Compatibility after state does not match candidate $($after.name)."
+                    }
+                }
+                $note = Get-SelectionProperty $change 'migrationNote'
+                if ($note -isnot [string] -or [string]::IsNullOrWhiteSpace($note) -or $note -match '[\r\n]' -or
+                    $bodies[0].IndexOf($note, [StringComparison]::Ordinal) -lt 0) {
+                    throw "Compatibility for $($before.name) has no exact migration note in $section."
+                }
+                if (($null -eq $after -or $renamed) -and
+                    ($note -notmatch '(?i)\bselection reset\b' -or $note -notmatch '(?i)\bmanual re-selection\b')) {
+                    throw "Removing/renaming $($before.name) needs a selection reset and manual re-selection warning."
+                }
+            }
+        }
+        foreach ($name in $then.Keys) {
+            if ((-not $now.ContainsKey($name) -or $then[$name].use -ne $now[$name].use) -and -not $declared.Contains($name)) {
+                throw "Patch $name was removed, renamed or changed its default without compatibility metadata."
+            }
+        }
+        return [pscustomobject]@{ Valid = $true; Reason = $null }
+    } catch { return Fail $_.Exception.Message }
 }
 
 function Test-ReleaseReceipt {
