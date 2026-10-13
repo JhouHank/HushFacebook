@@ -308,6 +308,15 @@ try {
                 Step 'holding the staged assets to SHA256SUMS.txt, the receipt and the source commit'
                 $staged = Test-StagedReleaseAt -Root $root -Folder $publishing -Version $Version -Commit $head
                 if (-not $staged.Valid) { throw "The staged release doesn't hold together, so nothing was tagged: $($staged.Reason)" }
+                # A held file can't change, but gh opens each one again by path, and a link could be
+                # pointed elsewhere after the check. Windows won't rename or delete a folder while a
+                # file in it is open, so with the files held, a folder holding no links keeps the
+                # files that were checked.
+                foreach ($item in @(Get-Item -LiteralPath $publishing -Force) + @(Get-ChildItem -LiteralPath $publishing -Force)) {
+                    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+                        throw "$($item.Name) in the publishing copy is a link, so nothing was tagged: what was checked might not be what gh uploads."
+                    }
+                }
 
                 $notes = Join-Path $assets 'notes.md'
                 Invoke-ReleaseText 'The release notes' @('github-notes', '--version', $Version, '--checked', $Checked, '--out', $notes)
@@ -320,8 +329,9 @@ try {
                     & gh release create $tag -R $Repository --verify-tag --title $tag --notes-file $notes `
                         (($assetNames + 'SHA256SUMS.txt') | ForEach-Object { Join-Path $publishing $_ })
                 }
-                $check = Join-Path ([IO.Path]::GetTempPath()) "hushfacebook-published-$Version"
-                Remove-Item -LiteralPath $check -Recurse -Force -ErrorAction SilentlyContinue
+                # A name nobody knows ahead, like the publishing copy's, so nothing can wait there
+                # with good copies for the compare.
+                $check = Join-Path ([IO.Path]::GetTempPath()) "hushfacebook-published-$Version-$([guid]::NewGuid().ToString('N'))"
                 try {
                     Invoke-Native 'The download back' { & gh release download $tag -R $Repository -D $check }
                     foreach ($name in $assetNames + 'SHA256SUMS.txt') {
@@ -333,7 +343,18 @@ try {
                 } finally { Remove-Item -LiteralPath $check -Recurse -Force -ErrorAction SilentlyContinue }
             } finally {
                 foreach ($stream in $held) { $stream.Dispose() }
-                Remove-Item -LiteralPath $publishing -Recurse -Force -ErrorAction SilentlyContinue
+                # Links go on their own first: Windows PowerShell's recursive removal follows a
+                # junction and would empty whatever it points at.
+                $copy = Get-Item -LiteralPath $publishing -Force -ErrorAction SilentlyContinue
+                $links = @(if ($copy -and -not ($copy.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+                        Get-ChildItem -LiteralPath $publishing -Force -ErrorAction SilentlyContinue
+                    } else { $copy }) | Where-Object { $_ -and ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) }
+                foreach ($link in $links) {
+                    try { $link.Delete() } catch { Write-Warning "Couldn't remove the link $($link.FullName): $($_.Exception.Message)" }
+                }
+                if ($copy -and -not ($copy.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+                    Remove-Item -LiteralPath $publishing -Recurse -Force -ErrorAction SilentlyContinue
+                }
             }
             Step 'published. Write the README and bundle summaries, then run -Stage index'
         }

@@ -296,8 +296,13 @@ function Get-KeptRun {
 
         The answer is a copy of the kept run in -Into, hashed there: a file hashed in the kept
         folder could be changed before the checks below read it, and the copy is this run's own.
+        Each file of the copy is opened for reading before it's hashed and added to -Held, which the
+        caller closes once its checks are done: Windows won't let a file held that way be written,
+        replaced or deleted, nor its folder be moved, so the checks read what was hashed. A copy
+        holding a link, which could be pointed elsewhere after the hash, isn't used.
     #>
-    param([string]$Apk, [object]$Stock, [bool]$Forced, [string]$Into)
+    param([string]$Apk, [object]$Stock, [bool]$Forced, [string]$Into,
+        [System.Collections.Generic.List[System.IO.FileStream]]$Held)
 
     if (-not $AppliedDir) { return $null }
     $label = Split-Path -Leaf $Apk
@@ -339,13 +344,28 @@ function Get-KeptRun {
     # The caller takes a merge in the copy as what the CLI patched, so one the stamp doesn't vouch
     # for, beside a plain APK's run, goes.
     if (-not $splitBundle) { Remove-Item -LiteralPath (Join-Path $Into 'stock-merged.apk') -Force -ErrorAction SilentlyContinue }
+    $mark = $Held.Count
+    $refused = $null
     foreach ($file in $files) {
+        $path = Join-Path $Into $file
+        try { $Held.Add([System.IO.File]::Open($path, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::Read)) }
+        catch { $refused = "can't be held for reading at its $file"; break }
         $want = [string]$stamp.($hashes[$file])
-        if (-not $want -or $want -cne (Get-Sha256Hex -Path (Join-Path $Into $file))) {
-            Write-Host "[receipt] the gate's run of $label no longer holds the $file it checked, so it's patched here"
-            Remove-Item -LiteralPath $Into -Recurse -Force -ErrorAction SilentlyContinue
-            return $null
+        if (-not $want -or $want -cne (Get-Sha256Hex -Path $path)) {
+            $refused = "no longer holds the $file it checked"
+            break
         }
+    }
+    if (-not $refused) {
+        foreach ($item in @(Get-Item -LiteralPath $Into -Force) + @(Get-ChildItem -LiteralPath $Into -Force)) {
+            if ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) { $refused = "copy holds a link, $($item.Name)"; break }
+        }
+    }
+    if ($refused) {
+        Write-Host "[receipt] the gate's run of $label $refused, so it's patched here"
+        while ($Held.Count -gt $mark) { $Held[$Held.Count - 1].Dispose(); $Held.RemoveAt($Held.Count - 1) }
+        Remove-Item -LiteralPath $Into -Recurse -Force -ErrorAction SilentlyContinue
+        return $null
     }
     return $Into
 }
@@ -360,6 +380,7 @@ Invoke-HeavyJob -Label 'receipt' -ScriptBlock {
         $runId = [guid]::NewGuid().ToString('N')
         $runDir = Resolve-WithinRoot -Path (Join-Path $workRoot "receipt-$runId") -Root $workRoot
         New-Item -ItemType Directory -Force -Path $runDir | Out-Null
+        $held = [System.Collections.Generic.List[System.IO.FileStream]]::new()
         try {
             $stock = $stockFacts[$apk]
 
@@ -377,7 +398,7 @@ Invoke-HeavyJob -Label 'receipt' -ScriptBlock {
             # report, patched APK and merge go through every check below, and only the patching is
             # skipped. The kept folder is read, never written, and what's read is this run's copy.
             $keptRun = Get-KeptRun -Apk $apk -Stock $stock -Forced $forced `
-                -Into (Resolve-WithinRoot -Path (Join-Path $runDir 'kept') -Root $workRoot)
+                -Into (Resolve-WithinRoot -Path (Join-Path $runDir 'kept') -Root $workRoot) -Held $held
             if ($keptRun) {
                 Write-Host "[receipt] reading the gate's run of ${label}: same bundle, APK, patch list and CLI"
                 $out = Join-Path $keptRun 'patched.apk'
@@ -484,6 +505,7 @@ Invoke-HeavyJob -Label 'receipt' -ScriptBlock {
                 }
             })
         } finally {
+            foreach ($stream in $held) { $stream.Dispose() }
             if ($runDir.StartsWith($workRoot, [System.StringComparison]::OrdinalIgnoreCase) -and
                 (Test-Path -LiteralPath $runDir)) {
                 Remove-Item -LiteralPath $runDir -Recurse -Force -ErrorAction SilentlyContinue

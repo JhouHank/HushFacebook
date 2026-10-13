@@ -4854,6 +4854,10 @@ try {
         'goto next',
         ':run',
         '>>"%HERE%aapt2.log" echo %APK%',
+        'rem A kept run''s copy is tried the way anyone running as the same user could, and the try is logged.',
+        'if "%APK:\kept\=%"=="%APK%" goto dump',
+        '(>>"%APK%" echo swapped) 2>nul && (>>"%HERE%aapt2.log" echo swap=went-through) || (>>"%HERE%aapt2.log" echo swap=refused)',
+        ':dump',
         'if exist "%APK%.xmltree" (type "%APK%.xmltree") else (type "%APK%")',
         'exit /b %errorlevel%') -join "`r`n") + "`r`n"), [System.Text.Encoding]::ASCII)
     # The 16 KB check runs the zipalign beside aapt2. Aligned unless a case below says otherwise.
@@ -5225,6 +5229,10 @@ try {
     Assert-True (@($manifestReads | Where-Object { $_.StartsWith($appliedRoot, [StringComparison]::OrdinalIgnoreCase) }).Count -eq 0 -and
         @($manifestReads | Where-Object { $_ -like (Join-Path $releaseRoot 'work\receipt-*\kept\patched.apk') }).Count -eq $builtBuilds.Count) `
         "The receipt read a kept run in place rather than its own copy: $($manifestReads -join '; ')"
+    # And that copy is held from its hash until its checks are done, so nothing can change it between.
+    $swaps = @($manifestReads | Where-Object { $_ -like 'swap=*' })
+    Assert-True ($swaps.Count -ge $builtBuilds.Count -and @($swaps | Where-Object { $_ -ne 'swap=refused' }).Count -eq 0) `
+        "The receipt's copy of a kept run could be changed while its checks read it: $($swaps -join '; ')"
     Assert-True (((Get-Content -LiteralPath $releaseReceipt -Raw | ConvertFrom-Json).targets | ConvertTo-Json -Depth 12) -ceq $freshTargets) `
         'The receipt read from kept runs differs from the one fresh runs gave.'
     Assert-True ((Get-KeptHashes) -ceq $keptBefore) 'The receipt changed the kept runs it read.'
@@ -6475,6 +6483,11 @@ try {
         '{"patches":[{"name":"A",' + $flowTarget + '},{"name":"B",' + $flowTarget + '}]}')
     $logLiteral = $flowLog.Replace("'", "''")
     $failLiteral = $flowFails.Replace("'", "''")
+    # What a link planted in the publish copy points at, with a file that must outlive the copy.
+    $flowLinkTarget = Join-Path $releaseFlow 'link-target'
+    New-Item -ItemType Directory -Force -Path $flowLinkTarget | Out-Null
+    Set-Content -LiteralPath (Join-Path $flowLinkTarget 'keep.txt') -Value 'keep' -Encoding ASCII
+    $linkTargetLiteral = $flowLinkTarget.Replace("'", "''")
     # The receipt names the commit it saw, as the real one does, and the bundle stage copies it.
     Set-Content -LiteralPath (Join-Path $flowRepo 'scripts/build-release-receipt.ps1') -Encoding UTF8 -Value @(
         'param([string[]]$Fixture, [string]$WorkDir, [string]$Root, [string]$Bundle, [string]$AppliedDir)',
@@ -6499,9 +6512,12 @@ try {
     # The publish stage's check of its copy of the staged release logs the folder it was handed and
     # what's in it, and refuses it when fail.txt says staged. It also tries to change the bundle in
     # that copy, as anyone running as the same user could once it's checked, and logs whether it could.
+    # When fail.txt says link, it plants a junction in the copy, as such a user could, and passes.
     Set-Content -LiteralPath (Join-Path $flowRepo 'scripts/release-receipt.ps1') -Encoding UTF8 -Value @(
         'function Test-StagedReleaseAt([string]$Root, [string]$Folder, [string]$Version, [string]$Commit) {',
         '    try { [IO.File]::AppendAllText((Join-Path $Folder ''patches-1.2.3.mpp''), ''swapped''); $swap = ''went-through'' } catch { $swap = ''refused'' }',
+        "    if ((Get-Content -LiteralPath '$failLiteral' -ErrorAction SilentlyContinue) -eq 'link') {",
+        "        New-Item -ItemType Junction -Path (Join-Path `$Folder 'linked') -Target '$linkTargetLiteral' | Out-Null }",
         "    Add-Content -LiteralPath '$logLiteral' -Value (""staged version=`$Version commit=`$Commit swap=`$swap folder=`$Folder files="" +",
         '        ((Get-ChildItem -LiteralPath $Folder -File | ForEach-Object { $_.Name } | Sort-Object) -join '',''))',
         "    if ((Get-Content -LiteralPath '$failLiteral' -ErrorAction SilentlyContinue) -eq 'staged') {",
@@ -6708,6 +6724,18 @@ try {
     Assert-True (-not (& git -C $flowRepo tag --list v1.2.3) -and -not (& git -C $flowOrigin tag --list v1.2.3)) 'Publish tagged a staged release its check refused.'
     $refusedCopy = [regex]::Match($flow[0], ' folder=(.+) files=').Groups[1].Value
     Assert-True ($refusedCopy -and -not (Test-Path -LiteralPath $refusedCopy)) 'A refused publish left the copy it checked behind.'
+    # A link in the copy, which could be pointed elsewhere before gh reads it, stops the stage before
+    # the notes, the tag or GitHub. Removing the copy takes the link away, not what it points at.
+    Set-Content -LiteralPath $flowFails -Value 'link' -Encoding ASCII
+    Assert-Throws { & $flowScript -Stage publish -Version 1.2.3 -Checked $flowChecked 6> $null 3> $null } '*linked in the publishing copy is a link, so nothing was tagged*' `
+        'Publish went ahead with a link in the copy it checked.'
+    Remove-Item -LiteralPath $flowFails -Force
+    $flow = @(Read-FlowLog)
+    Assert-True ($flow.Count -eq 1 -and $flow[0] -like 'staged *') "Publish ran a step past a link in its copy: $($flow -join ' | ')"
+    Assert-True (-not (& git -C $flowRepo tag --list v1.2.3) -and -not (& git -C $flowOrigin tag --list v1.2.3)) 'Publish tagged a copy holding a link.'
+    $linkedCopy = [regex]::Match($flow[0], ' folder=(.+) files=').Groups[1].Value
+    Assert-True ($linkedCopy -and -not (Test-Path -LiteralPath $linkedCopy)) 'A publish refused for a link left its copy behind.'
+    Assert-True (Test-Path -LiteralPath (Join-Path $flowLinkTarget 'keep.txt') -PathType Leaf) 'Removing the publish copy emptied what its link pointed at.'
     $flowHead = "$(& git -C $flowRepo rev-parse HEAD)".Trim()
     & $flowScript -Stage publish -Version 1.2.3 -Checked $flowChecked 6> $null 3> $null
     $flow = @(Read-FlowLog)
@@ -6725,6 +6753,11 @@ try {
         Assert-True ($flow[2].Contains((Join-Path $checkedCopy $name))) "Publish created the release without the checked $name."
     }
     Assert-True (-not (Test-Path -LiteralPath $checkedCopy)) 'Publish left the copy it checked behind.'
+    # The download back goes to a folder whose name isn't known ahead either, and it goes too.
+    $downloadedTo = [regex]::Match($flow[3], ' -D (.+)\z').Groups[1].Value
+    Assert-True ((Split-Path -Leaf $downloadedTo) -cmatch '\Ahushfacebook-published-1\.2\.3-[0-9a-f]{32}\z') `
+        "Publish downloaded the release back into a folder whose name can be known ahead: $downloadedTo"
+    Assert-True (-not (Test-Path -LiteralPath $downloadedTo)) 'Publish left the downloaded copy behind.'
     Assert-True ((& git -C $flowOrigin rev-parse 'v1.2.3^{commit}') -eq (& git -C $flowRepo rev-parse HEAD)) `
         'Publish did not push a v1.2.3 tag on the source commit.'
     $flowTamper = 'patches-1.2.3.mpp'
