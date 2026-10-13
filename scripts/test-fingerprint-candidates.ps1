@@ -8,7 +8,11 @@
     among decoys, and it has to rank first and stand out, with the tool still accepting nothing. In
     "twins" it is there twice, identical, and in "gone" it is missing: both runs have to fail closed
     and name no candidate on the console. A captured signature has to hold exactly the properties
-    fingerprint-signature.schema.json declares, and one of another version has to be refused.
+    fingerprint-signature.schema.json declares, and one of another version has to be refused. In
+    "outlined" the target asks a Redex string table for its marker beside a twin asking for another
+    case: read back, the marker has to set it apart, and five calls that prove no string, out of
+    range, a passed argument, a branch onto the call, a case calling the table again and a helper
+    that isn't a table, have to read none back.
 
     A getter that only its caller tells apart hides among 250 getters just like it. Callers are only
     compared for a shortlist, so in "crowd" the real one, last of a tie at the shortlist's end, has
@@ -176,8 +180,8 @@ try {
     $violations = @(Get-SchemaViolations $parsed $schema 'signature')
     Assert-True ($violations.Count -eq 0) ("The signature breaks its schema:`n" + ($violations -join "`n"))
     Assert-True ($parsed.method.descriptor -ceq $target -and $parsed.callers.count -eq 1 -and
-        @($parsed.strings) -contains 'fingerprint_fixture_marker' -and @($parsed.literals) -contains 'N:74565') `
-        "The signature does not describe the target and its one caller.`n$signatureText"
+        @($parsed.strings) -contains 'fingerprint_fixture_marker' -and @($parsed.literals) -contains 'N:74565' -and
+        @($parsed.outlinedStrings).Count -eq 0) "The signature does not describe the target and its one caller.`n$signatureText"
     # The schema check itself, on a signature with a property the schema doesn't declare.
     $extra = @(Get-SchemaViolations ($signatureText.Replace('"schema":', '"unknown": 1, "schema":') | ConvertFrom-Json) $schema 'signature')
     Assert-True ($extra.Count -eq 1 -and $extra[0] -like '*unknown is not in the schema*') 'The schema check let an undeclared property through.'
@@ -204,6 +208,44 @@ try {
     $gone = Invoke-Tool @('rank', $signature, (New-DexApk 'gone'), (Join-Path $caseRoot 'gone.txt'))
     Assert-True ($gone.ExitCode -eq 1 -and $gone.Text -match 'no candidate scores' -and $gone.Text -match 'fails closed') `
         "A build without the target did not fail closed.`n$($gone.Text)"
+
+    # Redex moved the marker into a string table. Read back, it sets the target apart from a twin
+    # that asks the table for another case, and the report names the case it came from.
+    $outlinedApk = New-DexApk 'outlined'
+    $outlinedReport = Join-Path $caseRoot 'outlined.txt'
+    $outlined = Invoke-Tool @('rank', $signature, $outlinedApk, $outlinedReport)
+    Assert-True ($outlined.ExitCode -eq 0 -and $outlined.Text -match 'Nothing was accepted' -and
+        ($outlined.Output | Where-Object { $_ -like '*#1 *' } | Select-Object -First 1) -like "*$moved*") `
+        "The target asking a string table for its marker did not rank first and stand out over its twin.`n$($outlined.Text)"
+    $outlinedText = [System.IO.File]::ReadAllText($outlinedReport)
+    $origin = 'LX/000;->A00(I)Ljava/lang/String; case 7'
+    Assert-True ($outlinedText -match [regex]::Escape("outlined strings: [`"fingerprint_fixture_marker`" from $origin]") -and
+        $outlinedText -match '"fingerprint_fixture_other_x+\.\.\." from LX/000;->A00\(I\)Ljava/lang/String; case 8\]') `
+        "The report did not say which table case the marker and the twin's long string came from.`n$outlinedText"
+    $outlinedSignature = Join-Path $caseRoot 'outlined.json'
+    $outlinedCaptured = Invoke-Tool @('capture', $outlinedApk, $moved, $outlinedSignature)
+    Assert-True ($outlinedCaptured.ExitCode -eq 0) "The capture of the outlined target failed.`n$($outlinedCaptured.Text)"
+    $outlinedParsed = [System.IO.File]::ReadAllText($outlinedSignature) | ConvertFrom-Json
+    $outlinedViolations = @(Get-SchemaViolations $outlinedParsed $schema 'outlined')
+    Assert-True ($outlinedViolations.Count -eq 0 -and @($outlinedParsed.outlinedStrings).Count -eq 1 -and
+        $outlinedParsed.outlinedStrings[0].string -ceq 'fingerprint_fixture_marker' -and $outlinedParsed.outlinedStrings[0].origin -ceq $origin -and
+        @($outlinedParsed.strings) -notcontains 'fingerprint_fixture_marker') `
+        "The outlined target's signature does not hold the marker as case 7 of the table, apart from its strings.`n$($outlinedViolations -join "`n")"
+    # Calls that prove no string add none.
+    $unprovable = [ordered]@{
+        'LX/Ng1;' = 'asks for a case the table lacks'
+        'LX/Ng2;' = 'passes its own argument'
+        'LX/Ng3;' = 'is reached by a branch loading another case'
+        'LX/Ng4;' = 'asks for a case that calls the table again'
+        'LX/Ng5;' = "calls a helper that isn't a table"
+    }
+    foreach ($owner in $unprovable.Keys) {
+        $unprovablePath = Join-Path $caseRoot ("unprovable-" + $owner.Substring(3, 3) + '.json')
+        $unprovableCapture = Invoke-Tool @('capture', $outlinedApk, "$owner->A00(I)V", $unprovablePath)
+        Assert-True ($unprovableCapture.ExitCode -eq 0) "The capture of $owner failed.`n$($unprovableCapture.Text)"
+        $read = @(([System.IO.File]::ReadAllText($unprovablePath) | ConvertFrom-Json).outlinedStrings)
+        Assert-True ($read.Count -eq 0) "A call that $($unprovable[$owner]) read back $($read.Count) string(s): $($read.origin -join ', ')"
+    }
 
     # A getter only its caller tells apart, among 250 just like it. Callers are compared for a
     # shortlist only, so the shortlist mustn't cut a tie by dex order, and a method it leaves off
@@ -273,11 +315,15 @@ try {
     Assert-True ($strayOld.ExitCode -ne 0 -and $strayOld.Text -match '-OldApk goes with -Method, or with -Calibrate') `
         "The wrapper took -OldApk beside -Signature, where it names nothing.`n$($strayOld.Text)"
 
-    # A signature of another version is refused rather than read the new way.
-    $future = Join-Path $caseRoot 'future.json'
-    [System.IO.File]::WriteAllText($future, $signatureText.Replace('"version": 1', '"version": 2'))
-    $refused = Invoke-Tool @('rank', $future, (Join-Path $caseRoot 'moved.apk'), (Join-Path $caseRoot 'future.txt'))
-    Assert-True ($refused.ExitCode -eq 2 -and $refused.Text -match 'version 2') "A version 2 signature was read.`n$($refused.Text)"
+    # A signature of another version is refused rather than read the new way, and one of version 1,
+    # captured before outlined strings counted, rather than read as if it had none.
+    foreach ($version in 1, 3) {
+        $other = Join-Path $caseRoot "version-$version.json"
+        [System.IO.File]::WriteAllText($other, $signatureText.Replace('"version": 2', "`"version`": $version"))
+        $refused = Invoke-Tool @('rank', $other, (Join-Path $caseRoot 'moved.apk'), (Join-Path $caseRoot "version-$version.txt"))
+        Assert-True ($refused.ExitCode -eq 2 -and $refused.Text -match "version $version, and this tool reads 2") `
+            "A version $version signature was read.`n$($refused.Text)"
+    }
 
     # Nothing is ever written as patch source: not under patches/ however the path spells it, and not
     # as a .kt or .java file. NTFS reads PATCHES and patches. as patches, and a junction reaches a
