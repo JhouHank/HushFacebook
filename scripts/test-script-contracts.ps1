@@ -1388,6 +1388,15 @@ try {
     Remove-Item -LiteralPath (Join-Path $stagedRoot 'patches-9.9.9.cdx.json') -Force
     $result = Test-Staged
     Assert-True ($result.Reason -like '*staged release has no patches-9.9.9.cdx.json*') "A staged release with no SBOM was not refused for it: $($result.Reason)"
+    # A receipt naming another bundle file, with SHA256SUMS.txt over it, though its hash and size
+    # are the staged bundle's: Test-ReleaseReceipt checks the bytes it's handed, not the name.
+    New-StagedRelease
+    Set-Content -LiteralPath (Join-Path $stagedRoot 'release-receipt-9.9.9.json') -Encoding UTF8 `
+        -Value ((New-TestReceipt -Mutate { param($r) $r.bundle.file = 'patches-9.9.8.mpp' }) | ConvertTo-Json -Depth 12)
+    Write-StagedSums
+    $result = Test-Staged
+    Assert-True ($result.Reason -like '*staged receipt names the bundle patches-9.9.8.mpp, not patches-9.9.9.mpp*') `
+        "A staged receipt naming another bundle file was not refused for it: $($result.Reason)"
 } finally {
     Remove-Item -LiteralPath $allowlistRoot -Recurse -Force -ErrorAction SilentlyContinue
 }

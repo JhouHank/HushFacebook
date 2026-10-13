@@ -1665,6 +1665,10 @@ function Test-StagedRelease {
         return Fail "The staged $receiptName can't be read: $($_.Exception.Message)"
     }
     if ($null -eq $receipt) { return Fail "The staged $receiptName is empty." }
+    # Test-ReleaseReceipt holds the bundle it's handed to the receipt, not the name the receipt gives it.
+    if ([string]$receipt.bundle.file -cne $bundleName) {
+        return Fail "The staged receipt names the bundle $($receipt.bundle.file), not $bundleName."
+    }
     $arguments = @{} + $Expected
     return Test-ReleaseReceipt @arguments -Receipt $receipt -ExpectedVersion $Version -BundlePath (Join-Path $Folder $bundleName) `
         -SbomPath (Join-Path $Folder $sbomName) -ToolingPath (Join-Path $Folder $toolingName) -RequireToolingAudit
@@ -1706,6 +1710,7 @@ function Test-StagedReleaseAt {
         if (-not $scopeText.Trim()) { return Fail "Commit $short carries no gradle/tooling-scopes.txt." }
         $seconds = "$(Invoke-RepoGit -Root $Root -Arguments @('log', '-1', '--format=%ct', $Commit) | Select-Object -First 1)".Trim()
         if ($seconds -notmatch '^\d+$') { return Fail "git can't say when commit $short was made." }
+        $schema = (Resolve-ReceiptSchema -Root $Root -Commit $Commit).Version
     } catch {
         return Fail "What commit $short carries can't be read: $($_.Exception.Message)"
     }
@@ -1719,6 +1724,7 @@ function Test-StagedReleaseAt {
         ApprovedManifestDelta       = @($allowlist.Entries)
         ActualCommitTimestamp       = [long]$seconds
         ExpectedCommit              = $Commit
+        ExpectedSchemaVersion       = $schema
         ToolingScopeManifestText    = $scopeText
     }
 }
