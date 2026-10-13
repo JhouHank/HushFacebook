@@ -26,6 +26,8 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* **Tooling:** Corrected the origin record for the download-speed helper so the source checks pass.
+
 * **Facebook:** With `Keep the progress bar` on, every reel in the Reels tab keeps its bar. Reels under a minute showed it on every other reel only (issue #73), because the Reels tab answers Facebook's minimum length check with its own version and the hook that gives a short reel its bar never ran there. A reel could also come up without the bar right after a swipe, when the hide Facebook meant for the reel leaving the screen landed on the next one.
 * **Facebook:** With `Keep the progress bar` on, a reel no longer picks up the last one's "most replayed" graph or chapter marks. Facebook takes the graph away when the bar thins out, and a kept bar never does, so one reel's graph sat over the next one's bar until you dragged it. After a reel with chapters, the next one could also come up with no bar at all. Both get cleared as each new reel loads now, and the graph shows while you drag, the way Facebook shows it.
 * **Facebook:** After you pick an app icon, the long press on the new icon lists Hushfacebook settings again right away. Android takes an app's shortcuts off when its launcher entry changes, and since Facebook keeps running after an icon change, the shortcut stayed gone until Facebook was closed and opened again (issue #119).

@@ -307,6 +307,7 @@
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/SaveLeftovers.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/Mp4Join.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/AacReencode.java",
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/TransferRate.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/VideoTranscode.java"
       ],
       "origin": "original",
