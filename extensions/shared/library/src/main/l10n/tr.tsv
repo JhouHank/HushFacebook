@@ -8,6 +8,8 @@ Hides "Pages you may like" cards, cards promoting Facebook's own features, and s
 %1$d switches will change.	%1$d anahtar değişecek.
 %1$s of %2$s	%1$s / %2$s
 %1$s so far	Şimdiye kadar %1$s
+%1$s a second	saniyede %1$s
+%1$s elapsed	%1$s geçti
 %1$s. It was set when you patched, so Pause can't turn it off. To rule it out, patch again and leave out that patch.	%1$s. Yamaladığında ayarlandığı için Duraklatma bunu kapatamaz. Bunu elemek için yeniden yamala ve o yamayı dışarıda bırak.
 %1$s. They were set when you patched, so Pause can't turn them off. To rule one out, patch again and leave out the patch in brackets after it.	%1$s. Yamaladığında ayarlandıkları için Duraklatma bunları kapatamaz. Birini elemek için yeniden yamala ve onun ardından parantez içinde yazan yamayı dışarıda bırak.
 A change here applies after Facebook restarts.	Buradaki bir değişiklik Facebook yeniden başladıktan sonra geçerli olur.

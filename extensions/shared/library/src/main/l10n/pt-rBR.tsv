@@ -8,6 +8,8 @@ Hides "Pages you may like" cards, cards promoting Facebook's own features, and s
 %1$d switches will change.	%1$d opções serão alteradas.
 %1$s of %2$s	%1$s de %2$s
 %1$s so far	%1$s até o momento
+%1$s a second	%1$s por segundo
+%1$s elapsed	%1$s decorridos
 %1$s. It was set when you patched, so Pause can't turn it off. To rule it out, patch again and leave out that patch.	%1$s. Isso foi definido quando você aplicou os patches, então a pausa não pode desativá-lo. Para descartar essa possibilidade, aplique os patches novamente sem esse patch.
 %1$s. They were set when you patched, so Pause can't turn them off. To rule one out, patch again and leave out the patch in brackets after it.	%1$s. Esses itens foram definidos quando você aplicou os patches, então a pausa não pode desativá-los. Para descartar um deles, aplique os patches novamente sem o patch entre parênteses depois dele.
 A change here applies after Facebook restarts.	Uma alteração daqui vale depois que o Facebook reiniciar.
