@@ -663,6 +663,7 @@ public class FontFilePreferenceTest {
             assertEquals(TIMEOUT, ShadowToast.getTextOfLatestToast());
             assertBeforeKept(page, rubik);
 
+            assertTrue("the screen never closed the file it stopped waiting on", gatedRead.closeAsked());
             gatedRead.letGo();
             settle();
             assertEquals("the late copy didn't read the whole file", khmer.length, gatedRead.bytesRead());
@@ -842,6 +843,7 @@ public class FontFilePreferenceTest {
      */
     private static final class GatedStream extends FilterInputStream {
         private final CountDownLatch go = new CountDownLatch(1);
+        private final CountDownLatch closeAsked = new CountDownLatch(1);
         private volatile boolean waited;
         private volatile long read;
 
@@ -851,6 +853,15 @@ public class FontFilePreferenceTest {
 
         void letGo() {
             go.countDown();
+        }
+
+        /**
+         * Whether something asked to close this within a few seconds. The screen closes it from a
+         * thread of its own, so a test waits for that before letting the read go, or the close
+         * could land mid-read.
+         */
+        boolean closeAsked() throws InterruptedException {
+            return closeAsked.await(10, TimeUnit.SECONDS);
         }
 
         long bytesRead() {
@@ -882,6 +893,7 @@ public class FontFilePreferenceTest {
 
         @Override
         public void close() throws IOException {
+            closeAsked.countDown();
             if (go.getCount() == 0) super.close();
         }
     }
