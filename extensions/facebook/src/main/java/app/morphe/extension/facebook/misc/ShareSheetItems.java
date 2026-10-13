@@ -131,17 +131,25 @@ public final class ShareSheetItems {
         return parse(Settings.HIDDEN_SHARE_ITEMS.savedValue());
     }
 
+    /** What {@link #hide} did with a pick. */
+    public enum Hidden {
+        SAVED,
+        /** The types need more than {@link #MAX_HIDDEN_CHARS}. Nothing was saved. */
+        NO_ROOM,
+        /** The phone didn't keep the write. The old list stands, live and on disk. */
+        NOT_STORED
+    }
+
     /**
      * Saves [types] as the ones to keep out, dropping anything that isn't a type. When the types
-     * need more than {@link #MAX_HIDDEN_CHARS}, it saves nothing and answers false, so a picked
-     * type is never lost in silence. An imported list can hold long types this build doesn't name.
+     * need more than {@link #MAX_HIDDEN_CHARS}, it saves nothing and says so, so a picked type is
+     * never lost in silence. An imported list can hold long types this build doesn't name.
      */
-    public static boolean hide(Collection<String> types) {
+    public static Hidden hide(Collection<String> types) {
         String picked = join(types);
         String kept = clean(picked);
-        if (count(kept) < count(picked)) return false;
-        Settings.HIDDEN_SHARE_ITEMS.save(kept);
-        return true;
+        if (count(kept) < count(picked)) return Hidden.NO_ROOM;
+        return Settings.HIDDEN_SHARE_ITEMS.save(kept) ? Hidden.SAVED : Hidden.NOT_STORED;
     }
 
     /**

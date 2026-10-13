@@ -331,7 +331,8 @@ final class AppPages {
 
     /**
      * The list: every item it knows, ticked when it's kept out. Save keeps the ticks, or, when they
-     * need more room than the setting has, keeps the list open and saves nothing.
+     * need more room than the setting has or the phone doesn't keep the write, keeps the list open
+     * with its ticks, so Save can be tried again.
      */
     private static void showShareItems(HushfacebookPreferenceFragment page, Context context, Preference row) {
         List<String> types = ShareSheetItems.choices();
@@ -354,8 +355,13 @@ final class AppPages {
             for (int i = 0; i < ticked.length; i++) {
                 if (ticked[i]) picked.add(types.get(i));
             }
-            if (!ShareSheetItems.hide(picked)) {
+            ShareSheetItems.Hidden saved = ShareSheetItems.hide(picked);
+            if (saved == ShareSheetItems.Hidden.NO_ROOM) {
                 Utils.showToastLong(L10n.t("This list needs more room than it has. Shorten it, then save again."));
+                return;
+            }
+            if (saved == ShareSheetItems.Hidden.NOT_STORED) {
+                Utils.showToastLong(L10n.t("Couldn't save the change. Try again."));
                 return;
             }
             row.setSummary(shareItemsSummary(ShareSheetItems.hidden()));
