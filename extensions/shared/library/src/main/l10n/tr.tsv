@@ -118,6 +118,8 @@ Android couldn't use that font file. Your font didn't change.	Android bu yazı t
 Couldn't save a copy of that font. Check that the phone has room, then try again.	Bu yazı tipinin kopyası kaydedilemedi. Telefonda yer olup olmadığını kontrol et, sonra tekrar dene.
 Couldn't open that file. Your font didn't change.	Bu dosya açılamadı. Yazı tipin değişmedi.
 Couldn't go back to your phone's font. Try again.	Telefonunun yazı tipine geri dönülemedi. Tekrar dene.
+The app holding that font file is taking too long, so Hushfacebook stopped waiting. Your font didn't change.	O yazı tipi dosyasını tutan uygulama çok uzun sürüyor, bu yüzden Hushfacebook beklemeyi bıraktı. Yazı tipin değişmedi.
+The app holding the last font file still hasn't answered. Try again later.	Son yazı tipi dosyasını tutan uygulama hâlâ yanıt vermedi. Daha sonra tekrar dene.
 Full report saved to %1$s	Tam rapor şuraya kaydedildi: %1$s
 The GPL-3.0 license, plus notices for the projects this is built on	GPL-3.0 lisansı ve bu çalışmanın dayandığı projelerin bildirimleri
 Hide "People you may know"	“Tanıyor olabileceğin kişiler” bölümünü gizle

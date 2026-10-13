@@ -118,6 +118,8 @@ Android couldn't use that font file. Your font didn't change.	Android no pudo us
 Couldn't save a copy of that font. Check that the phone has room, then try again.	No se pudo guardar una copia de esa fuente. Comprueba que el teléfono tenga espacio y vuelve a intentarlo.
 Couldn't open that file. Your font didn't change.	No se pudo abrir ese archivo. Tu fuente no cambió.
 Couldn't go back to your phone's font. Try again.	No se pudo volver a la fuente de tu teléfono. Inténtalo de nuevo.
+The app holding that font file is taking too long, so Hushfacebook stopped waiting. Your font didn't change.	La app que guarda ese archivo de fuente tarda demasiado, así que Hushfacebook dejó de esperar. Tu fuente no cambió.
+The app holding the last font file still hasn't answered. Try again later.	La app del último archivo de fuente aún no ha respondido. Inténtalo más tarde.
 Full report saved to %1$s	Informe completo guardado en %1$s
 The GPL-3.0 license, plus notices for the projects this is built on	La licencia GPL-3.0 y los avisos de los proyectos en los que se basa
 Hide "People you may know"	Ocultar “Personas que quizá conozcas”

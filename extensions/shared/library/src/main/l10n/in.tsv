@@ -118,6 +118,8 @@ Android couldn't use that font file. Your font didn't change.	Android tidak bisa
 Couldn't save a copy of that font. Check that the phone has room, then try again.	Salinan font itu tidak dapat disimpan. Pastikan ponsel masih punya ruang, lalu coba lagi.
 Couldn't open that file. Your font didn't change.	File itu tidak dapat dibuka. Font Anda tidak berubah.
 Couldn't go back to your phone's font. Try again.	Tidak dapat kembali ke font ponsel Anda. Coba lagi.
+The app holding that font file is taking too long, so Hushfacebook stopped waiting. Your font didn't change.	Aplikasi yang menyimpan file font itu terlalu lama, jadi Hushfacebook berhenti menunggu. Font Anda tidak berubah.
+The app holding the last font file still hasn't answered. Try again later.	Aplikasi yang menyimpan file font terakhir masih belum merespons. Coba lagi nanti.
 Full report saved to %1$s	Laporan lengkap disimpan ke %1$s
 The GPL-3.0 license, plus notices for the projects this is built on	Lisensi GPL-3.0 dan pemberitahuan untuk proyek-proyek yang menjadi dasarnya
 Hide "People you may know"	Sembunyikan “Orang yang Mungkin Anda Kenal”
