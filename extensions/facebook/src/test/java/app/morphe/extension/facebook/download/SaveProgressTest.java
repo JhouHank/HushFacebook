@@ -105,10 +105,11 @@ public class SaveProgressTest {
     @After
     public void tearDown() throws IOException {
         release.countDown();
-        server.close();
+        // First, so a server that fails to close can't leave the fake clock to the next class.
+        SavesForTests.endAll();
         MediaDownload.policyForTests = null;
         LogBufferManager.clearLogBuffer();
-        SavesForTests.endAll();
+        server.close();
     }
 
     /** A save on the feature's own worker, as a tap starts one, of [path] into the gallery. */
@@ -1072,6 +1073,9 @@ public class SaveProgressTest {
         assertEquals("1:00:00 elapsed", SaveControl.elapsedText(3_600_000));
         assertEquals("1 KB a second", SaveControl.rateText(1));
         assertEquals("850 KB a second", SaveControl.rateText(850 * 1024));
+        assertEquals("1023 KB a second", SaveControl.rateText(1023 * 1024));
+        // Just under a megabyte rounds to 1024 KB, so it's said as a megabyte.
+        assertEquals("1.0 MB a second", SaveControl.rateText(MIB - 400));
         assertEquals("1.3 MB a second", SaveControl.rateText((long) (1.3 * MIB)));
         assertEquals("12 MB a second", SaveControl.rateText(12 * MIB));
     }
@@ -1111,6 +1115,29 @@ public class SaveProgressTest {
         } finally { save.end(); }
     }
 
+    /** A tick right after a download's own tell waits its turn, so the list is told at most twice a second. */
+    @Test public void theTickKeepsToTheGapAfterADownloadTold() {
+        SavesForTests.FakeClock clock = SavesForTests.fakeClock();
+        SaveControl.Save save = SaveControl.begin(context, true);
+        AtomicInteger told = new AtomicInteger();
+        SaveControl.Watcher counting = told::incrementAndGet;
+        SaveControl.watch(counting);
+        try {
+            clock.advanceMillis(900);
+            save.transferred(MIB, 4 * MIB);
+            int afterDownload = told.get();
+            // The tick comes while the fake clock still reads the moment of that tell.
+            Shadows.shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(1));
+            assertEquals("the tick told again straight after the download did", afterDownload, told.get());
+            clock.advanceMillis(1_000);
+            Shadows.shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(1));
+            assertEquals("the tick stopped telling once the gap had passed", afterDownload + 1, told.get());
+        } finally {
+            save.end();
+            SaveControl.unwatch(counting);
+        }
+    }
+
     private static String text(Notification shown) {
         return String.valueOf(shown.extras.getCharSequence(Notification.EXTRA_TEXT));
     }
@@ -1118,11 +1145,11 @@ public class SaveProgressTest {
     /** The end of a save takes its tick away: nothing is told or shown for it afterwards. */
     @Test public void theTickEndsWithTheSave() {
         SaveControl.Save save = SaveControl.begin(context, true);
-        assertTrue("a running save has no tick", save.ticks.hasCallbacks(save.tick));
         AtomicInteger told = new AtomicInteger();
         SaveControl.Watcher counting = told::incrementAndGet;
         SaveControl.watch(counting);
         try {
+            assertTrue("a running save has no tick", save.ticks.hasCallbacks(save.tick));
             save.end();
             int ended = told.get();
             assertFalse("the tick outlived the save", save.ticks.hasCallbacks(save.tick));
@@ -1130,6 +1157,8 @@ public class SaveProgressTest {
             assertEquals("a save that ended still told the settings about itself", ended, told.get());
             assertNull("a save that ended showed its notification again", saveNotification());
         } finally {
+            // A failed check above still ends it, or it would run on into the next test.
+            save.end();
             SaveControl.unwatch(counting);
         }
     }

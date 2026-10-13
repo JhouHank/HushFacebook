@@ -29,6 +29,11 @@ final class TransferRate {
     private int first;
     private int count;
     private long latest;
+    /**
+     * When [latest] last grew. A read between samples only moves [latest], so after a stall the
+     * newest sample can be behind it for good, and only this says nothing came for a whole window.
+     */
+    private long grewAt;
 
     TransferRate(long now) {
         started = now;
@@ -43,6 +48,7 @@ final class TransferRate {
     synchronized void sample(long now, long done) {
         if (done < 0) return;
         if (count > 0 && done < latest) count = 0;
+        if (count == 0 || done > latest) grewAt = now;
         latest = done;
         if (count > 0 && now - at[index(count - 1)] < SPACING) return;
         if (count == KEPT) {
@@ -66,6 +72,7 @@ final class TransferRate {
         for (int k = 1; k < count && at[index(k)] <= now - WINDOW; k++) base = index(k);
         long span = now - at[base];
         if (span < SHORTEST) return -1;
+        if (now - grewAt >= WINDOW) return 0;
         long moved = latest - bytes[base];
         if (moved <= 0) return 0;
         return (long) (moved * 1e9 / span);

@@ -127,7 +127,8 @@ public final class SaveControl {
 
     /**
      * Told when a save starts, moves on to its next phase or ends, and at most twice a second while
-     * it downloads. On the save's own thread, or the one that cancelled it.
+     * it runs. On the save's own thread, the one that cancelled it, or the main thread for the
+     * once-a-second tick that moves the time on.
      */
     public interface Watcher {
         void savesChanged();
@@ -218,8 +219,10 @@ public final class SaveControl {
 
     /** "1.3 MB a second", or KB below a megabyte, in the phone's language and its numbers. */
     static String rateText(long bytesPerSecond) {
-        String amount = bytesPerSecond < 1024L * 1024L
-            ? String.format(L10n.locale(), "%d KB", Math.max(1L, Math.round(bytesPerSecond / 1024.0)))
+        // The unit after rounding: just under a megabyte rounds to 1024 KB, which reads as 1.0 MB.
+        long kilobytes = Math.max(1L, Math.round(bytesPerSecond / 1024.0));
+        String amount = kilobytes < 1024L
+            ? String.format(L10n.locale(), "%d KB", kilobytes)
             : megabytes(bytesPerSecond);
         return L10n.f("%1$s a second", amount);
     }
@@ -537,8 +540,12 @@ public final class SaveControl {
             synchronized (this) {
                 if (ended) return;
             }
-            toldAt = clock.nanoTime();
-            tell();
+            // Held to the same gap as a download's own tells, so the two never land back to back.
+            long now = clock.nanoTime();
+            if (now - toldAt >= UPDATE_GAP_NANOS) {
+                toldAt = now;
+                tell();
+            }
             if (manager != null) {
                 boolean downloading = phase == Phase.DOWNLOADING;
                 showIfDue(downloading ? percent(done, total) : -1, downloading ? done : 0, downloading ? total : -1, false);

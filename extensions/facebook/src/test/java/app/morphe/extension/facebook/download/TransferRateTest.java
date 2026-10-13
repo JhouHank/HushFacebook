@@ -56,6 +56,19 @@ public class TransferRateTest {
         assertEquals(0, rate.bytesPerSecond(T0 + 600_000 * MS));
     }
 
+    /**
+     * Real reads seldom land on the sample spacing. The last one before a stall is kept only as the
+     * latest count, and the bytes it brought were never in a stored sample, so the rate counted them
+     * over an ever longer span and never reached nothing.
+     */
+    @Test public void aStallAfterAReadBetweenSamplesStillFallsToNothing() {
+        TransferRate rate = new TransferRate(T0);
+        steady(rate, 0, 10_050, 0);
+        assertTrue(rate.bytesPerSecond(T0 + 10_100 * MS) > MIB / 2);
+        assertEquals(0, rate.bytesPerSecond(T0 + 15_050 * MS));
+        assertEquals(0, rate.bytesPerSecond(T0 + 600_000 * MS));
+    }
+
     @Test public void aCounterThatStartsOverIsMeasuredAfresh() {
         TransferRate rate = new TransferRate(T0);
         steady(rate, 0, 4_000, 0);
