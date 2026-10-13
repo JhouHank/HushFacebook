@@ -58,21 +58,28 @@ public final class JavaCrashReport {
      */
     private static final List<Saved> PENDING = new ArrayList<>();
 
+    /**
+     * Takes the crash files in Download/Hushfacebook one at a time, each a prune and an insert or a
+     * delete. Never held with {@link LogBufferManager#CLEAR_UNDO_LOCK}: every diagnostic event takes
+     * that one, and a slow MediaStore would hold them all up.
+     */
+    private static final Object FILE_LOCK = new Object();
+
     /** One save, for {@link #survived}: what the report held before it, and the file it wrote. */
     public static final class Saved {
         /** "" for nothing. A save before this one that lives on hands this one its own. */
         String before;
 
+        /** Set by the thread that saved, before it hands the save to {@link #survived}. */
         @Nullable
-        final Uri file;
+        Uri file;
 
         /** What a clear took this save out with, or null while it waits in {@link #PENDING}. */
         @Nullable
         Cleared cleared;
 
-        Saved(String before, @Nullable Uri file) {
+        Saved(String before) {
             this.before = before;
-            this.file = file;
         }
     }
 
@@ -105,14 +112,18 @@ public final class JavaCrashReport {
             if (context == null || throwable == null || lastSaved.get() == throwable) return null;
             lastSaved = new WeakReference<>(throwable);
             String report = build(context, thread, throwable);
+            Saved saved;
             synchronized (LogBufferManager.CLEAR_UNDO_LOCK) {
-                String before = LogBufferManager.readCrashReport(context);
+                saved = new Saved(LogBufferManager.readCrashReport(context));
                 LogBufferManager.persistCrashReport(context, report);
-                Uri file = CrashFile.wanted() ? CrashFile.write(context, report, System.currentTimeMillis()) : null;
-                Saved saved = new Saved(before, file);
                 PENDING.add(saved);
-                return saved;
             }
+            if (CrashFile.wanted()) {
+                synchronized (FILE_LOCK) {
+                    saved.file = CrashFile.write(context, report, System.currentTimeMillis());
+                }
+            }
+            return saved;
         } catch (Throwable ignored) {
             // Crash-time code must never get in the way of the handlers after this one.
             return null;
@@ -141,7 +152,11 @@ public final class JavaCrashReport {
                 } else {
                     LogBufferManager.persistCrashReport(context, saved.before);
                 }
-                if (saved.file != null) CrashFile.takeBack(context, saved.file);
+            }
+            if (saved.file != null) {
+                synchronized (FILE_LOCK) {
+                    CrashFile.takeBack(context, saved.file);
+                }
             }
         } catch (Throwable ignored) {
             // The exception's report stays; nothing else is lost.
@@ -192,13 +207,19 @@ public final class JavaCrashReport {
     }
 
     /**
-     * Undo of a clear: the report goes back while its place is still empty, with its saves waiting
-     * in it again as if it was never cleared. A crash saved since keeps the place, and the saves
-     * stay with the clear. Throws when the report can't be written.
+     * Undo of a clear: the report goes back with its saves waiting in it again, as if it was never
+     * cleared. While its place is empty it goes straight back. A crash saved since keeps the place,
+     * and while that one waits on its handlers the cleared report goes in under it: the oldest save
+     * since takes it as what it wrote over, so it comes back if they all live on. It used to stay
+     * with the clear, and the report ended empty. Throws when the report can't be written.
      */
     static void putBack(@Nullable Context context, Cleared cleared) throws Exception {
         synchronized (LogBufferManager.CLEAR_UNDO_LOCK) {
-            if (!LogBufferManager.restoreJavaCrashIfMissing(context, cleared.report)) return;
+            if (!LogBufferManager.restoreJavaCrashIfMissing(context, cleared.report)) {
+                // The clear took every save waiting before it, so these all came after.
+                if (PENDING.isEmpty()) return;
+                PENDING.get(0).before = cleared.report;
+            }
             for (Saved saved : cleared.waiting) saved.cleared = null;
             PENDING.addAll(0, cleared.waiting);
             cleared.waiting.clear();

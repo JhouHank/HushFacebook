@@ -212,6 +212,40 @@ public class JavaCrashReportTest {
         assertFalse(kept, kept.contains("swallowed"));
     }
 
+    /**
+     * Undo while a worker's exception saved after the clear holds the place puts the cleared report
+     * in under it, so when that worker and the one saved before the clear both live on, whichever
+     * goes first, the report ends as it was. Undo used to leave the cleared report with the clear,
+     * and the report ended empty.
+     */
+    @Test
+    public void undoUnderAWorkerSavedSinceEndsWithTheEarlierCrashWhenBothLiveOn() throws Exception {
+        for (boolean newerFirst : new boolean[]{false, true}) {
+            JavaCrashReport.resetForTests();
+            LogBufferManager.persistCrashReport(context, "an earlier start's crash");
+            Thread one = new Thread("CombinedTP3");
+            Thread two = new Thread("CombinedTP4");
+            JavaCrashReport.Saved first = JavaCrashReport.save(one, new IllegalStateException("before the clear"));
+            LogBufferManager.clearLogBuffer();
+            JavaCrashReport.Saved second = JavaCrashReport.save(two, new IllegalStateException("after the clear"));
+            assertEquals(LogBufferManager.UndoResult.RESTORED, LogBufferManager.undoClear());
+            assertTrue("newer first " + newerFirst + ": the crash since the clear lost its place",
+                    LogBufferManager.readCrashReport(context).contains("after the clear"));
+            if (newerFirst) {
+                JavaCrashReport.survived(two, second);
+                assertTrue("the worker saved before the clear isn't back under it",
+                        LogBufferManager.readCrashReport(context).contains("before the clear"));
+                JavaCrashReport.survived(one, first);
+            } else {
+                JavaCrashReport.survived(one, first);
+                JavaCrashReport.survived(two, second);
+            }
+            String kept = LogBufferManager.readCrashReport(context);
+            assertTrue("newer first " + newerFirst + ": " + kept, kept.contains("an earlier start's crash"));
+            assertFalse("newer first " + newerFirst + ": " + kept, kept.contains("the clear"));
+        }
+    }
+
     @Test
     public void nothingToKeepLeavesTheNextCrashItsPlace() {
         JavaCrashReport.save(Thread.currentThread(), null);
