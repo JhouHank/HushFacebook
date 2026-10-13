@@ -5297,9 +5297,15 @@ try {
     $deviceOut = Join-Path $releaseRoot 'device'
     # patch-for-device holds the bundle to the input digest it carries, and the receipt runs' bundle
     # carries none, so each device run gets that bundle stamped with this tree's digest (or the one
-    # given) and the receipt runs get it back as it was.
-    function Use-DeviceBundle([scriptblock]$Run, [string]$InputSha256) {
+    # given) and the receipt runs get it back as it was. The receipt cases that need a release's
+    # identity pass the clean commit.
+    function Use-StampedBundle([scriptblock]$Run, [string]$InputSha256, [string]$Commit) {
         if (-not $InputSha256) { $InputSha256 = Get-ProducerInputSha256 -Root $releaseRepo }
+        $source = if ($Commit) {
+            "Hushfacebook-Source-State: clean`nHushfacebook-Source-Commit: $Commit`nHushfacebook-Source-Tree: $('a' * 40)`n"
+        } else {
+            "Hushfacebook-Source-State: unknown`nHushfacebook-Source-Commit: unknown`nHushfacebook-Source-Tree: unknown`n"
+        }
         $legacy = [IO.File]::ReadAllBytes($releaseBundle)
         try {
             $zip = [IO.Compression.ZipFile]::Open($releaseBundle, [IO.Compression.ZipArchiveMode]::Update)
@@ -5310,8 +5316,7 @@ try {
                 $manifest.Delete()
                 $writer = [IO.StreamWriter]::new($zip.CreateEntry('META-INF/MANIFEST.MF').Open())
                 try {
-                    $writer.Write($text.TrimEnd("`n") + "`nHushfacebook-Source-State: unknown`nHushfacebook-Source-Commit: unknown`n" +
-                        "Hushfacebook-Source-Tree: unknown`nHushfacebook-Input-SHA256: $InputSha256`n`n")
+                    $writer.Write($text.TrimEnd("`n") + "`n$source" + "Hushfacebook-Input-SHA256: $InputSha256`n`n")
                 } finally { $writer.Dispose() }
             } finally { $zip.Dispose() }
             $zip = [IO.Compression.ZipFile]::OpenRead($releaseBundle)
@@ -5330,7 +5335,7 @@ try {
         $arguments = @{ Root = $releaseRepo; DesktopJar = $DesktopJar; Java = $stubJava; Aapt2 = $stubAapt2; OutDir = $OutDir }
         if ($Apk) { $arguments['Apk'] = $Apk }
         if ($AllowStaleBundle) { $arguments['AllowStaleBundle'] = $true }
-        Use-DeviceBundle -InputSha256 $InputSha256 -Run { & (Join-Path $PSScriptRoot 'patch-for-device.ps1') @arguments 6> $null }
+        Use-StampedBundle -InputSha256 $InputSha256 -Run { & (Join-Path $PSScriptRoot 'patch-for-device.ps1') @arguments 6> $null }
     }
     $deviceApk = Join-Path $deviceOut "hushfacebook-$releaseVersionHere-signed.apk"
     foreach ($build in $releaseTarget.PackageVersions) {
@@ -5373,7 +5378,7 @@ try {
             @{ Options = @{ $firstPatchHere = @('no equals sign') }; Pattern = "*The option 'no equals sign' for*isn't key=value*" })) {
         Remove-Item -LiteralPath $javaLog -Force -ErrorAction SilentlyContinue
         Assert-Throws {
-            Use-DeviceBundle {
+            Use-StampedBundle {
                 & (Join-Path $PSScriptRoot 'patch-for-device.ps1') -Root $releaseRepo -DesktopJar $stubJar -Java $stubJava `
                     -Aapt2 $stubAapt2 -OutDir $deviceOut -Apk $fixturePaths[$releaseTarget.PackageVersion] `
                     -PatchOptions $badOptions.Options 6> $null
@@ -5386,7 +5391,7 @@ try {
     $optionedHere = @((Get-Content -LiteralPath (Join-Path $releaseRepo 'patches-list.json') -Raw | ConvertFrom-Json).patches)[1].name
     $optionsLog = Join-Path $tools 'options.log'
     Remove-Item -LiteralPath $javaLog, $optionsLog -Force -ErrorAction SilentlyContinue
-    Use-DeviceBundle {
+    Use-StampedBundle {
         & (Join-Path $PSScriptRoot 'patch-for-device.ps1') -Root $releaseRepo -DesktopJar $stubJar -Java $stubJava `
             -Aapt2 $stubAapt2 -OutDir $deviceOut -Apk $fixturePaths[$releaseTarget.PackageVersion] `
             -PatchOptions @{ $optionedHere = @('appName=HushBook') } 6> $null
@@ -5418,6 +5423,50 @@ try {
     } finally {
         [IO.File]::WriteAllBytes($touchedCatalog, $catalogBytes)
         [IO.File]::SetLastWriteTimeUtc($touchedCatalog, $catalogTime)
+    }
+
+    # The receipt builder holds a bundle that carries its input digest to the checkout the same way.
+    # Its clean-tree check already sees an edit still there, so the case is a bundle built while the
+    # tree held an edit, or an input, that's gone again by the receipt run: the tree is clean, the
+    # stamp right and no file newer than the bundle. Both are refused before any fixture is patched,
+    # and the same tree, stamped as the clean release commit, writes its receipt.
+    $removedInput = Join-Path $releaseRepo 'gradle/wrapper/removed-input.txt'
+    New-Item -ItemType Directory -Path (Split-Path -Parent $removedInput) -Force | Out-Null
+    [IO.File]::WriteAllText($removedInput, 'x', [Text.Encoding]::ASCII)
+    $withRemoved = Get-ProducerInputSha256 -Root $releaseRepo
+    Remove-Item -LiteralPath $removedInput
+    [IO.File]::AppendAllText($touchedCatalog, "`n# edited`n")
+    $withEdit = Get-ProducerInputSha256 -Root $releaseRepo
+    [IO.File]::WriteAllBytes($touchedCatalog, $catalogBytes)
+    [IO.File]::SetLastWriteTimeUtc($touchedCatalog, $catalogTime)
+    $builtInputs = Get-ProducerInputSha256 -Root $releaseRepo
+    $releaseSbomBytes = [IO.File]::ReadAllBytes($releaseSbom)
+    $releaseToolingBytes = [IO.File]::ReadAllBytes($releaseTooling)
+    $releaseReceiptBytes = [IO.File]::ReadAllBytes($releaseReceipt)
+    try {
+        foreach ($since in @(@{ Name = 'an input deleted since'; Inputs = $withRemoved }, @{ Name = 'an edit put back since'; Inputs = $withEdit })) {
+            Use-StampedBundle -InputSha256 $since.Inputs -Commit $releaseCommit -Run {
+                Assert-Throws { Invoke-ReceiptBuilder -Fixtures $allFixtures } `
+                    "*doesn't match this checkout: it was built from other sources*Nothing was patched*" `
+                    "build-release-receipt.ps1 went ahead with a bundle built with $($since.Name)."
+                Assert-True (-not (Test-Path -LiteralPath $javaLog)) "build-release-receipt.ps1 patched with a bundle built with $($since.Name)."
+            }
+        }
+        Use-StampedBundle -InputSha256 $builtInputs -Commit $releaseCommit -Run {
+            New-TestSbom -Path $releaseSbom -Bundle $releaseBundle
+            New-TestTooling -Path $releaseTooling -Bundle $releaseBundle -Commit $releaseCommit -ScopeText $releaseScopeText
+            try {
+                Invoke-ReceiptBuilder -Fixtures $allFixtures
+            } catch {
+                throw "build-release-receipt.ps1 refused a bundle stamped with this tree's inputs: $($_.Exception.Message)"
+            }
+        }
+    } finally {
+        [IO.File]::WriteAllBytes($touchedCatalog, $catalogBytes)
+        [IO.File]::SetLastWriteTimeUtc($touchedCatalog, $catalogTime)
+        [IO.File]::WriteAllBytes($releaseSbom, $releaseSbomBytes)
+        [IO.File]::WriteAllBytes($releaseTooling, $releaseToolingBytes)
+        [IO.File]::WriteAllBytes($releaseReceipt, $releaseReceiptBytes)
     }
 
     # Another Meta app at a build the catalog declares. Neither script may hand it to the CLI: each

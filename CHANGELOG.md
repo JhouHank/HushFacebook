@@ -48,6 +48,7 @@ Changes in each Hushfacebook version, newest first.
 * **Tooling:** The translation generator refuses a row for an extra plural form (like "|few") when its table lacks the row that form belongs to. Both checks used to pass, and every other count would have stayed in English.
 * **Tooling:** The two Python harnesses that copy the whole checkout delete the copy after a passing run. A failing run still leaves it in the temp folder to look at.
 * **Tooling:** `patch-for-device.ps1` holds the bundle to the sources it was built from instead of to file times. A deleted or renamed source, or an edit left with an older time, used to get through, so a phone could get a bundle that didn't match the checkout. The script now works out the same input digest the build stamps into the bundle and stops when the two differ. `-AllowStaleBundle` still patches anyway, and the output says it did.
+* **Tooling:** The release receipt builder holds the bundle to the same input digest. It went by file times too, so a source deleted, renamed or put back with an older time since the build got past it. A bundle with no recorded inputs, like the ones published before the build started stamping them, gets the old checks.
 
 ## 0.11.1 (2026-10-12)
 

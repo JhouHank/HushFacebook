@@ -164,6 +164,12 @@ if ($newerSources.Count -gt 0) {
         "$($newerSources[0].FullName). The bundle may not hold what they hold now, so build it again. " +
         'Nothing was patched.')
 }
+# File times miss an input deleted, renamed or put back behind an older time. A bundle that carries
+# the digest of its inputs is held to the checkout's; a legacy one with no record keeps the checks above.
+if ((Get-BundleIdentityFacts -BundlePath $Bundle).Present) {
+    $staleBundle = Get-BundleInputMismatch -Root $Root -BundlePath $Bundle
+    if ($staleBundle) { throw "The bundle doesn't match this checkout: $staleBundle. Build it again. Nothing was patched." }
+}
 
 # The SBOM, read with the bundle and for the same reason, and held to it: an SBOM left from another
 # build would put another bundle's libraries in front of OSV. Then the advisory gate, before any
