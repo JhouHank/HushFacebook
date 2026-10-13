@@ -626,7 +626,7 @@ public final class MediaDownload {
             Downloader.Result fetched = DashSave.fetchWork(url, kind, file, policyFor(application), cap(), progress);
             if (!fetched.ok()) return fetched;
             // A photo the CDN sent as AVIF goes to the gallery as a JPEG, like Facebook's own saves.
-            String mime = kind == Downloader.Kind.IMAGE ? PhotoFormat.jpegFromAvif(file, fetched.mime) : fetched.mime;
+            String mime = kind == Downloader.Kind.IMAGE ? PhotoFormat.jpegFromAvif(file, fetched.mime, cap()) : fetched.mime;
             Downloader.Result published = Downloader.publish(file, mime, writer, progress);
             boolean lower = false;
             boolean refused = false;
