@@ -108,8 +108,13 @@ public final class FingerprintCandidates {
     /** Callers compared, per method. */
     static final int MAX_CALLERS = 400;
 
-    /** String tables read per build, the cases read per table, and outlined strings kept per method. */
-    static final int MAX_TABLES = 512, MAX_TABLE_CASES = 1 << 16, MAX_OUTLINED = 64;
+    /**
+     * String tables read per build, their cases kept per build, and outlined strings kept per method.
+     * A switch lists at most 65,535 cases, so the case budget is across the build's tables. The
+     * table limit can be lowered with -Dhushfacebook.fingerprint.maxTables, which the suite uses.
+     */
+    static final int MAX_TABLES = Integer.getInteger("hushfacebook.fingerprint.maxTables", 512);
+    static final int MAX_CACHED_CASES = 1 << 20, MAX_OUTLINED = 64;
 
     // The weight of each part of a score. Strings, literals, references and kept names do most of
     // the work, each weighed by how rare it is in the new build; the rest tells apart the methods
@@ -765,13 +770,13 @@ public final class FingerprintCandidates {
      * switch on its argument whose case for the index is a {@code const-string} returned at once.
      * An index without a case, any other argument, and a case that calls a helper, the table
      * itself included, add nothing. Each table is read once per build, at most
-     * {@link #MAX_TABLES} of them and {@link #MAX_TABLE_CASES} cases each. Only one thread
+     * {@link #MAX_TABLES} of them and {@link #MAX_CACHED_CASES} cases in all. Only one thread
      * featurizes methods, so the cache needs no lock.
      */
     static final class Tables {
         final Map<String, ClassDef> classes;
         final Map<String, Map<Integer, String>> read = new HashMap<>();
-        int tables, skipped;
+        int tables, skipped, cached;
 
         Tables(Map<String, ClassDef> classes) {
             this.classes = classes;
@@ -815,8 +820,9 @@ public final class FingerprintCandidates {
                 }
             }
             if (!cases.isEmpty()) {
-                if (tables < MAX_TABLES) {
+                if (tables < MAX_TABLES && cached + cases.size() <= MAX_CACHED_CASES) {
                     tables++;
+                    cached += cases.size();
                 } else {
                     skipped++;
                     cases = Map.of();
@@ -845,7 +851,6 @@ public final class FingerprintCandidates {
             Integer payloadAt = indexAt.get(((OffsetInstruction) first).getCodeOffset());
             if (payloadAt == null || !(code.get(payloadAt) instanceof SwitchPayload)) return Map.of();
             List<? extends SwitchElement> elements = ((SwitchPayload) code.get(payloadAt)).getSwitchElements();
-            if (elements.size() > MAX_TABLE_CASES) return Map.of();
             Map<Integer, String> out = new HashMap<>();
             for (SwitchElement e : elements) {
                 Integer at = indexAt.get(e.getOffset());
@@ -1052,7 +1057,8 @@ public final class FingerprintCandidates {
         System.out.println("[fingerprint] " + n + " methods with code, " + dict.names.size() + " distinct tokens, "
                 + build.calls + " calls");
         System.out.println("[fingerprint] " + build.tables.tables + " string tables read"
-                + (build.tables.skipped > 0 ? ", " + build.tables.skipped + " more left unread past the limit of " + MAX_TABLES : ""));
+                + (build.tables.skipped > 0 ? ", " + build.tables.skipped + " more left unread past the limit of " + MAX_TABLES
+                        + " tables or " + MAX_CACHED_CASES + " cases" : ""));
         return ix;
     }
 
@@ -1343,6 +1349,16 @@ public final class FingerprintCandidates {
                 if ((r.unsure || r.knownUnsure) && size < MAX_SHORTLIST) wider.add(k);
             }
             open = wider;
+        }
+        // A table left unread takes its strings out of the new build, so a signature that counts
+        // outlined strings could be missing them on its true match, and no candidate can stand out.
+        if (ix.build.tables.skipped > 0) {
+            for (Ranking r : rankings) {
+                if (!r.standsOut || r.query.f.outlined.isEmpty()) continue;
+                r.standsOut = false;
+                r.verdict = String.format(Locale.ROOT, "%s, but %d string tables of the new build were left unread past the limit, "
+                        + "and this signature counts outlined strings", r.verdict, ix.build.tables.skipped);
+            }
         }
         return Arrays.asList(rankings);
     }
@@ -1755,7 +1771,9 @@ public final class FingerprintCandidates {
         try {
             Map<String, Object> m = (Map<String, Object>) json;
             if (!SCHEMA.equals(m.get("schema"))) throw new InputException(file + " is not a " + SCHEMA + " file");
-            if (((Number) m.get("version")).intValue() != SCHEMA_VERSION) {
+            // A whole number only: 2.0 or 2.5 is no version this tool wrote.
+            Object version = m.get("version");
+            if (!(version instanceof Long) || (Long) version != SCHEMA_VERSION) {
                 throw new InputException(file + " is signature version " + m.get("version") + ", and this tool reads " + SCHEMA_VERSION);
             }
             Features f = new Features();

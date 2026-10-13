@@ -329,6 +329,13 @@ public class FingerprintFixture {
         outlined.addAll(unprovable());
         dexes.put("outlined", outlined);
 
+        // The outlined target with no twin: it stands out, until its table is left unread.
+        List<ClassDef> alone = new ArrayList<>(decoys());
+        alone.add(table());
+        alone.add(type("LX/Zz9;", outlinedTarget("LX/Zz9;", 7)));
+        alone.add(type("LX/Zz8;", caller("LX/Zz8;", "A00", "LX/Zz9;->B1c")));
+        dexes.put("outlined-alone", alone);
+
         for (Map.Entry<String, List<ClassDef>> e : dexes.entrySet()) {
             DexPool.writeTo(new File(out, e.getKey() + ".dex").getPath(), new ImmutableDexFile(Opcodes.forApi(30), e.getValue()));
         }

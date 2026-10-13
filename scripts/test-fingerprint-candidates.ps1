@@ -12,7 +12,8 @@
     "outlined" the target asks a Redex string table for its marker beside a twin asking for another
     case: read back, the marker has to set it apart, and five calls that prove no string, out of
     range, a passed argument, a branch onto the call, a case calling the table again and a helper
-    that isn't a table, have to read none back.
+    that isn't a table, have to read none back. In "outlined-alone" the target has no twin and
+    stands out, until the table limit leaves its table unread and the run has to fail closed.
 
     A getter that only its caller tells apart hides among 250 getters just like it. Callers are only
     compared for a shortlist, so in "crowd" the real one, last of a tie at the shortlist's end, has
@@ -231,6 +232,17 @@ try {
         $outlinedParsed.outlinedStrings[0].string -ceq 'fingerprint_fixture_marker' -and $outlinedParsed.outlinedStrings[0].origin -ceq $origin -and
         @($outlinedParsed.strings) -notcontains 'fingerprint_fixture_marker') `
         "The outlined target's signature does not hold the marker as case 7 of the table, apart from its strings.`n$($outlinedViolations -join "`n")"
+    # A table left unread past the limit takes its strings out of the new build, so a signature that
+    # counts outlined strings fails closed there, even where its match stands out with the table read.
+    $aloneApk = New-DexApk 'outlined-alone'
+    $alone = Invoke-Tool @('rank', $outlinedSignature, $aloneApk, (Join-Path $caseRoot 'alone.txt'))
+    Assert-True ($alone.ExitCode -eq 0 -and $alone.Text -match 'one candidate stands out') `
+        "The outlined target with no twin did not stand out with its table read.`n$($alone.Text)"
+    $unread = Invoke-Tool -Arguments @('rank', $outlinedSignature, $aloneApk, (Join-Path $caseRoot 'unread.txt')) `
+        -JavaOptions @('-Dhushfacebook.fingerprint.maxTables=0')
+    Assert-True ($unread.ExitCode -eq 1 -and $unread.Text -match '1 more left unread past the limit of 0 tables' -and
+        $unread.Text -match '1 string tables of the new build were left unread past the limit, and this signature counts outlined strings') `
+        "A signature with outlined strings stood out in a build whose table was left unread.`n$($unread.Text)"
     # Calls that prove no string add none.
     $unprovable = [ordered]@{
         'LX/Ng1;' = 'asks for a case the table lacks'
@@ -316,8 +328,9 @@ try {
         "The wrapper took -OldApk beside -Signature, where it names nothing.`n$($strayOld.Text)"
 
     # A signature of another version is refused rather than read the new way, and one of version 1,
-    # captured before outlined strings counted, rather than read as if it had none.
-    foreach ($version in 1, 3) {
+    # captured before outlined strings counted, rather than read as if it had none. 2.0 is no
+    # version the tool writes either.
+    foreach ($version in '1', '3', '2.0') {
         $other = Join-Path $caseRoot "version-$version.json"
         [System.IO.File]::WriteAllText($other, $signatureText.Replace('"version": 2', "`"version`": $version"))
         $refused = Invoke-Tool @('rank', $other, (Join-Path $caseRoot 'moved.apk'), (Join-Path $caseRoot "version-$version.txt"))
