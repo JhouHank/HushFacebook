@@ -4,6 +4,10 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+### Added
+
+* **Facebook:** `Hide posts by words` has a new switch under News feed, **Hide reposts** (issue #133). With it on, a post that shares someone else's post stays out of the feed, whether the person sharing it wrote anything above it or not. Posts people write themselves stay, and so does any post Hushfacebook can't read. The diagnostic report counts how many it hid and keeps nothing a post says. It starts off, it hasn't been tried on a real feed yet, and a change applies to the posts Facebook loads next.
+
 ### Changed
 
 * **Facebook:** The README's two settings screenshots come from 0.12.0 now, so the overview shows the Quick setups row.

@@ -1160,6 +1160,10 @@ Hides posts with a video, including shares. Reels in the feed have their own swi
 Hides posts that share a link to a website, with its preview card.	Menyembunyikan postingan yang membagikan tautan ke situs web, beserta kartu pratinjaunya.
 # context: summary of the Hide posts on a colored background switch
 Hides short posts shown as big text on a colored background.	Menyembunyikan postingan pendek yang tampil sebagai teks besar di atas latar berwarna.
+# context: switch title under News feed: hides posts that share someone else's post, the ones Facebook heads "shared a post"; use Facebook's own word for a shared post in this language
+Hide reposts	Sembunyikan postingan yang dibagikan ulang
+# context: summary of the Hide reposts switch; a caption is what the sharer wrote above the shared post
+Hides posts that share another post, with or without a caption. Original posts stay. Untested on a real feed, so it starts off.	Menyembunyikan postingan yang membagikan postingan lain, dengan atau tanpa keterangan. Postingan asli tetap ada. Belum diuji di feed sungguhan, jadi awalnya mati.
 # context: switch title in Privacy: asks for the phone's own screen lock before Facebook shows
 Lock Facebook	Kunci Facebook
 Save crashes to Downloads	Simpan crash ke Download

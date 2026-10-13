@@ -246,6 +246,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_background_posts", FALSE);
 
     /**
+     * Feed posts that share another post, with a caption or without: a story whose attached story
+     * is a story ({@link app.morphe.extension.facebook.feed.PostText#shareKind}). Off by default:
+     * no served repost has been checked on a signed-in feed yet.
+     */
+    public static final BooleanSetting HIDE_REPOSTS =
+            new BooleanSetting("hushfacebook_hide_reposts", FALSE);
+
+    /**
      * The reaction count above which feed posts are hidden, read from the feed unit's own feedback
      * ({@link app.morphe.extension.facebook.feed.PostReactions}). Off hides nothing. Not a switch:
      * a list picks the count, and a paused Facebook reads Off.

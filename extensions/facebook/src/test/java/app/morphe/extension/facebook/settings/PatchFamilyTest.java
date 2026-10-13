@@ -192,6 +192,18 @@ public class PatchFamilyTest {
     }
 
     @Test
+    public void hideRepostsAloneCountsAsTheFamilyBeingOn() {
+        try {
+            Settings.HIDE_REPOSTS.save(true);
+            String line = PatchFamily.reportLines(EnumSet.of(PatchFamily.POST_WORDS), false).get(0);
+            assertTrue(line, line.startsWith(FamilyNames.POST_WORDS + ": on ("));
+            assertTrue(line, line.contains(Settings.HIDE_REPOSTS.key + "=on"));
+        } finally {
+            Settings.HIDE_REPOSTS.resetToDefault();
+        }
+    }
+
+    @Test
     public void everyStatusFlagBelongsToExactlyOneFamily() {
         Set<String> flags = new TreeSet<>();
         for (Method method : SettingsStatus.class.getDeclaredMethods()) {

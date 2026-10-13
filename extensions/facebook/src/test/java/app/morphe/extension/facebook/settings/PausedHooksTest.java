@@ -355,7 +355,8 @@ public class PausedHooksTest {
                     return !section.items.contains(reel);
                 }));
         // A story whose own words hold a phrase from the hide list, and one drawn as a photo, which
-        // the kinds of post switches read without any list. Paused, the list reads empty too.
+        // the kinds of post switches read without any list. Paused, the list reads empty too. The
+        // last is a story that shares another, with no words on either.
         // Saved here, with the context, so a probe run without one reads it rather than loading it.
         Settings.HIDDEN_WORDS.save("spoiler");
         Settings.HIDE_POSTS_OVER_REACTIONS.save(app.morphe.extension.facebook.feed.ReactionCeiling.K1);
@@ -363,7 +364,8 @@ public class PausedHooksTest {
                 () -> FeedGuardForTests.hidesByWords(Category.ORGANIC, new GraphQLStory(),
                         FeedGuardForTests.postText("Big SPOILER inside")),
                 () -> FeedGuardForTests.hidesPhotoPost(Category.ORGANIC),
-                () -> FeedGuardForTests.hidesPopularPost(Category.ORGANIC)));
+                () -> FeedGuardForTests.hidesPopularPost(Category.ORGANIC),
+                () -> FeedGuardForTests.hidesRepost(Category.ORGANIC)));
         // A story with a bumper is answered as one without, so no strip is drawn and no room kept, and a
         // header whose title plugin would add "Follow" is told it has nothing to add.
         probes.put(PatchFamily.POST_PROMPTS, Arrays.asList(

@@ -1160,6 +1160,10 @@ Hides posts with a video, including shares. Reels in the feed have their own swi
 Hides posts that share a link to a website, with its preview card.	Oculta las publicaciones que comparten un enlace a un sitio web, con su tarjeta de vista previa.
 # context: summary of the Hide posts on a colored background switch
 Hides short posts shown as big text on a colored background.	Oculta las publicaciones cortas que se muestran como texto grande sobre un fondo de color.
+# context: switch title under News feed: hides posts that share someone else's post, the ones Facebook heads "shared a post"; use Facebook's own word for a shared post in this language
+Hide reposts	Ocultar publicaciones compartidas
+# context: summary of the Hide reposts switch; a caption is what the sharer wrote above the shared post
+Hides posts that share another post, with or without a caption. Original posts stay. Untested on a real feed, so it starts off.	Oculta las publicaciones que comparten otra publicación, con o sin texto propio. Las publicaciones originales se quedan. Aún sin probar en un feed real, por eso empieza apagado.
 # context: switch title in Privacy: asks for the phone's own screen lock before Facebook shows
 Lock Facebook	Bloquear Facebook
 Save crashes to Downloads	Guardar fallos en Descargas
