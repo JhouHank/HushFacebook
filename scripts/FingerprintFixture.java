@@ -24,6 +24,7 @@ import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstructio
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction31t;
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction35c;
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutablePackedSwitchPayload;
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableSparseSwitchPayload;
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableSwitchElement;
 import com.android.tools.smali.dexlib2.immutable.reference.ImmutableMethodReference;
 import com.android.tools.smali.dexlib2.immutable.reference.ImmutableStringReference;
@@ -202,6 +203,31 @@ public class FingerprintFixture {
                         new ImmutableSwitchElement(7, 5), new ImmutableSwitchElement(8, 8), new ImmutableSwitchElement(9, 11)))));
     }
 
+    static final ImmutableMethodReference HIGH_TABLE = new ImmutableMethodReference("LX/002;", "A00",
+            Collections.singletonList("I"), STRING);
+
+    /** A sparse string table with one case past 255, an index that would count as a literal. */
+    static ClassDef highTable() {
+        return type("LX/002;", method("LX/002;", "A00", STRING, Collections.singletonList("I"), 2,
+                new ImmutableInstruction31t(Opcode.SPARSE_SWITCH, 1, 8),        // 0
+                new ImmutableInstruction11n(Opcode.CONST_4, 0, 0),               // 3
+                new ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0),            // 4
+                string(0, "fingerprint_fixture_high"),                           // 5: case 4660
+                new ImmutableInstruction11x(Opcode.RETURN_OBJECT, 0),            // 7
+                new ImmutableSparseSwitchPayload(Collections.singletonList(      // 8
+                        new ImmutableSwitchElement(4660, 5)))));
+    }
+
+    /** Asks the sparse table for case 4660, and loads 4660 once more as a plain literal. */
+    static ClassDef highCaller() {
+        return type("LX/Zz5;", method("LX/Zz5;", "A00", "V", Collections.emptyList(), 2,
+                index(0, 4660),
+                invoke(HIGH_TABLE, 0),
+                new ImmutableInstruction11x(Opcode.MOVE_RESULT_OBJECT, 0),
+                index(1, 4661),
+                op(Opcode.RETURN_VOID)));
+    }
+
     /** A helper of the table's prototype that answers its int as text: no switch, so no table. */
     static ClassDef notATable() {
         return type("LX/001;", method("LX/001;", "A00", STRING, Collections.singletonList("I"), 1,
@@ -334,6 +360,8 @@ public class FingerprintFixture {
         alone.add(table());
         alone.add(type("LX/Zz9;", outlinedTarget("LX/Zz9;", 7)));
         alone.add(type("LX/Zz8;", caller("LX/Zz8;", "A00", "LX/Zz9;->B1c")));
+        alone.add(highTable());
+        alone.add(highCaller());
         dexes.put("outlined-alone", alone);
 
         for (Map.Entry<String, List<ClassDef>> e : dexes.entrySet()) {

@@ -651,24 +651,31 @@ public final class FingerprintCandidates {
         f.registers = impl.getRegisterCount();
         Instruction previous = null;
         Set<Integer> landings = null;
+        // A narrow literal's tokens wait one instruction: the index a proven table call asks for is
+        // a case number Redex renumbers, and the string read back stands for it instead.
+        List<String> pending = new ArrayList<>(2);
         int address = 0;
         for (Instruction i : impl.getInstructions()) {
             int at = address;
             address += i.getCodeUnits();
             Instruction before = previous;
             previous = i;
-            if (tables != null && f.outlined.size() < MAX_OUTLINED && Tables.isTableCall(i)) {
+            boolean proven = false;
+            if (tables != null && Tables.isTableCall(i)) {
                 if (landings == null) landings = landings(impl);
                 String[] hit = tables.outlined(before, i, at, landings);
-                if (hit != null) f.outlined.putIfAbsent(hit[0], hit[1]);
+                proven = hit != null;
+                if (proven && f.outlined.size() < MAX_OUTLINED) f.outlined.putIfAbsent(hit[0], hit[1]);
             }
+            if (!proven) f.literals.addAll(pending);
+            pending.clear();
             f.instructions++;
             Opcode opcode = i.getOpcode();
             f.opcodes.add(family(opcode));
             if (i instanceof WideLiteralInstruction && opcode.setsWideRegister()) {
                 literalTokens(((WideLiteralInstruction) i).getWideLiteral(), true, f.literals);
             } else if (i instanceof NarrowLiteralInstruction) {
-                literalTokens(((NarrowLiteralInstruction) i).getNarrowLiteral(), false, f.literals);
+                literalTokens(((NarrowLiteralInstruction) i).getNarrowLiteral(), false, pending);
             }
             if (!(i instanceof ReferenceInstruction)) continue;
             Reference r = ((ReferenceInstruction) i).getReference();
@@ -689,6 +696,7 @@ public final class FingerprintCandidates {
                 if (!obfuscatedType(mr.getDefiningClass())) f.references.add("C:" + mr.getDefiningClass());
             }
         }
+        f.literals.addAll(pending);
         return f;
     }
 

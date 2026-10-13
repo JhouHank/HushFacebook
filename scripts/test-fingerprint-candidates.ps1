@@ -13,7 +13,8 @@
     case: read back, the marker has to set it apart, and five calls that prove no string, out of
     range, a passed argument, a branch onto the call, a case calling the table again and a helper
     that isn't a table, have to read none back. In "outlined-alone" the target has no twin and
-    stands out, until the table limit leaves its table unread and the run has to fail closed.
+    stands out, until the table limit leaves its table unread and the run has to fail closed. A
+    sparse table's case 4660 read back there must not also count 4660 as the caller's literal.
 
     A getter that only its caller tells apart hides among 250 getters just like it. Callers are only
     compared for a shortlist, so in "crowd" the real one, last of a tie at the shortlist's end, has
@@ -240,9 +241,19 @@ try {
         "The outlined target with no twin did not stand out with its table read.`n$($alone.Text)"
     $unread = Invoke-Tool -Arguments @('rank', $outlinedSignature, $aloneApk, (Join-Path $caseRoot 'unread.txt')) `
         -JavaOptions @('-Dhushfacebook.fingerprint.maxTables=0')
-    Assert-True ($unread.ExitCode -eq 1 -and $unread.Text -match '1 more left unread past the limit of 0 tables' -and
-        $unread.Text -match '1 string tables of the new build were left unread past the limit, and this signature counts outlined strings') `
+    Assert-True ($unread.ExitCode -eq 1 -and $unread.Text -match '2 more left unread past the limit of 0 tables' -and
+        $unread.Text -match '2 string tables of the new build were left unread past the limit, and this signature counts outlined strings') `
         "A signature with outlined strings stood out in a build whose table was left unread.`n$($unread.Text)"
+    # The index a proven table call asks for is a case number Redex renumbers, so it's no literal of
+    # the method, while the same kind of number loaded for anything else still is.
+    $highSignature = Join-Path $caseRoot 'high.json'
+    $high = Invoke-Tool @('capture', $aloneApk, 'LX/Zz5;->A00()V', $highSignature)
+    Assert-True ($high.ExitCode -eq 0) "The capture of the sparse table's caller failed.`n$($high.Text)"
+    $highParsed = [System.IO.File]::ReadAllText($highSignature) | ConvertFrom-Json
+    Assert-True (@($highParsed.outlinedStrings).Count -eq 1 -and $highParsed.outlinedStrings[0].string -ceq 'fingerprint_fixture_high' -and
+        $highParsed.outlinedStrings[0].origin -ceq 'LX/002;->A00(I)Ljava/lang/String; case 4660' -and
+        @($highParsed.literals) -notcontains 'N:4660' -and @($highParsed.literals) -contains 'N:4661') `
+        "The sparse table's case 4660 was not read back, or its index still counted as a literal: $(@($highParsed.literals) -join ', ')"
     # Calls that prove no string add none.
     $unprovable = [ordered]@{
         'LX/Ng1;' = 'asks for a case the table lacks'
