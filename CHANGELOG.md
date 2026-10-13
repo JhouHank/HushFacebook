@@ -22,6 +22,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Changed
 
+* **Facebook:** The patch list now describes the separate Leave calls and chats to Messenger switch under `Open Messenger from the top bar`, including that it starts off.
 * **Facebook:** Settings pages have larger headings and connected navigation lists, with more consistent spacing in dialogs. Search and saved choices work as before.
 * **Facebook:** `Use the system font`, `Use the phone's emoji`, `Text size` and `Accent color` bring up the restart row when you change them. Each one only shows fully after Facebook restarts, and their summaries already said so. A page no longer opens with a line saying a change there applies after a restart, since the row says it and does it.
 * **Facebook:** Settings search uses the same matcher as the other Hush apps. It finds the same rows as before: every word you type, in any order, with accents and capitals ignored.
