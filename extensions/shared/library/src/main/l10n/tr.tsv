@@ -1353,8 +1353,6 @@ Your list of share sheet items to hide will hold %1$d item.	Paylaşırken gizlen
 Your list of share sheet items to hide will hold %1$d items.	Paylaşırken gizlenecek öğeler listende %1$d öğe olacak.
 # context: title of the last row on the settings home page; a tap opens the maintainer's Ko-fi page in a browser
 Support Hushfacebook	Hushfacebook'u destekle
-# context: that row's summary; Ko-fi is a tipping site's name and stays as it is
-Buy me a coffee on Ko-fi	Ko-fi'de bana bir kahve ısmarla
 # context: heading row at the end of the Privacy settings page, above a list of the places Facebook shows ads or reports usage
 Where ads and tracking are blocked	Reklamların ve takibin engellendiği yerler
 # context: that heading's summary; build means this patched copy of Facebook, switch is a settings toggle

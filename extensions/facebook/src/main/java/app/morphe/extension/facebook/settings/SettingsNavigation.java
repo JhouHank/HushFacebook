@@ -131,7 +131,7 @@ final class SettingsNavigation extends BaseAdapter {
         browse.setTitle(L10n.t("Browse settings"));
         more = link(context, L10n.t("More settings"), L10n.t("Additional Facebook preferences"), SettingsIcons.SETTINGS);
         more.setOnPreferenceClickListener(ignored -> { navigate(MORE); return true; });
-        support = link(context, L10n.t("Support Hushfacebook"), L10n.t("Buy me a coffee on Ko-fi"), SettingsIcons.OPENING);
+        support = link(context, L10n.t("Support Hushfacebook"), null, SettingsIcons.OPENING);
         support.setKey(HushfacebookPages.SUPPORT);
         support.setOnPreferenceClickListener(row -> { HushfacebookPages.openSupport(row.getContext()); return true; });
         report = link(context, L10n.t("Report a problem"),

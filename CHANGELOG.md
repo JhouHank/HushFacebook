@@ -7,6 +7,7 @@ Changes in each Hushfacebook version, newest first.
 ### Changed
 
 * **Facebook:** The README's two settings screenshots come from 0.12.0 now, so the overview shows the Quick setups row.
+* **Facebook:** The `Support Hushfacebook` row at the bottom of settings is just its name now. The "Buy me a coffee on Ko-fi" line under it is gone, and a tap still opens the Ko-fi page.
 
 ## 0.12.0 (2026-10-13)
 
