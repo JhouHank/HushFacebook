@@ -1752,6 +1752,91 @@ Set-Content -LiteralPath $Result -Value $lines
             $noConsole[2] -eq "after $noConsoleBefore before $noConsoleBefore") `
             "Use-Utf8ConsoleOutput with no console under $noConsoleShell did not read UTF-8 and put the encoding back: $($noConsole -join ' / ')"
     }
+    # The release and receipt copies lean on two helpers: one deletes a tree with every link in it
+    # removed as a link, the other holds a file or folder and proves the hold is the path's own.
+    # Windows PowerShell 5.1's recursive removal is the one that follows a junction, so both
+    # editions run them. Each hold is let go at the end and the same change then goes through, so
+    # a refusal is the hold's doing and not the machine's.
+    $heldChild = Join-Path $toolchainRoot 'held-child.ps1'
+    Set-Content -LiteralPath $heldChild -Encoding UTF8 -Value @'
+param([string]$Common, [string]$Result, [string]$Work)
+$ErrorActionPreference = 'Stop'
+. $Common
+function Try-Change([scriptblock]$Change) { try { & $Change; 'went' } catch { 'refused' } }
+function Try-Hold([string]$Path, [switch]$Directory) {
+    try { (Open-HeldFile -Path $Path -Directory:$Directory).Dispose(); 'held' }
+    catch { if ($_.Exception.Message -like '*is a link*') { 'refused' } else { 'threw ' + $_.Exception.Message } }
+}
+$lines = @()
+$outside = Join-Path $Work 'outside'
+$tree = Join-Path $Work 'tree'
+New-Item -ItemType Directory -Path $outside, (Join-Path $tree 'a\b') -Force | Out-Null
+Set-Content -LiteralPath (Join-Path $outside 'keep.txt') -Value keep
+Set-Content -LiteralPath (Join-Path $tree 'a\file.txt') -Value x
+(Get-Item -LiteralPath (Join-Path $tree 'a\file.txt')).IsReadOnly = $true
+New-Item -ItemType Junction -Path (Join-Path $tree 'a\b\linked') -Target $outside | Out-Null
+Remove-TreeWithoutFollowingLinks -Path $tree
+$lines += 'tree ' + (Test-Path -LiteralPath $tree) + ' ' + (Test-Path -LiteralPath (Join-Path $outside 'keep.txt'))
+$top = Join-Path $Work 'top'
+New-Item -ItemType Junction -Path $top -Target $outside | Out-Null
+Remove-TreeWithoutFollowingLinks -Path $top
+$lines += 'top ' + (Test-Path -LiteralPath $top) + ' ' + (Test-Path -LiteralPath (Join-Path $outside 'keep.txt'))
+
+$folder = Join-Path $Work 'held'
+New-Item -ItemType Directory -Path $folder | Out-Null
+$file = Join-Path $folder 'asset.txt'
+Set-Content -LiteralPath $file -Value checked
+$folderHold = Open-HeldFile -Path $folder -Directory
+$renamed = Try-Change { [IO.Directory]::Move($folder, "$folder-moved") }
+$folderHold.Dispose()
+$renamedAfter = Try-Change { [IO.Directory]::Move($folder, "$folder-moved"); [IO.Directory]::Move("$folder-moved", $folder) }
+$lines += "folder $renamed $renamedAfter"
+$fileHold = Open-HeldFile -Path $file
+$written = Try-Change { [IO.File]::AppendAllText($file, 'swapped') }
+$deleted = Try-Change { [IO.File]::Delete($file) }
+$read = [IO.File]::ReadAllText($file).Trim()
+$fileHold.Dispose()
+$writtenAfter = Try-Change { [IO.File]::AppendAllText($file, 'swapped') }
+$lines += "file $written $deleted $read $writtenAfter"
+
+$junction = Join-Path $Work 'junction'
+New-Item -ItemType Junction -Path $junction -Target $folder | Out-Null
+$lines += 'junction ' + (Try-Hold -Path $junction -Directory)
+# Through a junction to a real file the file is itself; the folder above it is held on its own.
+$lines += 'through ' + (Try-Hold -Path (Join-Path $junction 'asset.txt'))
+# A file symbolic link needs a privilege not every machine grants, so it's tried where it can be made.
+$symlink = Join-Path $Work 'symlink.txt'
+$made = try { New-Item -ItemType SymbolicLink -Path $symlink -Target $file -ErrorAction Stop | Out-Null; $true } catch { $false }
+$lines += 'symlink ' + $(if ($made) { Try-Hold -Path $symlink } else { 'unavailable' })
+Set-Content -LiteralPath $Result -Value $lines
+'@
+    foreach ($heldShell in $noConsoleShells) {
+        $heldWork = Join-Path $toolchainRoot ('held-' + [guid]::NewGuid().ToString('N'))
+        New-Item -ItemType Directory -Path $heldWork | Out-Null
+        $heldResult = Join-Path $heldWork 'result.txt'
+        $preference = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            $heldOutput = & $heldShell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $heldChild `
+                -Common (Join-Path $PSScriptRoot 'common.ps1') -Result $heldResult -Work $heldWork 2>&1
+        } finally {
+            $ErrorActionPreference = $preference
+        }
+        $heldLines = if (Test-Path -LiteralPath $heldResult) { @(Get-Content -LiteralPath $heldResult) } else { @() }
+        $heldSays = "$($heldLines -join ' / ') $($heldOutput -join ' ')"
+        Assert-True ($heldLines.Count -eq 7) "The held-file child under $heldShell did not finish: $heldSays"
+        Assert-True ($heldLines[0] -ceq 'tree False True' -and $heldLines[1] -ceq 'top False True') `
+            "Remove-TreeWithoutFollowingLinks under $heldShell followed a junction or left the tree: $heldSays"
+        Assert-True ($heldLines[2] -ceq 'folder refused went') "A held folder under $heldShell could be renamed, or the control failed: $heldSays"
+        Assert-True ($heldLines[3] -ceq 'file refused refused checked went') `
+            "A held file under $heldShell could be written or deleted, or the control failed: $heldSays"
+        Assert-True ($heldLines[4] -ceq 'junction refused' -and $heldLines[5] -ceq 'through held') `
+            "Open-HeldFile under $heldShell held a junction as a folder, or refused a real file reached through one: $heldSays"
+        Assert-True ($heldLines[6] -in @('symlink refused', 'symlink unavailable')) `
+            "Open-HeldFile under $heldShell held a file symbolic link as the file: $heldSays"
+        if ($heldLines[6] -ceq 'symlink unavailable') { Write-Host "[scripts] no file symbolic links here, so that hold case was skipped under $heldShell" }
+        Remove-TreeWithoutFollowingLinks -Path $heldWork
+    }
     $atNoAllowlist = Resolve-ReceiptManifestAllowlist -Root $toolchainRoot -Commit $releaseCommitSha -WorkingPath $allowlistFile
     Assert-True ((@($atNoAllowlist.Entries) -join ',') -ceq $unreviewed -and $atNoAllowlist.Note -like '*has no manifest delta allowlist*') `
         "A commit with no allowlist did not fall back to the working one, saying so: $($atNoAllowlist.Note)"

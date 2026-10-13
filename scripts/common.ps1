@@ -61,6 +61,133 @@ function Remove-GeneratedPath {
     }
 }
 
+function Remove-TreeWithoutFollowingLinks {
+    <#
+    .SYNOPSIS
+        Delete a folder this run made, removing every link in it as a link, never what it points at.
+    .DESCRIPTION
+        Windows PowerShell 5.1's Remove-Item -Recurse follows a junction and empties the folder it
+        points at, and a copy that's been tampered with is exactly where one would be. This walks
+        the tree itself: a link (a junction, a symbolic link, any reparse point) is deleted on its
+        own, a folder is emptied and then deleted. Anything that won't go is warned about and left,
+        since the callers are cleaning up after an answer that already stands.
+    #>
+    param([Parameter(Mandatory = $true)][string]$Path)
+    $full = [IO.Path]::GetFullPath($Path)
+    # The link's own attributes, never its target's, and a dangling link still answers.
+    try { $attributes = [IO.File]::GetAttributes($full) } catch { return }
+    $link = [bool]($attributes -band [IO.FileAttributes]::ReparsePoint)
+    try {
+        if ($attributes -band [IO.FileAttributes]::Directory) {
+            $folder = [IO.DirectoryInfo]::new($full)
+            if (-not $link) {
+                foreach ($child in @($folder.GetFileSystemInfos())) { Remove-TreeWithoutFollowingLinks -Path $child.FullName }
+            }
+            # Not recursive: on a junction or a directory link this removes the link alone.
+            $folder.Delete()
+        } else {
+            $file = [IO.FileInfo]::new($full)
+            if (-not $link -and ($attributes -band [IO.FileAttributes]::ReadOnly)) {
+                $file.Attributes = $attributes -band -bnot [IO.FileAttributes]::ReadOnly
+            }
+            $file.Delete()
+        }
+    } catch {
+        Write-Warning "Could not remove ${full}: $($_.Exception.Message)"
+    }
+}
+
+function Open-HeldFile {
+    <#
+    .SYNOPSIS
+        Open a file, or a folder with -Directory, so nothing can change or move it while it's held,
+        and prove what's open is the path's own file and not one a link there led to.
+    .DESCRIPTION
+        A file comes back as a FileStream opened for reading and shared only with readers: Windows
+        refuses to write, replace, rename or delete it while that's open. A folder comes back as a
+        handle that lets others read and write inside it but not rename or delete it, so every path
+        under it keeps meaning the same place. Both are compared with the path opened as itself
+        (FILE_FLAG_OPEN_REPARSE_POINT), by volume and file index, so a link at the path, or one
+        swapped in before the open, throws instead of handing back what it pointed at. A hard link
+        is the same file, so it passes, and holding it holds that file. The caller disposes what
+        comes back.
+    #>
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [switch]$Directory
+    )
+    if (-not ('Hushfacebook.HeldFile' -as [type])) {
+        Add-Type -TypeDefinition @'
+using System;
+using System.ComponentModel;
+using System.IO;
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
+
+namespace Hushfacebook {
+    public static class HeldFile {
+        [StructLayout(LayoutKind.Sequential)]
+        private struct Info {
+            public uint Attributes;
+            public uint CreatedLow, CreatedHigh, AccessedLow, AccessedHigh, WrittenLow, WrittenHigh;
+            public uint VolumeSerial, SizeHigh, SizeLow, Links, IndexHigh, IndexLow;
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool GetFileInformationByHandle(SafeFileHandle file, out Info info);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern SafeFileHandle CreateFileW(string name, uint access, uint share, IntPtr security,
+            uint disposition, uint flags, IntPtr template);
+
+        private const uint ListDirectory = 0x1, ReadAttributes = 0x80;
+        private const uint ShareRead = 1, ShareWrite = 2, ShareDelete = 4;
+        private const uint OpenExisting = 3;
+        private const uint OpenReparsePoint = 0x00200000, BackupSemantics = 0x02000000;
+
+        private static SafeFileHandle Open(string path, uint access, uint share, uint flags) {
+            SafeFileHandle file = CreateFileW(path, access, share, IntPtr.Zero, OpenExisting, flags, IntPtr.Zero);
+            if (file.IsInvalid) throw new IOException("Couldn't open " + path, new Win32Exception(Marshal.GetLastWin32Error()));
+            return file;
+        }
+
+        private static string Id(SafeFileHandle file) {
+            Info info;
+            if (!GetFileInformationByHandle(file, out info)) throw new Win32Exception(Marshal.GetLastWin32Error());
+            return info.VolumeSerial.ToString("x8") + ":" + info.IndexHigh.ToString("x8") + info.IndexLow.ToString("x8");
+        }
+
+        public static IDisposable Open(string path, bool directory) {
+            IDisposable held;
+            SafeFileHandle handle;
+            if (directory) {
+                // List access takes part in sharing, so leaving out delete sharing stops a rename.
+                handle = Open(path, ListDirectory, ShareRead | ShareWrite, BackupSemantics);
+                held = handle;
+            } else {
+                FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                handle = stream.SafeFileHandle;
+                held = stream;
+            }
+            try {
+                // Attribute access alone takes no part in sharing, so this can't be refused by the hold.
+                using (SafeFileHandle own = Open(path, ReadAttributes, ShareRead | ShareWrite | ShareDelete,
+                        OpenReparsePoint | BackupSemantics)) {
+                    if (Id(handle) != Id(own)) throw new IOException(path + " is a link, so what it led to wasn't held");
+                }
+                return held;
+            } catch {
+                held.Dispose();
+                throw;
+            }
+        }
+    }
+}
+'@
+    }
+    return [Hushfacebook.HeldFile]::Open([IO.Path]::GetFullPath($Path), [bool]$Directory)
+}
+
 function Get-BundleVersion {
     <#
     .SYNOPSIS
