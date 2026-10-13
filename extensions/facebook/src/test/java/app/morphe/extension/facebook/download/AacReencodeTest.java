@@ -9,6 +9,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
+import android.content.Context;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 
@@ -19,6 +20,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 import org.robolectric.annotation.Implementation;
 import org.robolectric.annotation.Implements;
@@ -26,8 +28,12 @@ import org.robolectric.shadows.ShadowMediaCodec;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import app.morphe.extension.shared.SettingsContextRule;
 
 /**
  * The re-encode's loop against Robolectric's codecs: every block of sound the decoder gives goes
@@ -39,6 +45,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Config(sdk = 30, shadows = {AacReencodeTest.SoundFile.class})
 public class AacReencodeTest {
     @Rule public final TemporaryFolder folder = new TemporaryFolder();
+    // The DASH save logs its steps, which needs the settings a phone would have.
+    @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 
     /** Samples the sound file holds, each 370 bytes of xHE-AAC, 21.3 ms apart as at 48 kHz. */
     static final int SAMPLES = 40;
@@ -186,6 +194,47 @@ public class AacReencodeTest {
         assertTrue(over.getMessage(), over.getMessage().contains(String.valueOf(room)));
         assertTrue("it went on past its room", encoded.get() < 2 * SAMPLES);
         assertEquals("the muxer got a block past the room", 20 * 300, out.length());
+    }
+
+    /**
+     * A DASH save whose re-encoded sound outgrows its room ends as a write error naming that room,
+     * with nothing left in the work folder: the conversion's throw never reaches the caller, and
+     * the save's single file is what follows.
+     */
+    @Test
+    public void aSaveWhoseSoundOutgrowsItsRoomFailsAndLeavesNothing() throws IOException {
+        Context context = RuntimeEnvironment.getApplication();
+        try (LocalServer server = new LocalServer()) {
+            int port = server.port();
+            MediaUrlPolicy policy = new MediaUrlPolicy(host -> new InetAddress[] { InetAddress.getByName("10.9.8.7") }) {
+                @Override
+                Refusal refusal(URL url) {
+                    if (url.getHost().equals("127.0.0.1") && url.getPort() == port) return null;
+                    return super.refusal(url);
+                }
+            };
+            byte[] body = new byte[1_000];
+            byte[] head = { 0, 0, 0, 0x18, 'f', 't', 'y', 'p', 'm', 'p', '4', '2' };
+            System.arraycopy(head, 0, body, 0, head.length);
+            server.serve("/v.mp4", "video/mp4", body);
+            server.serve("/a.mp4", "audio/mp4", body);
+            DashManifest.Track video = new DashManifest.Track("video/mp4", "avc1.64001f", 1280, 720, 1_200_000,
+                    server.origin() + "/v.mp4");
+            DashManifest.Track sound = new DashManifest.Track("audio/mp4", "mp4a.40.42", 0, 0, 39_000,
+                    server.origin() + "/a.mp4");
+            // Room for both fetches and 20 blocks of the new sound, where all of it takes 80.
+            long cap = OutputAllowance.BOXES + 20 * BLOCK + 2L * body.length;
+
+            Downloader.Result result = DashSave.save(context, video, sound, false, true,
+                    new MediaStoreWriter(context, true), policy, cap, new Progress());
+
+            assertEquals(result.toString(), Downloader.Status.WRITE_ERROR, result.status);
+            assertTrue(result.toString(), result.toString().contains("the re-encoded sound outgrew the " + cap + " bytes kept for it"));
+            assertTrue("the re-encode never ran", encoded.get() > 0);
+            assertTrue("it went on past its room", encoded.get() < 2 * SAMPLES);
+            String[] left = DashSave.workFolder(context).list();
+            assertEquals("work files were left", 0, left == null ? 0 : left.length);
+        }
     }
 
     /**
