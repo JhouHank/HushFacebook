@@ -489,6 +489,21 @@ A release goes out in two commits. The first carries the new version with `patch
 
 `scripts/release/release.ps1` walks through all of that one stage at a time: `source` (with `-Summary`, a file holding the release's one-paragraph summary), `preflight`, `bundle`, `publish` (with `-Checked`, the What was checked paragraph) and `index` (with `-ReadmeSummary` and `-BundleSummary`). Commit after `source`, push after `preflight` so the full gate runs, and commit and push again after `index`. Each stage refuses to run until the one before it is done, so you can fix a failure and run just that stage again. The text steps run `tools/release_text.py`, and `py -3.13 -I -m unittest discover -s tools -p "test_*.py"` runs its tests.
 
+### Fuzzing the download parsers
+
+`DashManifest` reads what Facebook's servers send and `Mp4Join` reads two downloaded files, so they're the code most worth throwing junk at. `scripts/fuzz-parsers.ps1` runs [Jazzer](https://github.com/CodeIntelligenceTesting/jazzer) over both, on this machine only. Nothing else calls it, and Jazzer stays out of Gradle and the extension. Get the standalone Windows release from Jazzer's releases page, unpack it, and point `-Jazzer` or `HUSHFACEBOOK_JAZZER_HOME` at the folder. It compiles with a JDK 21, and the one Android Studio ships is fine.
+
+```powershell
+scripts/fuzz-parsers.ps1 -Seconds 600              # both targets, ten minutes each
+scripts/fuzz-parsers.ps1 -Target mp4 -Seconds 3600 # one target for an hour
+```
+
+It compiles the two parsers with plain javac, no Android needed. The three small pieces they borrow from Android-side classes (`Downloader.Progress`, `VideoTranscode.sourceType` and `AacReencode.isXhe`) get copied out of the real sources each run, so if one of them changes shape the run stops and tells you, rather than fuzzing an old copy. The targets and seeds are test sources: `DashManifestFuzz`, `Mp4JoinFuzz` and `ParserFuzzSeeds`, which builds small valid manifests and fragmented MP4 pairs plus damaged ones (cut short, a sample count far too big, box lengths that lie, a time scale of zero).
+
+Before any real target it fuzzes `FaultyBoxFuzz`, a box reader with a bug planted on purpose, and gives up if Jazzer can't find that bug, since a clean run from a harness that can't find anything means nothing. Each target then runs in one idle-priority process with set limits: `-MaxInputBytes`, `-MaxOutputMB` for a join's output, `-HeapMB`, `-TimeoutSeconds` an input and `-Seconds` a target.
+
+A refusal is fine (an `IOException` from the join, no tracks from the manifest). An unchecked exception, a hang, running out of heap, or a join that stops by itself or writes too much is a finding. The run minimizes it, leaves it under `build/fuzz/<time>/<target>/` and exits 1, with 2 meaning the harness itself broke. Fix the parser, then copy the `minimized-*` file into `tools/fuzz/regressions/<target>/`. `ParserFuzzSeedsTest` runs every seed and every file in there with the ordinary unit tests. Each input's files are deleted before the next one, and a run that gets killed leaves its work folder for the next run to clear.
+
 ## Settings for your machine
 
 Nothing in the repository points at a folder or a phone on anybody's machine. These variables do that instead, and none of them has a default:
