@@ -1775,6 +1775,8 @@ Set-Content -LiteralPath (Join-Path $outside 'keep.txt') -Value keep
 Set-Content -LiteralPath (Join-Path $tree 'a\file.txt') -Value x
 (Get-Item -LiteralPath (Join-Path $tree 'a\file.txt')).IsReadOnly = $true
 New-Item -ItemType Junction -Path (Join-Path $tree 'a\b\linked') -Target $outside | Out-Null
+$readOnlyFolder = Get-Item -LiteralPath (Join-Path $tree 'a\b')
+$readOnlyFolder.Attributes = $readOnlyFolder.Attributes -bor [IO.FileAttributes]::ReadOnly
 Remove-TreeWithoutFollowingLinks -Path $tree
 $lines += 'tree ' + (Test-Path -LiteralPath $tree) + ' ' + (Test-Path -LiteralPath (Join-Path $outside 'keep.txt'))
 $top = Join-Path $Work 'top'
@@ -1788,9 +1790,16 @@ $file = Join-Path $folder 'asset.txt'
 Set-Content -LiteralPath $file -Value checked
 $folderHold = Open-HeldFile -Path $folder -Directory
 $renamed = Try-Change { [IO.Directory]::Move($folder, "$folder-moved") }
+# What the release flow does inside a held folder: copy in, read, plant and remove entries.
+$inside = Try-Change {
+    $extra = Join-Path $folder 'extra.txt'
+    Copy-Item -LiteralPath $file -Destination $extra
+    if ([IO.File]::ReadAllText($extra).Trim() -cne 'checked') { throw 'read back wrong' }
+    Remove-Item -LiteralPath $extra
+}
 $folderHold.Dispose()
 $renamedAfter = Try-Change { [IO.Directory]::Move($folder, "$folder-moved"); [IO.Directory]::Move("$folder-moved", $folder) }
-$lines += "folder $renamed $renamedAfter"
+$lines += "folder $renamed $inside $renamedAfter"
 $fileHold = Open-HeldFile -Path $file
 $written = Try-Change { [IO.File]::AppendAllText($file, 'swapped') }
 $deleted = Try-Change { [IO.File]::Delete($file) }
@@ -1827,7 +1836,8 @@ Set-Content -LiteralPath $Result -Value $lines
         Assert-True ($heldLines.Count -eq 7) "The held-file child under $heldShell did not finish: $heldSays"
         Assert-True ($heldLines[0] -ceq 'tree False True' -and $heldLines[1] -ceq 'top False True') `
             "Remove-TreeWithoutFollowingLinks under $heldShell followed a junction or left the tree: $heldSays"
-        Assert-True ($heldLines[2] -ceq 'folder refused went') "A held folder under $heldShell could be renamed, or the control failed: $heldSays"
+        Assert-True ($heldLines[2] -ceq 'folder refused went went') `
+            "A held folder under $heldShell could be renamed, kept files from being copied in and removed, or the control failed: $heldSays"
         Assert-True ($heldLines[3] -ceq 'file refused refused checked went') `
             "A held file under $heldShell could be written or deleted, or the control failed: $heldSays"
         Assert-True ($heldLines[4] -ceq 'junction refused' -and $heldLines[5] -ceq 'through held') `

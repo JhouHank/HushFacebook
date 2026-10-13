@@ -256,14 +256,15 @@ try {
                 })
 
             Step "receipt over $($fixtures.Count) fixtures of $($versions -join ', ')"
-            $work = Join-Path ([IO.Path]::GetTempPath()) "hushfacebook-receipt-$Version"
-            New-Item -ItemType Directory -Force -Path $work | Out-Null
+            # A fresh name each run, made here and not found, so nothing can be waiting in it.
+            $work = Join-Path ([IO.Path]::GetTempPath()) "hushfacebook-receipt-$Version-$([guid]::NewGuid().ToString('N'))"
+            New-Item -ItemType Directory -Path $work | Out-Null
             try {
                 $global:LASTEXITCODE = 0
                 & (Join-Path $root 'scripts/build-release-receipt.ps1') -Root $root -WorkDir $work -Fixture $fixtures `
                     -Bundle (Join-Path $built $builtNames[0]) -AppliedDir (Join-Path $root 'patches/build/fixture-apply')
                 if ($LASTEXITCODE -ne 0) { throw "The receipt did not pass (exit $LASTEXITCODE)." }
-            } finally { Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue }
+            } finally { Remove-TreeWithoutFollowingLinks -Path $work }
 
             New-Item -ItemType Directory -Force -Path $assets | Out-Null
             Copy-Item -LiteralPath ($builtNames | ForEach-Object { Join-Path $built $_ }) -Destination $assets -Force

@@ -74,24 +74,27 @@ function Remove-TreeWithoutFollowingLinks {
     #>
     param([Parameter(Mandatory = $true)][string]$Path)
     $full = [IO.Path]::GetFullPath($Path)
-    # The link's own attributes, never its target's, and a dangling link still answers.
-    try { $attributes = [IO.File]::GetAttributes($full) } catch { return }
+    # The link's own attributes, never its target's, and a dangling link still answers. Only a
+    # path that isn't there is quiet; anything else that stops the read is said.
+    try { $attributes = [IO.File]::GetAttributes($full) }
+    catch [IO.FileNotFoundException], [IO.DirectoryNotFoundException] { return }
+    catch {
+        Write-Warning "Could not remove ${full}: $($_.Exception.Message)"
+        return
+    }
     $link = [bool]($attributes -band [IO.FileAttributes]::ReparsePoint)
     try {
-        if ($attributes -band [IO.FileAttributes]::Directory) {
-            $folder = [IO.DirectoryInfo]::new($full)
-            if (-not $link) {
-                foreach ($child in @($folder.GetFileSystemInfos())) { Remove-TreeWithoutFollowingLinks -Path $child.FullName }
-            }
-            # Not recursive: on a junction or a directory link this removes the link alone.
-            $folder.Delete()
-        } else {
-            $file = [IO.FileInfo]::new($full)
-            if (-not $link -and ($attributes -band [IO.FileAttributes]::ReadOnly)) {
-                $file.Attributes = $attributes -band -bnot [IO.FileAttributes]::ReadOnly
-            }
-            $file.Delete()
+        # A read-only file or folder won't delete. A link's flag is left alone, since setting it
+        # could reach whatever it points at.
+        $info = if ($attributes -band [IO.FileAttributes]::Directory) { [IO.DirectoryInfo]::new($full) } else { [IO.FileInfo]::new($full) }
+        if (-not $link -and ($attributes -band [IO.FileAttributes]::ReadOnly)) {
+            $info.Attributes = $attributes -band -bnot [IO.FileAttributes]::ReadOnly
         }
+        if ($info -is [IO.DirectoryInfo] -and -not $link) {
+            foreach ($child in @($info.GetFileSystemInfos())) { Remove-TreeWithoutFollowingLinks -Path $child.FullName }
+        }
+        # Not recursive: on a junction or a directory link this removes the link alone.
+        $info.Delete()
     } catch {
         Write-Warning "Could not remove ${full}: $($_.Exception.Message)"
     }
