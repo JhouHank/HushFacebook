@@ -332,11 +332,19 @@ public class SettingsNavigationTest {
         app.morphe.extension.shared.settings.preference.AbstractPreferenceFragment.restartPending.add(
                 Settings.MARKETPLACE_ONLY.key);
         page.navigation.navigate("Opening Facebook");
-        layout(dialog.getView());
+        // Keep the viewport shorter than the page, so a skipped status row cannot be exposed
+        // merely because ListView pulls short content down to fill the available space.
+        layout(dialog.getView(), 1200);
         line = (Preference) list().getItemAtPosition(0);
         assertEquals("A change here applies after Facebook restarts.", String.valueOf(line.getTitle()));
+        assertFalse("The restart status must remain read-only", list().getAdapter().isEnabled(0));
+        assertEquals("The opening page must start at its status line", 0, list().getFirstVisiblePosition());
+        TextView boundTitle = list().getChildAt(0).findViewById(android.R.id.title);
+        assertEquals("The first bound view must match the opening page's status line", line.getTitle(), boundTitle.getText());
         android.view.ViewGroup frame = list().getChildAt(0).findViewById(android.R.id.widget_frame);
-        assertTrue("a restart line offered an action", frame == null || frame.getChildCount() == 0);
+        assertTrue("a restart line offered an action: " + (frame == null ? "no frame" : frame.getChildCount()
+                + " children, " + (frame.getChildCount() == 0 ? "none" : frame.getChildAt(0))),
+                frame == null || frame.getChildCount() == 0);
         page.navigation.back();
         page.navigation.navigate("Playback");
         assertEquals("a restart owed elsewhere was said here", categoryCount("Playback"), list().getCount());
@@ -527,11 +535,15 @@ public class SettingsNavigationTest {
             float density = root.getResources().getDisplayMetrics().density;
             int width = Math.round(root.getResources().getConfiguration().screenWidthDp * density);
             int height = Math.round(root.getResources().getConfiguration().screenHeightDp * density);
-            android.view.ViewGroup bar = (android.view.ViewGroup) ((android.view.ViewGroup) root).getChildAt(0);
-            TextView title = (TextView) bar.getChildAt(1);
+            TextView title = findHeading(root);
+            assertNotNull("The page title must remain an accessibility heading", title);
+            View back = findDescribed(root, L10n.t("Back"));
+            assertNotNull("The back action must remain available", back);
+            android.view.ViewGroup bar = (android.view.ViewGroup) back.getParent();
+            android.view.ViewGroup heading = (android.view.ViewGroup) title.getParent();
             EditText search = findSearch(root);
-            android.view.ViewGroup searchBox = (android.view.ViewGroup) search.getParent();
-            View clear = searchBox.getChildAt(2);
+            View clear = findDescribed(root, L10n.t("Clear search"));
+            assertNotNull("The search must retain its clear action", clear);
             for (int pass = 0; pass < 3; pass++) {
                 root.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
                         View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
@@ -550,18 +562,27 @@ public class SettingsNavigationTest {
             assertEquals("The app name must not break inside the word", 1, title.getLineCount());
             assertTrue("The whole title must fit", title.getPaint().measureText(title.getText().toString())
                     <= title.getWidth() - title.getCompoundPaddingLeft() - title.getCompoundPaddingRight());
+            if (root.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL) {
+                assertEquals("The Latin app name must align with the heading's right edge in RTL",
+                        title.getWidth() - title.getCompoundPaddingLeft() - title.getCompoundPaddingRight(),
+                        title.getLayout().getLineRight(0), 1f);
+            }
             assertTrue("The whole search hint must fit", search.getPaint().measureText(search.getHint().toString())
                     <= search.getWidth() - search.getCompoundPaddingLeft() - search.getCompoundPaddingRight());
             assertEquals(L10n.t("Search settings"), search.getContentDescription().toString());
             assertTrue(search.isFocusable());
-            View back = bar.getChildAt(0);
             assertEquals(L10n.t("Back"), back.getContentDescription().toString());
             assertTrue(back.getWidth() >= 48 * density && back.getHeight() >= 48 * density);
+            assertTrue("The page title must sit below the back toolbar", heading.getTop() >= bar.getBottom());
+            assertTrue("The search must sit below the page title", search.getTop() + ((View) search.getParent()).getTop()
+                    >= heading.getBottom());
             if (scale == 1f) {
-                assertEquals(28 * density, title.getTextSize(), 0.1f);
+                assertEquals(32 * density, title.getTextSize(), 0.1f);
                 assertEquals(View.INVISIBLE, clear.getVisibility());
-                assertEquals(4 * density, bar.getPaddingStart(), 0.1f);
-                assertEquals(16 * density, bar.getPaddingEnd(), 0.1f);
+                assertEquals(8 * density, bar.getPaddingStart(), 0.1f);
+                assertEquals(20 * density, bar.getPaddingEnd(), 0.1f);
+                assertEquals(20 * density, heading.getPaddingStart(), 0.1f);
+                assertEquals(20 * density, heading.getPaddingEnd(), 0.1f);
             }
             search.setText("video");
             assertEquals(View.VISIBLE, clear.getVisibility());
@@ -575,6 +596,30 @@ public class SettingsNavigationTest {
         } finally {
             RuntimeEnvironment.setFontScale(1f);
         }
+    }
+
+    private static TextView findHeading(View view) {
+        if (view instanceof TextView && view.isAccessibilityHeading()) return (TextView) view;
+        if (view instanceof android.view.ViewGroup) {
+            android.view.ViewGroup group = (android.view.ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                TextView found = findHeading(group.getChildAt(i));
+                if (found != null) return found;
+            }
+        }
+        return null;
+    }
+
+    private static View findDescribed(View view, String description) {
+        if (view.getContentDescription() != null && description.contentEquals(view.getContentDescription())) return view;
+        if (view instanceof android.view.ViewGroup) {
+            android.view.ViewGroup group = (android.view.ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                View found = findDescribed(group.getChildAt(i), description);
+                if (found != null) return found;
+            }
+        }
+        return null;
     }
 
     /**
@@ -1227,6 +1272,13 @@ public class SettingsNavigationTest {
             page.navigation.open(section);
             String name = section.getTitle().toString().toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z]+", "-");
             capture(prefix + name);
+            if ("pause-backup-and-diagnostics".equals(name)) {
+                TextView title = findHeading(dialog.getView());
+                assertEquals(TextView.AUTO_SIZE_TEXT_TYPE_NONE, title.getAutoSizeTextType());
+                float scaledDensity = title.getResources().getDisplayMetrics().scaledDensity;
+                assertEquals(28 * scaledDensity, title.getTextSize(), 0.1f);
+                assertTrue("Long category headings must wrap instead of shrinking", title.getLineCount() > 1);
+            }
             assertUncutText(dialog.getView());
             list().setSelection(list().getCount() - 1);
             capture(prefix + name + "-end");

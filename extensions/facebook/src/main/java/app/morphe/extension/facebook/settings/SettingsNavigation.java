@@ -49,6 +49,7 @@ final class SettingsNavigation extends BaseAdapter {
     private final ListAdapter source;
     private final List<Section> sections = new ArrayList<>();
     private final List<Preference> visible = new ArrayList<>();
+    private final Object guideLinks = new Object();
     private final Preference browse;
     private final Preference more;
     /** The home page's last row, which opens Hushfacebook's Ko-fi page in a browser. */
@@ -119,6 +120,7 @@ final class SettingsNavigation extends BaseAdapter {
         empty = new SettingsRows.Row(context);
         empty.setTitle(L10n.t("No matching settings"));
         empty.setSummary(L10n.t("Try a different word or clear the search."));
+        empty.setIcon(SettingsIcons.icon(context, SettingsIcons.SEARCH, palette().heading));
         empty.setSelectable(false);
         empty.setPersistent(false);
         pageStatus = new SettingsRows.Row(context);
@@ -245,7 +247,24 @@ final class SettingsNavigation extends BaseAdapter {
         // selection in touch mode. Rebind when changing pages; normal preference updates
         // still keep their current views and scroll position through notifyDataSetChanged.
         list.setAdapter(this);
-        list.setSelectionFromTop(position, offset);
+        // Outside touch mode, selection skips read-only status rows and headings. Offset the
+        // next selectable row by their full heights so the requested row still starts the page.
+        // No status becomes actionable, and no later animation moves the person's place.
+        int selectable = position;
+        int top = offset;
+        if (!list.isInTouchMode()) {
+            int width = list.getWidth();
+            if (width == 0) width = list.getResources().getDisplayMetrics().widthPixels;
+            int widthSpec = View.MeasureSpec.makeMeasureSpec(
+                    width - list.getPaddingLeft() - list.getPaddingRight(), View.MeasureSpec.EXACTLY);
+            while (selectable >= 0 && selectable < getCount() && !isEnabled(selectable)) {
+                View row = getView(selectable++, null, list);
+                row.measure(widthSpec, View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+                top += row.getMeasuredHeight() + list.getDividerHeight();
+            }
+        }
+        list.setSelectionFromTop(selectable < getCount() ? selectable : position,
+                selectable < getCount() ? top : offset);
     }
 
     private void rememberIndex() {
@@ -413,8 +432,8 @@ final class SettingsNavigation extends BaseAdapter {
             boolean last = position + 1 == getCount() || group(getItem(position + 1)) != group;
             palette().paintSurface(row, item, first, last);
             if (MORE.equals(route) && query.isEmpty()) {
-                row.setMinimumHeight(dp(56));
-                row.setPaddingRelative(dp(34), dp(12), dp(34), dp(12));
+                row.setMinimumHeight(dp(48));
+                row.setPaddingRelative(dp(36), dp(10), dp(36), dp(10));
             }
         }
         if (item == screen.getPreference(0)) {
@@ -520,18 +539,19 @@ final class SettingsNavigation extends BaseAdapter {
 
     private Object group(Preference item) {
         if (item == more || item == support || item == browse || item == screen.getPreference(0)) return item;
-        for (Section section : sections) if (item == section.link) return item;
+        for (Section section : sections) if (item == section.link) return section.primary ? sections : more;
+        if (!query.trim().isEmpty() && item.getParent() != null) return item.getParent();
         String key = item.getKey();
         if (Settings.DEFAULT_COMMENT_ORDER.key.equals(key) || Settings.COMMENT_ORDER.key.equals(key)) {
             return Settings.COMMENT_ORDER;
         }
-        // Give the Reels map and these selectors their own surfaces. Other dependent controls stay together.
-        if (key != null && (key.startsWith("action_show_")
-                || Settings.OPEN_ON_CHOSEN_TAB.key.equals(key)
-                || Settings.START_TAB.key.equals(key)
-                || Settings.FEEDS_SUBTAB.key.equals(key)
-                || Settings.PLAYBACK_QUALITY.key.equals(key)
-                || Settings.DOWNLOAD_QUALITY.key.equals(key))) return item;
+        // Guide destinations form one list; independent selectors keep their own surfaces.
+        if (key != null && key.startsWith("action_show_")) return guideLinks;
+        if (Settings.OPEN_ON_CHOSEN_TAB.key.equals(key) || Settings.START_TAB.key.equals(key)
+                || Settings.FEEDS_SUBTAB.key.equals(key)) return Settings.OPEN_ON_CHOSEN_TAB;
+        if (Settings.PLAYBACK_QUALITY.key.equals(key) || Settings.REELS_PLAYBACK_QUALITY.key.equals(key)
+                || Settings.STORIES_PLAYBACK_QUALITY.key.equals(key)) return Settings.PLAYBACK_QUALITY;
+        if (Settings.DOWNLOAD_QUALITY.key.equals(key)) return item;
         if (item.getParent() != null) return item.getParent();
         return sections;
     }

@@ -51,7 +51,7 @@ On a new phone, import the key in the same place before you patch anything. Rein
 
 There are three ways in. Long-press the Facebook logo at the top of your feed. Long-press Facebook's icon on your home screen and tap **Hushfacebook** (if it isn't there, open Facebook once and try again). Or open Facebook's Menu, expand **Settings and privacy** and tap **Hushfacebook settings** at the end.
 
-The overview has a search box, **Pause** and a page for each part of Facebook. Search reaches every setting, and you can flip a switch right in the results.
+The overview groups the main pages in one list, with search and **Pause** above it. **More settings** holds the rest. Search reaches every setting, and you can flip a switch right in the results.
 
 Switches act straight away, with no restart and no new patching, but what's already on screen stays as it was until Facebook draws it again. A reel keeps the buttons it was built with, and rows already in the feed stay until it loads fresh posts. The Stories tray switch shows the next time you pull the feed down to refresh. A row that tells you to restart Facebook, such as the font and tab switches, waits for that restart.
 

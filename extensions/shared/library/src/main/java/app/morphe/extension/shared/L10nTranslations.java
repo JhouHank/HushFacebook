@@ -44,7 +44,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildDe() {
-        Map<String, String> table = new HashMap<>(1922);
+        Map<String, String> table = new HashMap<>(1924);
         fillDe0(table);
         fillDe1(table);
         fillDe2(table);
@@ -1550,6 +1550,8 @@ public final class L10nTranslations {
                 "Richte zuerst in den Einstellungen deines Handys eine Displaysperre ein, damit Facebook etwas abfragen kann.");
         table.put("Set when you patched",
                 "Beim Patchen festgelegt");
+        table.put("Settings",
+                "Einstellungen");
         table.put("Settings couldn't open",
                 "Einstellungen lie\u00dfen sich nicht \u00f6ffnen");
         table.put("Settings couldn't refresh completely. Reopen settings and try again.",
@@ -1660,11 +1662,11 @@ public final class L10nTranslations {
                 "Tippe, um sie zu sehen.");
         table.put("Tap to turn it back on.",
                 "Zum Wiedereinschalten tippen.");
-        table.put("Tapping Download on a reel or video will send its link to an app.",
-                "Beim Tippen auf Download wird der Link eines Reels oder Videos an eine App gesendet.");
     }
 
     private static void fillDe13(Map<String, String> table) {
+        table.put("Tapping Download on a reel or video will send its link to an app.",
+                "Beim Tippen auf Download wird der Link eines Reels oder Videos an eine App gesendet.");
         table.put("Tapping the Messenger icon at the top of Facebook opens the Messenger app instead of Chats. Without Messenger, Chats opens as before.",
                 "Tippst du oben in Facebook auf das Messenger-Symbol, \u00f6ffnet sich die Messenger-App statt der Chats. Ohne Messenger \u00f6ffnen sich die Chats wie bisher.");
         table.put("Teal",
@@ -1783,11 +1785,11 @@ public final class L10nTranslations {
                 "Diese werden beim Patchen in Morphe Manager ausgew\u00e4hlt, und die Pause schaltet sie nicht aus. Patche erneut, um sie zu \u00e4ndern.");
         table.put("This Facebook build has no App icon page.",
                 "Diese Facebook-Version hat keine Seite \u201eApp-Symbol\u201c.");
-        table.put("This Facebook build has no Whitehat settings screen.",
-                "Diese Facebook-Version hat keinen Bildschirm f\u00fcr Whitehat-Einstellungen.");
     }
 
     private static void fillDe14(Map<String, String> table) {
+        table.put("This Facebook build has no Whitehat settings screen.",
+                "Diese Facebook-Version hat keinen Bildschirm f\u00fcr Whitehat-Einstellungen.");
         table.put("This build can't run the Messenger link test.",
                 "Dieser Build kann den Test der Messenger-Verbindung nicht ausf\u00fchren.");
         table.put("This build has no notification sound to save.",
@@ -1906,11 +1908,11 @@ public final class L10nTranslations {
                 "Videos, Reels, Stories und Musik warten auf dein Antippen, statt von selbst zu starten. Facebooks eigene Autoplay-Einstellung zeigt Aus, solange das aktiv ist.");
         table.put("View stories anonymously",
                 "Stories anonym ansehen");
-        table.put("Waiting for Facebook's tab bar. Marketplace only will apply when Facebook builds it.",
-                "Warten auf Facebooks Tab-Leiste. Der Marketplace-Modus wird angewendet, sobald Facebook sie erstellt.");
     }
 
     private static void fillDe15(Map<String, String> table) {
+        table.put("Waiting for Facebook's tab bar. Marketplace only will apply when Facebook builds it.",
+                "Warten auf Facebooks Tab-Leiste. Der Marketplace-Modus wird angewendet, sobald Facebook sie erstellt.");
         table.put("Watch history",
                 "Wiedergabeverlauf");
         table.put("Watch history isn't available in this build.",
@@ -2029,17 +2031,17 @@ public final class L10nTranslations {
                 "die Umf\u00e4rbung des Dunkelmodus");
         table.put("the settings row in Facebook's Menu",
                 "die Einstellungszeile im Facebook-Men\u00fc");
-        table.put("the start-up fix for x86 devices",
-                "der Startfix f\u00fcr x86-Ger\u00e4te");
     }
 
     private static void fillDe16(Map<String, String> table) {
+        table.put("the start-up fix for x86 devices",
+                "der Startfix f\u00fcr x86-Ger\u00e4te");
         table.put("the version number Google Play sees",
                 "die Versionsnummer, die Google Play sieht");
     }
 
     private static Map<String, String> buildEs() {
-        Map<String, String> table = new HashMap<>(1922);
+        Map<String, String> table = new HashMap<>(1924);
         fillEs0(table);
         fillEs1(table);
         fillEs2(table);
@@ -3545,6 +3547,8 @@ public final class L10nTranslations {
                 "Primero configura un bloqueo de pantalla en los ajustes del tel\u00e9fono, para que Facebook tenga algo que pedir.");
         table.put("Set when you patched",
                 "Aplicado al parchear");
+        table.put("Settings",
+                "Ajustes");
         table.put("Settings couldn't open",
                 "No se pudo abrir la configuraci\u00f3n");
         table.put("Settings couldn't refresh completely. Reopen settings and try again.",
@@ -3655,11 +3659,11 @@ public final class L10nTranslations {
                 "Toca para ver cu\u00e1les.");
         table.put("Tap to turn it back on.",
                 "Toca para volver a activarlo.");
-        table.put("Tapping Download on a reel or video will send its link to an app.",
-                "Al tocar Descargar en un reel o video, su enlace se enviar\u00e1 a una app.");
     }
 
     private static void fillEs13(Map<String, String> table) {
+        table.put("Tapping Download on a reel or video will send its link to an app.",
+                "Al tocar Descargar en un reel o video, su enlace se enviar\u00e1 a una app.");
         table.put("Tapping the Messenger icon at the top of Facebook opens the Messenger app instead of Chats. Without Messenger, Chats opens as before.",
                 "Al tocar el icono de Messenger en la parte superior de Facebook, se abre la app Messenger en lugar de Chats. Sin Messenger, Chats se abre como antes.");
         table.put("Teal",
@@ -3778,11 +3782,11 @@ public final class L10nTranslations {
                 "Se eligen en Morphe Manager al parchear, y Pausar no los desactiva. Vuelve a parchear para cambiarlos.");
         table.put("This Facebook build has no App icon page.",
                 "Esta versi\u00f3n de Facebook no tiene la p\u00e1gina \u00cdcono de la app.");
-        table.put("This Facebook build has no Whitehat settings screen.",
-                "Esta versi\u00f3n de Facebook no tiene la pantalla de ajustes de Whitehat.");
     }
 
     private static void fillEs14(Map<String, String> table) {
+        table.put("This Facebook build has no Whitehat settings screen.",
+                "Esta versi\u00f3n de Facebook no tiene la pantalla de ajustes de Whitehat.");
         table.put("This build can't run the Messenger link test.",
                 "Esta versi\u00f3n no puede hacer la prueba de la conexi\u00f3n con Messenger.");
         table.put("This build has no notification sound to save.",
@@ -3901,11 +3905,11 @@ public final class L10nTranslations {
                 "Los v\u00eddeos, reels, historias y la m\u00fasica esperan a que los toques, en lugar de reproducirse solos. El ajuste Reproducci\u00f3n autom\u00e1tica de Facebook muestra Desactivado mientras esto est\u00e1 activo.");
         table.put("View stories anonymously",
                 "Ver historias de forma an\u00f3nima");
-        table.put("Waiting for Facebook's tab bar. Marketplace only will apply when Facebook builds it.",
-                "Esperando la barra de pesta\u00f1as de Facebook. El modo Marketplace se aplicar\u00e1 cuando Facebook la cree.");
     }
 
     private static void fillEs15(Map<String, String> table) {
+        table.put("Waiting for Facebook's tab bar. Marketplace only will apply when Facebook builds it.",
+                "Esperando la barra de pesta\u00f1as de Facebook. El modo Marketplace se aplicar\u00e1 cuando Facebook la cree.");
         table.put("Watch history",
                 "Historial de reproducciones");
         table.put("Watch history isn't available in this build.",
@@ -4024,17 +4028,17 @@ public final class L10nTranslations {
                 "el cambio de colores del modo oscuro");
         table.put("the settings row in Facebook's Menu",
                 "la fila de configuraci\u00f3n en el men\u00fa de Facebook");
-        table.put("the start-up fix for x86 devices",
-                "el arreglo de inicio para dispositivos x86");
     }
 
     private static void fillEs16(Map<String, String> table) {
+        table.put("the start-up fix for x86 devices",
+                "el arreglo de inicio para dispositivos x86");
         table.put("the version number Google Play sees",
                 "el n\u00famero de versi\u00f3n que ve Google Play");
     }
 
     private static Map<String, String> buildIn() {
-        Map<String, String> table = new HashMap<>(1922);
+        Map<String, String> table = new HashMap<>(1924);
         fillIn0(table);
         fillIn1(table);
         fillIn2(table);
@@ -5540,6 +5544,8 @@ public final class L10nTranslations {
                 "Atur kunci layar di setelan ponsel Anda terlebih dahulu, agar Facebook punya sesuatu untuk diminta.");
         table.put("Set when you patched",
                 "Diatur saat Anda menambal");
+        table.put("Settings",
+                "Pengaturan");
         table.put("Settings couldn't open",
                 "Pengaturan tidak dapat dibuka");
         table.put("Settings couldn't refresh completely. Reopen settings and try again.",
@@ -5650,11 +5656,11 @@ public final class L10nTranslations {
                 "Ketuk untuk melihat yang mana.");
         table.put("Tap to turn it back on.",
                 "Ketuk untuk mengaktifkan Hushfacebook lagi.");
-        table.put("Tapping Download on a reel or video will send its link to an app.",
-                "Mengetuk Unduh pada reel atau video akan mengirim tautannya ke aplikasi.");
     }
 
     private static void fillIn13(Map<String, String> table) {
+        table.put("Tapping Download on a reel or video will send its link to an app.",
+                "Mengetuk Unduh pada reel atau video akan mengirim tautannya ke aplikasi.");
         table.put("Tapping the Messenger icon at the top of Facebook opens the Messenger app instead of Chats. Without Messenger, Chats opens as before.",
                 "Mengetuk ikon Messenger di bagian atas Facebook membuka aplikasi Messenger, bukan Chat. Tanpa Messenger, Chat terbuka seperti biasa.");
         table.put("Teal",
@@ -5773,11 +5779,11 @@ public final class L10nTranslations {
                 "Semua ini dipilih di Morphe Manager saat Anda menambal, dan Jeda tidak mematikannya. Tambal ulang untuk mengubahnya.");
         table.put("This Facebook build has no App icon page.",
                 "Versi Facebook ini tidak punya halaman Ikon aplikasi.");
-        table.put("This Facebook build has no Whitehat settings screen.",
-                "Versi Facebook ini tidak punya layar pengaturan Whitehat.");
     }
 
     private static void fillIn14(Map<String, String> table) {
+        table.put("This Facebook build has no Whitehat settings screen.",
+                "Versi Facebook ini tidak punya layar pengaturan Whitehat.");
         table.put("This build can't run the Messenger link test.",
                 "Build ini tidak dapat menjalankan uji koneksi Messenger.");
         table.put("This build has no notification sound to save.",
@@ -5896,11 +5902,11 @@ public final class L10nTranslations {
                 "Video, reel, cerita, dan musik menunggu ketukanmu, tidak diputar sendiri. Pengaturan Putar otomatis milik Facebook menampilkan Mati selama ini menyala.");
         table.put("View stories anonymously",
                 "Lihat cerita secara anonim");
-        table.put("Waiting for Facebook's tab bar. Marketplace only will apply when Facebook builds it.",
-                "Menunggu bilah tab Facebook. Mode Marketplace akan diterapkan saat Facebook membuatnya.");
     }
 
     private static void fillIn15(Map<String, String> table) {
+        table.put("Waiting for Facebook's tab bar. Marketplace only will apply when Facebook builds it.",
+                "Menunggu bilah tab Facebook. Mode Marketplace akan diterapkan saat Facebook membuatnya.");
         table.put("Watch history",
                 "Riwayat tontonan");
         table.put("Watch history isn't available in this build.",
@@ -6019,17 +6025,17 @@ public final class L10nTranslations {
                 "mode gelap yang diwarnai ulang");
         table.put("the settings row in Facebook's Menu",
                 "baris pengaturan di Menu Facebook");
-        table.put("the start-up fix for x86 devices",
-                "perbaikan saat mulai untuk perangkat x86");
     }
 
     private static void fillIn16(Map<String, String> table) {
+        table.put("the start-up fix for x86 devices",
+                "perbaikan saat mulai untuk perangkat x86");
         table.put("the version number Google Play sees",
                 "nomor versi yang dilihat Google Play");
     }
 
     private static Map<String, String> buildPt_rBR() {
-        Map<String, String> table = new HashMap<>(1922);
+        Map<String, String> table = new HashMap<>(1924);
         fillPt_rBR0(table);
         fillPt_rBR1(table);
         fillPt_rBR2(table);
@@ -7535,6 +7541,8 @@ public final class L10nTranslations {
                 "Primeiro configure um bloqueio de tela nas configura\u00e7\u00f5es do celular, para o Facebook ter o que pedir.");
         table.put("Set when you patched",
                 "Definido ao aplicar os patches");
+        table.put("Settings",
+                "Configura\u00e7\u00f5es");
         table.put("Settings couldn't open",
                 "N\u00e3o foi poss\u00edvel abrir as configura\u00e7\u00f5es");
         table.put("Settings couldn't refresh completely. Reopen settings and try again.",
@@ -7645,11 +7653,11 @@ public final class L10nTranslations {
                 "Toque para ver quais.");
         table.put("Tap to turn it back on.",
                 "Toque para reativar.");
-        table.put("Tapping Download on a reel or video will send its link to an app.",
-                "Tocar em Baixar em um reel ou v\u00eddeo vai enviar o link dele para um app.");
     }
 
     private static void fillPt_rBR13(Map<String, String> table) {
+        table.put("Tapping Download on a reel or video will send its link to an app.",
+                "Tocar em Baixar em um reel ou v\u00eddeo vai enviar o link dele para um app.");
         table.put("Tapping the Messenger icon at the top of Facebook opens the Messenger app instead of Chats. Without Messenger, Chats opens as before.",
                 "Tocar no \u00edcone do Messenger no topo do Facebook abre o app Messenger em vez de Conversas. Sem o Messenger, Conversas abre como antes.");
         table.put("Teal",
@@ -7768,11 +7776,11 @@ public final class L10nTranslations {
                 "Eles s\u00e3o escolhidos no Morphe Manager quando voc\u00ea aplica os patches, e a pausa n\u00e3o os desativa. Aplique os patches novamente para alter\u00e1-los.");
         table.put("This Facebook build has no App icon page.",
                 "Esta vers\u00e3o do Facebook n\u00e3o tem a p\u00e1gina \u00cdcone do app.");
-        table.put("This Facebook build has no Whitehat settings screen.",
-                "Esta vers\u00e3o do Facebook n\u00e3o tem a tela de configura\u00e7\u00f5es do Whitehat.");
     }
 
     private static void fillPt_rBR14(Map<String, String> table) {
+        table.put("This Facebook build has no Whitehat settings screen.",
+                "Esta vers\u00e3o do Facebook n\u00e3o tem a tela de configura\u00e7\u00f5es do Whitehat.");
         table.put("This build can't run the Messenger link test.",
                 "Esta vers\u00e3o n\u00e3o pode fazer o teste da conex\u00e3o com o Messenger.");
         table.put("This build has no notification sound to save.",
@@ -7891,11 +7899,11 @@ public final class L10nTranslations {
                 "V\u00eddeos, reels, stories e m\u00fasicas esperam o seu toque, em vez de tocar sozinhos. A configura\u00e7\u00e3o Reprodu\u00e7\u00e3o autom\u00e1tica do pr\u00f3prio Facebook mostra Desativada enquanto isto estiver ligado.");
         table.put("View stories anonymously",
                 "Ver Stories anonimamente");
-        table.put("Waiting for Facebook's tab bar. Marketplace only will apply when Facebook builds it.",
-                "Aguardando a barra de abas do Facebook. O modo Marketplace ser\u00e1 aplicado quando o Facebook a criar.");
     }
 
     private static void fillPt_rBR15(Map<String, String> table) {
+        table.put("Waiting for Facebook's tab bar. Marketplace only will apply when Facebook builds it.",
+                "Aguardando a barra de abas do Facebook. O modo Marketplace ser\u00e1 aplicado quando o Facebook a criar.");
         table.put("Watch history",
                 "Hist\u00f3rico de v\u00eddeos");
         table.put("Watch history isn't available in this build.",
@@ -8014,17 +8022,17 @@ public final class L10nTranslations {
                 "a nova colora\u00e7\u00e3o do modo escuro");
         table.put("the settings row in Facebook's Menu",
                 "a linha de configura\u00e7\u00f5es no Menu do Facebook");
-        table.put("the start-up fix for x86 devices",
-                "a corre\u00e7\u00e3o de inicializa\u00e7\u00e3o para dispositivos x86");
     }
 
     private static void fillPt_rBR16(Map<String, String> table) {
+        table.put("the start-up fix for x86 devices",
+                "a corre\u00e7\u00e3o de inicializa\u00e7\u00e3o para dispositivos x86");
         table.put("the version number Google Play sees",
                 "o n\u00famero de vers\u00e3o que o Google Play v\u00ea");
     }
 
     private static Map<String, String> buildTr() {
-        Map<String, String> table = new HashMap<>(1922);
+        Map<String, String> table = new HashMap<>(1924);
         fillTr0(table);
         fillTr1(table);
         fillTr2(table);
@@ -9530,6 +9538,8 @@ public final class L10nTranslations {
                 "Facebook'un isteyebilece\u011fi bir \u015fey olsun diye \u00f6nce telefonunun ayarlar\u0131ndan bir ekran kilidi ayarla.");
         table.put("Set when you patched",
                 "Yamalad\u0131\u011f\u0131nda ayarlananlar");
+        table.put("Settings",
+                "Ayarlar");
         table.put("Settings couldn't open",
                 "Ayarlar a\u00e7\u0131lamad\u0131");
         table.put("Settings couldn't refresh completely. Reopen settings and try again.",
@@ -9640,11 +9650,11 @@ public final class L10nTranslations {
                 "Hangileri oldu\u011funu g\u00f6rmek i\u00e7in dokun.");
         table.put("Tap to turn it back on.",
                 "Yeniden a\u00e7mak i\u00e7in dokun.");
-        table.put("Tapping Download on a reel or video will send its link to an app.",
-                "Bir reel'de veya videoda \u0130ndir'e dokunmak ba\u011flant\u0131s\u0131n\u0131 bir uygulamaya g\u00f6nderecek.");
     }
 
     private static void fillTr13(Map<String, String> table) {
+        table.put("Tapping Download on a reel or video will send its link to an app.",
+                "Bir reel'de veya videoda \u0130ndir'e dokunmak ba\u011flant\u0131s\u0131n\u0131 bir uygulamaya g\u00f6nderecek.");
         table.put("Tapping the Messenger icon at the top of Facebook opens the Messenger app instead of Chats. Without Messenger, Chats opens as before.",
                 "Facebook'un \u00fcst\u00fcndeki Messenger simgesine dokunmak Sohbetler yerine Messenger uygulamas\u0131n\u0131 a\u00e7ar. Messenger yoksa Sohbetler eskisi gibi a\u00e7\u0131l\u0131r.");
         table.put("Teal",
@@ -9763,11 +9773,11 @@ public final class L10nTranslations {
                 "Bunlar yamalarken Morphe Manager'da se\u00e7ilir ve Duraklatma bunlar\u0131 kapatmaz. De\u011fi\u015ftirmek i\u00e7in yeniden yamala.");
         table.put("This Facebook build has no App icon page.",
                 "Bu Facebook s\u00fcr\u00fcm\u00fcnde Uygulama simgesi sayfas\u0131 yok.");
-        table.put("This Facebook build has no Whitehat settings screen.",
-                "Bu Facebook s\u00fcr\u00fcm\u00fcnde Whitehat ayarlar\u0131 ekran\u0131 yok.");
     }
 
     private static void fillTr14(Map<String, String> table) {
+        table.put("This Facebook build has no Whitehat settings screen.",
+                "Bu Facebook s\u00fcr\u00fcm\u00fcnde Whitehat ayarlar\u0131 ekran\u0131 yok.");
         table.put("This build can't run the Messenger link test.",
                 "Bu s\u00fcr\u00fcm Messenger ba\u011flant\u0131 testini \u00e7al\u0131\u015ft\u0131ramaz.");
         table.put("This build has no notification sound to save.",
@@ -9886,11 +9896,11 @@ public final class L10nTranslations {
                 "Videolar, reeller, hikayeler ve m\u00fczik kendili\u011finden oynamak yerine dokunu\u015funuzu bekler. Bu a\u00e7\u0131kken Facebook'un kendi Otomatik oynat ayar\u0131 Kapal\u0131 g\u00f6r\u00fcn\u00fcr.");
         table.put("View stories anonymously",
                 "Hikayeleri anonim olarak izle");
-        table.put("Waiting for Facebook's tab bar. Marketplace only will apply when Facebook builds it.",
-                "Facebook'un sekme \u00e7ubu\u011fu bekleniyor. Facebook \u00e7ubu\u011fu olu\u015fturdu\u011funda Marketplace modu uygulanacak.");
     }
 
     private static void fillTr15(Map<String, String> table) {
+        table.put("Waiting for Facebook's tab bar. Marketplace only will apply when Facebook builds it.",
+                "Facebook'un sekme \u00e7ubu\u011fu bekleniyor. Facebook \u00e7ubu\u011fu olu\u015fturdu\u011funda Marketplace modu uygulanacak.");
         table.put("Watch history",
                 "\u0130zleme ge\u00e7mi\u015fi");
         table.put("Watch history isn't available in this build.",
@@ -10009,11 +10019,11 @@ public final class L10nTranslations {
                 "yeniden renklendirilmi\u015f karanl\u0131k mod");
         table.put("the settings row in Facebook's Menu",
                 "Facebook men\u00fcs\u00fcndeki ayarlar sat\u0131r\u0131");
-        table.put("the start-up fix for x86 devices",
-                "x86 cihazlar i\u00e7in a\u00e7\u0131l\u0131\u015f d\u00fczeltmesi");
     }
 
     private static void fillTr16(Map<String, String> table) {
+        table.put("the start-up fix for x86 devices",
+                "x86 cihazlar i\u00e7in a\u00e7\u0131l\u0131\u015f d\u00fczeltmesi");
         table.put("the version number Google Play sees",
                 "Google Play'in g\u00f6rd\u00fc\u011f\u00fc s\u00fcr\u00fcm numaras\u0131");
     }
