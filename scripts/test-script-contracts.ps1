@@ -6190,6 +6190,169 @@ try {
         }
     }
 
+    # What the libraries' own ELF headers say, which zipalign above can't. A library whose ZIP
+    # offset and LOAD segments line up and whose RELRO ends off a 16 KB boundary used to be
+    # recorded as aligned, because zipalign was the only thing asked. The receipt holds the three
+    # answers apart now, and its verdict passes only when all of them do. The stand-in APK is
+    # written byte for byte, so an entry is stored or deflated because this says so:
+    # System.IO.Compression picks the method itself, and not the same way on every runtime.
+    function New-TestElf([long[]]$LoadAlign = @(16384, 16384), [long]$RelroEnd = -1, [switch]$Narrow) {
+        $count = $LoadAlign.Length + $(if ($RelroEnd -ge 0) { 1 } else { 0 })
+        $memory = New-Object System.IO.MemoryStream
+        $writer = New-Object System.IO.BinaryWriter($memory)
+        $writer.Write([byte[]](0x7F, 0x45, 0x4C, 0x46, $(if ($Narrow) { 1 } else { 2 }), 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+        $writer.Write([uint16]3); $writer.Write([uint16]$(if ($Narrow) { 40 } else { 183 })); $writer.Write([uint32]1)
+        if ($Narrow) {
+            # Entry, program header offset, section header offset, flags, then the three sizes and counts.
+            $writer.Write([uint32]0); $writer.Write([uint32]52); $writer.Write([uint32]0); $writer.Write([uint32]0)
+            $writer.Write([uint16]52); $writer.Write([uint16]32); $writer.Write([uint16]$count)
+            $writer.Write([uint16]0); $writer.Write([uint16]0); $writer.Write([uint16]0)
+            # Type, offset, address, physical address, file size, memory size, flags, alignment.
+            foreach ($align in $LoadAlign) {
+                foreach ($value in @(1, 0, 0, 0, 4096, 4096, 5, $align)) { $writer.Write([uint32]$value) }
+            }
+            if ($RelroEnd -ge 0) {
+                foreach ($value in @(0x6474E552, 0, ($RelroEnd - 4096), 0, 4096, 4096, 4, 1)) { $writer.Write([uint32]$value) }
+            }
+        } else {
+            $writer.Write([uint64]0); $writer.Write([uint64]64); $writer.Write([uint64]0); $writer.Write([uint32]0)
+            $writer.Write([uint16]64); $writer.Write([uint16]56); $writer.Write([uint16]$count)
+            $writer.Write([uint16]0); $writer.Write([uint16]0); $writer.Write([uint16]0)
+            # Type and flags, then offset, address, physical address, file size, memory size, alignment.
+            foreach ($align in $LoadAlign) {
+                $writer.Write([uint32]1); $writer.Write([uint32]5)
+                foreach ($value in @(0, 0, 0, 4096, 4096, $align)) { $writer.Write([uint64]$value) }
+            }
+            if ($RelroEnd -ge 0) {
+                $writer.Write([uint32]0x6474E552); $writer.Write([uint32]4)
+                foreach ($value in @(0, ($RelroEnd - 4096), 0, 4096, 4096, 1)) { $writer.Write([uint64]$value) }
+            }
+        }
+        $writer.Flush()
+        return ,$memory.ToArray()
+    }
+    function New-TestLibraryApk([string]$Path, [object[]]$Entries) {
+        $crcTable = New-Object 'long[]' 256
+        for ($n = 0; $n -lt 256; $n++) {
+            $value = [long]$n
+            for ($bit = 0; $bit -lt 8; $bit++) {
+                $value = if ($value -band 1) { 3988292384L -bxor ($value -shr 1) } else { $value -shr 1 }
+            }
+            $crcTable[$n] = $value
+        }
+        $memory = New-Object System.IO.MemoryStream
+        $writer = New-Object System.IO.BinaryWriter($memory)
+        $directory = New-Object System.IO.MemoryStream
+        $index = New-Object System.IO.BinaryWriter($directory)
+        foreach ($entry in $Entries) {
+            [byte[]]$plain = $entry.Bytes
+            $crc = 4294967295L
+            foreach ($byte in $plain) { $crc = $crcTable[[int](($crc -bxor $byte) -band 255)] -bxor ($crc -shr 8) }
+            $crc = $crc -bxor 4294967295L
+            [byte[]]$data = $plain
+            if (-not $entry.Stored) {
+                $packed = New-Object System.IO.MemoryStream
+                $deflate = New-Object System.IO.Compression.DeflateStream($packed, [System.IO.Compression.CompressionMode]::Compress, $true)
+                $deflate.Write($plain, 0, $plain.Length)
+                $deflate.Dispose()
+                $data = $packed.ToArray()
+            }
+            [byte[]]$name = [System.Text.Encoding]::UTF8.GetBytes([string]$entry.Name)
+            $method = if ($entry.Stored) { 0 } else { 8 }
+            $at = $memory.Position
+            # The local header: version, flags, method, time, 1980-01-01, CRC, both sizes, name length.
+            $writer.Write([uint32]0x04034B50); $writer.Write([uint16]20); $writer.Write([uint16]0); $writer.Write([uint16]$method)
+            $writer.Write([uint16]0); $writer.Write([uint16]33)
+            $writer.Write([uint32]$crc); $writer.Write([uint32]$data.Length); $writer.Write([uint32]$plain.Length)
+            $writer.Write([uint16]$name.Length); $writer.Write([uint16]0)
+            $writer.Write($name); $writer.Write($data)
+            # Its directory record repeats those and adds where the local header is.
+            $index.Write([uint32]0x02014B50); $index.Write([uint16]20); $index.Write([uint16]20); $index.Write([uint16]0)
+            $index.Write([uint16]$method); $index.Write([uint16]0); $index.Write([uint16]33)
+            $index.Write([uint32]$crc); $index.Write([uint32]$data.Length); $index.Write([uint32]$plain.Length)
+            $index.Write([uint16]$name.Length); $index.Write([uint16]0); $index.Write([uint16]0)
+            $index.Write([uint16]0); $index.Write([uint16]0); $index.Write([uint32]0); $index.Write([uint32]$at)
+            $index.Write($name)
+        }
+        $index.Flush()
+        $directoryAt = $memory.Position
+        $writer.Write($directory.ToArray())
+        $writer.Write([uint32]0x06054B50); $writer.Write([uint16]0); $writer.Write([uint16]0)
+        $writer.Write([uint16]$Entries.Count); $writer.Write([uint16]$Entries.Count)
+        $writer.Write([uint32]$directory.Length); $writer.Write([uint32]$directoryAt); $writer.Write([uint16]0)
+        $writer.Flush()
+        [System.IO.File]::WriteAllBytes($Path, $memory.ToArray())
+    }
+    $apkStandIn = Join-Path $tools 'patched.apk'
+    $apkStandInBytes = [System.IO.File]::ReadAllBytes($apkStandIn)
+    $apkStandInEntries = @(
+        @{ Name = 'AndroidManifest.xml'; Bytes = [System.Text.Encoding]::ASCII.GetBytes('binary manifest'); Stored = $false },
+        @{ Name = 'classes.dex'; Bytes = [System.Text.Encoding]::ASCII.GetBytes("dex`n035"); Stored = $false })
+    $alignedElf = New-TestElf -RelroEnd 32768
+    function Get-BuiltNativeAlignment([object[]]$Libraries) {
+        New-TestLibraryApk -Path $apkStandIn -Entries ($apkStandInEntries + $Libraries)
+        try {
+            Invoke-ReceiptBuilder -Fixtures $allFixtures
+        } catch {
+            throw "build-release-receipt.ps1 refused a patched APK over what its libraries' ELF headers say: $($_.Exception.Message)"
+        }
+        return (Get-Content -LiteralPath $releaseReceipt -Raw | ConvertFrom-Json).targets[0].nativeAlignment
+    }
+    try {
+        # One stored and aligned in every way, one deflated whose RELRO ends 4 KB past a boundary.
+        $native = Get-BuiltNativeAlignment @(
+            @{ Name = 'lib/arm64-v8a/libgood.so'; Bytes = $alignedElf; Stored = $true },
+            @{ Name = 'lib/arm64-v8a/librelro.so'; Bytes = (New-TestElf -RelroEnd 36864); Stored = $false })
+        Assert-True ($native.zipOffsets.aligned -eq $true -and $native.zipOffsets.stored -eq 1 -and $native.zipOffsets.compressed -eq 1) `
+            "The receipt didn't count one stored and one compressed library at aligned ZIP offsets: $($native.zipOffsets | ConvertTo-Json -Compress)"
+        Assert-True ($native.loadSegments.aligned -eq $true -and $native.loadSegments.libraries -eq 2 -and $native.loadSegments.segments -eq 4) `
+            "The receipt didn't record four aligned LOAD segments in two libraries: $($native.loadSegments | ConvertTo-Json -Compress)"
+        Assert-True ($native.relroEnds.aligned -eq $false -and $native.relroEnds.present -eq 2 -and
+            (@($native.relroEnds.misaligned) -join ',') -ceq 'lib/arm64-v8a/librelro.so') `
+            "The receipt didn't name the one library whose RELRO ends off a 16 KB boundary: $($native.relroEnds | ConvertTo-Json -Compress)"
+        Assert-True ($native.staticChecksPass -eq $false) `
+            'A library whose RELRO ends off a 16 KB boundary got a passing 16 KB verdict from its ZIP offset and LOAD segments.'
+        $relroRecord = @($native.libraries | Where-Object { $_.entry -ceq 'lib/arm64-v8a/librelro.so' })[0]
+        Assert-True ($relroRecord.relro -ceq 'misaligned' -and $relroRecord.relroEnd -eq 36864 -and $relroRecord.stored -eq $false -and
+            $relroRecord.format -ceq 'elf64' -and $relroRecord.sha256 -match '^[0-9A-F]{64}$') `
+            "The receipt's record of the misaligned library isn't the library that was patched: $($relroRecord | ConvertTo-Json -Compress)"
+        Assert-True ($builderSaid -like '*1 of 2 RELRO ends off 16 KB*not ready for 16 KB pages as built*') `
+            "build-release-receipt.ps1 didn't say the libraries aren't ready for 16 KB pages: $builderSaid"
+
+        # Everything a 64-bit library can pass, beside a DEX named .so and a 32-bit library: the
+        # only run that passes, with the other two listed and left out of the verdict.
+        $native = Get-BuiltNativeAlignment @(
+            @{ Name = 'lib/arm64-v8a/libgood.so'; Bytes = $alignedElf; Stored = $true },
+            @{ Name = 'lib/arm64-v8a/libplain.dex.so'; Bytes = [System.Text.Encoding]::ASCII.GetBytes("dex`n035 and no library"); Stored = $false },
+            @{ Name = 'lib/armeabi-v7a/libold.so'; Bytes = (New-TestElf -LoadAlign @(4096) -Narrow); Stored = $false })
+        Assert-True ($native.staticChecksPass -eq $true -and $native.loadSegments.libraries -eq 1 -and $native.relroEnds.present -eq 1) `
+            "A library aligned in the ZIP, in its LOAD segments and at its RELRO end didn't pass: $($native | ConvertTo-Json -Depth 4 -Compress)"
+        Assert-True ((@($native.notElf) -join ',') -ceq 'lib/arm64-v8a/libplain.dex.so' -and @($native.malformed).Count -eq 0) `
+            "A DEX named .so wasn't listed as not ELF: $($native | ConvertTo-Json -Depth 4 -Compress)"
+        $oldRecord = @($native.libraries | Where-Object { $_.entry -ceq 'lib/armeabi-v7a/libold.so' })[0]
+        Assert-True ($oldRecord.format -ceq 'elf32' -and $null -eq $oldRecord.PSObject.Properties['relro']) `
+            "A 32-bit library was judged for 16 KB pages: $($oldRecord | ConvertTo-Json -Compress)"
+
+        # A LOAD segment aligned to 4 KB and no RELRO at all, a file cut off inside its ELF header,
+        # and a 32-bit ELF in the 64-bit folder: each named under its own check, none passed.
+        $native = Get-BuiltNativeAlignment @(
+            @{ Name = 'lib/arm64-v8a/libload.so'; Bytes = (New-TestElf -LoadAlign @(16384, 4096)); Stored = $false },
+            @{ Name = 'lib/arm64-v8a/libcut.so'; Bytes = [byte[]]($alignedElf[0..39]); Stored = $false },
+            @{ Name = 'lib/arm64-v8a/libnarrow.so'; Bytes = (New-TestElf -Narrow); Stored = $false })
+        Assert-True ($native.staticChecksPass -eq $false -and $native.loadSegments.aligned -eq $false -and
+            (@($native.loadSegments.misaligned) -join ',') -ceq 'lib/arm64-v8a/libload.so') `
+            "A LOAD segment aligned to 4 KB wasn't named as off 16 KB: $($native.loadSegments | ConvertTo-Json -Compress)"
+        Assert-True ($native.relroEnds.aligned -eq $true -and $native.relroEnds.present -eq 0 -and
+            (@($native.relroEnds.absent) -join ',') -ceq 'lib/arm64-v8a/libload.so') `
+            "A library with no RELRO wasn't recorded as having none: $($native.relroEnds | ConvertTo-Json -Compress)"
+        Assert-True ((@($native.malformed) -join '|') -ceq
+            'lib/arm64-v8a/libcut.so (ends inside the ELF header)|lib/arm64-v8a/libnarrow.so (a 32-bit ELF in a 64-bit folder)') `
+            "The unreadable libraries weren't named with why: $(@($native.malformed) -join '|')"
+    } finally {
+        [System.IO.File]::WriteAllBytes($apkStandIn, $apkStandInBytes)
+        [System.IO.File]::WriteAllBytes($releaseReceipt, $builtReceiptBytes)
+    }
+
     # patch-for-device.ps1 on the same root and stand-ins. It held every run's report to the
     # newest declared build, so an older declared build (README: 577 works too) was patched and
     # then refused with "unexpected package or version". Each declared build is held to its own

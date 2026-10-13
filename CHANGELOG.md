@@ -7,6 +7,7 @@ Changes in each Hushfacebook version, newest first.
 ### Changed
 
 * **Facebook:** The README's two settings screenshots come from 0.12.0 now, so the overview shows the Quick setups row.
+* **Facebook:** The release receipt records what each native library says about 16 KB pages in separate parts now (ZIP offsets, LOAD segments and RELRO ends, each library with its hash). It used to keep one flag that only spoke for the ZIP.
 * **Facebook:** The `Support Hushfacebook` row at the bottom of settings is just its name now. The "Buy me a coffee on Ko-fi" line under it is gone, and a tap still opens the Ko-fi page.
 
 ## 0.12.0 (2026-10-13)
