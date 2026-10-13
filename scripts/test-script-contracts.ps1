@@ -4805,6 +4805,8 @@ try {
     [System.IO.File]::WriteAllText($stubAapt2, ((@(
         '@echo off',
         'setlocal EnableExtensions DisableDelayedExpansion',
+        'rem Taken before the loop, since shift moves %0 along with the arguments.',
+        'set "HERE=%~dp0"',
         'set "APK="',
         ':next',
         'if "%~1"=="" goto run',
@@ -4812,6 +4814,7 @@ try {
         'shift',
         'goto next',
         ':run',
+        '>>"%HERE%aapt2.log" echo %APK%',
         'if exist "%APK%.xmltree" (type "%APK%.xmltree") else (type "%APK%")',
         'exit /b %errorlevel%') -join "`r`n") + "`r`n"), [System.Text.Encoding]::ASCII)
     # The 16 KB check runs the zipalign beside aapt2. Aligned unless a case below says otherwise.
@@ -5006,20 +5009,30 @@ try {
     $builtProved = "the receipt proves $($releaseNames.Count) patches on $($builtVersions -join ', ') " +
         "from commit $($releaseCommit.Substring(0, 8))"
     Assert-True ($said -like "*$builtProved*") "The release check did not accept the receipt the builder wrote: $said"
-    # And the publish stage's check takes it, staged as the bundle stage stages it and held to what
-    # the release commit carries. The fixture commits no allowlist, so the checked-in one stands in.
+    # And the publish stage's check, on the release staged as the bundle stage stages it and held to
+    # what the release commit carries. The fixture commits no allowlist, so the checked-in one stands
+    # in. This bundle carries no build identity, which the builder still takes from a bundle built
+    # before bundles carried one, so the folder holds together and is refused for that alone. The
+    # identity cases further down stage a bundle that carries one, and the check takes it.
     $stagedHere = Join-Path $releaseRoot 'staged'
-    New-Item -ItemType Directory -Path $stagedHere -Force | Out-Null
-    try {
+    function Save-StagedHere {
+        Remove-Item -LiteralPath $stagedHere -Recurse -Force -ErrorAction SilentlyContinue
+        New-Item -ItemType Directory -Path $stagedHere -Force | Out-Null
         Copy-Item -LiteralPath $releaseBundle, $releaseSbom, $releaseTooling, $releaseReceipt -Destination $stagedHere
-        $stagedSumLines = @(Get-ChildItem -LiteralPath $stagedHere -File | Sort-Object Name |
+        $lines = @(Get-ChildItem -LiteralPath $stagedHere -File | Sort-Object Name |
             ForEach-Object { '{0}  {1}' -f (Get-Sha256Hex -Path $_.FullName).ToLowerInvariant(), $_.Name })
-        [IO.File]::WriteAllText((Join-Path $stagedHere 'SHA256SUMS.txt'), (($stagedSumLines -join "`n") + "`n"))
-        $stagedCheck = Test-StagedReleaseAt -Root $releaseRepo -Folder $stagedHere -Version $releaseVersionHere -Commit $releaseCommit `
+        [IO.File]::WriteAllText((Join-Path $stagedHere 'SHA256SUMS.txt'), (($lines -join "`n") + "`n"))
+    }
+    function Test-StagedHere([string]$Commit = $releaseCommit) {
+        Test-StagedReleaseAt -Root $releaseRepo -Folder $stagedHere -Version $releaseVersionHere -Commit $Commit `
             -AllowlistPath (Join-Path $PSScriptRoot 'manifest-delta-allowlist.txt')
-        Assert-True $stagedCheck.Valid "The publish stage's check refused the release the builder staged: $($stagedCheck.Reason)"
-        $otherCommit = Test-StagedReleaseAt -Root $releaseRepo -Folder $stagedHere -Version $releaseVersionHere -Commit ('f' * 40) `
-            -AllowlistPath (Join-Path $PSScriptRoot 'manifest-delta-allowlist.txt')
+    }
+    try {
+        Save-StagedHere
+        $stagedCheck = Test-StagedHere
+        Assert-True (-not $stagedCheck.Valid -and $stagedCheck.Reason -like '*carries no intact build identity*') `
+            "The publish stage took a staged bundle with no build identity: $($stagedCheck.Reason)"
+        $otherCommit = Test-StagedHere -Commit ('f' * 40)
         Assert-True (-not $otherCommit.Valid) 'The publish stage held the staged release to a commit the fixture lacks.'
     } finally {
         Remove-Item -LiteralPath $stagedHere -Recurse -Force -ErrorAction SilentlyContinue
@@ -5160,11 +5173,19 @@ try {
     }
     $keptBefore = Get-KeptHashes
     $null = @(Read-QueueLog)
+    $aapt2Log = Join-Path $tools 'aapt2.log'
+    Remove-Item -LiteralPath $aapt2Log -Force -ErrorAction SilentlyContinue
     Invoke-ReceiptBuilder -Fixtures $allFixtures -AppliedDir $appliedRoot
     Assert-True (-not (Test-Path -LiteralPath $javaLog) -and -not (Test-Path -LiteralPath $mergeLog)) `
         "The receipt patched or merged a fixture whose kept run matched: $(@(Get-Content -LiteralPath $javaLog -ErrorAction SilentlyContinue) -join '; ')"
     Assert-True (@([regex]::Matches($builderSaid, "reading the gate's run of")).Count -eq $builtBuilds.Count) `
         "The receipt did not say it read each kept run: $builderSaid"
+    # What it read was its own copy, hashed there. Reading the kept folder after hashing it left a
+    # window for a file to change between the hash and the read.
+    $manifestReads = @(Get-Content -LiteralPath $aapt2Log | ForEach-Object { "$_".Trim() })
+    Assert-True (@($manifestReads | Where-Object { $_.StartsWith($appliedRoot, [StringComparison]::OrdinalIgnoreCase) }).Count -eq 0 -and
+        @($manifestReads | Where-Object { $_ -like (Join-Path $releaseRoot 'work\receipt-*\kept\patched.apk') }).Count -eq $builtBuilds.Count) `
+        "The receipt read a kept run in place rather than its own copy: $($manifestReads -join '; ')"
     Assert-True (((Get-Content -LiteralPath $releaseReceipt -Raw | ConvertFrom-Json).targets | ConvertTo-Json -Depth 12) -ceq $freshTargets) `
         'The receipt read from kept runs differs from the one fresh runs gave.'
     Assert-True ((Get-KeptHashes) -ceq $keptBefore) 'The receipt changed the kept runs it read.'
@@ -5582,6 +5603,63 @@ try {
                 Invoke-ReceiptBuilder -Fixtures $allFixtures
             } catch {
                 throw "build-release-receipt.ps1 refused a bundle stamped with this tree's inputs: $($_.Exception.Message)"
+            }
+
+            # The publish stage's check takes that release staged, its bundle naming the clean commit
+            # and this tree's inputs. That's the control for the cases after it.
+            $exclude = Join-Path $releaseRepo '.git/info/exclude'
+            $excludeBefore = if (Test-Path -LiteralPath $exclude -PathType Leaf) { [IO.File]::ReadAllText($exclude) } else { $null }
+            $ignoredInput = Join-Path $releaseRepo 'gradle/ignored-input.txt'
+            try {
+                Save-StagedHere
+                $answer = Test-StagedHere
+                Assert-True $answer.Valid "The publish stage refused a staged bundle built from its clean commit and this tree: $($answer.Reason)"
+                # An input git doesn't see, as an ignored file in an input folder is: HEAD is the commit
+                # and the tree clean, and the bundle still isn't a build of what the checkout holds.
+                New-Item -ItemType Directory -Path (Split-Path -Parent $exclude) -Force | Out-Null
+                [IO.File]::AppendAllText($exclude, "`n/gradle/ignored-input.txt`n")
+                [IO.File]::WriteAllText($ignoredInput, 'x', [Text.Encoding]::ASCII)
+                Assert-True (@(Invoke-FixtureGit -Root $releaseRepo -Arguments @('status', '--porcelain')).Count -eq 0) `
+                    'git saw the input the case hides from it, so the case proves nothing.'
+                $answer = Test-StagedHere
+                Assert-True (-not $answer.Valid -and $answer.Reason -like "*isn't a build of commit*built from other sources*") `
+                    "The publish stage took a bundle the checkout's inputs don't match: $($answer.Reason)"
+                # Seen by git, the same file stops the check before the inputs are compared.
+                if ($null -eq $excludeBefore) { Remove-Item -LiteralPath $exclude -Force } else { [IO.File]::WriteAllText($exclude, $excludeBefore) }
+                $answer = Test-StagedHere
+                Assert-True (-not $answer.Valid -and $answer.Reason -like "*isn't commit * with nothing changed*") `
+                    "The publish stage held a bundle to a checkout with changes in it: $($answer.Reason)"
+            } finally {
+                Remove-Item -LiteralPath $ignoredInput -Force -ErrorAction SilentlyContinue
+                if ($null -eq $excludeBefore) { Remove-Item -LiteralPath $exclude -Force -ErrorAction SilentlyContinue }
+                else { [IO.File]::WriteAllText($exclude, $excludeBefore) }
+                Remove-Item -LiteralPath $stagedHere -Recurse -Force -ErrorAction SilentlyContinue
+            }
+
+            # The same bundle with its identity taken out, and the SBOM, tooling report, receipt and
+            # checksums made again to match, as whoever can write every staged file could. The folder
+            # holds together and passed as a bundle from before identities. It's refused before the tag.
+            $zip = [IO.Compression.ZipFile]::Open($releaseBundle, [IO.Compression.ZipArchiveMode]::Update)
+            try {
+                $zip.GetEntry('META-INF/hushfacebook-build.identity').Delete()
+                $manifest = $zip.GetEntry('META-INF/MANIFEST.MF')
+                $reader = [IO.StreamReader]::new($manifest.Open())
+                try { $text = $reader.ReadToEnd() } finally { $reader.Dispose() }
+                $manifest.Delete()
+                $writer = [IO.StreamWriter]::new($zip.CreateEntry('META-INF/MANIFEST.MF').Open())
+                try { $writer.Write((@($text -split "`n" | Where-Object { $_ -notlike 'Hushfacebook-*' }) -join "`n")) } finally { $writer.Dispose() }
+            } finally { $zip.Dispose() }
+            Assert-True (-not (Get-BundleIdentityFacts -BundlePath $releaseBundle).Present) 'The stripped bundle still shows a build identity.'
+            New-TestSbom -Path $releaseSbom -Bundle $releaseBundle
+            New-TestTooling -Path $releaseTooling -Bundle $releaseBundle -Commit $releaseCommit -ScopeText $releaseScopeText
+            Invoke-ReceiptBuilder -Fixtures $allFixtures
+            try {
+                Save-StagedHere
+                $answer = Test-StagedHere
+                Assert-True (-not $answer.Valid -and $answer.Reason -like '*carries no intact build identity*') `
+                    "The publish stage took a staged bundle stripped of its identity: $($answer.Reason)"
+            } finally {
+                Remove-Item -LiteralPath $stagedHere -Recurse -Force -ErrorAction SilentlyContinue
             }
         }
     } finally {
@@ -6380,10 +6458,12 @@ try {
         "if ((Get-Content -LiteralPath '$failLiteral' -ErrorAction SilentlyContinue) -eq 'facts') { exit 1 }",
         'exit 0')
     # The publish stage's check of its copy of the staged release logs the folder it was handed and
-    # what's in it, and refuses it when fail.txt says staged.
+    # what's in it, and refuses it when fail.txt says staged. It also tries to change the bundle in
+    # that copy, as anyone running as the same user could once it's checked, and logs whether it could.
     Set-Content -LiteralPath (Join-Path $flowRepo 'scripts/release-receipt.ps1') -Encoding UTF8 -Value @(
         'function Test-StagedReleaseAt([string]$Root, [string]$Folder, [string]$Version, [string]$Commit) {',
-        "    Add-Content -LiteralPath '$logLiteral' -Value (""staged version=`$Version commit=`$Commit folder=`$Folder files="" +",
+        '    try { [IO.File]::AppendAllText((Join-Path $Folder ''patches-1.2.3.mpp''), ''swapped''); $swap = ''went-through'' } catch { $swap = ''refused'' }',
+        "    Add-Content -LiteralPath '$logLiteral' -Value (""staged version=`$Version commit=`$Commit swap=`$swap folder=`$Folder files="" +",
         '        ((Get-ChildItem -LiteralPath $Folder -File | ForEach-Object { $_.Name } | Sort-Object) -join '',''))',
         "    if ((Get-Content -LiteralPath '$failLiteral' -ErrorAction SilentlyContinue) -eq 'staged') {",
         '        return [pscustomobject]@{ Valid = $false; Reason = ''the stand-in refused it'' } }',
@@ -6592,13 +6672,16 @@ try {
     $flowHead = "$(& git -C $flowRepo rev-parse HEAD)".Trim()
     & $flowScript -Stage publish -Version 1.2.3 -Checked $flowChecked 6> $null 3> $null
     $flow = @(Read-FlowLog)
-    Assert-True ($flow.Count -eq 4 -and $flow[0] -like ("staged version=1.2.3 commit=$flowHead folder=* files=patches-1.2.3.cdx.json," +
+    Assert-True ($flow.Count -eq 4 -and $flow[0] -like ("staged version=1.2.3 commit=$flowHead swap=refused folder=* files=patches-1.2.3.cdx.json," +
             'patches-1.2.3.mpp,patches-1.2.3.tooling.json,release-receipt-1.2.3.json,SHA256SUMS.txt') -and
         $flow[1] -like "py * github-notes --version 1.2.3 --checked $flowChecked --out *notes.md" -and
         $flow[2] -like 'gh release create v1.2.3 -R SysAdminDoc/HushFacebook --verify-tag --title v1.2.3 --notes-file *notes.md *' -and
         $flow[3] -like 'gh release download v1.2.3 -R SysAdminDoc/HushFacebook -D *') "Publish did not check, write, create and download back: $($flow -join ' | ')"
-    # The release goes out from the copy that was checked, which is gone once the stage ends.
+    # The release goes out from the copy that was checked, which is gone once the stage ends. Its
+    # folder's name isn't known ahead, and the swap above found every file in it held.
     $checkedCopy = [regex]::Match($flow[0], ' folder=(.+) files=').Groups[1].Value
+    Assert-True ((Split-Path -Leaf $checkedCopy) -cmatch '\Ahushfacebook-publishing-1\.2\.3-[0-9a-f]{32}\z') `
+        "Publish checked a copy in a folder whose name can be known ahead: $checkedCopy"
     foreach ($name in 'patches-1.2.3.mpp', 'patches-1.2.3.cdx.json', 'patches-1.2.3.tooling.json', 'release-receipt-1.2.3.json', 'SHA256SUMS.txt') {
         Assert-True ($flow[2].Contains((Join-Path $checkedCopy $name))) "Publish created the release without the checked $name."
     }

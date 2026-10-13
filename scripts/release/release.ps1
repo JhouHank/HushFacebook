@@ -290,12 +290,22 @@ try {
 
             # What goes out is a copy taken now and checked, so a staged file changed after the
             # check can't be uploaded in its place, and the download back is held to the same bytes.
-            $publishing = Join-Path ([IO.Path]::GetTempPath()) "hushfacebook-publishing-$Version"
-            Remove-Item -LiteralPath $publishing -Recurse -Force -ErrorAction SilentlyContinue
+            # The copy's folder gets a name nobody knows ahead, and each file in it stays open, for
+            # reading only, from before the check until the download back is compared: Windows
+            # refuses to write, replace or delete a file held that way, so what was checked is what
+            # gh uploads. The hashes taken as they're opened are what the hosted copies must match.
+            $publishing = Join-Path ([IO.Path]::GetTempPath()) "hushfacebook-publishing-$Version-$([guid]::NewGuid().ToString('N'))"
             New-Item -ItemType Directory -Path $publishing | Out-Null
+            $held = [Collections.Generic.List[IO.FileStream]]::new()
             try {
                 Copy-Item -LiteralPath (($assetNames + 'SHA256SUMS.txt') | ForEach-Object { Join-Path $assets $_ }) -Destination $publishing
-                Step 'holding the staged assets to SHA256SUMS.txt and the receipt'
+                $checkedHashes = @{}
+                foreach ($name in $assetNames + 'SHA256SUMS.txt') {
+                    $path = Join-Path $publishing $name
+                    $held.Add([IO.File]::Open($path, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::Read))
+                    $checkedHashes[$name] = (Get-FileHash -Algorithm SHA256 -LiteralPath $path).Hash
+                }
+                Step 'holding the staged assets to SHA256SUMS.txt, the receipt and the source commit'
                 $staged = Test-StagedReleaseAt -Root $root -Folder $publishing -Version $Version -Commit $head
                 if (-not $staged.Valid) { throw "The staged release doesn't hold together, so nothing was tagged: $($staged.Reason)" }
 
@@ -315,14 +325,16 @@ try {
                 try {
                     Invoke-Native 'The download back' { & gh release download $tag -R $Repository -D $check }
                     foreach ($name in $assetNames + 'SHA256SUMS.txt') {
-                        $local = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $publishing $name)).Hash
                         $hostedPath = Join-Path $check $name
                         if (-not (Test-Path -LiteralPath $hostedPath -PathType Leaf)) { throw "The release has no $name." }
-                        if ((Get-FileHash -Algorithm SHA256 -LiteralPath $hostedPath).Hash -ne $local) { throw "The hosted $name differs from the local one." }
+                        if ((Get-FileHash -Algorithm SHA256 -LiteralPath $hostedPath).Hash -ne $checkedHashes[$name]) { throw "The hosted $name differs from the local one." }
                         Step "$name matches the hosted copy"
                     }
                 } finally { Remove-Item -LiteralPath $check -Recurse -Force -ErrorAction SilentlyContinue }
-            } finally { Remove-Item -LiteralPath $publishing -Recurse -Force -ErrorAction SilentlyContinue }
+            } finally {
+                foreach ($stream in $held) { $stream.Dispose() }
+                Remove-Item -LiteralPath $publishing -Recurse -Force -ErrorAction SilentlyContinue
+            }
             Step 'published. Write the README and bundle summaries, then run -Stage index'
         }
         'index' {

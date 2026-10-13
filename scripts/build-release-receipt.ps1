@@ -30,9 +30,10 @@
     -AppliedDir names the runs the pre-push gate kept (patches/build/fixture-apply, one folder per
     fixture file, written by verify-all-patches.ps1 -KeepIn). A fixture whose kept stamp names
     this bundle, this APK, this patch list and this CLI by SHA-256, and the same version, version
-    code and forced flag, is read from there: its CLI report, patched APK and merge go through the
-    same checks a fresh run's do, and only the patching is skipped. Any other fixture is patched
-    here as before, and kept runs are read, never changed.
+    code and forced flag, is read from there: its CLI report, patched APK and merge are copied into
+    the run's own folder, hashed there and go through the same checks a fresh run's do, and only
+    the patching is skipped. Any other fixture is patched here as before, and kept runs are read,
+    never changed.
 
     The bundle has to be a build of HEAD from a clean tree, and a clean tree when the receipt is
     cut doesn't show that. So its stamp has to be HEAD's commit time (the build writes 0 when the
@@ -336,8 +337,11 @@ function Get-KeptRun {
         when the fixture is a split bundle, and when every file the stamp stands for is there with
         the SHA-256 the stamp gives it (stamp schema 2). Anything less and the fixture is patched
         here, as it would be with no kept runs at all.
+
+        The answer is a copy of the kept run in -Into, hashed there: a file hashed in the kept
+        folder could be changed before the checks below read it, and the copy is this run's own.
     #>
-    param([string]$Apk, [object]$Stock, [bool]$Forced)
+    param([string]$Apk, [object]$Stock, [bool]$Forced, [string]$Into)
 
     if (-not $AppliedDir) { return $null }
     $label = Split-Path -Leaf $Apk
@@ -374,14 +378,20 @@ function Get-KeptRun {
         return $null
     }
     $hashes = @{ 'patched.apk' = 'patchedSha256'; 'result.json' = 'resultSha256'; 'stock-merged.apk' = 'mergedSha256' }
+    New-Item -ItemType Directory -Force -Path $Into | Out-Null
+    Get-ChildItem -LiteralPath $dir -File | Copy-Item -Destination $Into -Force
+    # The caller takes a merge in the copy as what the CLI patched, so one the stamp doesn't vouch
+    # for, beside a plain APK's run, goes.
+    if (-not $splitBundle) { Remove-Item -LiteralPath (Join-Path $Into 'stock-merged.apk') -Force -ErrorAction SilentlyContinue }
     foreach ($file in $files) {
         $want = [string]$stamp.($hashes[$file])
-        if (-not $want -or $want -cne (Get-Sha256Hex -Path (Join-Path $dir $file))) {
+        if (-not $want -or $want -cne (Get-Sha256Hex -Path (Join-Path $Into $file))) {
             Write-Host "[receipt] the gate's run of $label no longer holds the $file it checked, so it's patched here"
+            Remove-Item -LiteralPath $Into -Recurse -Force -ErrorAction SilentlyContinue
             return $null
         }
     }
-    return $dir
+    return $Into
 }
 
 # Every fixture in one slot of the machine's build queue when there is one (Invoke-HeavyJob):
@@ -409,8 +419,9 @@ Invoke-HeavyJob -Label 'receipt' -ScriptBlock {
 
             # The gate's run of this very fixture with this very bundle, when it kept one: its
             # report, patched APK and merge go through every check below, and only the patching is
-            # skipped. The kept folder is read, never written.
-            $keptRun = Get-KeptRun -Apk $apk -Stock $stock -Forced $forced
+            # skipped. The kept folder is read, never written, and what's read is this run's copy.
+            $keptRun = Get-KeptRun -Apk $apk -Stock $stock -Forced $forced `
+                -Into (Resolve-WithinRoot -Path (Join-Path $runDir 'kept') -Root $workRoot)
             if ($keptRun) {
                 Write-Host "[receipt] reading the gate's run of ${label}: same bundle, APK, patch list and CLI"
                 $out = Join-Path $keptRun 'patched.apk'

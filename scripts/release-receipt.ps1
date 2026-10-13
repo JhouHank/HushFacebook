@@ -1683,7 +1683,9 @@ function Test-StagedReleaseAt {
         out of -Commit through git, and the reviewed manifest changes the way
         Resolve-ReceiptManifestAllowlist reads them, with -AllowlistPath (the checkout's own by
         default) for a commit that carries none. So the staged release is held to the commit its
-        tag will name, and the receipt to that same commit. Answers @{ Valid; Reason }.
+        tag will name, and the receipt to that same commit. The bundle is then held to its source:
+        its build identity has to name -Commit, clean, and its input digest has to be that of
+        -Root, which has to be -Commit with nothing changed. Answers @{ Valid; Reason }.
     #>
     param(
         [Parameter(Mandatory = $true)][string]$Root,
@@ -1714,7 +1716,7 @@ function Test-StagedReleaseAt {
     } catch {
         return Fail "What commit $short carries can't be read: $($_.Exception.Message)"
     }
-    return Test-StagedRelease -Folder $Folder -Version $Version -Expected @{
+    $staged = Test-StagedRelease -Folder $Folder -Version $Version -Expected @{
         ExpectedPatchNames          = @($list.patches | ForEach-Object { [string]$_.name })
         ExpectedPatcherVersion      = $toolchain.PatcherVersion
         ExpectedManagerFloor        = $toolchain.ManagerFloor
@@ -1727,4 +1729,27 @@ function Test-StagedReleaseAt {
         ExpectedSchemaVersion       = $schema
         ToolingScopeManifestText    = $scopeText
     }
+    if (-not $staged.Valid) { return $staged }
+
+    # And to its source, not only to itself. Whoever can rewrite every staged file can keep the folder
+    # consistent, and a bundle with its build identity taken out passed as one from before bundles
+    # carried one, which skips the receipt's clean-commit check. So the bundle has to carry an intact
+    # identity naming this commit, clean, and the input digest of the checkout, which is the
+    # commit's own only while the checkout is that commit with nothing changed.
+    $bundleName = "patches-$Version.mpp"
+    $bundlePath = Join-Path $Folder $bundleName
+    $identity = Get-BundleIdentityFacts -BundlePath $bundlePath
+    if (-not $identity.Valid) { return Fail "The staged $bundleName carries no intact build identity, so nothing ties it to commit $short." }
+    if ($identity.SourceState -cne 'clean' -or $identity.SourceCommit -cne $Commit) {
+        return Fail "The staged $bundleName was built from $($identity.SourceState) source at $($identity.SourceCommit), not commit $short."
+    }
+    $head = "$(Invoke-RepoGit -Root $Root -Arguments @('rev-parse', 'HEAD') | Select-Object -First 1)".Trim()
+    $global:LASTEXITCODE = -1
+    $changed = @(Invoke-RepoGit -Root $Root -Arguments @('status', '--porcelain'))
+    if ($LASTEXITCODE -ne 0 -or $head -cne $Commit -or $changed.Count -gt 0) {
+        return Fail "The checkout isn't commit $short with nothing changed, so the staged $bundleName can't be held to its sources."
+    }
+    $mismatch = Get-BundleInputMismatch -Root $Root -BundlePath $bundlePath
+    if ($mismatch) { return Fail "The staged $bundleName isn't a build of commit ${short}: $mismatch." }
+    return $staged
 }
