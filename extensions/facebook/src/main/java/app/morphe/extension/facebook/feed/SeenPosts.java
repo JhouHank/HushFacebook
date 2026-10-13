@@ -117,7 +117,8 @@ public final class SeenPosts {
     private static final long WRITE_DELAY_MS = 5_000;
     /**
      * Writes in a row that didn't land, each tried again after {@link #WRITE_DELAY_MS}. Past this
-     * many the store stays marked for a write, and the next post remembered tries again.
+     * many the store stays marked for a write, and the next post remembered tries again. A Forget
+     * starts the count over.
      */
     static final int MAX_RETRIES = 5;
 
@@ -329,8 +330,8 @@ public final class SeenPosts {
     /**
      * Forget seen posts, and the switch going off: empties the store now and deletes its file on a
      * background thread. When the workers are all busy, the delete is tried again after a delay
-     * rather than dropped, which left the file to bring the posts back on the next start. Safe to
-     * call on the main thread.
+     * rather than dropped, which left the file to bring the posts back on the next start. It gets
+     * every retry even when writes before it used them up. Safe to call on the main thread.
      */
     public static void clear() {
         synchronized (STORE) {
@@ -338,6 +339,7 @@ public final class SeenPosts {
             STORE.clear();
             dirty = true;
             forgotten = true;
+            failedWrites = 0;
         }
         if (background(SeenPosts::writeNow)) return;
         synchronized (STORE) {

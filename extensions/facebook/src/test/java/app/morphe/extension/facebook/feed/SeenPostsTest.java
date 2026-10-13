@@ -528,6 +528,40 @@ public class SeenPostsTest {
         assertEquals(2, SeenPosts.size());
     }
 
+    /**
+     * Forget seen posts still deletes the file when writes before it used up their retries. A
+     * refused Forget went through the same count, so it was never tried again, and the next start
+     * read the forgotten posts back.
+     */
+    @Test
+    public void aForgetAfterTheRetriesRanOutIsStillTriedAgain() throws Exception {
+        Story story = new Story("forget after the limit");
+        SeenPosts.seen(story);
+        SeenPosts.writeNow();
+        assertTrue("the store wasn't written", file.length() > 0);
+        AtomicInteger schedules = new AtomicInteger();
+        SeenPosts.laterForTests = schedules::incrementAndGet;
+        File blocked = blockTheWorkFile();
+        try {
+            SeenPosts.seen(new Story("stuck"));
+            for (int i = 0; i <= SeenPosts.MAX_RETRIES; i++) SeenPosts.writeNow();
+            assertEquals(1 + SeenPosts.MAX_RETRIES, schedules.get());
+        } finally {
+            unblock(blocked);
+        }
+        SeenPosts.backgroundForTests = null;
+        try (WorkerPoolForTests ignored = WorkerPoolForTests.fill()) {
+            SeenPosts.clear();
+        }
+        assertEquals("a refused Forget past the limit wasn't tried again", 2 + SeenPosts.MAX_RETRIES, schedules.get());
+        SeenPosts.startWrite();
+        Utils.awaitBackgroundTasksForTests();
+        assertFalse("the file outlived Forget seen posts", file.exists());
+        restart();
+        assertEquals(0, SeenPosts.size());
+        assertNull(SeenPosts.hideReason(story));
+    }
+
     /** A folder, not empty, where the write's work file goes, so it can't be opened or deleted. */
     private File blockTheWorkFile() throws IOException {
         File blocked = new File(file.getPath() + ".tmp");
