@@ -420,6 +420,57 @@ class SharedPermissionsFixtureTest {
         assertEquals("a declared build has no fixture", versions, checked)
     }
 
+    /**
+     * #36 leftovers: each declared build's places that name Facebook to Android as this app hand the
+     * name to the extension first (Firebase's notification code and a chat notification's intent),
+     * and afterwards only the setPackage calls that mean Meta's Facebook still take its name straight
+     * from a literal.
+     */
+    @Test
+    fun eachDeclaredBuildsOwnIntentsTakeTheRunningPackage() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val holders = FixtureDex.classesHolding(bundle, FACEBOOK)
+                val context = PatchContexts.of(holders)
+                assertEquals("${bundle.name}: own package calls routed", OWN_PACKAGE_CALL_LOADS.getValue(version),
+                    context.routeOwnPackageCalls(FACEBOOK))
+
+                var inFirebase = 0
+                val stillFacebook = mutableListOf<String>()
+                for (before in holders) {
+                    val after = context.mutableClassDefBy(before.type).methods
+                    for (original in before.methods) {
+                        val now = after.single { it.sameSignatureAs(original) }.instructions()
+                        val where = "${original.definingClass}->${original.name}"
+                        if (original.definingClass == FIREBASE_MESSAGING) {
+                            inFirebase += now.count { (it as? ReferenceInstruction)?.reference?.toString() == PACKAGE_CALL }
+                        }
+                        now.withIndex().filter { (_, it) ->
+                            it.opcode == Opcode.INVOKE_VIRTUAL && (it as ReferenceInstruction).reference.toString() == SET_PACKAGE
+                        }.forEach { (index, call) ->
+                            val register = (call as FiveRegisterInstruction).registerD
+                            val load = (index - 1 downTo 0).map { now[it] }.firstOrNull {
+                                (it.opcode == Opcode.CONST_STRING || it.opcode == Opcode.CONST_STRING_JUMBO ||
+                                    it.opcode == Opcode.MOVE_RESULT_OBJECT) && (it as OneRegisterInstruction).registerA == register
+                            } ?: return@forEach
+                            val literal = ((load as? ReferenceInstruction)?.reference as? StringReference)?.string
+                            if (literal == FACEBOOK) stillFacebook += "$where at $index"
+                        }
+                    }
+                }
+                assertEquals("${bundle.name}: Firebase's notification calls routed", FIREBASE_LOADS.getValue(version), inFirebase)
+                assertTrue("${bundle.name}: Firebase still sets $FACEBOOK: $stillFacebook",
+                    stillFacebook.none { it.startsWith(FIREBASE_MESSAGING) })
+                assertEquals("${bundle.name}: setPackage left with $FACEBOOK: $stillFacebook",
+                    SETS_REAL_FACEBOOK.getValue(version), stillFacebook.size)
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
     private fun Document.authorities(): List<String> =
         elements("provider").flatMap { it.getAttribute("android:authorities").split(';') }
 
@@ -437,5 +488,24 @@ class SharedPermissionsFixtureTest {
          * template sites a dump of the arm64 582 dex showed (2026-10-14).
          */
         val REMOTE_VIEWS_LOADS = mapOf("582.0.0.50.54" to 14)
+
+        /**
+         * Loads of Facebook's package that only name this app to Android, per build, from a dump of
+         * the arm64 582 dex (2026-10-14): FirebaseMessagingService's two setPackage, one launch
+         * intent and three meta-data reads, and one chat notification's setPackage.
+         */
+        val OWN_PACKAGE_CALL_LOADS = mapOf("582.0.0.50.54" to 7)
+
+        /** Of those, the ones in Firebase's notification code. */
+        val FIREBASE_LOADS = mapOf("582.0.0.50.54" to 6)
+
+        /**
+         * How many setPackage calls still take Facebook's package from a literal, per build, because
+         * there it means Meta's Facebook app: Messenger's warm-start hint (ThreadSettingsActivity),
+         * sent to Facebook's WarmStartBroadcastReceiver once it has checked Facebook is installed,
+         * and Messenger's deep link launcher, which hands a link to Facebook or Lite after the same
+         * check.
+         */
+        val SETS_REAL_FACEBOOK = mapOf("582.0.0.50.54" to 2)
     }
 }

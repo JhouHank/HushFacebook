@@ -216,7 +216,57 @@ private fun buildsRemoteViewsOf(instruction: Instruction, register: Int): Boolea
  * is written again. A load something jumps in right after is left out, since the jump would pass
  * the call that goes there, and so is a value anything else reads.
  */
-internal fun Method.remoteViewsPackageLoads(packageName: String): List<Int> {
+internal fun Method.remoteViewsPackageLoads(packageName: String): List<Int> =
+    packageLoadsReadOnlyBy(packageName, ::buildsRemoteViewsOf)
+
+/*
+ * The rest of the bare package name (#36 leftovers). Where it means this app, a clone has to get
+ * its own: Firebase's notification code (FirebaseMessagingService, a kept name) sets the intent a
+ * notification's tap sends to the package, launches the package when that finds nothing, and reads
+ * the package's meta-data for the notification's icon, colour and channel, all of them
+ * context.getPackageName() in Google's source that Facebook's build spelled out; and a chat
+ * notification's intent is set to the package. In a clone those reach the stock app or nothing.
+ *
+ * Left alone, because there the name means Meta's Facebook app: getPackageInfo reads of its
+ * version or signatures (the in-app browser's FB4A version check among them), String.equals of a
+ * caller's or a target's package against it, the launch of Facebook after a check that it or
+ * its in-house build is installed, and Messenger's warm-start hint (ThreadSettingsActivity), which
+ * checks that Facebook is installed and then sends its WarmStartBroadcastReceiver a broadcast. A
+ * load that anything else reads, such as that install check or a ComponentName, stays as it is.
+ */
+
+internal const val SET_PACKAGE = "Landroid/content/Intent;->setPackage(Ljava/lang/String;)Landroid/content/Intent;"
+internal const val LAUNCH_INTENT =
+    "Landroid/content/pm/PackageManager;->getLaunchIntentForPackage(Ljava/lang/String;)Landroid/content/Intent;"
+internal const val APPLICATION_INFO =
+    "Landroid/content/pm/PackageManager;->getApplicationInfo(Ljava/lang/String;I)Landroid/content/pm/ApplicationInfo;"
+internal const val FIREBASE_MESSAGING = "Lcom/google/firebase/messaging/FirebaseMessagingService;"
+
+/**
+ * Whether [instruction] hands the package name in [register] to a call that means this app, and
+ * reads it for nothing else: an intent's setPackage anywhere, and in Firebase's notification code
+ * ([firebase]) a launch intent or an ApplicationInfo for it as well.
+ */
+private fun callsOwnPackage(instruction: Instruction, register: Int, firebase: Boolean): Boolean {
+    if (instruction.opcode != Opcode.INVOKE_VIRTUAL) return false
+    val called = ((instruction as ReferenceInstruction).reference as? MethodReference)?.toString() ?: return false
+    if (called != SET_PACKAGE && !(firebase && (called == LAUNCH_INTENT || called == APPLICATION_INFO))) return false
+    val call = instruction as FiveRegisterInstruction
+    return call.registerD == register && call.registerC != register && (call.registerCount < 3 || call.registerE != register)
+}
+
+/** Where [this] loads [packageName] only to name this app to Android ([callsOwnPackage]). */
+internal fun Method.ownPackageCallLoads(packageName: String): List<Int> {
+    val firebase = definingClass == FIREBASE_MESSAGING
+    return packageLoadsReadOnlyBy(packageName) { instruction, register -> callsOwnPackage(instruction, register, firebase) }
+}
+
+/**
+ * The index of each const-string of [packageName] in [this] whose value only [reads] reads before
+ * its register is written again. A load something jumps in right after is left out, since the jump
+ * would pass the call that goes there.
+ */
+private fun Method.packageLoadsReadOnlyBy(packageName: String, reads: (Instruction, Int) -> Boolean): List<Int> {
     val code = implementation?.instructions?.toList() ?: return emptyList()
     val loads = code.indices.filter { code[it].loadedString() == packageName }
     if (loads.isEmpty()) return emptyList()
@@ -224,8 +274,8 @@ internal fun Method.remoteViewsPackageLoads(packageName: String): List<Int> {
     return loads.filter { at ->
         val register = (code[at] as OneRegisterInstruction).registerA
         if (at + 1 in targets || register > 255) return@filter false
-        val reads = readsAfter(at, register)
-        reads.isNotEmpty() && reads.all { buildsRemoteViewsOf(code[it], register) }
+        val readers = readsAfter(at, register)
+        readers.isNotEmpty() && readers.all { reads(code[it], register) }
     }
 }
 
@@ -233,15 +283,26 @@ internal fun Method.remoteViewsPackageLoads(packageName: String): List<Int> {
  * Hands every load of [packageName] that only builds RemoteViews to the extension, which answers
  * the running app's package. Answers how many it handed over. The extension is left alone.
  */
-internal fun BytecodePatchContext.routeRemoteViewsPackage(packageName: String): Int {
+internal fun BytecodePatchContext.routeRemoteViewsPackage(packageName: String): Int =
+    routePackageLoads(packageName) { it.remoteViewsPackageLoads(packageName) }
+
+/**
+ * Hands every load of [packageName] that only names this app to Android ([ownPackageCallLoads]) to
+ * the extension, which answers the running app's package. Answers how many it handed over.
+ */
+internal fun BytecodePatchContext.routeOwnPackageCalls(packageName: String): Int =
+    routePackageLoads(packageName) { it.ownPackageCallLoads(packageName) }
+
+/** Hands each load [loadsOf] picks out to the extension, right after it. The extension is left alone. */
+private fun BytecodePatchContext.routePackageLoads(packageName: String, loadsOf: (Method) -> List<Int>): Int {
     val owners = classDefByStrings(packageName, StringComparisonType.EQUALS)
         .filterNot { it.type.startsWith(EXTENSION_ROOT) }
-        .filter { owner -> owner.methods.any { it.remoteViewsPackageLoads(packageName).isNotEmpty() } }
+        .filter { owner -> owner.methods.any { loadsOf(it).isNotEmpty() } }
         .map { it.type }
         .distinct()
     return owners.sumOf { type ->
         mutableClassDefBy(type).methods.sumOf { method ->
-            val loads = method.remoteViewsPackageLoads(packageName)
+            val loads = loadsOf(method)
             loads.asReversed().forEach { at ->
                 val register = method.getInstruction<OneRegisterInstruction>(at).registerA
                 method.addInstructions(
@@ -292,5 +353,6 @@ internal val clonedPackagePatch = bytecodePatch {
     execute {
         routeOwnAuthorities(packageMetadata.packageName, stockAuthorities)
         routeRemoteViewsPackage(packageMetadata.packageName)
+        routeOwnPackageCalls(packageMetadata.packageName)
     }
 }

@@ -179,4 +179,68 @@ class ClonedPackageLiteralsTest {
         assertEquals("the extension's literal was routed", 4,
             context.mutableClassDefBy(extension).methods.single().instructions().size)
     }
+
+    private fun call(definingClass: String, name: String, parameters: List<String>, returns: String, vararg registers: Int) =
+        ImmutableInstruction35c(
+            Opcode.INVOKE_VIRTUAL, registers.size, registers[0], registers[1], registers.getOrElse(2) { 0 }, 0, 0,
+            ImmutableMethodReference(definingClass, name, parameters, returns),
+        )
+
+    private fun setPackage(intent: Int, packageName: Int) =
+        call("Landroid/content/Intent;", "setPackage", listOf("Ljava/lang/String;"), "Landroid/content/Intent;", intent, packageName)
+
+    private fun launchIntent(manager: Int, packageName: Int) = call("Landroid/content/pm/PackageManager;",
+        "getLaunchIntentForPackage", listOf("Ljava/lang/String;"), "Landroid/content/Intent;", manager, packageName)
+
+    private fun applicationInfo(manager: Int, packageName: Int, flags: Int) = call("Landroid/content/pm/PackageManager;",
+        "getApplicationInfo", listOf("Ljava/lang/String;", "I"), "Landroid/content/pm/ApplicationInfo;", manager, packageName, flags)
+
+    private fun packageInfo(manager: Int, packageName: Int, flags: Int) = call("Landroid/content/pm/PackageManager;",
+        "getPackageInfo", listOf("Ljava/lang/String;", "I"), "Landroid/content/pm/PackageInfo;", manager, packageName, flags)
+
+    /**
+     * #36 leftovers: where Facebook names itself to Android, a clone names itself. An intent's
+     * setPackage anywhere, and in Firebase's notification code the launch intent and the meta-data
+     * read too, take the running package. Elsewhere a launch of Facebook, a read of its version and
+     * a comparison with its name mean Meta's app and keep the literal.
+     */
+    @Test
+    fun facebooksNameWhereItMeansThisAppGoesThroughTheExtension() {
+        val firebase = FIREBASE_MESSAGING
+        val chats = "Lcom/example/ChatNotification;"
+        val equals = ImmutableMethodReference("Ljava/lang/String;", "equals", listOf("Ljava/lang/Object;"), "Z")
+        val context = PatchContexts.of(
+            listOf(
+                classDef(firebase, method(firebase, 10,
+                    load(0, facebook), setPackage(1, 0),
+                    load(0, facebook), launchIntent(2, 0),
+                    load(0, facebook), applicationInfo(2, 0, 3),
+                    ImmutableInstruction10x(Opcode.RETURN_VOID))),
+                classDef(chats, method(chats, 10,
+                    load(0, facebook), setPackage(1, 0),
+                    load(0, facebook), launchIntent(2, 0),
+                    load(0, facebook), applicationInfo(2, 0, 3),
+                    load(0, facebook), packageInfo(2, 0, 3),
+                    load(0, facebook), ImmutableInstruction35c(Opcode.INVOKE_VIRTUAL, 2, 4, 0, 0, 0, 0, equals),
+                    load(0, facebook), setPackage(0, 1),
+                    ImmutableInstruction10x(Opcode.RETURN_VOID))),
+            ),
+        )
+
+        assertEquals(4, context.routeOwnPackageCalls(facebook))
+
+        val inFirebase = context.mutableClassDefBy(firebase).methods.single().instructions()
+        assertEquals(13, inFirebase.size)
+        for (index in listOf(0, 4, 8)) {
+            assertEquals(facebook, inFirebase[index].literal())
+            assertEquals(PACKAGE_CALL, (inFirebase[index + 1] as ReferenceInstruction).reference.toString())
+            assertEquals(Opcode.MOVE_RESULT_OBJECT, inFirebase[index + 2].opcode)
+        }
+        val inChats = context.mutableClassDefBy(chats).methods.single().instructions()
+        assertEquals("only the setPackage load was routed", 15, inChats.size)
+        assertEquals(PACKAGE_CALL, (inChats[1] as ReferenceInstruction).reference.toString())
+        assertEquals(facebook, inChats[4].literal())
+        assertEquals("a launch of Facebook outside Firebase", Opcode.INVOKE_VIRTUAL, inChats[5].opcode)
+        assertEquals("an intent whose own register holds the name", Opcode.INVOKE_VIRTUAL, inChats[13].opcode)
+    }
 }

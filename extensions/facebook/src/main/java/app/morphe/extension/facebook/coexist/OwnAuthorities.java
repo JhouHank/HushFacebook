@@ -61,7 +61,9 @@ public final class OwnAuthorities {
      * RemoteViews with, as the running app's package. RemoteViews takes its layouts from the
      * package it names, so a clone handing over Facebook's name had its notifications drawn from
      * the stock app's layouts, or from an app that isn't there, and Android closed it for a bad
-     * notification (#36). Anything but Facebook's package name exactly comes back as it was.
+     * notification (#36). The same goes for the places Facebook names itself to Android: the intent
+     * a notification's tap sends, the app a notification launches, and the meta-data Firebase reads
+     * for a notification's icon. Anything but Facebook's package name exactly comes back as it was.
      */
     public static String packageName(@Nullable String facebooksPackage) {
         if (!FACEBOOK.equals(facebooksPackage)) return facebooksPackage;
