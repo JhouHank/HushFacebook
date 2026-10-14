@@ -174,6 +174,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean carrierBanners() {
+        return false;
+    }
+
     public static boolean unlockAppIcons() {
         return false;
     }

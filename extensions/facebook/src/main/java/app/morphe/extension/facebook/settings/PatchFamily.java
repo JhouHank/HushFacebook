@@ -136,6 +136,8 @@ public enum PatchFamily {
             Settings.USE_SYSTEM_EMOJI),
     HAPTICS(FamilyNames.HAPTICS, "turnOffHaptics", null,
             Settings.TURN_OFF_HAPTICS),
+    CARRIER_BANNERS(FamilyNames.CARRIER_BANNERS, "carrierBanners", null,
+            Settings.HIDE_DATA_MODE_BANNER, Settings.HIDE_FREE_MODE_BANNER),
     SCREEN_TRANSITIONS(FamilyNames.SCREEN_TRANSITIONS, "turnOffScreenTransitions", null,
             Settings.TURN_OFF_SCREEN_TRANSITIONS),
     APP_ICONS(FamilyNames.APP_ICONS, "unlockAppIcons", null,

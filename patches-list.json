@@ -1262,6 +1262,44 @@
       "options": []
     },
     {
+      "name": "Hide carrier data banners",
+      "description": "On carriers with Facebook Flex, hides the Data mode bar with its buy mobile data button, or the purple Free mode bar, so the feed gets that space back. Both switches start off. Turn them on in Hushfacebook settings > Appearance.",
+      "category": "Interface",
+      "use": true,
+      "dependencies": [
+        "BytecodePatch",
+        "Hushfacebook settings"
+      ],
+      "compatiblePackages": {
+        "com.facebook.katana": [
+          "582.0.0.50.54"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Facebook",
+          "packageName": "com.facebook.katana",
+          "description": null,
+          "appIconColor": 550655,
+          "signatures": [
+            "911d604446084ca7f4760b775bfc160fa8702441240a7258645d7a72c4312d27",
+            "e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1"
+          ],
+          "targets": [
+            {
+              "version": "582.0.0.50.54",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 475417104,
+                "ARMEABI_V7A": 475417036
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Hide post prompts",
       "description": "Removes the strip Facebook adds to some posts, like \"Are you interested in this post?\", \"Show less\" or follow suggestions, so posts look less cluttered. No gap is left. On by default. Turn it off in Hushfacebook settings > News feed. A second switch there, Hide the Follow link on posts, starts off.",
       "category": "Feed",

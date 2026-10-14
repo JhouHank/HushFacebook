@@ -1498,3 +1498,11 @@ Settings shortcut on the app icon	Uygulama simgesinde ayarlar kısayolu
 Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings from the Hushfacebook settings row in Settings and privacy or with a long press on the Facebook logo.	Facebook simgesine basılı tutunca açılan menüye Hushfacebook ayarlarını koyar. Kapalıyken bu menüden çıkar. Bu ayarları yine Ayarlar ve gizlilik içindeki Hushfacebook ayarları satırından ya da Facebook logosuna basılı tutarak açabilirsin.
 # context: summary of that switch when the build has no settings row in Facebook's Menu
 Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings with a long press on the Facebook logo.	Facebook simgesine basılı tutunca açılan menüye Hushfacebook ayarlarını koyar. Kapalıyken bu menüden çıkar. Bu ayarları yine Facebook logosuna basılı tutarak açabilirsin.
+# context: switch title on the Appearance settings page: hides Facebook Flex's Data mode bar under the top bar; Data mode is Facebook's own name for paid mode on Flex carriers
+Hide the Data mode banner	Veri modu bannerını gizle
+# context: switch title on the Appearance settings page: hides Facebook Flex's purple Free mode bar; Free mode is Facebook's own name for the free text-only mode
+Hide the Free mode banner	Ücretsiz mod bannerını gizle
+# context: summary of the Hide the Data mode banner switch
+On carriers with Facebook Flex, hides the Data mode bar under the top bar and its button to buy mobile data.	Facebook Flex sunan operatörlerde üst çubuğun altındaki Veri modu çubuğunu ve mobil veri satın alma düğmesini gizler.
+# context: summary of the Hide the Free mode banner switch; the purple bar is also where you switch back to Data mode
+On carriers with Facebook Flex, hides the purple Free mode bar. That bar is also how you go back to Data mode, so turn this off when you want to switch.	Facebook Flex sunan operatörlerde mor Ücretsiz mod çubuğunu gizler. Bu çubuk Veri moduna geri dönmenin de yoludur, bu yüzden geçiş yapmak istediğinde bunu kapat.

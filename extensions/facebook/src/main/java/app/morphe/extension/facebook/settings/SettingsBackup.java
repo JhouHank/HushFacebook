@@ -172,6 +172,8 @@ public final class SettingsBackup {
             Settings.HOLD_CAMERA_ROLL_PROCESSING,
             Settings.ALLOW_SCREENSHOTS,
             Settings.TURN_OFF_HAPTICS,
+            Settings.HIDE_DATA_MODE_BANNER,
+            Settings.HIDE_FREE_MODE_BANNER,
             Settings.TURN_OFF_SCREEN_TRANSITIONS,
             Settings.UNLOCK_APP_ICONS,
             Settings.BLOCK_SCREENSHOT_DETECTION,

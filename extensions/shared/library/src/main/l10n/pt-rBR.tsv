@@ -1390,3 +1390,11 @@ Settings shortcut on the app icon	Atalho das configurações no ícone do app
 Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings from the Hushfacebook settings row in Settings and privacy or with a long press on the Facebook logo.	Coloca as Configurações do Hushfacebook no menu que aparece ao segurar o ícone do Facebook. Desligado, o atalho sai desse menu, e você ainda pode abrir estas configurações pela linha Configurações do Hushfacebook em Configurações e privacidade ou tocando e segurando o logotipo do Facebook.
 # context: summary of that switch when the build has no settings row in Facebook's Menu
 Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings with a long press on the Facebook logo.	Coloca as Configurações do Hushfacebook no menu que aparece ao segurar o ícone do Facebook. Desligado, o atalho sai desse menu, e você ainda pode abrir estas configurações tocando e segurando o logotipo do Facebook.
+# context: switch title on the Appearance settings page: hides Facebook Flex's Data mode bar under the top bar; Data mode is Facebook's own name for paid mode on Flex carriers
+Hide the Data mode banner	Ocultar o banner do modo de dados
+# context: switch title on the Appearance settings page: hides Facebook Flex's purple Free mode bar; Free mode is Facebook's own name for the free text-only mode
+Hide the Free mode banner	Ocultar o banner do modo gratuito
+# context: summary of the Hide the Data mode banner switch
+On carriers with Facebook Flex, hides the Data mode bar under the top bar and its button to buy mobile data.	Em operadoras com Facebook Flex, oculta a barra do modo de dados abaixo da barra superior e o botão dela para comprar dados móveis.
+# context: summary of the Hide the Free mode banner switch; the purple bar is also where you switch back to Data mode
+On carriers with Facebook Flex, hides the purple Free mode bar. That bar is also how you go back to Data mode, so turn this off when you want to switch.	Em operadoras com Facebook Flex, oculta a barra roxa do modo gratuito. Essa barra também é o jeito de voltar ao modo de dados, então desligue isto quando quiser trocar.

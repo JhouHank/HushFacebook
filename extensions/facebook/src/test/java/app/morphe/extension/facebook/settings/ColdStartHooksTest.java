@@ -81,6 +81,7 @@ import app.morphe.extension.facebook.menu.MenuSettingsRow;
 import app.morphe.extension.facebook.misc.AnalyticsUploads;
 import app.morphe.extension.facebook.misc.AppIcons;
 import app.morphe.extension.facebook.misc.ScreenshotDetection;
+import app.morphe.extension.facebook.misc.CarrierBanners;
 import app.morphe.extension.facebook.misc.Haptics;
 import app.morphe.extension.facebook.misc.ScreenTransitionsForTests;
 import app.morphe.extension.facebook.misc.Screenshots;
@@ -263,6 +264,7 @@ public class ColdStartHooksTest {
         assertFalse("a fade timer skipped before the context said yes", ProgressBar.keepsControls());
         assertFalse("a reel's caption lifted before the context said yes", ProgressBar.liftsFooter());
         assertFalse("a short reel's faded bar skipped before the context said yes", ProgressBar.noFadedBar());
+        assertFalse("a carrier banner before the context was hidden", CarrierBanners.hides("zorp_paid_mode_banner"));
         assertTrue("a haptic before the context was held back", Haptics.performHapticFeedback(new android.view.View(app) {
             @Override
             public boolean performHapticFeedback(int feedbackConstant) {

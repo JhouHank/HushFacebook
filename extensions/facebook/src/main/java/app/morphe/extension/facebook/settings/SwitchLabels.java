@@ -110,6 +110,8 @@ final class SwitchLabels {
         if (setting == Settings.HOLD_CAMERA_ROLL_PROCESSING) return L10n.t("Hold back camera roll processing");
         if (setting == Settings.ALLOW_SCREENSHOTS) return L10n.t("Allow screenshots");
         if (setting == Settings.TURN_OFF_HAPTICS) return L10n.t("Turn off haptics");
+        if (setting == Settings.HIDE_DATA_MODE_BANNER) return L10n.t("Hide the Data mode banner");
+        if (setting == Settings.HIDE_FREE_MODE_BANNER) return L10n.t("Hide the Free mode banner");
         if (setting == Settings.TURN_OFF_SCREEN_TRANSITIONS) return L10n.t("Turn off screen transitions");
         if (setting == Settings.UNLOCK_APP_ICONS) return L10n.t("Unlock app icons");
         if (setting == Settings.BLOCK_SCREENSHOT_DETECTION) return L10n.t("Block screenshot detection");

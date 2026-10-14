@@ -464,6 +464,20 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_turn_off_haptics", FALSE);
 
     /**
+     * The Data mode banner Facebook Flex carriers show under the top bar, with its offer to buy
+     * mobile data ({@link app.morphe.extension.facebook.misc.CarrierBanners}, #70). Starts off.
+     */
+    public static final BooleanSetting HIDE_DATA_MODE_BANNER =
+            new BooleanSetting("hushfacebook_hide_data_mode_banner", FALSE);
+
+    /**
+     * The purple Free mode banner of Facebook Flex carriers, which is also the way back to Data
+     * mode ({@link app.morphe.extension.facebook.misc.CarrierBanners}, #70). Starts off.
+     */
+    public static final BooleanSetting HIDE_FREE_MODE_BANNER =
+            new BooleanSetting("hushfacebook_hide_free_mode_banner", FALSE);
+
+    /**
      * Facebook's screens and tabs show without the slide or fade between them
      * ({@link app.morphe.extension.facebook.misc.ScreenTransitions}). Starts off.
      */

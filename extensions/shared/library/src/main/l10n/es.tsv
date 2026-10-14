@@ -1498,3 +1498,11 @@ Settings shortcut on the app icon	Acceso directo a la configuración en el icono
 Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings from the Hushfacebook settings row in Settings and privacy or with a long press on the Facebook logo.	Pone la configuración de Hushfacebook en el menú que aparece al mantener pulsado el icono de Facebook. Si lo desactivas, sale de ese menú y puedes seguir abriendo esta configuración desde la fila Configuración de Hushfacebook en Configuración y privacidad o manteniendo pulsado el logotipo de Facebook.
 # context: summary of that switch when the build has no settings row in Facebook's Menu
 Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings with a long press on the Facebook logo.	Pone la configuración de Hushfacebook en el menú que aparece al mantener pulsado el icono de Facebook. Si lo desactivas, sale de ese menú y puedes seguir abriendo esta configuración manteniendo pulsado el logotipo de Facebook.
+# context: switch title on the Appearance settings page: hides Facebook Flex's Data mode bar under the top bar; Data mode is Facebook's own name for paid mode on Flex carriers
+Hide the Data mode banner	Ocultar el banner del modo de datos
+# context: switch title on the Appearance settings page: hides Facebook Flex's purple Free mode bar; Free mode is Facebook's own name for the free text-only mode
+Hide the Free mode banner	Ocultar el banner del modo gratuito
+# context: summary of the Hide the Data mode banner switch
+On carriers with Facebook Flex, hides the Data mode bar under the top bar and its button to buy mobile data.	En operadores con Facebook Flex, oculta la barra del modo de datos bajo la barra superior y su botón para comprar datos móviles.
+# context: summary of the Hide the Free mode banner switch; the purple bar is also where you switch back to Data mode
+On carriers with Facebook Flex, hides the purple Free mode bar. That bar is also how you go back to Data mode, so turn this off when you want to switch.	En operadores con Facebook Flex, oculta la barra morada del modo gratuito. Esa barra también es la forma de volver al modo de datos, así que desactiva esto cuando quieras cambiar.

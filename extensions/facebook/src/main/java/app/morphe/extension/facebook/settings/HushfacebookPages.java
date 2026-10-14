@@ -144,6 +144,15 @@ final class HushfacebookPages {
                     L10n.t("No number on Facebook's app icon. Notifications still arrive. Some launchers add their own count, "
                             + "which this can't remove.")));
         }
+        if (build.contains(PatchFamily.CARRIER_BANNERS)) {
+            // Asked each time Facebook shows its carrier banner, which it does as screens open and the mode changes.
+            appearance.addPreference(toggle(context, Settings.HIDE_DATA_MODE_BANNER,
+                    L10n.t("On carriers with Facebook Flex, hides the Data mode bar under the top bar and its button to "
+                            + "buy mobile data.")));
+            appearance.addPreference(toggle(context, Settings.HIDE_FREE_MODE_BANNER,
+                    L10n.t("On carriers with Facebook Flex, hides the purple Free mode bar. That bar is also how you go "
+                            + "back to Data mode, so turn this off when you want to switch.")));
+        }
         if (build.contains(PatchFamily.FORCE_DARK_MODE)) {
             // Facebook asks for dark mode as each screen applies its theme, so a change shows fully after a restart.
             appearance.addPreference(toggle(context, Settings.FORCE_DARK_MODE,

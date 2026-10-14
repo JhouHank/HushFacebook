@@ -102,6 +102,7 @@ import app.morphe.extension.facebook.menu.MenuSectionsForTests;
 import app.morphe.extension.facebook.misc.MetaUpsells;
 import app.morphe.extension.facebook.misc.AnalyticsUploads;
 import app.morphe.extension.facebook.misc.AppIcons;
+import app.morphe.extension.facebook.misc.CarrierBanners;
 import app.morphe.extension.facebook.misc.Haptics;
 import app.morphe.extension.facebook.misc.ScreenshotDetection;
 import app.morphe.extension.facebook.misc.ScreenTransitionsForTests;
@@ -685,6 +686,10 @@ public class PausedHooksTest {
                 AnalyticsUploads::holdXAnalyticsUpload,
                 () -> !AnalyticsUploads.papayaOn(true)));
         // A haptic Facebook asks for doesn't play.
+        // Facebook Flex's Data mode and Free mode banners are hidden.
+        probes.put(PatchFamily.CARRIER_BANNERS, Arrays.asList(
+                () -> CarrierBanners.hides("autoflex_paid_mode_banner"),
+                () -> CarrierBanners.hides("autoflex_banner")));
         probes.put(PatchFamily.HAPTICS, Collections.singletonList(
                 () -> !Haptics.performHapticFeedback(new android.view.View(RuntimeEnvironment.getApplication()) {
                     @Override

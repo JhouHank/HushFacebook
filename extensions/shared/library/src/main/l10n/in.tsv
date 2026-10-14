@@ -1498,3 +1498,11 @@ Settings shortcut on the app icon	Pintasan pengaturan di ikon aplikasi
 Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings from the Hushfacebook settings row in Settings and privacy or with a long press on the Facebook logo.	Menaruh Pengaturan Hushfacebook di menu yang muncul saat ikon Facebook ditekan lama. Jika dimatikan, pintasan itu hilang dari menu tersebut, dan kamu tetap bisa membuka pengaturan ini dari baris Pengaturan Hushfacebook di Pengaturan dan privasi atau dengan menekan lama logo Facebook.
 # context: summary of that switch when the build has no settings row in Facebook's Menu
 Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings with a long press on the Facebook logo.	Menaruh Pengaturan Hushfacebook di menu yang muncul saat ikon Facebook ditekan lama. Jika dimatikan, pintasan itu hilang dari menu tersebut, dan kamu tetap bisa membuka pengaturan ini dengan menekan lama logo Facebook.
+# context: switch title on the Appearance settings page: hides Facebook Flex's Data mode bar under the top bar; Data mode is Facebook's own name for paid mode on Flex carriers
+Hide the Data mode banner	Sembunyikan banner Mode Data
+# context: switch title on the Appearance settings page: hides Facebook Flex's purple Free mode bar; Free mode is Facebook's own name for the free text-only mode
+Hide the Free mode banner	Sembunyikan banner Mode Gratis
+# context: summary of the Hide the Data mode banner switch
+On carriers with Facebook Flex, hides the Data mode bar under the top bar and its button to buy mobile data.	Di operator dengan Facebook Flex, menyembunyikan bilah Mode Data di bawah bilah atas beserta tombolnya untuk membeli data seluler.
+# context: summary of the Hide the Free mode banner switch; the purple bar is also where you switch back to Data mode
+On carriers with Facebook Flex, hides the purple Free mode bar. That bar is also how you go back to Data mode, so turn this off when you want to switch.	Di operator dengan Facebook Flex, menyembunyikan bilah ungu Mode Gratis. Bilah itu juga cara kembali ke Mode Data, jadi matikan ini saat kamu ingin beralih.
