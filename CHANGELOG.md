@@ -10,8 +10,16 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** New patch, `Hide carrier data banners`, for carriers with Facebook Flex (issue #70). **Hide the Data mode banner** takes away the Data mode bar and its buy mobile data button, and **Hide the Free mode banner** takes away the purple Free mode bar. Both switches are under Appearance and start off.
 * **Facebook:** `Picture-in-picture` puts a **Picture-in-picture** row in a reel's More menu, so a reel can float in the small window without leaving Facebook (issue #44). The new **Only from a reel's More menu** switch under it starts off. Turn it on and leaving Facebook no longer opens the window, so the row is the only way in.
 * **Facebook:** `Material You theme` colors Facebook's light mode too (issues #141 and #65). In light mode the grays, the blues, the pale blue highlights and the selected tab take your wallpaper's colors at the same lightness, so text stays as easy to read. White stays white, and dark mode looks as it did. There's no new switch.
+* **Facebook:** New patch, `Skip silent parts`, plays videos, reels and stories past the quiet stretches in their sound, so talks and how-tos get to the point sooner (issue #144). Its switch is under Playback and starts off. A change takes effect from the next video or the next seek.
+* **Facebook:** **Load whole reply threads** under Comment sheet options keeps loading an open reply thread as you scroll, so you don't have to keep tapping View more replies (issue #140). It starts off.
+
+### Changed
+
+* **Facebook:** With `View stories anonymously` on, a story you watch to the end now shows as watched on your phone until that person posts a new one (issue #61). Facebook still isn't told you saw it.
 
 ### Fixed
+
+* **Facebook:** With `Use the system font` on, a font that draws past its own line box keeps its extra room in Reels captions and other text with a set line height, so letter tails and Bengali vowel signs aren't cut off (issue #96).
 
 * **Facebook:** With `AMOLED black theme` or `Material You theme` in your build, the time on Facebook's older comment row (left of Like and Reply) can't come out too dark to read on a dark page anymore (issue #138). It falls back to Facebook's own gray, themed like the rest. Light mode looks as it did.
 * **Facebook:** With `Material You theme`, the box under a link post (the site and title) takes your wallpaper's colors when Facebook doesn't send that box a color of its own (issue #37). Light mode stays as it was.
