@@ -47,7 +47,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** #133 Mute reposts: the new **Hide reposts** switch under News feed keeps shared posts out of Home, whether the person sharing wrote something above them or not.
 * **Facebook:** #142 Turning off the saving and saved toasts: **Quiet saves** under Downloads. A save that fails still tells you why.
 * **Facebook:** #90 and #120 A reel's bar showing time before Play is tapped, and the bar starting where the last reel stopped: each reel's bar starts at the beginning now, and its time waits until that reel plays.
-* **Facebook:** #126 Picture-in-picture display issue: opening a link, a notification or a settings shortcut while a reel floats brings Facebook back full screen on that page.
+* **Facebook:** #126 Picture-in-picture display issue: a link, a notification or a settings shortcut that opens while a reel floats now brings Facebook back full screen instead of opening in the small window. The pink block you reported hasn't shown up on my phones, so if you still see it after updating, please say so on the issue.
 * **Facebook:** #110 Comment sorting: All comments gets picked again when Facebook reloads a post's comments in its own order, and a link to one comment still opens in Facebook's view.
 * **Facebook:** #132 Keep the top bar on screen: the kept bar doesn't fade out anymore on phones where Facebook fades it as it scrolls away.
 * **Facebook:** #143 The changelog in Morphe Manager: Manager lists every change of the release you patched with, starting with this one.
