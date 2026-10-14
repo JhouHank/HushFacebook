@@ -611,6 +611,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_open_reply_threads", FALSE);
 
     /**
+     * An open reply thread loads the rest of its replies as it's scrolled, with no View more
+     * replies to tap ({@link app.morphe.extension.facebook.comments.CommentSheetOptions}, #140).
+     * Works with or without {@link #OPEN_REPLY_THREADS}. Off by default. A change shows on the
+     * next thread opened.
+     */
+    public static final BooleanSetting LOAD_WHOLE_REPLY_THREADS =
+            new BooleanSetting("hushfacebook_load_whole_reply_threads", FALSE);
+
+    /**
      * A group post's comments end without the Related groups list and its Join buttons
      * ({@link app.morphe.extension.facebook.comments.CommentSheetOptions}, #101). Off by default. A
      * change shows on the next comments opened.

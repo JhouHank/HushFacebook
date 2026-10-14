@@ -319,6 +319,8 @@ public class ColdStartHooksTest {
                 CommentSheetOptions.skipReactionPicker());
         assertFalse("a comment drawn before the context had its reply thread open",
                 CommentSheetOptions.openReplyThreads(false));
+        assertFalse("a reply thread opened before the context paged on by itself",
+                CommentSheetOptions.loadWholeReplyThreads(false));
         assertFalse("a post's comments drawn before the context lost Related groups",
                 CommentSheetOptions.holdsBottomContent(CommentSheetOptions.RELATED_GROUPS));
         assertFalse("a comment with a shop link drawn before the context was left out",

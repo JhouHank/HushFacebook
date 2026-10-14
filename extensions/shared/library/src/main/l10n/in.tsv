@@ -452,6 +452,10 @@ The comment box loses its GIF and sticker buttons. Typing, photos and posting wo
 Open every reply thread	Buka semua utas balasan
 # context: summary of that switch; View replies is the link Facebook shows under a comment that has replies
 Comments show their replies right away, so there's no View replies to tap.	Komentar langsung menampilkan balasannya, jadi tidak perlu mengetuk Lihat balasan.
+# context: switch title under Comments; it makes an open reply thread load the rest of its replies by itself as the list is scrolled
+Load whole reply threads	Muat utas balasan lengkap
+# context: summary of that switch; View more replies is the row Facebook shows under an open thread that has more replies to load
+An open reply thread keeps loading as you scroll, so there's no View more replies to tap.	Utas balasan yang terbuka terus dimuat saat kamu menggulir, tanpa perlu mengetuk untuk melihat balasan lainnya.
 Hide related groups	Sembunyikan grup terkait
 A group post's comments end without the Related groups list and its Join buttons.	Komentar postingan grup berakhir tanpa daftar Grup terkait dan tombol Gabung-nya.
 # context: row title under Comments that opens Facebook's own settings; reaction counts are the numbers next to the reactions on a post
