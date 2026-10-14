@@ -20,7 +20,9 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
-* **Facebook:** A copy made with Clone app builds Facebook's rich notifications from its own layouts, so a notification no longer closes the clone (issue #36). There's no switch.
+* **Facebook:** A copy made with Clone app builds Facebook's rich notifications from its own layouts, so a notification no longer closes the clone (issue #36). Tapping a push or chat notification opens the clone instead of the stock app, and the notification's icon and color come from the clone. There's no switch.
+* **Facebook:** `Turn off HDR brightness` no longer leaves HLG reels bright and warm (issue #93). HLG video reaches the decoder at the usual range in its own colors, the way HDR10 reels already did.
+* **Facebook:** With `Tap to play` on, tapping a reel in the Reels row on Home plays that reel right away, since the tap already asked for it (issue #106). Reels sitting in the feed still wait for a tap.
 * **Facebook:** The README's Help entry on Facebook links now names the Messenger setting that stops Messenger claiming facebook.com links: Open supported links, or In your browser on newer Android (issue #111).
 * **Facebook:** `Hide Meta AI questions under posts` also takes away the row of Meta AI question chips Facebook puts under some photos and captions (issue #48). Those chips came through a different part of the post than the questions the switch already caught. It's under News feed and starts on.
 * **Facebook:** With `Use the system font` on, a font that draws past its own line box keeps its extra room in Reels captions and other text with a set line height, so letter tails and Bengali vowel signs aren't cut off (issue #96).
