@@ -8048,7 +8048,7 @@ try {
         # The folder the build wrapper was sent to, which has to be a fresh one in the temp folder
         # and gone again, with every other worktree and the two bystanders as they were.
         function Assert-RebuildCleanedUp([string]$Line, [string]$When) {
-            $tree = [regex]::Match($Line, '^gradle dir=(.+) priority=release tasks= :patches:buildAndroid $').Groups[1].Value
+            $tree = [regex]::Match($Line, '^gradle dir=(.+) priority=release tasks= :patches:buildAndroid --no-build-cache $').Groups[1].Value
             Assert-True ($tree -and (Split-Path -Leaf $tree) -cmatch '\Ahushfacebook-rebuild-[0-9a-f]{32}\z' -and
                 (Split-Path -Parent $tree).TrimEnd('\', '/') -ieq [System.IO.Path]::GetTempPath().TrimEnd('\', '/') -and $tree -ine $flowLookalike) `
                 "$When did not build in a fresh folder of its own under the temp folder: $Line"
@@ -8064,7 +8064,7 @@ try {
         # A rebuild that fails stops the stage and leaves no note, so publish still refuses and
         # nothing is tagged.
         Set-Content -LiteralPath $flowFails -Value 'gradle' -Encoding ASCII
-        Assert-Throws { & $flowScript -Stage rebuild -Version 1.2.3 6> $null 3> $null } '*Gradle :patches:buildAndroid did not pass*' `
+        Assert-Throws { & $flowScript -Stage rebuild -Version 1.2.3 6> $null 3> $null } '*Gradle :patches:buildAndroid --no-build-cache did not pass*' `
             'The rebuild stage carried on past a rebuild that failed.'
         Remove-Item -LiteralPath $flowFails -Force
         $flow = @(Read-FlowLog)

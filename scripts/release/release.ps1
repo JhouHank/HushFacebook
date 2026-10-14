@@ -170,6 +170,8 @@ function Remove-RebuildWorktree([string]$Path) {
     & git -C $root worktree remove --force $Path
     $removed = $LASTEXITCODE -eq 0
     if (Test-Path -LiteralPath $Path) { Remove-TreeWithoutFollowingLinks -Path $Path }
+    # A folder that went only by the fallback leaves git's entry for it, which prune drops.
+    if (-not $removed) { & git -C $root worktree prune }
     if (-not $removed -or (Test-Path -LiteralPath $Path)) {
         Write-Warning "The rebuild's worktree didn't go cleanly. See 'git worktree list', and remove $Path if it's still there."
     }
@@ -350,7 +352,10 @@ try {
                         if (Test-Path -LiteralPath $sdk -PathType Leaf) { Copy-Item -LiteralPath $sdk -Destination $worktree }
 
                         Step 'bundle from the worktree'
-                        Invoke-Gradle @(':patches:buildAndroid') -ProjectDir $worktree
+                        # Without the build cache: its keys don't depend on the folder, so the staged
+                        # build's own outputs would come back from it, and a build that doesn't come
+                        # out the same twice would pass.
+                        Invoke-Gradle @(':patches:buildAndroid', '--no-build-cache') -ProjectDir $worktree
                         $rebuilt = Get-ReleaseBundlePath -Root $worktree -Version $Version
                         if (-not (Test-Path -LiteralPath $rebuilt -PathType Leaf)) {
                             throw "The rebuild left no $($builtNames[0]) in $(Split-Path -Parent $rebuilt)."
