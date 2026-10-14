@@ -25,6 +25,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.WideLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -42,8 +43,11 @@ import java.io.File
  * short reel check answering no so the bar isn't faded out, the look selector reporting each look
  * and letting a look that shows the bar take the place of a parked hide (issue #73),
  * and the Reels footer's seek bar status starting and staying VISIBLE, so a playing reel's caption
- * sits above the bar (issue #73). Each hook asks the extension, a no lands on Facebook's code, and
- * nothing of Facebook's code moves. Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and
+ * sits above the bar (issue #73), and the Reels registry's hand-over telling the extension which reel
+ * the scrubber holds and which is on screen, then whether the light mount ran, with the mount
+ * reporting itself and the look selector asking the extension for each look first (issues #90 and
+ * #120). Each hook asks the extension, a no lands on Facebook's code, and nothing of Facebook's code
+ * moves. Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and
  * skips without it.
  */
 class KeepProgressBarReelsFixtureTest {
@@ -457,5 +461,158 @@ class KeepProgressBarReelsFixtureTest {
         }
         val into = patched.indices.filter { store + 1 in flow.normal[it] }.toSet()
         assertEquals("$where: something jumps past the hook", setOf(store), into)
+    }
+
+    private fun extensionHas(where: String, descriptor: String) {
+        val method = ExtensionDex.classDef(PROGRESS_BAR).methods.singleOrNull {
+            "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" == descriptor
+        }
+        assertTrue("$where: the extension has no $descriptor", method != null && AccessFlags.STATIC.isSet(method.accessFlags))
+    }
+
+    @Test
+    fun `each declared build tells the extension of each reel hand-over and whether the light mount ran`() = bundles { bundle ->
+        val name = bundle.name
+        val found = scrubber(bundle)
+        val looks = found.looks
+        val base = found.progress.base
+        val another = anotherVideo(base, barInfo(base, minimumLengthCheck(found.scrubber)).builder.returnType)
+        val holders = FixtureDex.classesHolding(bundle, NEW_REELS_UNIT_SHOWN).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        val handOver = reelHandOver(holders, base.type)
+        val owner = holders.single { it.type == handOver.method.definingClass }
+        val where = "$name: ${owner.type}->${handOver.method.name}"
+        val original = handOver.method.code()
+        // #120: past the id's test Facebook skips the reel the scrubber's bar info already holds, by the same id
+        // the hook hands the extension, and otherwise binds the scrubber to the reel's player, which runs the
+        // light mount the mount hook reports.
+        assertTrue("$where no longer reads the scrubber's bar info", original.drop(handOver.at).any { it.reference() == another.info })
+        assertTrue("$where no longer reads the bar info's video id", original.drop(handOver.at).any { it.reference() == another.id })
+        assertTrue("$where no longer compares the ids", original.drop(handOver.at).any {
+            it.reference() == "Ljava/lang/String;->equals(Ljava/lang/Object;)Z"
+        })
+        assertTrue("$where no longer binds the scrubber's player", original.drop(handOver.at).any { instruction ->
+            val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+            instruction.opcode.name.startsWith("invoke-virtual") && call != null && call.returnType == "V" && call.parameterTypes.size == 6
+        })
+        assertEquals("$where: the scrubber's holder field isn't a ${base.type}", base.type, handOver.scrubber.substringAfter(":"))
+
+        val context = PatchContexts.of(listOf(owner))
+        val method = context.mutableClassDefBy(owner.type).methods.single { it.sameAs(handOver.method) }
+        val live = RegisterLiveness.of(handOver.method).liveInto(handOver.at)
+        method.checksHandOver(handOver)
+        method.notesHandOver(handOver, looks, another)
+        val patched = method.code()
+        val at = handOver.at
+        val end = handOver.end + 11
+        assertEquals("$where gains twelve instructions", original.size + 12, patched.size)
+        assertEquals("$where: Facebook's code up to the id's test stays", original.take(at).map { it.opcode },
+            patched.take(at).map { it.opcode })
+        assertEquals("$where: the hook's code",
+            listOf(Opcode.IGET_OBJECT, Opcode.IF_EQZ, Opcode.IGET_OBJECT, Opcode.IF_EQZ, Opcode.IGET_OBJECT, Opcode.IGET_OBJECT,
+                Opcode.IGET_OBJECT, Opcode.CONST_4, Opcode.IF_EQZ, Opcode.IGET_OBJECT, Opcode.INVOKE_STATIC),
+            patched.subList(at, at + 11).map { it.opcode })
+        val scrubber = (patched[at] as TwoRegisterInstruction).registerA
+        assertEquals("$where: the scrubber is taken off Facebook's holder", handOver.holder, (patched[at] as TwoRegisterInstruction).registerB)
+        assertEquals("$where: through the field Facebook reads it by", handOver.scrubber, patched[at].reference())
+        assertEquals("$where: then its views holder", looks.viewsField, patched[at + 2].reference())
+        assertEquals("$where: its bar", looks.barField, patched[at + 4].reference())
+        assertEquals("$where: its time label", looks.labelField, patched[at + 5].reference())
+        assertEquals("$where: its bar info", another.info, patched[at + 6].reference())
+        assertEquals("$where: and the info's video id", another.id, patched[at + 9].reference())
+        assertEquals("$where: the extension is asked", HANDS_OVER, patched[at + 10].reference())
+        val ask = patched[at + 10] as FiveRegisterInstruction
+        val label = (patched[at + 5] as TwoRegisterInstruction).registerA
+        val bar = (patched[at + 4] as TwoRegisterInstruction).registerA
+        val held = (patched[at + 9] as TwoRegisterInstruction).registerA
+        assertEquals("$where: with the label, the bar, the held id and the reel's id", listOf(4, label, bar, held, handOver.shown),
+            listOf(ask.registerCount, ask.registerC, ask.registerD, ask.registerE, ask.registerF))
+        assertEquals("$where: no id without bar info", held, (patched[at + 7] as OneRegisterInstruction).registerA)
+        val locals = handOver.method.localRegisterCount()
+        for (borrowed in setOf(scrubber, label, bar, held)) {
+            assertTrue("$where: the hook writes v$borrowed, which isn't a low local", borrowed < minOf(locals, 16))
+            assertTrue("$where: the hook borrows v$borrowed, which Facebook reads on", borrowed !in live)
+        }
+        assertEquals("$where: four registers borrowed", 4, setOf(scrubber, label, bar, held).size)
+        assertEquals("$where: Facebook's test of the id comes right after the hook", original[at].opcode, patched[at + 11].opcode)
+        val flow = ControlFlow.of(method)
+        assertEquals("$where: a missing scrubber goes on to Facebook", setOf(at + 2, at + 11), flow.normal[at + 1].toSet())
+        assertEquals("$where: a missing views holder goes on to Facebook", setOf(at + 4, at + 11), flow.normal[at + 3].toSet())
+        assertEquals("$where: missing bar info asks with no id", setOf(at + 9, at + 10), flow.normal[at + 8].toSet())
+        assertEquals("$where: something jumps past the hook", setOf(at + 1, at + 3, at + 10),
+            patched.indices.filter { at + 11 in flow.normal[it] }.toSet())
+        assertEquals("$where: something jumps onto the hook", setOf(at - 1), patched.indices.filter { at in flow.normal[it] }.toSet())
+
+        assertEquals("$where: the extension is asked at the return", LEFT_ON_LAST_REEL, patched[end].reference())
+        assertEquals("$where: with nothing", 0, (patched[end] as FiveRegisterInstruction).registerCount)
+        assertEquals("$where: right before it", Opcode.RETURN_VOID, patched[end + 1].opcode)
+        assertEquals("$where: something jumps past the return's hook", setOf(end - 1), patched.indices.filter { end in flow.normal[it] }.toSet())
+        assertEquals("$where: Facebook's code from the id's test on stays", original.drop(at).map { it.opcode },
+            (patched.subList(at + 11, end) + patched.drop(end + 1)).map { it.opcode })
+        val reached = mutableSetOf(at)
+        val queue = ArrayDeque(listOf(at))
+        while (queue.isNotEmpty()) flow.normal[queue.removeFirst()].forEach { if (reached.add(it)) queue += it }
+        assertEquals("$where: a way on from the hook returns without asking at the return", setOf(end + 1),
+            reached.filter { patched[it].opcode == Opcode.RETURN_VOID }.toSet())
+        extensionHas(where, HANDS_OVER)
+        extensionHas(where, LEFT_ON_LAST_REEL)
+    }
+
+    @Test
+    fun `each declared build reports the light mount and asks the extension for each look first`() = bundles { bundle ->
+        val name = bundle.name
+        val found = scrubber(bundle)
+        val looks = found.looks
+        val base = found.progress.base
+        val another = anotherVideo(base, barInfo(base, minimumLengthCheck(found.scrubber)).builder.returnType)
+        val context = PatchContexts.of(listOf(base))
+
+        val mount = context.mutableClassDefBy(base.type).methods.single { it.sameAs(another.mount) }
+        var where = "$name: ${base.type}->${mount.name}"
+        val mountCode = mount.code()
+        mount.reportsMount(looks)
+        val mounted = mount.code()
+        assertEquals("$where: the hook's code",
+            listOf(Opcode.MOVE_OBJECT_FROM16, Opcode.IGET_OBJECT, Opcode.IF_EQZ, Opcode.IGET_OBJECT, Opcode.INVOKE_STATIC),
+            mounted.take(5).map { it.opcode })
+        assertEquals("$where: from p0", mount.localRegisterCount(), (mounted[0] as TwoRegisterInstruction).registerB)
+        assertEquals("$where: the views holder", looks.viewsField, mounted[1].reference())
+        assertEquals("$where: the time label", looks.labelField, mounted[3].reference())
+        assertEquals("$where: the extension is told", MOUNTS, mounted[4].reference())
+        assertEquals("$where: Facebook's code stays", mountCode.map { it.opcode }, mounted.drop(5).map { it.opcode })
+        assertEquals("$where: a missing views holder goes on to Facebook", setOf(3, 5), ControlFlow.of(mount).normal[2].toSet())
+        val mountFlow = ControlFlow.of(another.mount)
+        assertEquals("$where: something jumps onto the mount's first instruction", emptySet<Int>(),
+            mountCode.indices.filter { 0 in mountFlow.normal[it] }.toSet())
+
+        val selector = lookSelector(base, looks)
+        val method = context.mutableClassDefBy(base.type).methods.single { it.sameAs(selector) }
+        where = "$name: ${base.type}->${selector.name}"
+        val original = method.code()
+        method.countsLook()
+        method.asksLook(looks)
+        val patched = method.code()
+        val look = method.implementation!!.registerCount - 1
+        assertEquals("$where: the hook's code",
+            listOf(Opcode.MOVE_OBJECT_FROM16, Opcode.IGET_OBJECT, Opcode.IF_EQZ, Opcode.IGET_OBJECT, Opcode.MOVE_OBJECT_FROM16,
+                Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT_OBJECT, Opcode.MOVE_OBJECT_FROM16),
+            patched.take(8).map { it.opcode })
+        assertEquals("$where: the look is read", look, (patched[4] as TwoRegisterInstruction).registerB)
+        assertEquals("$where: the extension is asked", LOOK_FOR, patched[5].reference())
+        val ask = patched[5] as FiveRegisterInstruction
+        assertEquals("$where: with the label and the look", listOf(2, (patched[3] as TwoRegisterInstruction).registerA,
+            (patched[4] as TwoRegisterInstruction).registerA), listOf(ask.registerCount, ask.registerC, ask.registerD))
+        assertEquals("$where: its answer replaces the look", look, (patched[7] as TwoRegisterInstruction).registerA)
+        assertEquals("$where: then the look is counted", COUNTS_LOOK, patched[8].reference())
+        assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(9).map { it.opcode })
+        assertEquals("$where: a missing views holder goes on with the look as asked", setOf(3, 8),
+            ControlFlow.of(method).normal[2].toSet())
+        // The selector returns on a null look before anything else, so a dropped look changes nothing of Facebook's.
+        val nullCheck = original.indexOfFirst { it.opcode == Opcode.IF_EQZ && (it as OneRegisterInstruction).registerA == look }
+        assertTrue("$where no longer tests the look for null first", nullCheck in 0..2 &&
+            original.take(nullCheck).none { it.opcode.name.startsWith("invoke") || it.opcode.name.startsWith("if-") })
+        val onNull = ControlFlow.of(selector).normal[nullCheck].single { it != nullCheck + 1 }
+        assertEquals("$where no longer returns on a null look", Opcode.RETURN_VOID, original[onNull].opcode)
+        extensionHas(where, MOUNTS)
+        extensionHas(where, LOOK_FOR)
     }
 }

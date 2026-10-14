@@ -116,6 +116,14 @@ internal const val LIFTS_FOOTER = "$PROGRESS_BAR->liftsFooter()Z"
 internal const val NO_FADED_BAR = "$PROGRESS_BAR->noFadedBar()Z"
 internal const val COUNTS_LOOK = "$PROGRESS_BAR->look(Ljava/lang/Integer;)V"
 internal const val REPLACES_PARKED = "$PROGRESS_BAR->replacesParkedLook(Ljava/lang/Integer;Ljava/lang/Integer;)Z"
+internal const val HANDS_OVER =
+    "$PROGRESS_BAR->handsOver(Landroid/view/ViewGroup;Landroid/view/View;Ljava/lang/String;Ljava/lang/String;)V"
+internal const val LEFT_ON_LAST_REEL = "$PROGRESS_BAR->leftOnLastReel()V"
+internal const val MOUNTS = "$PROGRESS_BAR->mounts(Landroid/view/ViewGroup;)V"
+internal const val LOOK_FOR = "$PROGRESS_BAR->lookFor(Landroid/view/ViewGroup;Ljava/lang/Integer;)Ljava/lang/Integer;"
+
+/** The trace name of the Reels scrubber registry's hand-over as a new reel shows, a kept literal. */
+internal const val NEW_REELS_UNIT_SHOWN = ".onNewReelsUnitShown"
 internal const val TAKES_TOUCH =
     "Lapp/morphe/extension/facebook/media/TapToSeek;->takesTouch(${SEEK_BAR}Landroid/view/MotionEvent;)Z"
 internal const val VIEW_GROUP = "Landroid/view/ViewGroup;"
@@ -169,6 +177,19 @@ internal const val INVALIDATE = "Landroid/view/View;->invalidate()V"
  * the next reel to reuse the scrubber.
  * And the wait before the scrubber's next progress update, Facebook's `defaultFrameDelayMs` of
  * 100 ms, drops to about a frame, so the bar moves smoothly instead of in visible steps.
+ *
+ * Facebook hands its Reels scrubber each reel that shows from one registry method tracing
+ * [NEW_REELS_UNIT_SHOWN] (582 `LX/8ZR;->A00`), which binds it to the reel's player and so runs the
+ * light mount, where the next reel's reset lives. That method returns before the bind when the
+ * reel's player has no parameters yet or the reel has no id, and the scrubber stays on the last
+ * reel: on a phone (#90, #120) the kept bar and its time stopped where the last reel was after Up
+ * next played the next reel or after a swipe, and a touch showed 0:00 over the last reel's length,
+ * read off the last reel's bar info, with no progress update running. So a hook right after the method reads
+ * the reel's id tells the extension which reel the scrubber holds and which is on screen, one at the
+ * method's single return asks whether the light mount ran (a hook first in the mount reports that),
+ * and when it didn't, the extension hides the bar and its time until a reel takes the scrubber. A
+ * hook first in the look selector hands the extension each look, and while the bar is hidden that
+ * way a look that would show the last reel's bar is dropped.
  *
  * The Reels footer lays the caption out from a seek bar status (582 `LX/AGv;` holding a `LX/AGw;`):
  * HIDDEN while a reel plays, VISIBLE while it's paused, DRAGGING during a drag. Only VISIBLE lifts
@@ -270,6 +291,12 @@ val keepProgressBarPatch = bytecodePatch(
         progress.update.freeLocalsAt(PATCH, dragCheck(progress.update, progress), 2)
         val info = barInfo(progress.base, lengthCheck)
         val another = anotherVideo(progress.base, info.builder.returnType)
+        val handOver = reelHandOver(
+            classDefByStrings(NEW_REELS_UNIT_SHOWN, StringComparisonType.EQUALS)
+                .filterNot { it.type.startsWith(EXTENSION_CLASSES) },
+            progress.base.type,
+        )
+        handOver.method.freeLocalsAt(PATCH, handOver.at, 4)
         val delay = frameDelay(progress)
         val selector = lookSelector(progress.base, scrubber)
         val skip = sameLookSkip(selector) { classDefByOrNull(it) }
@@ -313,6 +340,12 @@ val keepProgressBarPatch = bytecodePatch(
         mutableClassDefBy(progress.base.type).methods.single { it.sameAs(another.mount) }.apply {
             startsNextReelOver(scrubber, another.at)
             clearsLastReel(scrubber, graph, chapters, another.at)
+            reportsMount(scrubber)
+        }
+        // The return goes in first, so the hook at the id's test, further up, keeps its index.
+        mutableClassDefBy(handOver.method.definingClass).methods.single { it.sameAs(handOver.method) }.apply {
+            checksHandOver(handOver)
+            notesHandOver(handOver, scrubber, another)
         }
         mutableClassDefBy(scrubber.type).methods.single { it.sameAs(lengthCheck) }.longEnoughWhileKept()
         mutableClassDefBy(scrubber.type).methods.single { it.sameAs(shortCheck) }.notShortWhileKept()
@@ -328,6 +361,7 @@ val keepProgressBarPatch = bytecodePatch(
         mutableClassDefBy(progress.base.type).methods.single { it.sameAs(selector) }.apply {
             replacesParkedLook(skip)
             countsLook()
+            asksLook(scrubber)
         }
         mutableClassDefBy(footer.type).methods.single { it.sameAs(footer.constructor) }.startsLifted(footer, status)
         mutableClassDefBy(footer.type).methods.single { it.sameAs(footer.update) }.staysLifted(footer, status)
@@ -521,8 +555,12 @@ internal fun chapterReset(scrubber: ClassDef, looks: ScrubberLooks): Method {
     return reset
 }
 
-/** The scrubber base's light mount and the index where its branch for another video starts. */
-internal class AnotherVideo(val mount: Method, val at: Int)
+/**
+ * The scrubber base's light mount, the index where its branch for another video starts, the base's
+ * field holding the bar info it built last ([info], 582 `LX/9c4;->A06`) and the info's video id
+ * ([id], 582 `LX/AGr;->A01`), both as the mount reads them before comparing.
+ */
+internal class AnotherVideo(val mount: Method, val at: Int, val info: String, val id: String)
 
 /**
  * The scrubber base's light mount (582 `LX/9c4;->A0m`), which Facebook runs each time it hands its
@@ -551,18 +589,111 @@ internal fun anotherVideo(base: ClassDef, barInfo: String): AnotherVideo {
             code[index + 2].opcode == Opcode.IF_NEZ && branch.registerA == result.registerA
     }
     val compare = compares.singleOrNull() ?: refuse("$where compares ${compares.size} pairs with areEqual and skips on a match, expected the video's id")
-    val readsId = code.subList(0, compare).any {
-        it.opcode == Opcode.IGET_OBJECT && ((it as ReferenceInstruction).reference as FieldReference).let { field ->
-            field.definingClass == barInfo && field.type == "Ljava/lang/String;"
-        }
-    }
-    if (!readsId) refuse("$where no longer reads the video id off its bar info $barInfo before comparing")
+    fun read(index: Int) = code[index].takeIf { it.opcode == Opcode.IGET_OBJECT }
+        ?.let { (it as ReferenceInstruction).reference as FieldReference }
+    val ids = code.indices.take(compare).mapNotNull(::read).filter { it.definingClass == barInfo && it.type == "Ljava/lang/String;" }
+    val id = ids.distinct().singleOrNull()
+        ?: refuse("$where no longer reads the video id off its bar info $barInfo before comparing")
+    val infos = code.indices.take(compare).mapNotNull(::read).filter { it.definingClass == base.type && it.type == barInfo }
+    val info = infos.distinct().singleOrNull()
+        ?: refuse("$where reads ${infos.distinct().size} bar info field(s) of ${base.type} before comparing, expected one")
     val at = compare + 3
     val flow = ControlFlow.of(mount)
     if (at >= code.size || code.indices.any { it != at - 1 && at in flow.normal[it] }) {
         refuse("$where has a jump onto its branch for another video")
     }
-    return AnotherVideo(mount, at)
+    return AnotherVideo(mount, at, info.toString(), id.toString())
+}
+
+/**
+ * The Reels scrubber registry's hand-over as a new reel shows ([method], 582 `LX/8ZR;->A00`), where
+ * the hand-over hook goes ([at], right after the reel's id is read, before Facebook checks it), the
+ * register holding the reel's id ([shown]), the register holding the picked scrubber's holder
+ * ([holder]) and the holder's field with the scrubber ([scrubber]), and the one `return-void` every way
+ * on from [at] ends at ([end]).
+ */
+internal class ReelHandOver(
+    val method: Method,
+    val at: Int,
+    val shown: Int,
+    val holder: Int,
+    val scrubber: String,
+    val end: Int,
+)
+
+/**
+ * The Reels scrubber registry's hand-over (582 `LX/8ZR;->A00`): the one instance `V` method of
+ * [holders] tracing [NEW_REELS_UNIT_SHOWN]. Facebook runs it for each reel that shows, swiped to or
+ * played next by itself. It picks the scrubber for the reel, reads the reel's video id with a static
+ * one-argument call, skips the rest for no id or for the reel the scrubber's bar info already holds,
+ * and otherwise hands the scrubber the reel's player, which runs the scrubber's light mount. Before
+ * that it returns when the reel's player has no parameters yet. Every way on ends at one
+ * `return-void` right after the trace's closing call. Refuses unless all that holds: the id call
+ * right after the trace with its `move-result-object` and a test of the id, nothing but the
+ * instruction before jumping onto that test, the first read of a [base] field afterwards taken off
+ * a holder register written before the test and not in between, both registers and the id's at v15
+ * or below, and no other return reachable from the test.
+ */
+internal fun reelHandOver(holders: List<ClassDef>, base: String): ReelHandOver {
+    val methods = holders.distinctBy { it.type }.flatMap { holder ->
+        methodsHolding(holder, NEW_REELS_UNIT_SHOWN).filter { !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" }
+    }
+    val method = methods.singleOrNull()
+        ?: refuse("expected one instance method tracing \"$NEW_REELS_UNIT_SHOWN\", found ${methods.size}")
+    val where = "${method.definingClass}->${method.name}"
+    val code = method.implementation!!.instructions.toList()
+    val trace = code.indices.singleOrNull {
+        code[it].opcode.let { op -> op == Opcode.CONST_STRING || op == Opcode.CONST_STRING_JUMBO } &&
+            ((code[it] as ReferenceInstruction).reference as StringReference).string == NEW_REELS_UNIT_SHOWN
+    } ?: refuse("$where loads \"$NEW_REELS_UNIT_SHOWN\" more than once")
+    val idCall = (trace + 1 until code.size).firstOrNull { index ->
+        val call = (code[index] as? ReferenceInstruction)?.reference as? MethodReference
+        code[index].opcode == Opcode.INVOKE_STATIC && call != null && call.returnType == "Ljava/lang/String;" &&
+            call.parameterTypes.size == 1 && (code[index] as FiveRegisterInstruction).registerCount == 1
+    } ?: refuse("$where no longer reads the reel's id with a static call after its trace")
+    val result = code.getOrNull(idCall + 1)?.takeIf { it.opcode == Opcode.MOVE_RESULT_OBJECT } as? OneRegisterInstruction
+        ?: refuse("$where no longer keeps the reel's id")
+    val shown = result.registerA
+    val at = idCall + 2
+    val test = code.getOrNull(at)
+    if (test == null || (test.opcode != Opcode.IF_NEZ && test.opcode != Opcode.IF_EQZ) || (test as OneRegisterInstruction).registerA != shown) {
+        refuse("$where no longer tests the reel's id right after reading it")
+    }
+    val flow = ControlFlow.of(method)
+    if (code.indices.any { it != at - 1 && at in flow.normal[it] }) refuse("$where has a jump onto its test of the reel's id")
+    val take = (at until code.size).firstOrNull { index ->
+        code[index].opcode == Opcode.IGET_OBJECT && ((code[index] as ReferenceInstruction).reference as FieldReference).type == base
+    } ?: refuse("$where no longer takes a $base off the scrubber it picked")
+    val holder = (code[take] as TwoRegisterInstruction).registerB
+    val scrubber = (code[take] as ReferenceInstruction).reference.toString()
+    fun writes(instruction: Instruction, register: Int): Boolean {
+        val destination = (instruction as? OneRegisterInstruction)?.registerA ?: return false
+        if (!instruction.opcode.setsRegister()) return false
+        return destination == register || (instruction.opcode.setsWideRegister() && destination + 1 == register)
+    }
+    if ((at until take).any { writes(code[it], holder) }) refuse("$where writes v$holder between the id's test and its read of the scrubber")
+    if ((at + 1..take).any { index -> code.indices.any { index in flow.normal[it] && it !in at until index } }) {
+        refuse("$where can reach its read of the scrubber without its test of the reel's id")
+    }
+    if (holder > 15 || shown > 15) refuse("$where keeps the scrubber's holder or the reel's id past v15")
+    val reached = mutableSetOf(at)
+    val queue = ArrayDeque(listOf(at))
+    while (queue.isNotEmpty()) {
+        val next = queue.removeFirst()
+        flow.normal[next].forEach { if (reached.add(it)) queue += it }
+    }
+    val returns = reached.filter { code[it].opcode == Opcode.RETURN_VOID }
+    val end = returns.singleOrNull()
+        ?: refuse("$where can end at ${returns.size} return-void instructions past its test of the reel's id, expected one")
+    val closing = code.getOrNull(end - 1)
+    val closes = (closing as? ReferenceInstruction)?.reference as? MethodReference
+    if (closing?.opcode != Opcode.INVOKE_STATIC || closes == null || closes.returnType != "V" ||
+        closes.parameterTypes.map(CharSequence::toString) != listOf("I")
+    ) {
+        refuse("$where no longer closes its trace right before it returns")
+    }
+    if (code.indices.any { it != end - 1 && end in flow.normal[it] }) refuse("$where has a jump onto its return")
+    return ReelHandOver(method, at, shown, holder, scrubber, end)
 }
 
 /**
@@ -1192,6 +1323,88 @@ internal fun MutableMethod.startsNextReelOver(looks: ScrubberLooks, at: Int) {
             invoke-static { v$v, v$bar }, $NEXT_REEL
         """,
         ExternalLabel("facebook", getInstruction(at)),
+    )
+}
+
+/**
+ * In the Reels scrubber registry's hand-over ([ReelHandOver]), right after it reads the reel's id: take
+ * the scrubber off the holder Facebook picked, as Facebook does next, and hand the extension its time
+ * label, its bar, the video id of the bar info it holds (null without one) and the reel's id. Then
+ * Facebook's test of the id runs as before. A scrubber or views holder that isn't there goes straight
+ * on. The hook borrows four low locals that nothing reads from there on.
+ */
+internal fun MutableMethod.notesHandOver(handOver: ReelHandOver, looks: ScrubberLooks, another: AnotherVideo) {
+    val (scrubber, label, bar, held) = freeLocalsAt(PATCH, handOver.at, 4)
+    addInstructionsWithLabels(
+        handOver.at,
+        """
+            iget-object v$scrubber, v${handOver.holder}, ${handOver.scrubber}
+            if-eqz v$scrubber, :facebook
+            iget-object v$label, v$scrubber, ${looks.viewsField}
+            if-eqz v$label, :facebook
+            iget-object v$bar, v$label, ${looks.barField}
+            iget-object v$label, v$label, ${looks.labelField}
+            iget-object v$scrubber, v$scrubber, ${another.info}
+            const/4 v$held, 0x0
+            if-eqz v$scrubber, :ask
+            iget-object v$held, v$scrubber, ${another.id}
+            :ask
+            invoke-static { v$label, v$bar, v$held, v${handOver.shown} }, $HANDS_OVER
+        """,
+        ExternalLabel("facebook", getInstruction(handOver.at)),
+    )
+}
+
+/**
+ * At the hand-over's one `return-void` ([ReelHandOver.end]), which every way on from the hook above
+ * reaches: ask the extension whether Facebook left the scrubber on the last reel. It needs nothing
+ * from the method, so nothing is borrowed, and nothing jumps onto the return.
+ */
+internal fun MutableMethod.checksHandOver(handOver: ReelHandOver) {
+    addInstructions(handOver.end, "invoke-static { }, $LEFT_ON_LAST_REEL")
+}
+
+/**
+ * First thing in the scrubber base's light mount: hand the extension the scrubber's time label, as
+ * the scrubber takes the reel it's given. A views holder that isn't there goes straight on. It goes
+ * in after the hooks at the branch for another video, whose index is the unpatched mount's.
+ */
+internal fun MutableMethod.reportsMount(looks: ScrubberLooks) {
+    requireLocals(PATCH, 1)
+    addInstructionsWithLabels(
+        0,
+        """
+            move-object/from16 v0, p0
+            iget-object v0, v0, ${looks.viewsField}
+            if-eqz v0, :facebook
+            iget-object v0, v0, ${looks.labelField}
+            invoke-static { v0 }, $MOUNTS
+        """,
+        ExternalLabel("facebook", getInstruction(0)),
+    )
+}
+
+/**
+ * First thing in the scrubber's look selector, ahead of the look count: hand the extension the
+ * scrubber's time label and the look asked for, and go on with the look it answers, which may be
+ * null, a look the selector returns on at once. A views holder that isn't there goes straight on with
+ * the look as asked. The range-free moves name the look wherever it sits.
+ */
+internal fun MutableMethod.asksLook(looks: ScrubberLooks) {
+    requireLocals(PATCH, 2)
+    addInstructionsWithLabels(
+        0,
+        """
+            move-object/from16 v0, p0
+            iget-object v0, v0, ${looks.viewsField}
+            if-eqz v0, :facebook
+            iget-object v0, v0, ${looks.labelField}
+            move-object/from16 v1, p1
+            invoke-static { v0, v1 }, $LOOK_FOR
+            move-result-object v1
+            move-object/from16 p1, v1
+        """,
+        ExternalLabel("facebook", getInstruction(0)),
     )
 }
 

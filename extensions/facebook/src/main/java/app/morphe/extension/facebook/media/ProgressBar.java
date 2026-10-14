@@ -10,11 +10,13 @@ import android.view.ViewGroup;
 
 import androidx.annotation.Nullable;
 
+import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.WeakHashMap;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 
@@ -27,7 +29,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * and total time the active look shows, so it appears only while you drag, as stock. The patch hides
  * the "most replayed" graph over the bar there too, as the passive look does, and {@link
  * #clearsLastReel} has it clear the graph and the chapter marks as the scrubber takes the next reel,
- * so one reel's doesn't stay over the next. Older builds' viewer used a bottom bar
+ * so one reel's doesn't stay over the next. When Facebook's Reels registry returns from a hand-over
+ * without giving the scrubber the reel on screen, {@link #handsOver} and {@link #leftOnLastReel} hide
+ * the bar and its time instead of leaving the last reel's stopped there, until a reel takes the
+ * scrubber ({@link #mounts}). Older builds' viewer used a bottom bar
  * (FbShortsViewerBottomSeekBarPlugin), which has two sizes. Facebook
  * makes it full size, with the thumb showing and the bar taking drags, when it shows a reel's
  * controls or while you scrub, and shrinks it to a line 2 dp high with the thumb hidden and drags
@@ -93,6 +98,15 @@ public final class ProgressBar {
     /** Counted each time the bar, while kept, takes back the place of a look Facebook parked to hide it. */
     static final String PARKED_HIDE_REPLACED = "Reel bar kept over a parked hide";
 
+    /** Counted each time a reel hand-over ends with the scrubber still on the last reel, so the kept bar is hidden. */
+    static final String LAST_REEL_HIDDEN = "Reel bar hidden while it holds the last reel";
+
+    /** Counted each time a look that would show the bar is dropped while the bar holds the last reel. */
+    static final String LAST_REEL_LOOK = "Reel bar kept from showing the last reel";
+
+    /** Counted each time a bar hidden for holding the last reel comes back once a reel takes it. */
+    static final String LAST_REEL_BACK = "Reel bar back once a reel takes it";
+
     /** The scrubber's looks that leave no bar on screen: 2 fades it out, 4 hides it. */
     static final int FADED = 2;
     static final int INVISIBLE = 4;
@@ -111,6 +125,41 @@ public final class ProgressBar {
      * one being readied), and each is held to {@link #TIME_REFRESH_MS} on its own.
      */
     private static final Map<View, Long> lastRefresh = new WeakHashMap<>();
+
+    /**
+     * A reel hand-over Facebook may leave unfinished: the reel the scrubber holds, the one on screen,
+     * and what the extension did about it.
+     */
+    private static final class HandOver {
+        final WeakReference<View> bar;
+        @Nullable final String held;
+        @Nullable final String shown;
+        /** Facebook ran the scrubber's light mount, which takes the reel on, during the hand-over. */
+        boolean mounted;
+        /** The extension hid the bar and its time, and the bar's visibility before that. */
+        boolean hidden;
+        int barWas = View.VISIBLE;
+        /** Facebook hid the bar itself afterwards, so its looks own the bar again. */
+        boolean facebookHid;
+        boolean dropLogged;
+
+        HandOver(@Nullable View bar, @Nullable String held, @Nullable String shown) {
+            this.bar = new WeakReference<>(bar);
+            this.held = held;
+            this.shown = shown;
+        }
+    }
+
+    /**
+     * Each scrubber's time label while that scrubber holds a reel other than the one on screen: from
+     * a hand-over to another reel until Facebook's light mount takes the reel on, or the reel the
+     * scrubber holds is back on screen.
+     */
+    private static final Map<View, HandOver> handOvers = new WeakHashMap<>();
+
+    /** The label of the hand-over running now, between {@link #handsOver} and {@link #leftOnLastReel}. */
+    @Nullable
+    private static WeakReference<View> handingOver;
 
     private ProgressBar() {
     }
@@ -160,6 +209,151 @@ public final class ProgressBar {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "reel bar start over", failure);
         }
+    }
+
+    /**
+     * The hook in Facebook's Reels scrubber registry as a new reel shows, once it has picked the
+     * scrubber, with that scrubber's time label and bar, the id of the reel the scrubber holds (its
+     * bar info's) and the id of the reel on screen. Facebook goes on to hand the scrubber the reel,
+     * through the light mount that {@link #mounts} reports, but returns before that when the reel's
+     * player isn't ready or the reel has no id, and the scrubber stays on the last reel: its bar and
+     * time stopped where that reel was, and a touch showed 0:00 over the last reel's length (#90,
+     * #120). While the bar is kept, this notes a hand-over to another reel for
+     * {@link #leftOnLastReel}. The reel the scrubber holds coming back on screen ends any such hold
+     * and shows the bar again.
+     */
+    public static void handsOver(@Nullable ViewGroup label, @Nullable View bar, @Nullable String held, @Nullable String shown) {
+        try {
+            handingOver = null;
+            if (label == null) return;
+            if (shown != null && shown.equals(held)) {
+                HandOver over = handOvers.remove(label);
+                if (over != null && showBarAgain(over)) {
+                    Logger.printDebug(() -> "Reel bar: " + shown + " is back on screen, the bar shows again");
+                }
+                return;
+            }
+            HookStatus.invoked(FAMILY);
+            if (!Utils.settingsReady() || !Settings.KEEP_PROGRESS_BAR.get()) {
+                HandOver over = handOvers.remove(label);
+                if (over != null) showBarAgain(over);
+                return;
+            }
+            HookStatus.bound(FAMILY, "reel hand-over");
+            HandOver before = handOvers.get(label);
+            HandOver over = new HandOver(bar, held, shown);
+            if (before != null && before.hidden) {
+                // Still hidden from an earlier hand-over: what to put back stays the same.
+                over.hidden = true;
+                over.barWas = before.barWas;
+                over.facebookHid = before.facebookHid;
+            }
+            handOvers.put(label, over);
+            handingOver = new WeakReference<>(label);
+            Logger.printDebug(() -> "Reel bar: handing the bar from " + held + " to " + shown);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel hand-over", failure);
+        }
+    }
+
+    /**
+     * The hook, first thing in the scrubber base's light mount, with the scrubber's time label.
+     * Facebook runs the mount as it hands the scrubber a reel, so the scrubber holds the reel it's
+     * given from here on: a hand-over noted by {@link #handsOver} is done, and a bar hidden for
+     * holding the last reel shows again, unless Facebook hid it meanwhile.
+     */
+    public static void mounts(@Nullable ViewGroup label) {
+        try {
+            if (label == null) return;
+            HandOver over = handOvers.remove(label);
+            if (over == null) return;
+            over.mounted = true;
+            boolean back = showBarAgain(over);
+            Logger.printDebug(() -> "Reel bar: Facebook handed the bar " + over.shown + (back ? ", which shows again" : ""));
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel hand-over", failure);
+        }
+    }
+
+    /**
+     * The hook at the end of the registry's hand-over, on every way out past the one {@link #handsOver}
+     * saw begin. When that hand-over was to another reel and Facebook ran no light mount, the scrubber
+     * still holds the last reel, so while the bar is kept this hides the bar and its time label
+     * (invisible, which keeps the layout) instead of leaving them stopped on the last reel, and
+     * {@link #lookFor} keeps Facebook's looks from showing them until a reel takes the scrubber.
+     */
+    public static void leftOnLastReel() {
+        try {
+            WeakReference<View> current = handingOver;
+            handingOver = null;
+            View label = current == null ? null : current.get();
+            if (label == null) return;
+            HandOver over = handOvers.get(label);
+            if (over == null || over.mounted) return;
+            if (!Utils.settingsReady() || !Settings.KEEP_PROGRESS_BAR.get()) return;
+            View bar = over.bar.get();
+            if (!over.hidden) {
+                over.hidden = true;
+                if (bar != null) over.barWas = bar.getVisibility();
+            }
+            if (bar != null && bar.getVisibility() == View.VISIBLE) bar.setVisibility(View.INVISIBLE);
+            if (label.getVisibility() == View.VISIBLE) label.setVisibility(View.INVISIBLE);
+            lastRefresh.remove(label);
+            HookStatus.counted(FAMILY, LAST_REEL_HIDDEN);
+            Logger.printDebug(() -> "Reel bar: Facebook left the bar on " + over.held + " with " + over.shown
+                    + " on screen, so it's hidden until a reel takes it");
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel hand-over", failure);
+        }
+    }
+
+    /**
+     * The hook, first thing in the scrubber's look selector, with the scrubber's time label and the
+     * look asked for, answering the look the selector goes on with. While {@link #leftOnLastReel}
+     * keeps the bar hidden, a look that would show it (a player event of the last reel, or a parked
+     * one) answers null, which the selector ignores, so the last reel's bar and time don't come back
+     * over the reel on screen. A look that fades or hides the bar goes through, and Facebook's looks
+     * then own the bar again. Every other look goes through as asked.
+     */
+    @Nullable
+    public static Integer lookFor(@Nullable ViewGroup label, @Nullable Integer look) {
+        try {
+            if (label == null || look == null) return look;
+            HandOver over = handOvers.get(label);
+            if (over == null || !over.hidden) return look;
+            if (look == FADED || look == INVISIBLE) {
+                over.facebookHid = true;
+                return look;
+            }
+            if (!Utils.settingsReady() || !Settings.KEEP_PROGRESS_BAR.get()) {
+                handOvers.remove(label);
+                showBarAgain(over);
+                return look;
+            }
+            HookStatus.counted(FAMILY, LAST_REEL_LOOK);
+            if (!over.dropLogged) {
+                over.dropLogged = true;
+                Logger.printDebug(() -> "Reel bar: kept look " + look + " from showing the bar of " + over.held);
+            }
+            return null;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel hand-over", failure);
+            return look;
+        }
+    }
+
+    /**
+     * Puts back the bar {@link #leftOnLastReel} hid, as it was before, unless Facebook hid it since.
+     * The time label stays hidden for {@link #refreshesTime} to bring back with the reel's own time.
+     * Whether the bar came back.
+     */
+    private static boolean showBarAgain(HandOver over) {
+        if (!over.hidden || over.facebookHid || over.barWas != View.VISIBLE) return false;
+        View bar = over.bar.get();
+        if (bar == null || bar.getVisibility() != View.INVISIBLE) return false;
+        bar.setVisibility(over.barWas);
+        HookStatus.counted(FAMILY, LAST_REEL_BACK);
+        return true;
     }
 
     /**
@@ -228,10 +422,15 @@ public final class ProgressBar {
      * shows preview frames, and only its looks show it again. A look that doesn't change leaves it
      * hidden, so a reel could play on with no time until the next drag (#73). While the time is shown,
      * the bar is on screen and nobody is dragging it, this puts such a label back first.
+     *
+     * <p>While the bar is hidden for holding the last reel ({@link #leftOnLastReel}), the label stays
+     * hidden and nothing is written, as the scrubber's position and length are the last reel's.
      */
     public static boolean refreshesTime(ViewGroup label, @Nullable View bar) {
         try {
             if (label == null || !showsTime()) return false;
+            HandOver over = handOvers.get(label);
+            if (over != null && over.hidden) return false;
             if (label.getVisibility() == View.INVISIBLE && bar != null && !bar.isPressed() && visible(bar)) {
                 label.setVisibility(View.VISIBLE);
                 HookStatus.counted(FAMILY, TIME_LABEL_BACK);
