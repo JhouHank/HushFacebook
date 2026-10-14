@@ -19,6 +19,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* **Facebook:** `Hide Meta AI questions under posts` also takes away the row of Meta AI question chips Facebook puts under some photos and captions (issue #48). Those chips came through a different part of the post than the questions the switch already caught. It's under News feed and starts on.
 * **Facebook:** With `Use the system font` on, a font that draws past its own line box keeps its extra room in Reels captions and other text with a set line height, so letter tails and Bengali vowel signs aren't cut off (issue #96).
 
 * **Facebook:** With `AMOLED black theme` or `Material You theme` in your build, the time on Facebook's older comment row (left of Like and Reply) can't come out too dark to read on a dark page anymore (issue #138). It falls back to Facebook's own gray, themed like the rest. Light mode looks as it did.
