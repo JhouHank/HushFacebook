@@ -440,6 +440,14 @@ val materialYouThemePatch = bytecodePatch(
         } catch (moved: PatchException) {
             patchLog.warning("${moved.message}. The theme goes on without the comment time's colour check.")
         }
+
+        // The ring between a post's overlapping reaction icons (#147). With AMOLED in the build its
+        // call put the hook in already, and ReactionRing runs both themes.
+        try {
+            hookReactionRing()
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. The theme goes on without the reaction ring's cut.")
+        }
     }
 }
 

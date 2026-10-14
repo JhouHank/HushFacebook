@@ -486,6 +486,14 @@ val amoledThemePatch = bytecodePatch(
             patchLog.warning("${moved.message}. The theme goes on without the comment time's colour check.")
         }
 
+        // The ring between a post's overlapping reaction icons, painted white on a black page
+        // (#147). Material You calls the same hook and finds it in place.
+        try {
+            hookReactionRing()
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. The theme goes on without the reaction ring's cut.")
+        }
+
         enableStatus("amoledTheme")
     }
 }
