@@ -13,6 +13,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** The README's two settings screenshots come from 0.12.0 now, so the overview shows the Quick setups row.
 * **Facebook:** The release receipt records what each native library says about 16 KB pages in separate parts now (ZIP offsets, LOAD segments and RELRO ends, each library with its hash). It used to keep one flag that only spoke for the ZIP.
 * **Facebook:** The `Support Hushfacebook` row at the bottom of settings is just its name now. The "Buy me a coffee on Ko-fi" line under it is gone, and a tap still opens the Ko-fi page.
+* **Facebook:** A release now builds its commit a second time, in a fresh worktree, and compares that bundle with the staged one before anything is tagged. Every class, DEX file, extension payload and resource has to match by name and SHA-256, whatever the ZIP order or the timestamps say. What a bundle records about its own build used to be taken on its word. A checkout with other line endings still passes when the classes come out the same. `scripts/release/release.ps1 -Stage rebuild` runs it, `publish` won't go ahead for a bundle that wasn't compared, and it adds one build to a release.
 
 ### Fixed
 

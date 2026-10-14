@@ -22,6 +22,10 @@
     The SBOM :patches:releaseSbom writes beside the bundle says what the bundle carries: every
     library and the version it resolved to. The receipt records its hash, and the SBOM records the
     bundle's, so neither can be swapped for another build's without the pair coming apart.
+
+    What a bundle says about its own build is the one fact taken from the build's word. A release
+    builds its commit a second time for that, and Compare-BundleContent and Test-RebuiltBundle hold
+    the staged bundle to the second build entry by entry.
 #>
 
 function Get-ReleaseReceiptSchemaVersion {
@@ -630,6 +634,111 @@ function Get-ExtensionPayloads {
 
     if ($payloads.Count -eq 0) { throw "The bundle carries no extension payload: $BundlePath" }
     return ,$payloads.ToArray()
+}
+
+function Compare-BundleContent {
+    <#
+    .SYNOPSIS
+        Every difference between two bundles in what executes or ships, whatever their ZIP framing
+        and whatever each says about its own build.
+    .DESCRIPTION
+        The identity a bundle carries (commit, clean flag, input digest) is written by the build
+        that made it, so it says where the bundle claims to come from and proves nothing. A second
+        build of the same commit is the proof, and this is how the two are compared: every entry
+        by its name and the SHA-256 of its bytes as they unpack, so the order of the entries, their
+        times and whether one is stored or deflated don't count. Classes, DEX files and resources
+        are read here, and the extension payloads through Get-ExtensionPayloads, which refuses one
+        that isn't a DEX and a bundle that carries none.
+
+        META-INF/MANIFEST.MF and META-INF/hushfacebook-build.identity hold that identity. Two
+        checkouts of one commit can differ in line endings, which moves the input digest in the
+        manifest and with it the payload hash in the identity record, while every class comes out
+        the same. So those two come back in Identity, each with whether it's the same on both
+        sides, and never decide: alone they can't make two bundles equal, and they can't make them
+        differ.
+
+        Answers @{ Equal; Compared; Differing; Missing; Extra; Identity }. Missing is what
+        -ReferencePath carries and -BundlePath lacks, Extra the other way round, and either is a
+        difference. Each entry names its Kind (class, DEX, extension payload or resource) and its
+        hash on each side. An entry named twice in a bundle throws: nothing says which of the two a
+        loader would read.
+    #>
+    param(
+        [Parameter(Mandatory = $true)][string]$BundlePath,
+        [Parameter(Mandatory = $true)][string]$ReferencePath
+    )
+
+    $identityNames = @('META-INF/MANIFEST.MF', 'META-INF/hushfacebook-build.identity')
+    function Read-BundleEntries([string]$Path) {
+        if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { throw "There is no bundle to compare at $Path." }
+        # ZipFile reads a relative path against the process directory, not PowerShell's location.
+        $Path = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        $entries = [Collections.Generic.Dictionary[string, object]]::new([StringComparer]::Ordinal)
+        $seen = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+        $sha = [Security.Cryptography.SHA256]::Create()
+        $archive = [IO.Compression.ZipFile]::OpenRead($Path)
+        try {
+            foreach ($entry in $archive.Entries) {
+                $name = $entry.FullName
+                # A folder's own entry holds no bytes.
+                if ($name.EndsWith('/') -and $entry.Length -eq 0) { continue }
+                if (-not $seen.Add($name)) { throw "$Path carries $name twice." }
+                # Get-ExtensionPayloads reads these below, picked by this same pattern.
+                if ($name -like 'extensions/*.mpe') { continue }
+                $kind = 'resource'
+                if ($name.EndsWith('.class', [StringComparison]::OrdinalIgnoreCase)) { $kind = 'class' }
+                elseif ($name.EndsWith('.dex', [StringComparison]::OrdinalIgnoreCase)) { $kind = 'DEX' }
+                $stream = $entry.Open()
+                try { $hash = [BitConverter]::ToString($sha.ComputeHash($stream)) -replace '-', '' } finally { $stream.Dispose() }
+                $entries.Add($name, [pscustomobject]@{ Kind = $kind; Sha256 = $hash })
+            }
+        } finally {
+            $archive.Dispose()
+            $sha.Dispose()
+        }
+        foreach ($payload in (Get-ExtensionPayloads -BundlePath $Path)) {
+            $entries.Add([string]$payload.name, [pscustomobject]@{ Kind = 'extension payload'; Sha256 = [string]$payload.sha256 })
+        }
+        return ,$entries
+    }
+
+    $bundle = Read-BundleEntries $BundlePath
+    $reference = Read-BundleEntries $ReferencePath
+    $names = [Collections.Generic.SortedSet[string]]::new([StringComparer]::Ordinal)
+    foreach ($name in $bundle.Keys) { [void]$names.Add($name) }
+    foreach ($name in $reference.Keys) { [void]$names.Add($name) }
+
+    $differing = [Collections.Generic.List[object]]::new()
+    $missing = [Collections.Generic.List[object]]::new()
+    $extra = [Collections.Generic.List[object]]::new()
+    $identity = [Collections.Generic.List[object]]::new()
+    $compared = 0
+    foreach ($name in $names) {
+        $ours = if ($bundle.ContainsKey($name)) { $bundle[$name] } else { $null }
+        $theirs = if ($reference.ContainsKey($name)) { $reference[$name] } else { $null }
+        $oursHash = if ($null -ne $ours) { $ours.Sha256 } else { $null }
+        $theirsHash = if ($null -ne $theirs) { $theirs.Sha256 } else { $null }
+        if ($identityNames -ccontains $name) {
+            $identity.Add([pscustomobject]@{ Name = $name; Sha256 = $oursHash; ReferenceSha256 = $theirsHash
+                Same = ($null -ne $ours -and $null -ne $theirs -and $oursHash -ceq $theirsHash) })
+            continue
+        }
+        $compared++
+        $kind = if ($null -ne $ours) { $ours.Kind } else { $theirs.Kind }
+        $found = [pscustomobject]@{ Name = $name; Kind = $kind; Sha256 = $oursHash; ReferenceSha256 = $theirsHash }
+        if ($null -eq $ours) { $missing.Add($found) }
+        elseif ($null -eq $theirs) { $extra.Add($found) }
+        elseif ($oursHash -cne $theirsHash) { $differing.Add($found) }
+    }
+    return [pscustomobject]@{
+        Equal     = ($differing.Count + $missing.Count + $extra.Count) -eq 0
+        Compared  = $compared
+        Differing = $differing.ToArray()
+        Missing   = $missing.ToArray()
+        Extra     = $extra.ToArray()
+        Identity  = $identity.ToArray()
+    }
 }
 
 function Get-ElfPageFacts {
@@ -2394,4 +2503,85 @@ function Test-StagedReleaseAt {
     $mismatch = Get-BundleInputMismatch -Root $Root -BundlePath $bundlePath
     if ($mismatch) { return Fail "The staged $bundleName isn't a build of commit ${short}: $mismatch." }
     return $staged
+}
+
+function Test-RebuiltBundle {
+    <#
+    .SYNOPSIS
+        Whether a staged bundle is what its commit builds, held to a second build of that commit
+        made in a checkout of its own.
+    .DESCRIPTION
+        Test-StagedReleaseAt holds a bundle to the identity it carries, and the build wrote that
+        identity itself, so a bundle built from other source with a copied identity block reads the
+        same. The release's rebuild stage builds the commit again in a fresh worktree, and this
+        holds the staged bundle to what came out.
+
+        Each bundle is first held to the checkout it was built in: an intact identity naming
+        -Commit, clean, a checkout that is -Commit with nothing changed, and the input digest of
+        that checkout's files as they are on disk. Nothing is normalized first. Two checkouts of
+        one commit can hold a file with different line endings and git calls both clean, so the two
+        digests can differ while each bundle is right about its own checkout. The rebuild's
+        checkout has to be another folder than the staged bundle's, or the second build is the
+        first one again.
+
+        Compare-BundleContent then decides: every class, DEX, extension payload and resource has to
+        be the same in both, and the identity entries are left out of it. So a checkout with other
+        line endings that builds the same classes passes, and one changed class doesn't, whatever
+        the bundle says about itself. Answers @{ Valid; Reason; Comparison }, with Comparison $null
+        when a bundle was refused before the two were compared.
+    #>
+    param(
+        [Parameter(Mandatory = $true)][string]$Root,
+        [Parameter(Mandatory = $true)][string]$BundlePath,
+        [Parameter(Mandatory = $true)][string]$RebuiltRoot,
+        [Parameter(Mandatory = $true)][string]$RebuiltPath,
+        [Parameter(Mandatory = $true)][string]$Commit
+    )
+
+    function Fail { param([string]$Reason, $Comparison) return [pscustomobject]@{ Valid = $false; Reason = $Reason; Comparison = $Comparison } }
+
+    if ($Commit -notmatch '^[0-9a-f]{40}$') { return Fail "$Commit isn't a full commit to hold the rebuilt bundle to." }
+    $short = $Commit.Substring(0, 8)
+    $folders = @($Root, $RebuiltRoot | ForEach-Object {
+        $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($_).TrimEnd('\', '/') })
+    if ($folders[0] -ieq $folders[1]) {
+        return Fail "The rebuild has to come from a checkout of its own, and $RebuiltRoot is the one the staged bundle was built in."
+    }
+    $bundleName = Split-Path -Leaf $BundlePath
+    foreach ($side in @(@{ What = 'staged'; Root = $Root; Path = $BundlePath }, @{ What = 'rebuilt'; Root = $RebuiltRoot; Path = $RebuiltPath })) {
+        $what = "$($side.What) $bundleName"
+        if (-not (Test-Path -LiteralPath $side.Path -PathType Leaf)) { return Fail "There is no $what at $($side.Path)." }
+        try {
+            $identity = Get-BundleIdentityFacts -BundlePath $side.Path
+            if (-not $identity.Valid) { return Fail "The $what carries no intact build identity, so nothing ties it to commit $short." }
+            if ($identity.SourceState -cne 'clean' -or $identity.SourceCommit -cne $Commit) {
+                return Fail "The $what was built from $($identity.SourceState) source at $($identity.SourceCommit), not commit $short."
+            }
+            $head = "$(Invoke-RepoGit -Root $side.Root -Arguments @('rev-parse', 'HEAD') | Select-Object -First 1)".Trim()
+            $global:LASTEXITCODE = -1
+            $changed = @(Invoke-RepoGit -Root $side.Root -Arguments @('status', '--porcelain'))
+            if ($LASTEXITCODE -ne 0 -or $head -cne $Commit -or $changed.Count -gt 0) {
+                return Fail "$($side.Root) isn't commit $short with nothing changed, so the $what can't be held to its sources."
+            }
+            $mismatch = Get-BundleInputMismatch -Root $side.Root -BundlePath $side.Path
+            if ($mismatch) { return Fail "The $what isn't a build of commit $short as $($side.Root) holds it: $mismatch." }
+        } catch {
+            return Fail "The $what can't be held to its sources: $($_.Exception.Message)"
+        }
+    }
+
+    try {
+        $comparison = Compare-BundleContent -BundlePath $BundlePath -ReferencePath $RebuiltPath
+    } catch {
+        return Fail "The staged and rebuilt $bundleName can't be compared: $($_.Exception.Message)"
+    }
+    if (-not $comparison.Equal) {
+        $found = @($comparison.Differing | ForEach-Object { "$($_.Kind) $($_.Name) differs" }) +
+            @($comparison.Missing | ForEach-Object { "$($_.Kind) $($_.Name) is only in the rebuild" }) +
+            @($comparison.Extra | ForEach-Object { "$($_.Kind) $($_.Name) isn't in the rebuild" })
+        $more = if ($found.Count -gt 5) { ", and $($found.Count - 5) more" } else { '' }
+        return Fail ("The staged $bundleName isn't what commit $short builds: " +
+            (@($found | Select-Object -First 5) -join '; ') + "$more.") $comparison
+    }
+    return [pscustomobject]@{ Valid = $true; Reason = $null; Comparison = $comparison }
 }

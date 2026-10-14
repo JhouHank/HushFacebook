@@ -7523,12 +7523,249 @@ Assert-True ($libsReaders.Count -eq 0) `
 
 Write-Host '[scripts] release bundle path contracts passed'
 
+# --- a staged bundle held to a rebuild -------------------------------------------------------
+#
+# The identity a bundle carries (commit, clean flag, input digest) is the build's own word, so a
+# bundle built from other source with a copied identity block passed the publish stage's check. A
+# release builds its commit a second time in a fresh worktree now, and the two bundles are
+# compared entry by entry (Compare-BundleContent) once each has been held to its own checkout
+# (Test-RebuiltBundle). The bundles here are written entry by entry so each case moves one thing,
+# and the two checkouts are a fixture repository and a worktree of it: nothing is built. The
+# repository's checkout holds one source with CRLF endings and the worktree holds it with LF, the
+# way a real rebuild of 138edb6b found two files, and git calls both clean.
+
+$rebuildRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('hushfacebook-rebuilt-' + [guid]::NewGuid().ToString('N'))
+try {
+    $rebuildRepo = Join-Path $rebuildRoot 'repo'
+    $rebuildFresh = Join-Path $rebuildRoot 'fresh'
+    $rebuildSource = Join-Path $rebuildRepo 'patches/src/main/kotlin/Feed.kt'
+    New-Item -ItemType Directory -Path (Split-Path -Parent $rebuildSource), (Join-Path $rebuildRepo 'extensions/facebook/src/main/java') -Force | Out-Null
+    [System.IO.File]::WriteAllText((Join-Path $rebuildRepo '.gitattributes'), "* text=auto eol=lf`n")
+    [System.IO.File]::WriteAllText((Join-Path $rebuildRepo 'gradle.properties'), "version = 9.9.9`n")
+    [System.IO.File]::WriteAllText($rebuildSource, "package app.morphe`nval feed = 1`n")
+    [System.IO.File]::WriteAllText((Join-Path $rebuildRepo 'extensions/facebook/src/main/java/Hook.java'), "class Hook {}`n")
+    Invoke-FixtureGit -Root $rebuildRepo -Arguments @('init', '--quiet') | Out-Null
+    $rebuildGitDir = "$(Invoke-FixtureGit -Root $rebuildRepo -Arguments @('rev-parse', '--absolute-git-dir') | Select-Object -First 1)".Trim()
+    Assert-True ($rebuildGitDir -and ([IO.Path]::GetFullPath($rebuildGitDir).TrimEnd('\', '/') -ieq
+            [IO.Path]::GetFullPath((Join-Path $rebuildRepo '.git')).TrimEnd('\', '/'))) `
+        "The rebuild fixture resolved to $rebuildGitDir, not its own repository. Refusing to write."
+    Invoke-FixtureGit -Root $rebuildRepo -Arguments @('config', 'user.email', 'contracts@example.invalid') | Out-Null
+    Invoke-FixtureGit -Root $rebuildRepo -Arguments @('config', 'user.name', 'Contracts') | Out-Null
+    Invoke-FixtureGit -Root $rebuildRepo -Arguments @('config', 'core.autocrlf', 'false') | Out-Null
+    # No warning on stderr about the line endings below, which Windows PowerShell would throw on.
+    Invoke-FixtureGit -Root $rebuildRepo -Arguments @('config', 'core.safecrlf', 'false') | Out-Null
+    Invoke-FixtureGit -Root $rebuildRepo -Arguments @('add', '-A') | Out-Null
+    Invoke-FixtureGit -Root $rebuildRepo -Arguments @('commit', '-m', 'release', '--quiet') | Out-Null
+    $rebuildCommit = "$(Invoke-FixtureGit -Root $rebuildRepo -Arguments @('rev-parse', 'HEAD') | Select-Object -First 1)".Trim()
+    # Added again, the CRLF copy is the blob the commit already holds, so the index only takes the
+    # file's new size and git goes on calling the checkout clean.
+    [System.IO.File]::WriteAllText($rebuildSource, "package app.morphe`r`nval feed = 1`r`n")
+    Invoke-FixtureGit -Root $rebuildRepo -Arguments @('add', '--', 'patches/src/main/kotlin/Feed.kt') | Out-Null
+    Invoke-FixtureGit -Root $rebuildRepo -Arguments @('worktree', 'add', '--quiet', '--detach', $rebuildFresh, $rebuildCommit) | Out-Null
+    $rebuildInputs = Get-ProducerInputSha256 -Root $rebuildRepo
+    $freshInputs = Get-ProducerInputSha256 -Root $rebuildFresh
+    Assert-True (@(Invoke-FixtureGit -Root $rebuildRepo -Arguments @('status', '--porcelain')).Count -eq 0 -and
+        @(Invoke-FixtureGit -Root $rebuildFresh -Arguments @('status', '--porcelain')).Count -eq 0 -and
+        [System.IO.File]::ReadAllText($rebuildSource).Contains("`r`n") -and
+        -not [System.IO.File]::ReadAllText((Join-Path $rebuildFresh 'patches/src/main/kotlin/Feed.kt')).Contains("`r") -and
+        $rebuildInputs -cne $freshInputs) `
+        'The two checkouts are not both clean with one source in CRLF here and LF there, so the line-ending cases prove nothing.'
+
+    # A bundle as buildAndroid leaves it, stamped for the checkout it was built in: the source
+    # fields in the manifest and the payload hash in the identity record. -Reframed writes the
+    # same entries in the opposite order, stored instead of deflated, with another time on each.
+    function New-RebuildBundle {
+        param([string]$Path, [string]$Checkout, [hashtable]$Change = @{}, [string[]]$Without = @(),
+            [string]$InputSha256, [string]$Commit = $rebuildCommit, [switch]$Reframed)
+        if (-not $InputSha256) { $InputSha256 = Get-ProducerInputSha256 -Root $Checkout }
+        $entries = [ordered]@{
+            'META-INF/MANIFEST.MF' = "Manifest-Version: 1.0`nVersion: 9.9.9`nTimestamp: 1700000000000`nPatcher-Version: 1.12.0`n" +
+                "Hushfacebook-Source-State: clean`nHushfacebook-Source-Commit: $Commit`nHushfacebook-Source-Tree: $('a' * 40)`n" +
+                "Hushfacebook-Input-SHA256: $InputSha256`n`n"
+            'app/morphe/patches/facebook/Feed.class' = 'feed class ' * 40
+            'app/morphe/util/BundleIdentity.class' = 'identity class'
+            'com/google/gson/Gson.class' = 'gson class'
+            'classes.dex' = "dex`n035 patches"
+            'extensions/facebook.mpe' = "dex`n035 facebook"
+            'extensions/shared.mpe' = "dex`n035 shared"
+            'META-INF/proguard/gson.pro' = '-keep class com.google.gson.** { *; }'
+            'META-INF/hushfacebook-build.identity' = 'not sealed yet'
+        }
+        foreach ($name in $Change.Keys) { $entries[$name] = $Change[$name] }
+        foreach ($name in $Without) { $entries.Remove($name) }
+        $names = @($entries.Keys)
+        $level = [System.IO.Compression.CompressionLevel]::Optimal
+        $time = [DateTimeOffset]::new(2021, 3, 4, 5, 6, 8, [TimeSpan]::Zero)
+        if ($Reframed) {
+            [array]::Reverse($names)
+            $level = [System.IO.Compression.CompressionLevel]::NoCompression
+            $time = [DateTimeOffset]::new(1999, 12, 31, 23, 59, 58, [TimeSpan]::Zero)
+        }
+        if (Test-Path -LiteralPath $Path) { Remove-Item -LiteralPath $Path -Force }
+        $zip = [System.IO.Compression.ZipFile]::Open($Path, [System.IO.Compression.ZipArchiveMode]::Create)
+        try {
+            foreach ($name in $names) {
+                $entry = $zip.CreateEntry($name, $level)
+                $entry.LastWriteTime = $time
+                [byte[]]$bytes = [System.Text.Encoding]::UTF8.GetBytes([string]$entries[$name])
+                $stream = $entry.Open()
+                try { $stream.Write($bytes, 0, $bytes.Length) } finally { $stream.Dispose() }
+            }
+        } finally { $zip.Dispose() }
+        if ($Without -ccontains 'META-INF/hushfacebook-build.identity') { return }
+        $zip = [System.IO.Compression.ZipFile]::OpenRead($Path)
+        try { $payload = Get-BundlePayloadSha256 -Archive $zip } finally { $zip.Dispose() }
+        $zip = [System.IO.Compression.ZipFile]::Open($Path, [System.IO.Compression.ZipArchiveMode]::Update)
+        try {
+            $zip.GetEntry('META-INF/hushfacebook-build.identity').Delete()
+            $writer = [System.IO.StreamWriter]::new($zip.CreateEntry('META-INF/hushfacebook-build.identity').Open())
+            try { $writer.Write("hushfacebook-bundle-1`n$payload`n") } finally { $writer.Dispose() }
+        } finally { $zip.Dispose() }
+    }
+    function Get-BundleFraming([string]$Path) {
+        $zip = [System.IO.Compression.ZipFile]::OpenRead($Path)
+        try {
+            $class = $zip.GetEntry('app/morphe/patches/facebook/Feed.class')
+            return [pscustomobject]@{ Order = (@($zip.Entries | ForEach-Object { $_.FullName }) -join '|')
+                Time = $class.LastWriteTime.UtcDateTime; Packed = $class.CompressedLength }
+        } finally { $zip.Dispose() }
+    }
+    function Test-RebuiltHere([string]$Root = $rebuildRepo, [string]$RebuiltRoot = $rebuildFresh) {
+        Test-RebuiltBundle -Root $Root -BundlePath $stagedBundle -RebuiltRoot $RebuiltRoot -RebuiltPath $rebuiltBundle -Commit $rebuildCommit
+    }
+
+    # The same build twice: the staged bundle from the CRLF checkout, the rebuilt one from the LF
+    # worktree, written in another order, stored and with other entry times. Their identity entries
+    # differ, since each names its own checkout's input digest, and nothing else does. Equal, with
+    # both identity entries reported as differing and neither counted.
+    $stagedBundle = Join-Path $rebuildRoot 'staged/patches-9.9.9.mpp'
+    $rebuiltBundle = Join-Path $rebuildRoot 'rebuilt/patches-9.9.9.mpp'
+    New-Item -ItemType Directory -Path (Split-Path -Parent $stagedBundle), (Split-Path -Parent $rebuiltBundle) -Force | Out-Null
+    New-RebuildBundle -Path $stagedBundle -Checkout $rebuildRepo
+    New-RebuildBundle -Path $rebuiltBundle -Checkout $rebuildFresh -Reframed
+    $stagedFraming = Get-BundleFraming $stagedBundle
+    $rebuiltFraming = Get-BundleFraming $rebuiltBundle
+    Assert-True ($stagedFraming.Order -cne $rebuiltFraming.Order -and $stagedFraming.Time -ne $rebuiltFraming.Time -and
+        $stagedFraming.Packed -ne $rebuiltFraming.Packed) `
+        'The two fixture bundles share an entry order, an entry time or a packed size, so the framing case proves nothing.'
+    $sameBuild = Compare-BundleContent -BundlePath $stagedBundle -ReferencePath $rebuiltBundle
+    Assert-True ($sameBuild.Equal -and $sameBuild.Compared -eq 7 -and $sameBuild.Differing.Count -eq 0 -and
+        $sameBuild.Missing.Count -eq 0 -and $sameBuild.Extra.Count -eq 0) `
+        "Two bundles that differ only in entry order, entry times, compression and build identity did not compare equal: $($sameBuild | ConvertTo-Json -Depth 4 -Compress)"
+    Assert-True ((@($sameBuild.Identity | ForEach-Object { $_.Name }) -join '|') -ceq 'META-INF/MANIFEST.MF|META-INF/hushfacebook-build.identity' -and
+        @($sameBuild.Identity | Where-Object { $_.Same -or -not $_.Sha256 -or -not $_.ReferenceSha256 }).Count -eq 0) `
+        "The identity entries that differ were not reported apart from the comparison: $($sameBuild.Identity | ConvertTo-Json -Compress)"
+    $held = Test-RebuiltHere
+    Assert-True ($held.Valid -and $held.Comparison.Equal) "A rebuild from a checkout with other line endings and the same classes was refused: $($held.Reason)"
+
+    # One changed entry of each kind, in a staged bundle whose identity is intact and names the
+    # clean commit and its checkout's inputs, the way a copied identity block reads. Each is named
+    # with its kind, and the rebuild check refuses the bundle for it.
+    foreach ($changed in @(
+            @{ Case = 'one changed class'; Entry = 'app/morphe/patches/facebook/Feed.class'; Kind = 'class'; Bytes = 'another class' },
+            @{ Case = 'a changed DEX'; Entry = 'classes.dex'; Kind = 'DEX'; Bytes = "dex`n035 other" },
+            @{ Case = 'one changed extension payload'; Entry = 'extensions/facebook.mpe'; Kind = 'extension payload'; Bytes = "dex`n035 other" },
+            @{ Case = 'one changed resource'; Entry = 'META-INF/proguard/gson.pro'; Kind = 'resource'; Bytes = '-dontwarn' })) {
+        New-RebuildBundle -Path $stagedBundle -Checkout $rebuildRepo -Change @{ $changed.Entry = $changed.Bytes }
+        Assert-True (Get-BundleIdentityFacts -BundlePath $stagedBundle).Valid "The bundle with $($changed.Case) lost its identity, so the case proves nothing."
+        $found = Compare-BundleContent -BundlePath $stagedBundle -ReferencePath $rebuiltBundle
+        Assert-True (-not $found.Equal -and $found.Differing.Count -eq 1 -and $found.Missing.Count -eq 0 -and $found.Extra.Count -eq 0 -and
+            $found.Differing[0].Name -ceq $changed.Entry -and $found.Differing[0].Kind -ceq $changed.Kind -and
+            $found.Differing[0].Sha256 -cmatch '\A[0-9A-F]{64}\z' -and $found.Differing[0].ReferenceSha256 -cmatch '\A[0-9A-F]{64}\z' -and
+            $found.Differing[0].Sha256 -cne $found.Differing[0].ReferenceSha256) `
+            "The comparison did not report $($changed.Case) as the one difference: $($found | ConvertTo-Json -Depth 4 -Compress)"
+        $held = Test-RebuiltHere
+        Assert-True (-not $held.Valid -and $held.Reason -like "*isn't what commit $($rebuildCommit.Substring(0, 8)) builds: $($changed.Kind) $($changed.Entry) differs*" -and
+            $held.Comparison.Differing.Count -eq 1) "A staged bundle with $($changed.Case) passed its rebuild: $($held.Reason)"
+    }
+
+    # An entry on one side only is a difference whichever side has it.
+    New-RebuildBundle -Path $stagedBundle -Checkout $rebuildRepo -Without 'com/google/gson/Gson.class'
+    $found = Compare-BundleContent -BundlePath $stagedBundle -ReferencePath $rebuiltBundle
+    Assert-True (-not $found.Equal -and $found.Missing.Count -eq 1 -and $found.Missing[0].Name -ceq 'com/google/gson/Gson.class' -and
+        $found.Missing[0].Kind -ceq 'class' -and $null -eq $found.Missing[0].Sha256 -and $found.Extra.Count -eq 0 -and $found.Differing.Count -eq 0) `
+        "An entry the staged bundle lacks was not reported as missing: $($found | ConvertTo-Json -Depth 4 -Compress)"
+    $held = Test-RebuiltHere
+    Assert-True (-not $held.Valid -and $held.Reason -like '*class com/google/gson/Gson.class is only in the rebuild*') `
+        "A staged bundle missing an entry passed its rebuild: $($held.Reason)"
+    $found = Compare-BundleContent -BundlePath $rebuiltBundle -ReferencePath $stagedBundle
+    Assert-True (-not $found.Equal -and $found.Extra.Count -eq 1 -and $found.Extra[0].Name -ceq 'com/google/gson/Gson.class' -and
+        $null -eq $found.Extra[0].ReferenceSha256 -and $found.Missing.Count -eq 0 -and $found.Differing.Count -eq 0) `
+        "An entry only the first bundle carries was not reported as extra: $($found | ConvertTo-Json -Depth 4 -Compress)"
+
+    # The identity entries never decide. One of them on one side only isn't a difference, and two
+    # bundles that hold nothing else can't be called equal: with no extension payload there is
+    # nothing to compare, and that throws. So does a bundle naming an entry twice.
+    New-RebuildBundle -Path $stagedBundle -Checkout $rebuildRepo -Without 'META-INF/hushfacebook-build.identity'
+    $found = Compare-BundleContent -BundlePath $stagedBundle -ReferencePath $rebuiltBundle
+    $record = @($found.Identity | Where-Object { $_.Name -ceq 'META-INF/hushfacebook-build.identity' })
+    Assert-True ($found.Equal -and $record.Count -eq 1 -and $null -eq $record[0].Sha256 -and $record[0].ReferenceSha256 -and -not $record[0].Same) `
+        "An identity record on one side only was counted as a difference, or not reported: $($found | ConvertTo-Json -Depth 4 -Compress)"
+    $held = Test-RebuiltHere
+    Assert-True (-not $held.Valid -and $held.Reason -like '*staged patches-9.9.9.mpp carries no intact build identity*' -and $null -eq $held.Comparison) `
+        "A staged bundle with no identity record passed its rebuild: $($held.Reason)"
+    $identityOnly = @('app/morphe/patches/facebook/Feed.class', 'app/morphe/util/BundleIdentity.class', 'com/google/gson/Gson.class',
+        'classes.dex', 'extensions/facebook.mpe', 'extensions/shared.mpe', 'META-INF/proguard/gson.pro')
+    $bareBundle = Join-Path $rebuildRoot 'bare.mpp'
+    New-RebuildBundle -Path $bareBundle -Checkout $rebuildRepo -Without $identityOnly
+    Assert-Throws { Compare-BundleContent -BundlePath $bareBundle -ReferencePath $bareBundle } '*carries no extension payload*' `
+        'Two bundles holding nothing but their identity entries compared equal.'
+    $twiceBundle = Join-Path $rebuildRoot 'twice.mpp'
+    $zip = [System.IO.Compression.ZipFile]::Open($twiceBundle, [System.IO.Compression.ZipArchiveMode]::Create)
+    try {
+        foreach ($name in @('extensions/facebook.mpe', 'classes.dex', 'classes.dex')) {
+            $writer = [System.IO.StreamWriter]::new($zip.CreateEntry($name).Open())
+            try { $writer.Write("dex`n035 $name") } finally { $writer.Dispose() }
+        }
+    } finally { $zip.Dispose() }
+    Assert-Throws { Compare-BundleContent -BundlePath $twiceBundle -ReferencePath $rebuiltBundle } '*carries classes.dex twice*' `
+        'A bundle naming an entry twice was compared as if a loader could only read one of them.'
+
+    # Each bundle is held to the files of its own checkout as they are on disk, and nothing is
+    # normalized first. The staged bundle carrying the worktree's digest is the CRLF checkout's
+    # sources hashed as if they had LF endings, and it's refused, as is a rebuilt bundle carrying
+    # the staged checkout's digest: a copy of the staged bundle is not a second build.
+    New-RebuildBundle -Path $stagedBundle -Checkout $rebuildRepo -InputSha256 $freshInputs
+    $held = Test-RebuiltHere
+    Assert-True (-not $held.Valid -and $held.Reason -like "*staged patches-9.9.9.mpp isn't a build of commit*built from other sources*" -and $null -eq $held.Comparison) `
+        "A staged bundle carrying the digest of its sources with other line endings passed: $($held.Reason)"
+    New-RebuildBundle -Path $stagedBundle -Checkout $rebuildRepo
+    New-RebuildBundle -Path $rebuiltBundle -Checkout $rebuildFresh -InputSha256 $rebuildInputs -Reframed
+    $held = Test-RebuiltHere
+    Assert-True (-not $held.Valid -and $held.Reason -like "*rebuilt patches-9.9.9.mpp isn't a build of commit*built from other sources*") `
+        "A rebuilt bundle carrying the staged checkout's digest passed as a second build: $($held.Reason)"
+    # A rebuild of another commit, one from the staged bundle's own checkout, and one whose
+    # worktree holds a change are refused before anything is compared.
+    New-RebuildBundle -Path $rebuiltBundle -Checkout $rebuildFresh -Commit ('c' * 40) -Reframed
+    $held = Test-RebuiltHere
+    Assert-True (-not $held.Valid -and $held.Reason -like "*rebuilt patches-9.9.9.mpp was built from clean source at $('c' * 40), not commit*") `
+        "A rebuild of another commit backed the staged bundle: $($held.Reason)"
+    New-RebuildBundle -Path $rebuiltBundle -Checkout $rebuildFresh -Reframed
+    $held = Test-RebuiltHere -RebuiltRoot (Join-Path $rebuildRepo '.')
+    Assert-True (-not $held.Valid -and $held.Reason -like '*has to come from a checkout of its own*') `
+        "A rebuild from the staged bundle's own checkout counted as a second build: $($held.Reason)"
+    $strayFile = Join-Path $rebuildFresh 'stray.txt'
+    [System.IO.File]::WriteAllText($strayFile, 'stray')
+    try {
+        $held = Test-RebuiltHere
+        Assert-True (-not $held.Valid -and $held.Reason -like "*isn't commit * with nothing changed, so the rebuilt patches-9.9.9.mpp can't be held to its sources*") `
+            "A rebuild from a worktree holding a change backed the staged bundle: $($held.Reason)"
+    } finally { Remove-Item -LiteralPath $strayFile -Force }
+    $held = Test-RebuiltHere
+    Assert-True $held.Valid "The control after the refusals was refused: $($held.Reason)"
+} finally {
+    Remove-Item -LiteralPath $rebuildRoot -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+Write-Host '[scripts] rebuilt bundle comparison contracts passed'
+
 # --- scripts/release/release.ps1 -----------------------------------------------------------------
 #
 # The release stages, run in a fixture repository whose checks are stand-ins that log what they
 # were handed: the contract suite, the facts check, the receipt and the build wrapper as scripts,
 # and py and gh as functions here, which release.ps1 finds before the real commands. Nothing here
-# builds, patches or reaches GitHub. The origin is a bare repository beside the fixture.
+# builds, patches or reaches GitHub. The origin is a bare repository beside the fixture. The
+# rebuild stage's worktree is a real one, of the fixture, with the stand-in wrapper as its build.
 
 $releaseFlow = Join-Path ([System.IO.Path]::GetTempPath()) ('hushfacebook-release-flow-' + [guid]::NewGuid().ToString('N'))
 $flowNames = @('HUSHFACEBOOK_BUILD_WRAPPER', 'HUSHFACEBOOK_FIXTURE_DIR', 'GITHUB_ACTOR', 'GITHUB_TOKEN', 'BUILD_QUEUE_PRIORITY')
@@ -7595,6 +7832,18 @@ try {
         "    if ((Get-Content -LiteralPath '$failLiteral' -ErrorAction SilentlyContinue) -eq 'staged') {",
         '        return [pscustomobject]@{ Valid = $false; Reason = ''the stand-in refused it'' } }',
         '    return [pscustomobject]@{ Valid = $true; Reason = $null }',
+        '}',
+        # The rebuild stage's check logs the commit, the checkout it was handed and that checkout's
+        # HEAD, and whether both bundles are there. It tries to change the staged bundle the same
+        # way, and refuses the pair when fail.txt says rebuilt.
+        'function Test-RebuiltBundle([string]$Root, [string]$BundlePath, [string]$RebuiltRoot, [string]$RebuiltPath, [string]$Commit) {',
+        '    try { [IO.File]::AppendAllText($BundlePath, ''swapped''); $swap = ''went-through'' } catch { $swap = ''refused'' }',
+        '    $there = (Test-Path -LiteralPath $BundlePath -PathType Leaf) -and (Test-Path -LiteralPath $RebuiltPath -PathType Leaf)',
+        "    Add-Content -LiteralPath '$logLiteral' -Value (""rebuilt commit=`$Commit swap=`$swap head=`$(git -C `$RebuiltRoot rev-parse HEAD) "" +",
+        '        "staged=$(Split-Path -Leaf $BundlePath) bundle=$(Split-Path -Leaf $RebuiltPath) there=$there root=$RebuiltRoot")',
+        "    if ((Get-Content -LiteralPath '$failLiteral' -ErrorAction SilentlyContinue) -eq 'rebuilt') {",
+        '        return [pscustomobject]@{ Valid = $false; Reason = ''the stand-in found a changed class''; Comparison = $null } }',
+        '    return [pscustomobject]@{ Valid = $true; Reason = $null; Comparison = [pscustomobject]@{ Compared = 3; Identity = @() } }',
         '}')
     $flowWrapper = Join-Path $releaseFlow 'wrapper.ps1'
     Set-Content -LiteralPath $flowWrapper -Encoding UTF8 -Value @(
@@ -7773,6 +8022,118 @@ try {
     Assert-Throws { & $flowScript -Stage publish -Version 1.2.3 6> $null } '*-Checked*' 'Publish ran without a checked paragraph.'
     $flowChecked = Join-Path $releaseFlow 'checked.txt'
     Set-Content -LiteralPath $flowChecked -Value 'Checked.' -Encoding ASCII
+
+    # Rebuild comes first. Publish refuses a staged bundle no rebuild has backed, before the notes,
+    # the tag or GitHub.
+    $flowHead = "$(& git -C $flowRepo rev-parse HEAD)".Trim()
+    $flowBundle = Join-Path $flowAssets 'patches-1.2.3.mpp'
+    $flowNote = Join-Path $flowAssets 'rebuild-1.2.3.json'
+    function Test-FlowUntagged { return -not (& git -C $flowRepo tag --list v1.2.3) -and -not (& git -C $flowOrigin tag --list v1.2.3) }
+    Assert-Throws { & $flowScript -Stage publish -Version 1.2.3 -Checked $flowChecked 6> $null 3> $null } '*Run -Stage rebuild first*' `
+        'Publish went ahead with a bundle the rebuild stage never compared.'
+    Assert-True (@(Read-FlowLog).Count -eq 0 -and (Test-FlowUntagged)) 'Publish ran a step or tagged before the rebuild stage had run.'
+
+    # The stage builds the commit once more in a worktree of its own under the temp folder, and
+    # takes that worktree away again whatever happens. Another worktree of the repository, and a
+    # folder in the temp folder named the way the stage names its own, are somebody else's.
+    $flowBystander = Join-Path $releaseFlow 'bystander'
+    & git -C $flowRepo worktree add --quiet --detach $flowBystander $flowHead
+    $flowLookalike = Join-Path ([System.IO.Path]::GetTempPath()) ('hushfacebook-rebuild-' + [guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $flowLookalike | Out-Null
+    try {
+        foreach ($kept in $flowBystander, $flowLookalike) { Set-Content -LiteralPath (Join-Path $kept 'keep.txt') -Value 'keep' -Encoding ASCII }
+        function Get-FlowWorktrees { return @(& git -C $flowRepo worktree list --porcelain | Where-Object { $_ -like 'worktree *' }) -join '|' }
+        $flowWorktrees = Get-FlowWorktrees
+        Assert-True (@($flowWorktrees -split '\|').Count -eq 2) "The fixture does not hold its own checkout and one more worktree: $flowWorktrees"
+        # The folder the build wrapper was sent to, which has to be a fresh one in the temp folder
+        # and gone again, with every other worktree and the two bystanders as they were.
+        function Assert-RebuildCleanedUp([string]$Line, [string]$When) {
+            $tree = [regex]::Match($Line, '^gradle dir=(.+) priority=release tasks= :patches:buildAndroid $').Groups[1].Value
+            Assert-True ($tree -and (Split-Path -Leaf $tree) -cmatch '\Ahushfacebook-rebuild-[0-9a-f]{32}\z' -and
+                (Split-Path -Parent $tree).TrimEnd('\', '/') -ieq [System.IO.Path]::GetTempPath().TrimEnd('\', '/') -and $tree -ine $flowLookalike) `
+                "$When did not build in a fresh folder of its own under the temp folder: $Line"
+            Assert-True (-not (Test-Path -LiteralPath $tree)) "$When left its worktree behind: $tree"
+            Assert-True ((Get-FlowWorktrees) -ceq $flowWorktrees -and
+                (Test-Path -LiteralPath (Join-Path $flowBystander 'keep.txt') -PathType Leaf) -and
+                (Test-Path -LiteralPath (Join-Path $flowBystander 'gradle.properties') -PathType Leaf) -and
+                (Test-Path -LiteralPath (Join-Path $flowLookalike 'keep.txt') -PathType Leaf)) `
+                "$When took away a worktree or a folder that wasn't its own: $(Get-FlowWorktrees)"
+            return $tree
+        }
+
+        # A rebuild that fails stops the stage and leaves no note, so publish still refuses and
+        # nothing is tagged.
+        Set-Content -LiteralPath $flowFails -Value 'gradle' -Encoding ASCII
+        Assert-Throws { & $flowScript -Stage rebuild -Version 1.2.3 6> $null 3> $null } '*Gradle :patches:buildAndroid did not pass*' `
+            'The rebuild stage carried on past a rebuild that failed.'
+        Remove-Item -LiteralPath $flowFails -Force
+        $flow = @(Read-FlowLog)
+        Assert-True ($flow.Count -eq 1) "A failed rebuild still ran what follows it: $($flow -join ' | ')"
+        $null = Assert-RebuildCleanedUp $flow[0] 'A failed rebuild'
+        Assert-True (-not (Test-Path -LiteralPath $flowNote)) 'A failed rebuild left a note for publish to read.'
+        Assert-Throws { & $flowScript -Stage publish -Version 1.2.3 -Checked $flowChecked 6> $null 3> $null } '*Run -Stage rebuild first*' `
+            'Publish went ahead after a rebuild that failed.'
+        Assert-True (@(Read-FlowLog).Count -eq 0 -and (Test-FlowUntagged)) 'Publish ran a step or tagged after a rebuild that failed.'
+
+        # A rebuilt bundle that doesn't match stops it the same way, after its one build.
+        Set-Content -LiteralPath $flowFails -Value 'rebuilt' -Encoding ASCII
+        Assert-Throws { & $flowScript -Stage rebuild -Version 1.2.3 6> $null 3> $null } `
+            "*doesn't back the staged bundle, so it can't be published: the stand-in found a changed class*" `
+            'The rebuild stage passed a staged bundle its check refused.'
+        Remove-Item -LiteralPath $flowFails -Force
+        $flow = @(Read-FlowLog)
+        Assert-True ($flow.Count -eq 2 -and $flow[1] -like 'rebuilt *') "A refused rebuild did not build once and compare: $($flow -join ' | ')"
+        $null = Assert-RebuildCleanedUp $flow[0] 'A refused rebuild'
+        Assert-True (-not (Test-Path -LiteralPath $flowNote) -and (Test-FlowUntagged)) 'A refused rebuild left a note for publish to read, or a tag.'
+
+        # A rebuild that matches: one Gradle run for the bundle, in a worktree detached at the source
+        # commit, at release priority, then the check on the staged bundle (held, so the stand-in's
+        # change is refused) and the bundle the worktree's build left. The note names the commit and
+        # the staged bundle's hash.
+        & $flowScript -Stage rebuild -Version 1.2.3 6> $null 3> $null
+        $flow = @(Read-FlowLog)
+        Assert-True ($flow.Count -eq 2) "The rebuild stage did not build once and compare: $($flow -join ' | ')"
+        $rebuiltTree = Assert-RebuildCleanedUp $flow[0] 'A rebuild that matched'
+        Assert-True ($flow[1] -ceq ("rebuilt commit=$flowHead swap=refused head=$flowHead staged=patches-1.2.3.mpp " +
+                "bundle=patches-1.2.3.mpp there=True root=$rebuiltTree")) `
+            "The rebuild's check was not handed the held staged bundle and the worktree's own, at the source commit: $($flow[1])"
+        $note = Get-Content -LiteralPath $flowNote -Raw | ConvertFrom-Json
+        Assert-True ($note.version -ceq '1.2.3' -and $note.commit -ceq $flowHead -and $note.bundle.file -ceq 'patches-1.2.3.mpp' -and
+            $note.bundle.sha256 -ceq (Get-FileHash -Algorithm SHA256 -LiteralPath $flowBundle).Hash.ToLowerInvariant() -and $note.compared -eq 3) `
+            "The rebuild's note does not name the commit and the staged bundle's hash: $(Get-Content -LiteralPath $flowNote -Raw)"
+        Assert-True (Test-FlowClean) 'The rebuild stage left the tree changed.'
+        Assert-True (-not $env:BUILD_QUEUE_PRIORITY) 'The rebuild stage left its release priority behind.'
+
+        # One more build a release, not one a run: with that note there the stage builds nothing.
+        & $flowScript -Stage rebuild -Version 1.2.3 6> $null 3> $null
+        Assert-True (@(Read-FlowLog).Count -eq 0) 'The rebuild stage built again for a bundle it had already compared.'
+
+        # A bundle changed since isn't the one that was compared, and publish refuses it before the tag.
+        $keptBundle = [System.IO.File]::ReadAllBytes($flowBundle)
+        [System.IO.File]::AppendAllText($flowBundle, 'changed')
+        Assert-Throws { & $flowScript -Stage publish -Version 1.2.3 -Checked $flowChecked 6> $null 3> $null } `
+            "*isn't the bundle a rebuild of $flowHead was compared with, so nothing was tagged*" `
+            'Publish went ahead with a bundle changed since its rebuild.'
+        [System.IO.File]::WriteAllBytes($flowBundle, $keptBundle)
+        $flow = @(Read-FlowLog)
+        Assert-True ($flow.Count -eq 1 -and $flow[0] -like 'staged *' -and (Test-FlowUntagged)) `
+            "Publish ran a step or tagged with a bundle changed since its rebuild: $($flow -join ' | ')"
+        # Nor does a note for another commit back this one: publish refuses, and the stage builds again.
+        $keptNote = Get-Content -LiteralPath $flowNote -Raw
+        Set-Content -LiteralPath $flowNote -Value $keptNote.Replace($flowHead, ('b' * 40)) -Encoding ASCII -NoNewline
+        Assert-Throws { & $flowScript -Stage publish -Version 1.2.3 -Checked $flowChecked 6> $null 3> $null } `
+            "*isn't the bundle a rebuild of $flowHead was compared with, so nothing was tagged*" `
+            'Publish went ahead on a rebuild of another commit.'
+        Assert-True (@(Read-FlowLog).Count -eq 1 -and (Test-FlowUntagged)) 'Publish ran a step or tagged on a rebuild of another commit.'
+        & $flowScript -Stage rebuild -Version 1.2.3 6> $null 3> $null
+        $flow = @(Read-FlowLog)
+        Assert-True ($flow.Count -eq 2 -and (Get-Content -LiteralPath $flowNote -Raw | ConvertFrom-Json).commit -ceq $flowHead) `
+            "The rebuild stage did not build again over a note for another commit: $($flow -join ' | ')"
+        $null = Assert-RebuildCleanedUp $flow[0] 'A second rebuild'
+    } finally {
+        Remove-Item -LiteralPath $flowLookalike -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
     # A receipt for another commit, or one naming none, is refused before anything is tagged: the
     # assets would go out under a tag on a commit they weren't built from.
     $flowReceipt = Join-Path $flowAssets 'release-receipt-1.2.3.json'
@@ -7808,7 +8169,6 @@ try {
     $linkedCopy = [regex]::Match($flow[0], ' folder=(.+) files=').Groups[1].Value
     Assert-True ($linkedCopy -and -not (Test-Path -LiteralPath $linkedCopy)) 'A publish refused for a link left its copy behind.'
     Assert-True (Test-Path -LiteralPath (Join-Path $flowLinkTarget 'keep.txt') -PathType Leaf) 'Removing the publish copy emptied what its link pointed at.'
-    $flowHead = "$(& git -C $flowRepo rev-parse HEAD)".Trim()
     & $flowScript -Stage publish -Version 1.2.3 -Checked $flowChecked 6> $null 3> $null
     $flow = @(Read-FlowLog)
     Assert-True ($flow.Count -eq 4 -and $flow[0] -like ("staged version=1.2.3 commit=$flowHead swap=refused folder=* files=patches-1.2.3.cdx.json," +
