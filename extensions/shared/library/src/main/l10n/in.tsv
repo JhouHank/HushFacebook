@@ -375,6 +375,10 @@ Go straight to one group of settings. Back returns to where you were.	Langsung k
 Save videos other apps can open	Simpan video yang bisa dibuka aplikasi lain
 # context: summary of that switch; WhatsApp is a name and stays as it is, and saves are the videos the user saved to the phone
 Fixes saved videos that play without sound in WhatsApp, video editors such as CapCut and InShot, or some galleries and players. May lower quality.	Memperbaiki video tersimpan yang diputar tanpa suara di WhatsApp, editor video seperti CapCut dan InShot, atau beberapa galeri dan pemutar. Bisa menurunkan kualitas.
+# context: switch title under Downloads; on, a save shows no message when it starts, finishes or is canceled
+Quiet saves	Simpan tanpa pesan
+# context: summary of that switch; a toast is Android's short message at the bottom of the screen
+No toast when a save starts, finishes or is canceled. A save that fails still says why.	Tidak ada pesan saat penyimpanan dimulai, selesai, atau dibatalkan. Jika gagal, alasannya tetap ditampilkan.
 # context: section title for the Chats settings, named like Facebook's own Chats screen
 Chats	Chat
 # context: switch title under Chats; the card is Facebook's own "Get the Messenger app" card

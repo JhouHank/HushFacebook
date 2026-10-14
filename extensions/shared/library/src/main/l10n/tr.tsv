@@ -375,6 +375,10 @@ Go straight to one group of settings. Back returns to where you were.	Doğrudan 
 Save videos other apps can open	Videoları diğer uygulamaların açabileceği biçimde kaydet
 # context: summary of that switch; WhatsApp is a name and stays as it is, and saves are the videos the user saved to the phone
 Fixes saved videos that play without sound in WhatsApp, video editors such as CapCut and InShot, or some galleries and players. May lower quality.	WhatsApp'ta, CapCut ve InShot gibi video düzenleyicilerde veya bazı galeri ve oynatıcılarda sessiz çalan kayıtlı videoları düzeltir. Kaliteyi düşürebilir.
+# context: switch title under Downloads; on, a save shows no message when it starts, finishes or is canceled
+Quiet saves	Sessiz kaydetme
+# context: summary of that switch; a toast is Android's short message at the bottom of the screen
+No toast when a save starts, finishes or is canceled. A save that fails still says why.	Kaydetme başladığında, bittiğinde veya iptal edildiğinde mesaj gösterilmez. Kaydetme başarısız olursa nedeni yine gösterilir.
 # context: section title for the Chats settings, named like Facebook's own Chats screen
 Chats	Sohbetler
 # context: switch title under Chats; the card is Facebook's own "Get the Messenger app" card

@@ -375,6 +375,10 @@ Go straight to one group of settings. Back returns to where you were.	Direkt zu 
 Save videos other apps can open	Videos speichern, die andere Apps öffnen können
 # context: summary of that switch; WhatsApp is a name and stays as it is, and saves are the videos the user saved to the phone
 Fixes saved videos that play without sound in WhatsApp, video editors such as CapCut and InShot, or some galleries and players. May lower quality.	Behebt gespeicherte Videos, die in WhatsApp, Videoeditoren wie CapCut und InShot oder manchen Galerien und Playern ohne Ton laufen. Kann die Qualität senken.
+# context: switch title under Downloads; on, a save shows no message when it starts, finishes or is canceled
+Quiet saves	Leise speichern
+# context: summary of that switch; a toast is Android's short message at the bottom of the screen
+No toast when a save starts, finishes or is canceled. A save that fails still says why.	Keine Meldung, wenn ein Speichervorgang beginnt, endet oder abgebrochen wird. Schlägt einer fehl, wird der Grund trotzdem angezeigt.
 # context: section title for the Chats settings, named like Facebook's own Chats screen
 Chats	Chats
 # context: switch title under Chats; the card is Facebook's own "Get the Messenger app" card

@@ -175,7 +175,7 @@ Morphe Manager's default selection has every patch except `AMOLED black theme`, 
 
 Both themes show in Facebook's dark mode, so turn that on first. A tablet whose Facebook settings have no Dark mode row can use **Force dark mode** under Appearance. `Material You theme` takes its colors from your wallpaper on Android 12 and newer, and Android 11 gets a fixed palette built from Facebook's blue. `AMOLED black theme` has one option, Background color. Leave it blank for black, or give a dark six-digit color such as #0D1117. A color too light to keep text readable is refused, and the message says what to pick instead. The two themes work together, with the background staying black (or your color) and the palette coloring what sits on top.
 
-Videos save to your gallery at the quality you pick under Downloads, best by default. A running save shows its progress in a notification and at the top of the Downloads page, each with a Cancel button.
+Videos save to your gallery at the quality you pick under Downloads, best by default. A running save shows its progress in a notification and at the top of the Downloads page, each with a Cancel button. Turn on **Quiet saves** there if the toasts at the start and end of a save bother you. A save that fails still says why.
 
 ## Help
 

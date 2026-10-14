@@ -139,6 +139,7 @@ final class SwitchLabels {
         if (setting == Settings.DOWNLOAD_PHOTOS) return L10n.t("Save any photo");
         if (setting == Settings.POST_MENU_PHOTO_SAVE) return L10n.t("Save photo in post menus");
         if (setting == Settings.DOWNLOAD_COMPATIBLE) return L10n.t("Save videos other apps can open");
+        if (setting == Settings.DOWNLOAD_QUIET) return L10n.t("Quiet saves");
         if (setting == Settings.HIDE_GET_MESSENGER_CARD) return L10n.t("Hide the Get Messenger card");
         if (setting == Settings.HIDE_CHAT_NOTES_TRAY) return L10n.t("Hide the notes and active now row");
         if (setting == Settings.HIDE_CHAT_PROMOTIONS) return L10n.t("Hide chat list promotions");

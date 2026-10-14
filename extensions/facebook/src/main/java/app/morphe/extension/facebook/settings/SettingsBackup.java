@@ -219,6 +219,7 @@ public final class SettingsBackup {
             Settings.DOWNLOAD_PHOTOS,
             Settings.POST_MENU_PHOTO_SAVE,
             Settings.DOWNLOAD_COMPATIBLE,
+            Settings.DOWNLOAD_QUIET,
             Settings.OPEN_ON_CHOSEN_TAB,
             Settings.FOLLOWING_FEED_HOME,
             Settings.SAVED_SHORTCUT,

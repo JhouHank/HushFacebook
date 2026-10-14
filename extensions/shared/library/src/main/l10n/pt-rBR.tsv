@@ -360,6 +360,10 @@ Jump to a section	Ir para uma seção
 Go straight to one group of settings. Back returns to where you were.	Vá diretamente para um grupo de configurações. Voltar leva você de volta ao ponto em que estava.
 Save videos other apps can open	Salvar vídeos que outros apps conseguem abrir
 Fixes saved videos that play without sound in WhatsApp, video editors such as CapCut and InShot, or some galleries and players. May lower quality.	Corrige vídeos salvos que tocam sem som no WhatsApp, em editores de vídeo como CapCut e InShot ou em algumas galerias e players. Pode reduzir a qualidade.
+# context: switch title under Downloads; on, a save shows no message when it starts, finishes or is canceled
+Quiet saves	Salvar sem avisos
+# context: summary of that switch; a toast is Android's short message at the bottom of the screen
+No toast when a save starts, finishes or is canceled. A save that fails still says why.	Nenhum aviso quando um salvamento começa, termina ou é cancelado. Se um falhar, o motivo ainda aparece.
 Chats	Conversas
 Hide the Get Messenger card	Ocultar o cartão Baixar o Messenger
 Hides the card at the top of Chats that asks you to get Messenger, once Messenger is installed. Without Messenger, the card stays.	Oculta o cartão no topo de Conversas que pede para você instalar o Messenger, quando o Messenger já está instalado. Sem o Messenger, o cartão continua.

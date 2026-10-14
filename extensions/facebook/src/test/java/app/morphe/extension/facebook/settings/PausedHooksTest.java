@@ -261,6 +261,8 @@ public class PausedHooksTest {
         Map<BooleanSetting, Probe> probes = new LinkedHashMap<>();
         // A save takes the H.264 picture over the sharper AV1 one.
         probes.put(Settings.DOWNLOAD_COMPATIBLE, SaveRulesForTests::picksAFileOtherAppsOpen);
+        // A finished save goes without its Saved to toast.
+        probes.put(Settings.DOWNLOAD_QUIET, SaveRulesForTests::finishesQuietly);
         return probes;
     }
 

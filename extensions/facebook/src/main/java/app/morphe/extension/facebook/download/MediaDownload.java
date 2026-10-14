@@ -576,6 +576,27 @@ public final class MediaDownload {
         }
     }
 
+    /**
+     * Whether the save starting now goes without the toasts that only say how it went
+     * ({@link Settings#DOWNLOAD_QUIET}). Read when the save starts, so one save's toasts follow one
+     * setting. Never throws: before the settings are ready, or when they can't be read, it's off.
+     */
+    static boolean quietSaves() {
+        try {
+            return Utils.settingsReady() && Settings.DOWNLOAD_QUIET.get();
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /**
+     * Whether the toast at the end of a save shows. A quiet save keeps a failure's, which says why,
+     * and the WhatsApp warning when no notification card carries it ([carded] false).
+     */
+    static boolean endToast(boolean quiet, boolean failed, boolean refused, boolean carded) {
+        return !quiet || failed || (refused && !carded);
+    }
+
     /** What the report adds to a DASH save line whose tracks were kept to what other apps can open. */
     private static String compatibleNote(boolean compatible) {
         return compatible ? ", kept to files other apps can open" : "";
@@ -1030,9 +1051,12 @@ public final class MediaDownload {
             if (watching != null) watching.accept(known);
             final SaveControl.Save save = SaveControl.begin(application, video);
             begun = save;
+            final boolean quiet = quietSaves();
             // With no notification to cancel it from, the list of saves in the settings is the only way
             // to stop it, so the start says where that is, for long enough to read.
-            if (save.manager != null) {
+            if (quiet) {
+                info(() -> "quiet saves: no toast as the save starts or ends, unless it fails");
+            } else if (save.manager != null) {
                 Feedback.show(application, L10n.t(application, "Saving..."), false);
             } else {
                 Feedback.show(application,
@@ -1057,12 +1081,15 @@ public final class MediaDownload {
                         result.lower);
                     boolean refused = result.ok() && result.refused && !compatibleSaves();
                     boolean carded = result.ok() && SaveControl.showCompleted(save, writer, refused ? text : null);
+                    boolean failed = !result.ok() && !cancelled;
                     if (refused) {
                         info(() -> "the saved file has a track WhatsApp and some editors refuse, with Save videos "
                             + "other apps can open off");
-                        Feedback.show(application, refusedMessage(application, carded), true);
-                    } else {
-                        Feedback.show(application, text, !result.ok() && !cancelled);
+                        if (endToast(quiet, failed, true, carded)) {
+                            Feedback.show(application, refusedMessage(application, carded), true);
+                        }
+                    } else if (endToast(quiet, failed, false, carded)) {
+                        Feedback.show(application, text, failed);
                     }
                 } catch (Throwable t) {
                     // Nothing can leave this thread. Facebook installs its own handler for uncaught

@@ -1370,6 +1370,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_download_compatible", FALSE);
 
     /**
+     * Saves go without the toasts that only say how a save went: Saving as it starts, Saved to as
+     * it finishes, and Save canceled (issue #142). A failed save still says why, and the WhatsApp
+     * warning still shows when no notification card carries it. Off by default. Every download
+     * patch reads it ({@link PatchFamily#DOWNLOAD_SWITCHES}).
+     */
+    public static final BooleanSetting DOWNLOAD_QUIET =
+            new BooleanSetting("hushfacebook_download_quiet", FALSE);
+
+    /**
      * The name a saved video gets: {date}, {video_id}, {owner}, {owner_id} and {posted} fill in per
      * save, the last four only when the save knows them, and the default is Facebook's own FB_VID_
      * name, so nothing changes for anyone who leaves it. Photos have {@link #PHOTO_FILENAME_TEMPLATE}.
