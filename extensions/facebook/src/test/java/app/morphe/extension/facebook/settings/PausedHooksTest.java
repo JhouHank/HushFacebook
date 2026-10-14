@@ -700,10 +700,11 @@ public class PausedHooksTest {
         probes.put(PatchFamily.HDR_BRIGHTNESS, Arrays.asList(
                 HdrBrightnessForTests::keepsAnHdrWindowInTheUsualRange, HdrBrightnessForTests::holdsTheHeadroom,
                 HdrBrightnessForTests::answersTheScreenAsShowingNoHdr));
-        // A reel's bar is kept full size, a full-screen video sets no fade timer, and a press off the
-        // bar's thumb is held as a tap to seek.
+        // A reel's bar is kept full size, a full-screen video sets no fade timer, a press off the
+        // bar's thumb is held as a tap to seek, and the next reel's bar starts over.
         probes.put(PatchFamily.PROGRESS_BAR, Arrays.asList(ProgressBar::keepsReelBar, ProgressBar::keepsControls,
-                ProgressBar::liftsFooter, ProgressBar::noFadedBar, PausedHooksTest::holdsATapOnTheBar));
+                ProgressBar::liftsFooter, ProgressBar::noFadedBar, PausedHooksTest::holdsATapOnTheBar,
+                PausedHooksTest::startsTheNextReelOver));
         // A tab asked for shows without its slide.
         probes.put(PatchFamily.SCREEN_TRANSITIONS, Collections.singletonList(() -> !ScreenTransitionsForTests.slides()));
         // The app icon benefit is answered yes, at the provider's check and at the picker's own look,
@@ -778,6 +779,14 @@ public class PausedHooksTest {
             if (!family.switches.isEmpty()) switched.add(family);
         }
         return switched;
+    }
+
+    /** The scrubber takes the next reel with its bar where the last reel stopped. */
+    private static boolean startsTheNextReelOver() {
+        android.widget.SeekBar bar = new android.widget.SeekBar(RuntimeEnvironment.getApplication());
+        bar.setProgress(47);
+        ProgressBar.nextReel(null, bar);
+        return bar.getProgress() == 0;
     }
 
     /** A press at the far end of a bar whose thumb sits at its start, then a cancel to end it. */
