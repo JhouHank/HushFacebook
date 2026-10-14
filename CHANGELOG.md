@@ -12,6 +12,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** `Material You theme` colors Facebook's light mode too (issues #141 and #65). In light mode the grays, the blues, the pale blue highlights and the selected tab take your wallpaper's colors at the same lightness, so text stays as easy to read. White stays white, and dark mode looks as it did. There's no new switch.
 * **Facebook:** New patch, `Skip silent parts`, plays videos, reels and stories past the quiet stretches in their sound, so talks and how-tos get to the point sooner (issue #144). Its switch is under Playback and starts off. A change takes effect from the next video or the next seek.
 * **Facebook:** **Load whole reply threads** under Comment sheet options keeps loading an open reply thread as you scroll, so you don't have to keep tapping View more replies (issue #140). It starts off.
+* **Facebook:** New patch, `Upload Stories in HD`, makes videos you post to your Story ask Facebook for its high upload quality instead of standard, so they can come out sharper (issue #123). Its switch is under Stories and starts off. Facebook's servers still pick the final quality.
 
 ### Changed
 
@@ -19,6 +20,8 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* **Facebook:** A copy made with Clone app builds Facebook's rich notifications from its own layouts, so a notification no longer closes the clone (issue #36). There's no switch.
+* **Facebook:** The README's Help entry on Facebook links now names the Messenger setting that stops Messenger claiming facebook.com links: Open supported links, or In your browser on newer Android (issue #111).
 * **Facebook:** `Hide Meta AI questions under posts` also takes away the row of Meta AI question chips Facebook puts under some photos and captions (issue #48). Those chips came through a different part of the post than the questions the switch already caught. It's under News feed and starts on.
 * **Facebook:** With `Use the system font` on, a font that draws past its own line box keeps its extra room in Reels captions and other text with a set line height, so letter tails and Bengali vowel signs aren't cut off (issue #96).
 
