@@ -255,7 +255,8 @@ public class DefaultCommentOrderTest {
      * #110: a refetch built from the first request's params names no order, so its answer comes back
      * in Facebook's order with nothing left waiting for the menu. A post that kept All comments gets
      * it picked again, once per answer: a menu drawn again before the pick's answer, or a server that
-     * won't answer All comments, gets no second pick. A post picked on another order keeps that one.
+     * won't answer All comments, gets no second pick, and neither does a link to one of its comments.
+     * A post picked on another order keeps that one.
      */
     @Test
     public void aPostThatKeptAllCommentsGetsItPickedAgainOncePerAnswer() {
@@ -288,6 +289,12 @@ public class DefaultCommentOrderTest {
         DefaultCommentOrder.sortMenu(onAll, sheet);
         DefaultCommentOrder.sortMenu(onRelevant, sheet);
         assertEquals("answered, so the next refetch is picked again", 3, sent.size());
+
+        // A link to one comment of that post: Facebook's view stays until it answers All comments.
+        DefaultCommentOrder.sortMenu(onAll, sheet);
+        DefaultCommentOrder.requestedOrder(null, POST, COMMENT);
+        DefaultCommentOrder.sortMenu(onRelevant, sheet);
+        assertEquals("a link to one comment keeps Facebook's order", 3, sent.size());
 
         // Picked on Most relevant by hand, a post keeps it.
         DefaultCommentOrder.picked(RELEVANT);

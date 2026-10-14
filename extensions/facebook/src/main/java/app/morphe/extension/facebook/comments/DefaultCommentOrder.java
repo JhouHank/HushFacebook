@@ -234,6 +234,9 @@ public final class DefaultCommentOrder {
             CommentOrder order = chosen();
             if (order == null) return token;
             if (!isEmpty(focusedCommentId)) {
+                // A link's view stays Facebook's: a post that kept the order isn't picked again
+                // in its menu until an answer comes back on that order.
+                if (picks.containsKey(feedbackId)) answered.put(feedbackId, Boolean.FALSE);
                 log("left a link to one comment in Facebook's order.");
                 return token;
             }
