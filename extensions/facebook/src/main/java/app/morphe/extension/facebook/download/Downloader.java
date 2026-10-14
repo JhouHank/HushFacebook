@@ -84,7 +84,7 @@ final class Downloader {
         NOT_MEDIA,
         /** The file is bigger than a save will hold. */
         TOO_LARGE,
-        /** The body was empty, or ended before the length it announced. */
+        /** The body was empty, ended before the length it announced, or a read failed once it was arriving. */
         INCOMPLETE,
         /** A work file couldn't be made or written, and the phone didn't say why. Not known to be a full disk. */
         STORAGE,
@@ -385,6 +385,8 @@ final class Downloader {
     static Result fetch(String url, Kind kind, File into, MediaUrlPolicy policy, long maxBytes, Progress progress) {
         HttpURLConnection connection = null;
         boolean kept = false;
+        // Whether the file had started to arrive when a read failed.
+        boolean arriving = false;
 
         try {
             Object opened = connect(url, policy, progress);
@@ -419,6 +421,7 @@ final class Downloader {
             }
 
             InputStream in = connection.getInputStream();
+            arriving = true;
             byte[] head = new byte[HEAD];
             int headLength = readHead(in, head);
             if (headLength == 0) return Result.fail(Status.WRITE_ERROR, Cause.INCOMPLETE, "the body was empty");
@@ -459,6 +462,13 @@ final class Downloader {
             if (e instanceof StorageFailure) {
                 return Result.fail(Status.WRITE_ERROR, Cause.STORAGE, "the cache could not hold the file: "
                     + e.getCause().getClass().getSimpleName());
+            }
+            // A body shorter than the length it announced doesn't reach the length check above:
+            // Android's HTTP stack and the JVM's both throw from the read that hits the early end.
+            // So a read that fails once the file is arriving is a download cut short, and only a
+            // failure before that is the connection's.
+            if (arriving) {
+                return Result.fail(Status.NETWORK_ERROR, Cause.INCOMPLETE, "the fetch failed: " + e.getClass().getSimpleName());
             }
             return Result.fail(Status.NETWORK_ERROR, "the fetch failed: " + e.getClass().getSimpleName());
         } catch (Throwable t) {

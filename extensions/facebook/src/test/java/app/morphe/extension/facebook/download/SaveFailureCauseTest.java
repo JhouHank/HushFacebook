@@ -241,10 +241,11 @@ public class SaveFailureCauseTest {
         assertFailed(Downloader.Cause.INCOMPLETE, INCOMPLETE, true, end(true, video("/empty.mp4")));
         assertEquals(Downloader.Status.WRITE_ERROR, ended.status);
 
-        // Announces 5000 bytes and sends 1000.
+        // Announces 5000 bytes and sends 1000. The read that meets the early end throws, here and on
+        // a phone, so the report keeps calling it a failed fetch while the person hears why.
         server.serve("/short.mp4", 200, "video/mp4", mp4(1000), 5000);
         assertFailed(Downloader.Cause.INCOMPLETE, INCOMPLETE, true, end(true, video("/short.mp4")));
-        assertEquals(Downloader.Status.WRITE_ERROR, ended.status);
+        assertEquals(Downloader.Status.NETWORK_ERROR, ended.status);
     }
 
     @Test
