@@ -3577,8 +3577,8 @@ try {
             'fingerprint-calibration.txt', 'fingerprint-calibration-582-arm64.txt', 'fingerprint-calibration-582-armv7.txt',
             'fingerprint-candidates.ps1', 'fingerprint-history.ps1', 'fingerprint-history.txt',
             'fingerprint-signature.schema.json', 'test-fingerprint-candidates.ps1')
-        'scripts/test-facebook-sources.ps1' = @('audit-facebook-sources.ps1', 'facebook-sources.ps1', 'patch-target.ps1',
-            'test-facebook-sources.ps1')
+        'scripts/test-facebook-sources.ps1' = @('audit-facebook-sources.ps1', 'facebook-sources.ps1', 'gitlab-coverage.ps1',
+            'patch-target.ps1', 'scan-gitlab-coverage.ps1', 'test-facebook-sources.ps1')
         'scripts/test-release-text.ps1' = @('release/release.ps1', 'test-release-text.ps1')
         'scripts/test-phone-smoke.ps1' = @('phone-smoke.ps1', 'test-phone-smoke.ps1')
     }
