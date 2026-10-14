@@ -225,7 +225,14 @@ A patched Facebook can't install Meta's updates, so it stays on the version you 
 
 ### Facebook keeps closing
 
-After three crashes or freezes within a minute of starting, Hushfacebook pauses itself. If you can't reach the settings at all, an empty file named `hushfacebook-safe-mode` in `Android/data/com.facebook.katana/files` pauses it too. A pause only changes what the switches answer and every patch's code stays in place, so if Facebook keeps closing, patch again without the patch you suspect. The next diagnostic report you export shows the error that closed Facebook.
+After three crashes or freezes within a minute of starting, Hushfacebook pauses itself. If you can't reach the settings at all, an empty file named `hushfacebook-safe-mode` in `Android/data/com.facebook.katana/files` pauses it too (a clone uses its own package's folder, like `com.facebook.katana.morphe`). On Android 11 and newer most file managers can't write there, but a computer with adb can, with no root:
+
+```
+adb shell touch /sdcard/Android/data/com.facebook.katana/files/hushfacebook-safe-mode
+adb shell am force-stop com.facebook.katana
+```
+
+Open Facebook and the settings say Hushfacebook is paused. `Resume` deletes the file. A pause only changes what the switches answer and every patch's code stays in place, so if Facebook keeps closing, patch again without the patch you suspect. The next diagnostic report you export shows the error that closed Facebook.
 
 ## Your Facebook account
 
