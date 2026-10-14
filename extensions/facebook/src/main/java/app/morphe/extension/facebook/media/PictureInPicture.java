@@ -14,6 +14,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.util.Rational;
 import android.view.View;
 
 import androidx.annotation.Nullable;
@@ -41,10 +42,13 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * player going in the window and turns auto-enter off and on as it pauses and plays. A swipe starts
  * the next reel's player without arming again, so the window would open on a frozen reel, or not at
  * all once the first one's pause turned auto-enter off. So when another reel starts, the extension
- * arms the window again with Facebook's own arguments for that reel's player. And while the window
- * is armed, it sets Facebook's change of auto-enter aside and decides from the reel on screen:
- * while it's paused, auto-enter is off, set the way Facebook's own disarm sets it, and when a reel
- * plays, it's back on.
+ * arms the window again with Facebook's own arguments for that reel's player, in that reel's own
+ * shape, worked out the way Facebook works it out when it arms. A reel of a shape Facebook arms no
+ * window for, a landscape one, isn't armed again: it opens no window, as with Facebook's own arming,
+ * where before it opened in the last reel's tall shape around the wide video (#126). And while the
+ * window is armed, it sets Facebook's change of auto-enter aside and decides from the reel on screen:
+ * while it's paused, or of a shape the window doesn't take, auto-enter is off, set the way
+ * Facebook's own disarm sets it, and when a reel plays, it's back on.
  *
  * <p>In the window, Facebook's viewer opens in a container with a new view id, which a React
  * Native view on the main screen can already hold. The extension swaps such an id for a free one,
@@ -93,6 +97,16 @@ public final class PictureInPicture {
     /** Counted each time the window is armed again for the reel a swipe started. */
     static final String REARMED = "armed again for the next reel";
 
+    /** Counted each time a reel of a shape Facebook arms no window for turns auto-enter off. */
+    static final String KEPT_OUT = "wide reel kept out of the window";
+
+    /**
+     * The narrowest and widest window Facebook arms for a reel, width to height, as its arming
+     * checks it: 1 by 2.39, Android's own narrowest, up to square.
+     */
+    static final float NARROWEST = 1f / 2.39f;
+    static final float WIDEST = 1f;
+
     /** Counted each time the window's viewer gets a view id of its own instead of one a view already holds. */
     static final String VIEWER_ID = "viewer id replaced";
 
@@ -135,6 +149,9 @@ public final class PictureInPicture {
     private static WeakReference<Activity> armedScreen = new WeakReference<>(null);
     private static WeakReference<Object> current = new WeakReference<>(null);
     private static boolean held;
+
+    /** Whether the reel on screen has a shape the window doesn't take, so auto-enter stays off for it. */
+    private static boolean unfit;
 
     /**
      * The arguments ReelsPipUtil last armed the window with, kept until it disarms, as Facebook
@@ -227,12 +244,12 @@ public final class PictureInPicture {
      * The screen a reel's More sheet built in [context] may open the window on: the armed screen,
      * when the sheet is on it, with the switch on, the phone's feature, and no window open yet.
      * Null otherwise, so a sheet on another screen, such as a reel opened over the armed one, gets
-     * no row that would float the wrong screen.
+     * no row that would float the wrong screen, and a reel the window doesn't take gets none either.
      */
     static Activity menuScreen(@Nullable Context context) {
         Activity screen;
         synchronized (PictureInPicture.class) {
-            screen = armedScreen.get();
+            screen = unfit ? null : armedScreen.get();
         }
         if (screen == null || !on() || activityOf(context) != screen) return null;
         if (screen.isFinishing() || screen.isDestroyed() || screen.isInPictureInPictureMode()) return null;
@@ -376,6 +393,7 @@ public final class PictureInPicture {
         current = new WeakReference<>(player);
         arming = arguments;
         held = false;
+        unfit = false;
     }
 
     /**
@@ -458,11 +476,11 @@ public final class PictureInPicture {
         return arming != null && on() ? arming : null;
     }
 
-    /** The armed screen when a pause holds auto-enter, released. */
+    /** The armed screen when a pause holds auto-enter, released, unless the reel on screen is one the window doesn't take. */
     private static synchronized Activity releasing() {
         if (!held) return null;
         held = false;
-        return armedScreen.get();
+        return unfit ? null : armedScreen.get();
     }
 
     /**
@@ -476,7 +494,10 @@ public final class PictureInPicture {
             }
             Activity screen = armedScreen.get();
             if (screen == null || screen.isFinishing() || screen.isDestroyed()) return;
-            if (!rearm(arguments, player)) return;
+            if (!rearm(arguments, player)) {
+                keepOut(screen, player);
+                return;
+            }
             HookStatus.bound(FAMILY, "arming again");
             HookStatus.counted(FAMILY, REARMED);
             Logger.printDebug(() -> "Picture-in-picture: armed again for player " + System.identityHashCode(player));
@@ -487,10 +508,52 @@ public final class PictureInPicture {
 
     /**
      * Filled in by the patch: arms the window again through ReelsPipUtil with the [arguments] of its
-     * last arming, for [player] and that player's own video. False until the patch fills it in.
+     * last arming, for [player], that player's own video and the shape {@link #shape} gives for it.
+     * False when that reel has a shape the window doesn't take, and until the patch fills it in.
      */
     public static boolean rearm(Object[] arguments, Object player) {
         return false;
+    }
+
+    /**
+     * The window's shape for a reel whose video is [aspect] wide to one high, worked out as Facebook
+     * works it out when it arms the window for a reel: in thousandths, from {@link #NARROWEST} up to
+     * {@link #WIDEST}, and 9 by 16 for a video of no known shape. Null for a shape Facebook arms no
+     * window for, such as a landscape reel's.
+     */
+    @Nullable
+    public static Rational shape(double aspect) {
+        try {
+            if (!(aspect > 0)) return new Rational(9, 16);
+            int thousandths = (int) ((float) aspect * 1000f);
+            float ratio = thousandths / 1000f;
+            Logger.printDebug(() -> "Picture-in-picture: the next reel is " + aspect + " wide to one high");
+            if (thousandths <= 0 || ratio < NARROWEST || ratio > WIDEST) return null;
+            return new Rational(thousandths, 1000);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel shape", failure);
+            return null;
+        }
+    }
+
+    /**
+     * [player], the reel on screen, has a shape the window doesn't take, so it isn't armed again:
+     * auto-enter goes off, leaving it out of the window as Facebook's own arming does, until a reel
+     * the window takes plays and is armed. Nothing changes once another reel started, or while the
+     * window is open.
+     */
+    private static void keepOut(Activity screen, Object player) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return;
+        synchronized (PictureInPicture.class) {
+            if (player != current.get()) return;
+            unfit = true;
+            held = false;
+        }
+        if (screen.isInPictureInPictureMode()) return;
+        autoEnter(screen, false);
+        HookStatus.bound(FAMILY, "arming again");
+        HookStatus.counted(FAMILY, KEPT_OUT);
+        Logger.printDebug(() -> "Picture-in-picture: player " + System.identityHashCode(player) + " kept out of the window");
     }
 
     /** The armed screen when [player] is the reel on screen and its pause should hold auto-enter, marked held. */

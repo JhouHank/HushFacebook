@@ -40,6 +40,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
@@ -74,6 +75,9 @@ internal const val REARM_STUB = "rearm"
 /** Helpers the patch adds to ReelsPipUtil: one hands the arming's arguments over, one arms again with them. */
 internal const val ARMING_HELPER = "hushfacebookPipArming"
 internal const val REARM_HELPER = "hushfacebookPipRearm"
+
+/** The window's shape for the next reel's aspect, or null for a shape Facebook arms no window for. */
+internal const val SHAPE = "$PICTURE_IN_PICTURE->shape(D)$RATIONAL"
 
 internal const val DISARMED = "$PICTURE_IN_PICTURE->disarmed()V"
 
@@ -126,7 +130,10 @@ internal const val HOME_FLAG_ALLOWED = "$PICTURE_IN_PICTURE->homeFlagAllowed(Z)Z
  * runnable aside and turns auto-enter off while the reel on screen, the player that started last,
  * is paused, and back on when a reel plays. A reel other than the armed one gets the window armed
  * again, through a helper the patch adds to ReelsPipUtil, with Facebook's own arguments and that
- * reel's player, so the window plays the reel on screen.
+ * reel's player, so the window plays the reel on screen. Its shape is that reel's own, from the
+ * aspect its video params carry (581 `LX/5AT;`, their one double), checked the way the arming step
+ * checks the aspect it reads: Facebook arms no window for a reel wider than square, so neither does
+ * the helper, and the extension keeps that reel out of the window (#126).
  *
  * In the window, Facebook's viewer (581 `LX/g7h;`) gives its container a new view id, and its
  * fragment finds the container by that id from the top of the screen. A React Native view can
@@ -381,9 +388,18 @@ internal class VideoParams(val call: MethodReference, val kind: String)
 private val boxes = mapOf("I" to ("Ljava/lang/Integer;" to "intValue"), "Z" to ("Ljava/lang/Boolean;" to "booleanValue"))
 
 /**
+ * The aspect the video params of type [params] carry: the class's one instance double, the video's
+ * width to its height. Null without exactly one.
+ */
+internal fun aspectField(params: ClassDef): FieldReference? =
+    params.fields.filter { it.type == "D" && !AccessFlags.STATIC.isSet(it.accessFlags) }.singleOrNull()
+
+/**
  * The arming first hands its activity, its player and all its arguments to the extension, through
  * a helper with registers of its own. A second helper arms again with those arguments for another
- * player and that player's own video arguments, and the extension's [REARM_STUB] calls it.
+ * player, that player's own video arguments and the shape the extension's [SHAPE] gives for that
+ * video's aspect, answering whether it armed: a shape Facebook arms no window for arms nothing. The
+ * extension's [REARM_STUB] calls it and answers the same.
  */
 internal fun BytecodePatchContext.applyArming(arming: Method, player: String, video: VideoParams) {
     if (!AccessFlags.STATIC.isSet(arming.accessFlags)) refuse("${arming.definingClass}->${arming.name} isn't static")
@@ -393,8 +409,13 @@ internal fun BytecodePatchContext.applyArming(arming: Method, player: String, vi
     }
     val playerAt = shape.indexOf(player)
     val paramsAt = shape.indexOf(video.call.returnType)
+    val rationalAt = shape.indexOf(RATIONAL)
     val kind = video.kind
     val videoParams = video.call
+    val aspect = aspectField(classDefBy(video.call.returnType))
+        ?: refuse("${video.call.returnType} doesn't hold one aspect double")
+    // The replay's aspect takes the two registers after the arguments, and its reads take 4-bit registers.
+    if (shape.size + 1 > 15) refuse("${arming.definingClass}->${arming.name} takes ${shape.size} arguments, too many to replay")
     val util = mutableClassDefBy(arming.definingClass)
     val parameters = shape.joinToString("")
 
@@ -424,8 +445,10 @@ internal fun BytecodePatchContext.applyArming(arming: Method, player: String, vi
         "invoke-static/range { p0 .. p${shape.size - 1} }, ${arming.definingClass}->$ARMING_HELPER($parameters)V",
     )
 
-    // Locals v0 to v(n-1) (the arguments) and vn (an index); p0 the captured arguments, p1 the player.
+    // Locals v0 to v(n-1) (the arguments), then vn (an index) and vn, vn+1 (the aspect, once the index
+    // is done with); p0 the captured arguments, p1 the player.
     val index = "v${shape.size}"
+    val wide = shape.size
     val replay = buildString {
         shape.forEachIndexed { at, type ->
             when (at) {
@@ -433,7 +456,7 @@ internal fun BytecodePatchContext.applyArming(arming: Method, player: String, vi
                     appendLine("move-object/from16 v$at, p1")
                     appendLine("check-cast v$at, $type")
                 }
-                paramsAt -> Unit
+                paramsAt, rationalAt -> Unit
                 else -> {
                     appendLine("const/16 $index, $at")
                     appendLine("aget-object v$at, p0, $index")
@@ -450,32 +473,47 @@ internal fun BytecodePatchContext.applyArming(arming: Method, player: String, vi
         }
         appendLine("invoke-$kind/range { v$playerAt .. v$playerAt }, $videoParams")
         appendLine("move-result-object v$paramsAt")
+        appendLine("iget-wide v$wide, v$paramsAt, $aspect")
+        appendLine("invoke-static/range { v$wide .. v${wide + 1} }, $SHAPE")
+        appendLine("move-result-object v$rationalAt")
+        appendLine("if-eqz v$rationalAt, :unfit")
         appendLine("invoke-static/range { v0 .. v${shape.size - 1} }, ${arming.definingClass}->${arming.name}($parameters)V")
-        appendLine("return-void")
+        appendLine("const/4 v$wide, 0x1")
+        appendLine("return v$wide")
+        appendLine(":unfit")
+        appendLine("const/4 v$wide, 0x0")
+        appendLine("return v$wide")
     }
-    util.methods.add(helper(arming.definingClass, REARM_HELPER, listOf("[Ljava/lang/Object;", "Ljava/lang/Object;"), shape.size + 3, replay))
+    val replayShape = listOf("[Ljava/lang/Object;", "Ljava/lang/Object;")
+    util.methods.add(helper(arming.definingClass, REARM_HELPER, replayShape, shape.size + 4, replay, "Z"))
 
     val stub = mutableClassDefBy(PICTURE_IN_PICTURE).methods.singleOrNull {
-        it.name == REARM_STUB && AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Z" &&
-            it.shape() == listOf("[Ljava/lang/Object;", "Ljava/lang/Object;")
+        it.name == REARM_STUB && AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Z" && it.shape() == replayShape
     } ?: refuse("$PICTURE_IN_PICTURE has no static boolean $REARM_STUB(Object[], Object)")
     // d8 gives the stub no locals of its own, so the answer goes back in p0, used by then.
     stub.addInstructions(
         0,
         """
-            invoke-static { p0, p1 }, ${arming.definingClass}->$REARM_HELPER([Ljava/lang/Object;Ljava/lang/Object;)V
-            const/4 p0, 0x1
+            invoke-static { p0, p1 }, ${arming.definingClass}->$REARM_HELPER([Ljava/lang/Object;Ljava/lang/Object;)Z
+            move-result p0
             return p0
         """,
     )
 }
 
-/** A public static void helper on [owner] with [registers] registers in all, running [smali]. */
-private fun helper(owner: String, name: String, parameters: List<String>, registers: Int, smali: String) = ImmutableMethod(
+/** A public static helper on [owner] answering [returns], with [registers] registers in all, running [smali]. */
+private fun helper(
+    owner: String,
+    name: String,
+    parameters: List<String>,
+    registers: Int,
+    smali: String,
+    returns: String = "V",
+) = ImmutableMethod(
     owner,
     name,
     parameters.map { ImmutableMethodParameter(it, null, null) },
-    "V",
+    returns,
     AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
     null,
     null,
