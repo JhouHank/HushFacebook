@@ -1459,3 +1459,17 @@ Puts every feature switch but Lock Facebook back the way it started.	Mengembalik
 Changed %1$d setting	%1$d pengaturan diubah
 # context: the same toast for none, or for two or more
 Changed %1$d settings	%1$d pengaturan diubah
+# context: toast and Last save row: a save failed for want of a connection
+The connection failed. Check your internet and try again.	Koneksi gagal. Periksa internetmu lalu coba lagi.
+# context: toast and Last save row: the server answered a save with an error, not the file
+Facebook's server didn't send the file. Try again in a moment.	Server Facebook tidak mengirim filenya. Coba lagi sebentar lagi.
+# context: toast and Last save row: the file a save fetched came empty or cut short
+The download ended before the whole file arrived. Try again.	Unduhan berhenti sebelum seluruh file tiba. Coba lagi.
+# context: toast and Last save row: a save's work file couldn't be written, for a reason the phone didn't give
+Your phone couldn't write the file. Check your free space and try again.	Ponselmu tidak bisa menulis filenya. Periksa ruang kosongnya lalu coba lagi.
+# context: toast and Last save row: the phone was measured and has too little free space for a save
+Not enough free space to save this. Free some up and try again.	Ruang kosong tidak cukup untuk menyimpan ini. Kosongkan sedikit lalu coba lagi.
+# context: toast and Last save row: a video's picture and sound couldn't be converted or joined; Download quality is the setting's name
+Your phone couldn't put this video together. Try another Download quality.	Ponselmu tidak bisa menyusun video ini. Coba Kualitas unduhan yang lain.
+# context: toast and Last save row: the gallery refused a finished photo or video
+The file couldn't be copied into your phone's gallery. Try again in a moment.	File tidak bisa disalin ke galeri ponselmu. Coba lagi sebentar lagi.

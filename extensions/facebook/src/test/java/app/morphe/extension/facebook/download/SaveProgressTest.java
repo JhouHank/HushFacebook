@@ -791,7 +791,9 @@ public class SaveProgressTest {
                 finish(worker);
                 assertEquals(Downloader.Status.WRITE_ERROR, result.get(20, TimeUnit.SECONDS).status);
                 assertEquals(SaveControl.State.FAILED, save.state());
-                assertEquals("Download failed. Try again in a moment.", ShadowToast.getTextOfLatestToast());
+                assertEquals("The file couldn't be copied into your phone's gallery. Try again in a moment.",
+                        ShadowToast.getTextOfLatestToast());
+                assertEquals(Downloader.Cause.GALLERY, SaveControl.lastCause());
                 assertTrue("failed publication left a gallery row", gallery.rows.isEmpty());
                 assertTrue(pendingList().isEmpty());
             } finally {
@@ -905,7 +907,9 @@ public class SaveProgressTest {
         Thread worker = MediaDownload.start(context, true,
                 MediaDownload.dashJob(context, video, null, server.origin() + "/fallback.mp4"));
         finish(worker);
-        assertEquals("Download failed. Try again in a moment.", ShadowToast.getTextOfLatestToast());
+        assertEquals("The file couldn't be copied into your phone's gallery. Try again in a moment.",
+                ShadowToast.getTextOfLatestToast());
+        assertEquals(Downloader.Cause.GALLERY, SaveControl.lastCause());
         assertEquals("a terminal gallery failure fetched the fallback", 0, server.hits("/fallback.mp4"));
         assertEquals(1, gallery.updates);
         assertTrue(gallery.rows.isEmpty());

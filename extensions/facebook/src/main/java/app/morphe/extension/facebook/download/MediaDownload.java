@@ -637,10 +637,12 @@ public final class MediaDownload {
             List<DashManifest.Track> offered, DashManifest.Track writable, DownloadQuality quality,
             MediaStoreWriter writer, Downloader.Progress progress) {
         java.io.File folder = DashSave.workFolder(application);
-        if (folder == null) return Downloader.Result.fail(Downloader.Status.WRITE_ERROR, "no cache folder");
+        if (folder == null) {
+            return Downloader.Result.fail(Downloader.Status.WRITE_ERROR, Downloader.Cause.STORAGE, "no cache folder");
+        }
         java.io.File file = null;
         try {
-            file = java.io.File.createTempFile(kind.name().toLowerCase(Locale.US), ".part", folder);
+            file = DashSave.workFile(kind.name().toLowerCase(Locale.US), ".part", folder);
             Downloader.Result fetched = DashSave.fetchWork(url, kind, file, policyFor(application), cap(), progress);
             if (!fetched.ok()) return fetched;
             // A photo the CDN sent as AVIF goes to the gallery as a JPEG, like Facebook's own saves.
@@ -678,7 +680,10 @@ public final class MediaDownload {
             Downloader.Result saved = published.ok() && lower ? published.lower() : published;
             return refused ? saved.refused() : saved;
         } catch (Throwable t) {
-            return Downloader.Result.fail(Downloader.Status.WRITE_ERROR, "the cache could not hold the file");
+            // Only a work file that couldn't be made is known to be the storage's doing.
+            return Downloader.Result.fail(Downloader.Status.WRITE_ERROR,
+                t instanceof Downloader.StorageFailure ? Downloader.Cause.STORAGE : Downloader.Cause.UNKNOWN,
+                "the cache could not hold the file");
         } finally {
             DashSave.discard(file);
         }
@@ -1034,8 +1039,12 @@ public final class MediaDownload {
                     Downloader.Result result = job.run(writer, save);
                     boolean cancelled = result.status == Downloader.Status.CANCELLED;
                     if (result.ok() || cancelled) info(() -> "save finished: " + result);
-                    else failure(() -> "save finished: " + result, null);
-                    String text = message(application, result.status, writer.savedLocation(), result.lower);
+                    else {
+                        failure(() -> "save finished: " + result, null);
+                        save.failed(result.cause);
+                    }
+                    String text = message(application, result.status, result.cause, writer.savedLocation(),
+                        result.lower);
                     boolean refused = result.ok() && result.refused && !compatibleSaves();
                     boolean carded = result.ok() && SaveControl.showCompleted(save, writer, refused ? text : null);
                     if (refused) {
@@ -1084,9 +1093,11 @@ public final class MediaDownload {
 
     /**
      * What the toast at the end of a save says, in the phone's language. [lower] when the saved
-     * picture is below the best one Facebook offered within the quality setting.
+     * picture is below the best one Facebook offered within the quality setting. A save that failed
+     * says why from its [cause], and the plain answer when that isn't known.
      */
-    static String message(Context application, Downloader.Status status, String location, boolean lower) {
+    static String message(Context application, Downloader.Status status, Downloader.Cause cause, String location,
+            boolean lower) {
         switch (status) {
             case OK:
                 if (lower) {
@@ -1097,16 +1108,44 @@ public final class MediaDownload {
                 return location == null
                     ? L10n.t(application, "Saved to the gallery")
                     : L10n.f(application, "Saved to %1$s", L10n.isolate(location));
-            case EXPIRED:
-                return L10n.t(application, "Link expired. Reopen the item and try again.");
-            case REFUSED:
-                return L10n.t(application, "Not saved: that isn't a Facebook photo or video");
-            case TOO_LARGE:
-                return L10n.t(application, "Not saved: the file is over 512 MB");
             case CANCELLED:
                 return L10n.t(application, "Save canceled");
             default:
-                return L10n.t(application, "Download failed. Try again in a moment.");
+                String why = failureText(application, cause);
+                return why != null ? why : L10n.t(application, "Download failed. Try again in a moment.");
+        }
+    }
+
+    /**
+     * Why a save failed and what to do about it, for the toast at its end and for the last save in
+     * the settings, or null when [cause] says nothing more than that it failed. Two lines at most,
+     * since Android 12 cuts a toast there. Never worked out from a result's reason text.
+     */
+    static String failureText(Context application, Downloader.Cause cause) {
+        if (cause == null) return null;
+        switch (cause) {
+            case NETWORK:
+                return L10n.t(application, "The connection failed. Check your internet and try again.");
+            case EXPIRED:
+                return L10n.t(application, "Link expired. Reopen the item and try again.");
+            case SERVER:
+                return L10n.t(application, "Facebook's server didn't send the file. Try again in a moment.");
+            case NOT_MEDIA:
+                return L10n.t(application, "Not saved: that isn't a Facebook photo or video");
+            case TOO_LARGE:
+                return L10n.t(application, "Not saved: the file is over 512 MB");
+            case INCOMPLETE:
+                return L10n.t(application, "The download ended before the whole file arrived. Try again.");
+            case STORAGE:
+                return L10n.t(application, "Your phone couldn't write the file. Check your free space and try again.");
+            case NO_SPACE:
+                return L10n.t(application, "Not enough free space to save this. Free some up and try again.");
+            case CONVERSION:
+                return L10n.t(application, "Your phone couldn't put this video together. Try another Download quality.");
+            case GALLERY:
+                return L10n.t(application, "The file couldn't be copied into your phone's gallery. Try again in a moment.");
+            default:
+                return null;
         }
     }
 

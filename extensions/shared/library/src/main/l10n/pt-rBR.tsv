@@ -1351,3 +1351,17 @@ Puts every feature switch but Lock Facebook back the way it started.	Volta cada 
 Changed %1$d setting	%1$d configuração alterada
 # context: the same toast for none, or for two or more
 Changed %1$d settings	%1$d configurações alteradas
+# context: toast and Last save row: a save failed for want of a connection
+The connection failed. Check your internet and try again.	A conexão falhou. Confira sua internet e tente de novo.
+# context: toast and Last save row: the server answered a save with an error, not the file
+Facebook's server didn't send the file. Try again in a moment.	O servidor do Facebook não enviou o arquivo. Tente de novo em instantes.
+# context: toast and Last save row: the file a save fetched came empty or cut short
+The download ended before the whole file arrived. Try again.	O download terminou antes de o arquivo chegar inteiro. Tente de novo.
+# context: toast and Last save row: a save's work file couldn't be written, for a reason the phone didn't give
+Your phone couldn't write the file. Check your free space and try again.	Seu celular não conseguiu gravar o arquivo. Confira o espaço livre e tente de novo.
+# context: toast and Last save row: the phone was measured and has too little free space for a save
+Not enough free space to save this. Free some up and try again.	Não há espaço livre suficiente para salvar isto. Libere um pouco e tente de novo.
+# context: toast and Last save row: a video's picture and sound couldn't be converted or joined; Download quality is the setting's name
+Your phone couldn't put this video together. Try another Download quality.	Seu celular não conseguiu montar este vídeo. Tente outra Qualidade do download.
+# context: toast and Last save row: the gallery refused a finished photo or video
+The file couldn't be copied into your phone's gallery. Try again in a moment.	Não deu para copiar o arquivo para a galeria do celular. Tente de novo em instantes.

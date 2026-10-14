@@ -10,6 +10,10 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** The release receipt records what each native library says about 16 KB pages in separate parts now (ZIP offsets, LOAD segments and RELRO ends, each library with its hash). It used to keep one flag that only spoke for the ZIP.
 * **Facebook:** The `Support Hushfacebook` row at the bottom of settings is just its name now. The "Buy me a coffee on Ko-fi" line under it is gone, and a tap still opens the Ko-fi page.
 
+### Fixed
+
+* **Facebook:** A save that fails now says why. The toast and the `Last save` row under Downloads used to give the same "try again" whatever went wrong. No connection, an expired link, a download cut short, too little free space, a video the phone couldn't put together and a gallery that wouldn't take the file each get their own message now. Anything else still gets the plain "Download failed" one.
+
 ## 0.12.0 (2026-10-13)
 
 * **Facebook:** This release gathers everything since v0.11.0 and still brings 88 patches for Facebook 582.0.0.50.54. New switches leave calls and chat notifications to Messenger, keep the top bar and the tab bar on screen while you scroll, let a tap on a reel's progress bar seek, and take Muse out of the share sheet. The settings home page gets Quick setups and a Report a problem row, and a setting that needs a restart now shows a row that restarts Facebook and brings you back to the same page. You can name the patched app when you patch, and `Pick an app icon` opens Facebook's App icon page on accounts where Facebook doesn't list it. The kept progress bar shows on every reel and stays where you drag it, and the Reported issues list below maps each report this release touches.

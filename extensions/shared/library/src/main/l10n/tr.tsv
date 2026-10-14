@@ -1459,3 +1459,17 @@ Puts every feature switch but Lock Facebook back the way it started.	Facebook'u 
 Changed %1$d setting	%1$d ayar değiştirildi
 # context: the same toast for none, or for two or more
 Changed %1$d settings	%1$d ayar değiştirildi
+# context: toast and Last save row: a save failed for want of a connection
+The connection failed. Check your internet and try again.	Bağlantı başarısız oldu. İnternetini kontrol edip tekrar dene.
+# context: toast and Last save row: the server answered a save with an error, not the file
+Facebook's server didn't send the file. Try again in a moment.	Facebook'un sunucusu dosyayı göndermedi. Birazdan tekrar dene.
+# context: toast and Last save row: the file a save fetched came empty or cut short
+The download ended before the whole file arrived. Try again.	İndirme, dosyanın tamamı gelmeden bitti. Tekrar dene.
+# context: toast and Last save row: a save's work file couldn't be written, for a reason the phone didn't give
+Your phone couldn't write the file. Check your free space and try again.	Telefonun dosyayı yazamadı. Boş alanını kontrol edip tekrar dene.
+# context: toast and Last save row: the phone was measured and has too little free space for a save
+Not enough free space to save this. Free some up and try again.	Bunu kaydetmek için yeterli boş alan yok. Biraz yer açıp tekrar dene.
+# context: toast and Last save row: a video's picture and sound couldn't be converted or joined; Download quality is the setting's name
+Your phone couldn't put this video together. Try another Download quality.	Telefonun bu videoyu birleştiremedi. Başka bir İndirme kalitesi dene.
+# context: toast and Last save row: the gallery refused a finished photo or video
+The file couldn't be copied into your phone's gallery. Try again in a moment.	Dosya telefonunun galerisine kopyalanamadı. Birazdan tekrar dene.
