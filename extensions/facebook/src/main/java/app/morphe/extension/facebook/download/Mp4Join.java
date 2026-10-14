@@ -907,7 +907,8 @@ final class Mp4Join {
         }
         out.full(STSC, 0, 0).u32(stsc.size / 3).ints(stsc).end();
 
-        boolean uniform = true;
+        // A shared size of 0 would say every size follows in a table, so empty samples get the table.
+        boolean uniform = count > 0 && track.sizes.get(0) != 0;
         for (int i = 1; i < count && uniform; i++) uniform = track.sizes.get(i) == track.sizes.get(0);
         out.full(STSZ, 0, 0);
         if (uniform) {
