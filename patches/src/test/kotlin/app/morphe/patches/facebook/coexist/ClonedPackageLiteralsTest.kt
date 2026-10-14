@@ -22,7 +22,11 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction10x
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction21c
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction31c
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction31i
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction35c
+import com.android.tools.smali.dexlib2.immutable.reference.ImmutableMethodReference
 import com.android.tools.smali.dexlib2.immutable.reference.ImmutableStringReference
+import com.android.tools.smali.dexlib2.immutable.reference.ImmutableTypeReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -104,15 +108,75 @@ class ClonedPackageLiteralsTest {
             context.mutableClassDefBy(extension).methods.single().instructions().size)
     }
 
-    /** The call the patch writes is a public static method of the payload, moving names under Facebook's package. */
+    /** The calls the patch writes are public static methods of the payload, moving names under Facebook's package. */
     @Test
     fun theExtensionDeclaresTheCall() {
-        val type = AUTHORITY_CALL.substringBefore("->")
-        val call = AUTHORITY_CALL.substringAfter("->")
-        val declared = ExtensionDex.classDef(type).methods.filter {
-            AccessFlags.PUBLIC.isSet(it.accessFlags) && AccessFlags.STATIC.isSet(it.accessFlags)
-        }.map { "${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" }
-        assertTrue("the extension declares no public static $call: $declared", call in declared)
-        assertEquals(AppCompatibilities.FACEBOOK_PACKAGE, ExtensionDex.stringConstant(type, "FACEBOOK"))
+        for (written in listOf(AUTHORITY_CALL, PACKAGE_CALL)) {
+            val type = written.substringBefore("->")
+            val call = written.substringAfter("->")
+            val declared = ExtensionDex.classDef(type).methods.filter {
+                AccessFlags.PUBLIC.isSet(it.accessFlags) && AccessFlags.STATIC.isSet(it.accessFlags)
+            }.map { "${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" }
+            assertTrue("the extension declares no public static $call: $declared", call in declared)
+            assertEquals(AppCompatibilities.FACEBOOK_PACKAGE, ExtensionDex.stringConstant(type, "FACEBOOK"))
+        }
+    }
+
+    private fun remoteViews(register: Int): Instruction =
+        ImmutableInstruction21c(Opcode.NEW_INSTANCE, register, ImmutableTypeReference("Landroid/widget/RemoteViews;"))
+
+    private fun build(views: Int, packageName: Int, layout: Int): Instruction = ImmutableInstruction35c(
+        Opcode.INVOKE_DIRECT, 3, views, packageName, layout, 0, 0,
+        ImmutableMethodReference("Landroid/widget/RemoteViews;", "<init>", listOf("Ljava/lang/String;", "I"), "V"),
+    )
+
+    /**
+     * A notification template's RemoteViews built from Facebook's package name spelled out takes the
+     * running app's instead (#36), a name two views share included. A load anything else reads, such
+     * as a comparison with another package, and the extension's own classes are left alone.
+     */
+    @Test
+    fun aNotificationsViewsBuiltFromFacebooksNameGoThroughTheExtension() {
+        val template = "Lcom/example/NotificationTemplate;"
+        val extension = PACKAGE_CALL.substringBefore("->")
+        val equals = ImmutableMethodReference("Ljava/lang/String;", "equals", listOf("Ljava/lang/Object;"), "Z")
+        val context = PatchContexts.of(
+            listOf(
+                classDef(template, method(template, 20,
+                    load(1, facebook),
+                    ImmutableInstruction31i(Opcode.CONST, 0, 0x7f0e0042),
+                    remoteViews(2),
+                    build(2, 1, 0),
+                    load(3, facebook),
+                    ImmutableInstruction35c(Opcode.INVOKE_VIRTUAL, 2, 3, 4, 0, 0, 0, equals),
+                    load(5, facebook),
+                    remoteViews(6),
+                    build(6, 5, 0),
+                    remoteViews(7),
+                    build(7, 5, 0),
+                    load(8, "com.facebook.orca"),
+                    remoteViews(9),
+                    build(9, 8, 0),
+                    ImmutableInstruction10x(Opcode.RETURN_VOID))),
+                classDef(extension, method(extension, 3,
+                    load(1, facebook), remoteViews(2), build(2, 1, 0), ImmutableInstruction10x(Opcode.RETURN_VOID))),
+            ),
+        )
+
+        assertEquals(2, context.routeRemoteViewsPackage(facebook))
+
+        val routed = context.mutableClassDefBy(template).methods.single().instructions()
+        assertEquals(19, routed.size)
+        for ((index, register) in listOf(0 to 1, 8 to 5)) {
+            assertEquals(facebook, routed[index].literal())
+            val call = routed[index + 1]
+            assertEquals(PACKAGE_CALL, (call as ReferenceInstruction).reference.toString())
+            assertEquals(register to 1, (call as RegisterRangeInstruction).startRegister to call.registerCount)
+            assertEquals(Opcode.MOVE_RESULT_OBJECT, routed[index + 2].opcode)
+            assertEquals(register, (routed[index + 2] as OneRegisterInstruction).registerA)
+        }
+        assertEquals("the compared load was routed", Opcode.INVOKE_VIRTUAL, routed[7].opcode)
+        assertEquals("the extension's literal was routed", 4,
+            context.mutableClassDefBy(extension).methods.single().instructions().size)
     }
 }

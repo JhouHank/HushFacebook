@@ -9,8 +9,10 @@ import app.morphe.PatchContexts
 import app.morphe.patches.facebook.feed.FixtureDex
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.apksig.internal.apk.AndroidBinXmlParser
+import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -370,6 +372,54 @@ class SharedPermissionsFixtureTest {
         assertEquals("a declared build has no fixture", versions, checked)
     }
 
+    /**
+     * Each declared build's notification templates that build RemoteViews from Facebook's package
+     * spelled out hand it to the extension first (#36), and afterwards no RemoteViews in those
+     * classes is built straight from the literal: the nearest load of its package register is the
+     * extension's answer or something other than Facebook's name.
+     */
+    @Test
+    fun eachDeclaredBuildsNotificationViewsTakeTheRunningPackage() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val holders = FixtureDex.classesHolding(bundle, FACEBOOK)
+                val context = PatchContexts.of(holders)
+                assertEquals("${bundle.name}: RemoteViews package loads routed", REMOTE_VIEWS_LOADS.getValue(version),
+                    context.routeRemoteViewsPackage(FACEBOOK))
+
+                var built = 0
+                for (before in holders) {
+                    val after = context.mutableClassDefBy(before.type).methods
+                    for (original in before.methods) {
+                        val now = after.single { it.sameSignatureAs(original) }.instructions()
+                        val where = "${bundle.name}: ${original.definingClass}->${original.name}"
+                        now.withIndex().filter { (_, it) ->
+                            it.opcode == Opcode.INVOKE_DIRECT &&
+                                (it as ReferenceInstruction).reference.toString() == REMOTE_VIEWS_INIT
+                        }.forEach { (index, init) ->
+                            val register = (init as FiveRegisterInstruction).registerD
+                            val loadAt = (index - 1 downTo 0).firstOrNull { at ->
+                                val it = now[at]
+                                (it.opcode == Opcode.CONST_STRING || it.opcode == Opcode.CONST_STRING_JUMBO ||
+                                    it.opcode == Opcode.MOVE_RESULT_OBJECT) && (it as OneRegisterInstruction).registerA == register
+                            } ?: return@forEach
+                            val load = now[loadAt]
+                            val literal = ((load as? ReferenceInstruction)?.reference as? StringReference)?.string
+                            assertTrue("$where at $index: RemoteViews still built from $FACEBOOK", literal != FACEBOOK)
+                            if (load.opcode == Opcode.MOVE_RESULT_OBJECT &&
+                                (now.getOrNull(loadAt - 1) as? ReferenceInstruction)?.reference?.toString() == PACKAGE_CALL) built++
+                        }
+                    }
+                }
+                assertTrue("${bundle.name}: no RemoteViews takes the routed package", built >= REMOTE_VIEWS_LOADS.getValue(version))
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
     private fun Document.authorities(): List<String> =
         elements("provider").flatMap { it.getAttribute("android:authorities").split(';') }
 
@@ -381,5 +431,11 @@ class SharedPermissionsFixtureTest {
 
         /** Loads of an own authority per build, counted off the fixtures with a separate dex scan. */
         val AUTHORITY_LOADS = mapOf("582.0.0.50.54" to 13)
+
+        /**
+         * Loads of Facebook's package that only build RemoteViews, per build: the 14 notification
+         * template sites a dump of the arm64 582 dex showed (2026-10-14).
+         */
+        val REMOTE_VIEWS_LOADS = mapOf("582.0.0.50.54" to 14)
     }
 }

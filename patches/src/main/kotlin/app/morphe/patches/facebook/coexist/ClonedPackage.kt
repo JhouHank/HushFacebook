@@ -5,12 +5,23 @@
 package app.morphe.patches.facebook.coexist
 
 import app.morphe.patcher.StringComparisonType
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patches.facebook.chats.jumpTargets
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.patchLog
+import app.morphe.util.readsAfter
+import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import org.w3c.dom.Attr
 import org.w3c.dom.Document
 import org.w3c.dom.Element
@@ -176,6 +187,76 @@ internal fun BytecodePatchContext.routeOwnAuthorities(packageName: String, autho
     }
 }
 
+/*
+ * Facebook's rich notification templates build their RemoteViews with the package spelled out,
+ * new RemoteViews("com.facebook.katana", layout), 14 times in 582. RemoteViews takes its layouts
+ * from that package, so in a clone a notification either named an app that isn't installed, which
+ * throws, or the Facebook it was cloned from, whose layout ids aren't the clone's, and Android
+ * refused it as a bad notification and closed the clone (#36). Each of those loads is handed to the
+ * extension, which answers the running package.
+ */
+
+/** The call Facebook's package name goes through where it's loaded only to build RemoteViews. */
+internal const val PACKAGE_CALL =
+    "$EXTENSION_PACKAGE/coexist/OwnAuthorities;->packageName(Ljava/lang/String;)Ljava/lang/String;"
+
+internal const val REMOTE_VIEWS_INIT = "Landroid/widget/RemoteViews;-><init>(Ljava/lang/String;I)V"
+
+/** Whether [instruction] builds a RemoteViews from the package name in [register] and reads it for nothing else. */
+private fun buildsRemoteViewsOf(instruction: Instruction, register: Int): Boolean {
+    if (instruction.opcode != Opcode.INVOKE_DIRECT) return false
+    if (((instruction as ReferenceInstruction).reference as? MethodReference)?.toString() != REMOTE_VIEWS_INIT) return false
+    val call = instruction as FiveRegisterInstruction
+    return call.registerD == register && call.registerC != register && call.registerE != register
+}
+
+/**
+ * Where [this] loads [packageName] as a literal only to build RemoteViews with it: the index of each
+ * const-string whose value reaches nothing but RemoteViews(String, int)'s package before its register
+ * is written again. A load something jumps in right after is left out, since the jump would pass
+ * the call that goes there, and so is a value anything else reads.
+ */
+internal fun Method.remoteViewsPackageLoads(packageName: String): List<Int> {
+    val code = implementation?.instructions?.toList() ?: return emptyList()
+    val loads = code.indices.filter { code[it].loadedString() == packageName }
+    if (loads.isEmpty()) return emptyList()
+    val targets = jumpTargets(code)
+    return loads.filter { at ->
+        val register = (code[at] as OneRegisterInstruction).registerA
+        if (at + 1 in targets || register > 255) return@filter false
+        val reads = readsAfter(at, register)
+        reads.isNotEmpty() && reads.all { buildsRemoteViewsOf(code[it], register) }
+    }
+}
+
+/**
+ * Hands every load of [packageName] that only builds RemoteViews to the extension, which answers
+ * the running app's package. Answers how many it handed over. The extension is left alone.
+ */
+internal fun BytecodePatchContext.routeRemoteViewsPackage(packageName: String): Int {
+    val owners = classDefByStrings(packageName, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_ROOT) }
+        .filter { owner -> owner.methods.any { it.remoteViewsPackageLoads(packageName).isNotEmpty() } }
+        .map { it.type }
+        .distinct()
+    return owners.sumOf { type ->
+        mutableClassDefBy(type).methods.sumOf { method ->
+            val loads = method.remoteViewsPackageLoads(packageName)
+            loads.asReversed().forEach { at ->
+                val register = method.getInstruction<OneRegisterInstruction>(at).registerA
+                method.addInstructions(
+                    at + 1,
+                    """
+                        invoke-static/range { v$register .. v$register }, $PACKAGE_CALL
+                        move-result-object v$register
+                    """,
+                )
+            }
+            loads.size
+        }
+    }
+}
+
 /** The stock app's own authorities and permissions, read before anything renames the package. */
 private var stockAuthorities: Set<String> = emptySet()
 private var stockPermissions: Set<String> = emptySet()
@@ -210,5 +291,6 @@ internal val clonedPackagePatch = bytecodePatch {
 
     execute {
         routeOwnAuthorities(packageMetadata.packageName, stockAuthorities)
+        routeRemoteViewsPackage(packageMetadata.packageName)
     }
 }
