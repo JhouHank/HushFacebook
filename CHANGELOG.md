@@ -33,6 +33,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** With `Default comment order` on All comments, a post's comments that come back as Most relevant or Newest after a refresh get All comments picked again (#110). The first pick held, but a reload Facebook built from the post's first request came back in its own order with nothing to pick it. It's picked once per answer, so a post where Facebook won't give All comments isn't asked over and over. A link to one comment still opens in Facebook's own view.
 * **Facebook:** `Keep the top bar on screen` now keeps the bar from fading out too. Facebook fades the top bar as it scrolls away on some phones and accounts, and only the slide was held before, so the bar could stay put and still disappear.
 * **Facebook:** With `Picture-in-picture` on, opening a Facebook link, a notification or a settings shortcut while a reel floats in its window brings Facebook back full screen on that page. The page used to open inside the little window and stay there until you tapped the app icon.
+* **Facebook:** `Hide link posts` hides website links on 582. Facebook sends their preview card with a template style first and the plain link style second, and only the first one was checked, so these posts stayed in Home. A post goes now when its card lists the link style anywhere and the link leads off Facebook. Shared events and shared reels stay, and so does a photo post with a web address typed in its text.
 
 ## 0.12.0 (2026-10-13)
 
