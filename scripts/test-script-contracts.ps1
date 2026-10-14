@@ -8233,6 +8233,384 @@ try {
 
 Write-Host '[scripts] release stage contracts passed'
 
+# --- fuzz-parsers.ps1 ------------------------------------------------------------------------
+#
+# The parser fuzzer keeps what a run found for the next one, leaves a record of every run, clean or
+# not, and runs only between 19:00 and 07:00. Each case runs the real script on a root of its own,
+# holding the three sources its shims copy, against stand-ins for its tools, so nothing compiles or
+# fuzzes. One small program, built here with the .NET Framework's C# compiler since the script
+# looks for jazzer.exe and javac.exe by name, plays each tool by the name it's copied to. java
+# answers -version and writes one seed a target. javac does nothing. Jazzer answers --version,
+# notes each run's target, seed and starting corpus in calls.log, and does what mode.txt names for
+# that target: by default a clean run that adds one input named by its SHA-1, the way libFuzzer
+# names them, then finding (a crash), fail (an error and no crash) or, for the planted-bug check,
+# miss. Without one the check finds its bug.
+
+$fuzzScript = Join-Path $Root 'scripts/fuzz-parsers.ps1'
+$fuzzCases = [System.IO.Path]::GetFullPath((Join-Path ([System.IO.Path]::GetTempPath()) `
+    ('hushfacebook-fuzzcases-' + [guid]::NewGuid().ToString('N'))))
+$fuzzJdk = Join-Path $fuzzCases 'tools/jdk'
+$fuzzJazzerHome = Join-Path $fuzzCases 'tools/jazzer'
+$fuzzCalls = Join-Path $fuzzJazzerHome 'calls.log'
+$fuzzMode = Join-Path $fuzzJazzerHome 'mode.txt'
+$fuzzSha1 = [System.Security.Cryptography.SHA1]::Create()
+$fuzzLinks = @()
+function Get-FuzzSha1([byte[]]$Bytes) {
+    return [System.BitConverter]::ToString($fuzzSha1.ComputeHash($Bytes)).Replace('-', '').ToLowerInvariant()
+}
+function New-FuzzCaseRoot([string]$Name) {
+    $caseRoot = Join-Path $fuzzCases $Name
+    $download = Join-Path $caseRoot 'extensions/facebook/src/main/java/app/morphe/extension/facebook/download'
+    New-Item -ItemType Directory -Force -Path $download | Out-Null
+    foreach ($source in 'Downloader.java', 'VideoTranscode.java', 'AacReencode.java') {
+        Copy-Item -LiteralPath (Join-Path $Root "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/$source") -Destination $download
+    }
+    return $caseRoot
+}
+function Invoke-FuzzCase {
+    # The script on [CaseRoot] at 21:00 unless [With] says otherwise, answering its exit code.
+    # calls.log starts empty, and mode.txt holds [Mode].
+    param([string]$CaseRoot, [string[]]$Mode = @(), [hashtable]$With = @{})
+    Remove-Item -LiteralPath $fuzzCalls -Force -ErrorAction SilentlyContinue
+    [System.IO.File]::WriteAllText($fuzzMode, ($Mode -join "`n"))
+    $arguments = @{ Root = $CaseRoot; Java = $fuzzJdk; Jazzer = $fuzzJazzerHome; Seconds = 10; SelfCheckSeconds = 10
+        Now = [datetime]'2026-10-13T21:00:00' }
+    foreach ($key in $With.Keys) { $arguments[$key] = $With[$key] }
+    $global:LASTEXITCODE = 0
+    $null = & $fuzzScript @arguments 6> $null 3> $null
+    return $LASTEXITCODE
+}
+function Read-FuzzCalls([string]$Target) {
+    if (-not (Test-Path -LiteralPath $fuzzCalls -PathType Leaf)) { return }
+    [System.IO.File]::ReadAllLines($fuzzCalls) | Where-Object { $_ -like "$Target *" }
+}
+function Read-FuzzRecord([string]$CaseRoot, [string]$Target) {
+    # The newest run record of [Target].
+    $newest = Get-ChildItem -LiteralPath (Join-Path $CaseRoot 'build/fuzz/runs') -File -Filter "*-$Target.json" |
+        Sort-Object Name | Select-Object -Last 1
+    return (Get-Content -LiteralPath $newest.FullName -Raw | ConvertFrom-Json)
+}
+
+try {
+    New-Item -ItemType Directory -Force -Path (Join-Path $fuzzJdk 'bin'), $fuzzJazzerHome | Out-Null
+    $csc = @('Framework64', 'Framework') | ForEach-Object { Join-Path $env:WINDIR "Microsoft.NET/$_/v4.0.30319/csc.exe" } |
+        Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
+    Assert-True ([bool]$csc) "The fuzz runner's cases build their tool stand-ins with the .NET Framework's csc.exe, and there's none under $env:WINDIR\Microsoft.NET."
+    $standInSource = Join-Path $fuzzCases 'tools/stand-in.cs'
+    $standIn = Join-Path $fuzzCases 'tools/stand-in.exe'
+    [System.IO.File]::WriteAllText($standInSource, @'
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Security.Cryptography;
+using System.Text;
+
+static class FuzzStandIn {
+    static readonly string Here = AppDomain.CurrentDomain.BaseDirectory;
+
+    static string Value(string[] args, string name) {
+        foreach (string arg in args) {
+            if (arg.StartsWith(name + "=", StringComparison.Ordinal)) return arg.Substring(name.Length + 1);
+        }
+        return null;
+    }
+
+    static string Sha1(byte[] data) {
+        using (SHA1 sha = SHA1.Create()) return BitConverter.ToString(sha.ComputeHash(data)).Replace("-", "").ToLowerInvariant();
+    }
+
+    static string Mode(string target) {
+        string file = Path.Combine(Here, "mode.txt");
+        if (File.Exists(file)) {
+            foreach (string line in File.ReadAllLines(file)) {
+                if (line.StartsWith(target + "=", StringComparison.Ordinal)) return line.Substring(target.Length + 1);
+            }
+        }
+        return "clean";
+    }
+
+    static int Main(string[] args) {
+        string tool = Path.GetFileNameWithoutExtension(System.Reflection.Assembly.GetEntryAssembly().Location).ToLowerInvariant();
+        if (tool == "javac") return 0;
+        if (tool == "java") {
+            if (args.Length > 0 && args[0] == "-version") { Console.WriteLine("openjdk version \"21.0.5\" 2024-10-15"); return 0; }
+            if (args.Length < 4 || !args[2].EndsWith(".ParserFuzzSeeds", StringComparison.Ordinal)) return 9;
+            foreach (string target in new string[] { "dash", "mp4", "faulty" }) {
+                string folder = Path.Combine(args[3], target);
+                Directory.CreateDirectory(folder);
+                File.WriteAllText(Path.Combine(folder, "seed-" + target), "a seed for " + target);
+            }
+            return 0;
+        }
+        if (args.Length == 1 && args[0] == "--version") { Console.WriteLine("Jazzer v9.9.9"); return 0; }
+        string targetClass = Value(args, "--target_class") ?? "";
+        string name = targetClass.EndsWith(".FaultyBoxFuzz") ? "faulty" : targetClass.EndsWith(".DashManifestFuzz") ? "dash"
+            : targetClass.EndsWith(".Mp4JoinFuzz") ? "mp4" : "unknown";
+        string corpus = args[args.Length - 1];
+        if (Value(args, "-minimize_crash") == "1") {
+            File.WriteAllText(Value(args, "-exact_artifact_path"), "minimized");
+            File.AppendAllText(Path.Combine(Here, "calls.log"), "minimize " + name + "\n");
+            return 0;
+        }
+        List<string> names = new List<string>();
+        foreach (string file in Directory.GetFiles(corpus)) names.Add(Path.GetFileName(file));
+        names.Sort(StringComparer.Ordinal);
+        string seed = Value(args, "-seed");
+        File.AppendAllText(Path.Combine(Here, "calls.log"), name + " seed=" + seed + " corpus=" + string.Join(",", names.ToArray()) + "\n");
+        string mode = Mode(name);
+        if ((name == "faulty" && mode != "miss") || mode == "finding") {
+            File.WriteAllText(Value(args, "-artifact_prefix") + "crash-" + Sha1(Encoding.ASCII.GetBytes(name)), "a crash in " + name);
+            Console.WriteLine("== Java Exception: java.lang.IllegalStateException: found in " + name);
+            return 77;
+        }
+        if (mode == "fail") { Console.WriteLine("ERROR: the stand-in failed on purpose"); return 3; }
+        if (name != "faulty") {
+            byte[] input = Encoding.ASCII.GetBytes(name + " " + Guid.NewGuid().ToString("N"));
+            File.WriteAllBytes(Path.Combine(corpus, Sha1(input)), input);
+        }
+        Console.WriteLine("INFO: Seed: " + seed);
+        Console.WriteLine("#2\tINITED cov: 10 ft: 20 corp: 2/64b exec/s: 0 rss: 100Mb");
+        Console.WriteLine("#1234\tDONE   cov: 42 ft: 84 corp: 3/96b lim: 64 exec/s: 617 rss: 101Mb");
+        Console.WriteLine("Done 1234 runs in 2 second(s)");
+        Console.WriteLine("stat::number_of_executed_units: 1234");
+        Console.WriteLine("stat::average_exec_per_sec:     617");
+        Console.WriteLine("stat::new_units_added:          1");
+        Console.WriteLine("stat::peak_rss_mb:              101");
+        return 0;
+    }
+}
+'@)
+    $built = & $csc /nologo /target:exe "/out:$standIn" $standInSource
+    Assert-True ($LASTEXITCODE -eq 0) "csc couldn't build the fuzz runner's tool stand-ins: $($built -join ' ')"
+    foreach ($copy in (Join-Path $fuzzJdk 'bin/java.exe'), (Join-Path $fuzzJdk 'bin/javac.exe'), (Join-Path $fuzzJazzerHome 'jazzer.exe')) {
+        Copy-Item -LiteralPath $standIn -Destination $copy
+    }
+    [System.IO.File]::WriteAllText((Join-Path $fuzzJazzerHome 'jazzer_standalone.jar'), '')
+    $null = @(Read-QueueLog)
+
+    # Two runs: the second starts from what the first kept, but not from a file whose bytes don't
+    # match its name (what a run killed mid-write leaves) or one Jazzer didn't name.
+    $reuseRoot = New-FuzzCaseRoot 'reuse'
+    $keptDash = Join-Path $reuseRoot 'build/fuzz/corpus/dash'
+    Assert-True ((Invoke-FuzzCase $reuseRoot -With @{ Target = 'dash' }) -eq 0) 'A clean fuzz run did not exit 0.'
+    Assert-True (@(Read-QueueLog) -contains 'hushfacebook parser fuzzing') 'A fuzz run did not go through the build queue.'
+    $firstKept = @(Get-ChildItem -LiteralPath $keptDash -File | ForEach-Object { $_.Name })
+    Assert-True ($firstKept.Count -eq 1 -and $firstKept[0] -cmatch '\A[0-9a-f]{40}\z') `
+        "A clean fuzz run did not keep the one input Jazzer added: $($firstKept -join ', ')"
+    $torn = Join-Path $keptDash ('0' * 40)
+    $stray = Join-Path $keptDash 'notes.txt'
+    [System.IO.File]::WriteAllText($torn, 'not the bytes this name is the hash of')
+    [System.IO.File]::WriteAllText($stray, 'not an input Jazzer kept')
+    Assert-True ((Invoke-FuzzCase $reuseRoot -With @{ Target = 'dash' }) -eq 0) 'A second clean fuzz run did not exit 0.'
+    $secondCall = @(Read-FuzzCalls 'dash')
+    Assert-True ($secondCall.Count -eq 1 -and $secondCall[0] -like "*corpus=*$($firstKept[0])*" -and $secondCall[0] -like '*seed-dash*') `
+        "The second fuzz run did not start from the input the first one kept and the seeds: $secondCall"
+    Assert-True ($secondCall[0] -notlike "*$('0' * 40)*" -and $secondCall[0] -notlike '*notes.txt*') `
+        "A fuzz run started from a kept file that isn't an input named by its SHA-1: $secondCall"
+    $secondKept = @(Get-ChildItem -LiteralPath $keptDash -File | ForEach-Object { $_.Name })
+    Assert-True ($secondKept.Count -eq 2 -and $secondKept -contains $firstKept[0] -and
+        -not (Test-Path -LiteralPath $torn) -and -not (Test-Path -LiteralPath $stray)) `
+        "The kept corpus after two runs isn't both runs' inputs alone: $($secondKept -join ', ')"
+    # The planted-bug check starts from its seeds every time, and keeps nothing.
+    Assert-True ((@(Read-FuzzCalls 'faulty') -join '|') -like '*corpus=seed-faulty' -and
+        -not (Test-Path -LiteralPath (Join-Path $reuseRoot 'build/fuzz/corpus/faulty'))) `
+        "The fuzzer's planted-bug check started from or kept more than its seeds: $(@(Read-FuzzCalls 'faulty'))"
+
+    # A clean run leaves its record and its log, and its empty findings folder goes as before.
+    $evidenceRoot = New-FuzzCaseRoot 'evidence'
+    & git -C $evidenceRoot init --quiet
+    & git -C $evidenceRoot add -A
+    & git -C $evidenceRoot -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -m fixture
+    $evidenceCommit = (& git -C $evidenceRoot rev-parse HEAD).Trim()
+    Assert-True ((Invoke-FuzzCase $evidenceRoot -With @{ Target = 'mp4'; Seed = 4242 }) -eq 0) 'A clean fuzz run with a set seed did not exit 0.'
+    $evidenceRuns = Join-Path $evidenceRoot 'build/fuzz/runs'
+    $evidenceFiles = @(Get-ChildItem -LiteralPath $evidenceRuns -File | ForEach-Object { $_.Name } | Sort-Object)
+    Assert-True ($evidenceFiles.Count -eq 4 -and @($evidenceFiles -like '*-faulty.json').Count -eq 1 -and @($evidenceFiles -like '*-faulty.log').Count -eq 1 -and
+        @($evidenceFiles -like '*-mp4.json').Count -eq 1 -and @($evidenceFiles -like '*-mp4.log').Count -eq 1) `
+        "A clean fuzz run did not leave a record and a log for the check and the target: $($evidenceFiles -join ', ')"
+    $evidence = Read-FuzzRecord $evidenceRoot 'mp4'
+    Assert-True ($evidence.target -eq 'mp4' -and $evidence.seed -eq 4242 -and $evidence.jazzer.version -eq '9.9.9' -and
+        $evidence.jdk.version -eq '21.0.5' -and $evidence.commit -eq $evidenceCommit) `
+        "A clean run's record has the wrong target, seed, tool versions or commit: $($evidence | ConvertTo-Json -Depth 6 -Compress)"
+    Assert-True ($evidence.requestedSeconds -eq 10 -and $evidence.actualSeconds -ge 0 -and $evidence.executions -eq 1234 -and
+        $evidence.execPerSecond -eq 617 -and $evidence.coverage.edges -eq 42 -and $evidence.coverage.features -eq 84 -and
+        $evidence.exitReason -eq 'clean' -and @($evidence.findings).Count -eq 0) `
+        "A clean run's record has the wrong duration, executions, coverage or exit reason: $($evidence | ConvertTo-Json -Depth 6 -Compress)"
+    Assert-True ($evidence.corpus.seeds -eq 1 -and $evidence.corpus.keptBefore -eq 0 -and $evidence.corpus.added -eq 1 -and
+        $evidence.corpus.keptAfter -eq 1 -and $evidence.corpus.keptBytesAfter -gt 0) `
+        "A clean run's record has the wrong corpus sizes: $($evidence.corpus | ConvertTo-Json -Compress)"
+    Assert-True (([datetime]$evidence.window.start) -eq [datetime]'2026-10-13T19:00:00' -and
+        ([datetime]$evidence.window.end) -eq [datetime]'2026-10-14T07:00:00' -and $evidence.allowDaytime -eq $false) `
+        "A clean run's record has the wrong off-hours window: $($evidence.window | ConvertTo-Json -Compress)"
+    $evidenceLog = Join-Path $evidenceRuns $evidence.log
+    Assert-True ((Test-Path -LiteralPath $evidenceLog -PathType Leaf) -and ([System.IO.File]::ReadAllText($evidenceLog)) -like '*DONE*cov: 42*') `
+        "A clean run's log did not survive beside its record: $evidenceLog"
+    Assert-True ((Read-FuzzRecord $evidenceRoot 'faulty').exitReason -eq 'planted-bug-found') `
+        "The planted-bug check's record does not say it found the bug."
+    $evidenceLeft = @(Get-ChildItem -LiteralPath (Join-Path $evidenceRoot 'build/fuzz') -Directory | ForEach-Object { $_.Name } | Sort-Object)
+    Assert-True (($evidenceLeft -join ',') -eq 'corpus,runs') "A clean fuzz run left a findings folder: $($evidenceLeft -join ', ')"
+
+    # The bounds remove the oldest: by bytes, three kept inputs of 400,000 bytes a day apart and
+    # a 1 MB limit, then by count, and the records past -KeepRuns, a target at a time.
+    $boundRoot = New-FuzzCaseRoot 'bounds'
+    $keptMp4 = Join-Path $boundRoot 'build/fuzz/corpus/mp4'
+    $boundRuns = Join-Path $boundRoot 'build/fuzz/runs'
+    New-Item -ItemType Directory -Force -Path $keptMp4, $boundRuns | Out-Null
+    $plantedKept = @(foreach ($daysAgo in 3, 2, 1) {
+        $bytes = New-Object byte[] 400000
+        $bytes[0] = [byte]$daysAgo
+        $plantedPath = Join-Path $keptMp4 (Get-FuzzSha1 $bytes)
+        [System.IO.File]::WriteAllBytes($plantedPath, $bytes)
+        [System.IO.File]::SetLastWriteTimeUtc($plantedPath, [datetime]::UtcNow.AddDays(-$daysAgo))
+        Split-Path -Leaf $plantedPath
+    })
+    foreach ($stamp in '20200101-000000-000', '20200102-000000-000', '20200103-000000-000') {
+        [System.IO.File]::WriteAllText((Join-Path $boundRuns "$stamp-mp4.json"), '{}')
+        [System.IO.File]::WriteAllText((Join-Path $boundRuns "$stamp-mp4.log"), 'an old log')
+    }
+    [System.IO.File]::WriteAllText((Join-Path $boundRuns '20200101-000000-000-dash.json'), '{}')
+    [System.IO.File]::WriteAllText((Join-Path $boundRuns 'notes.txt'), 'not a run record')
+    Assert-True ((Invoke-FuzzCase $boundRoot -With @{ Target = 'mp4'; CorpusMaxMB = 1; KeepRuns = 2 }) -eq 0) 'A bounded fuzz run did not exit 0.'
+    $byBytes = @(Get-ChildItem -LiteralPath $keptMp4 -File | ForEach-Object { $_.Name })
+    Assert-True ($byBytes.Count -eq 3 -and $byBytes -notcontains $plantedKept[0] -and $byBytes -contains $plantedKept[1] -and
+        $byBytes -contains $plantedKept[2]) "The corpus byte bound did not remove the oldest kept input alone: $($byBytes -join ', ')"
+    $boundLeft = @(Get-ChildItem -LiteralPath $boundRuns -File | ForEach-Object { $_.Name } | Sort-Object)
+    Assert-True ($boundLeft -notcontains '20200101-000000-000-mp4.json' -and $boundLeft -notcontains '20200101-000000-000-mp4.log' -and
+        $boundLeft -notcontains '20200102-000000-000-mp4.json' -and $boundLeft -notcontains '20200102-000000-000-mp4.log' -and
+        $boundLeft -contains '20200103-000000-000-mp4.json' -and $boundLeft -contains '20200103-000000-000-mp4.log' -and
+        $boundLeft -contains '20200101-000000-000-dash.json' -and $boundLeft -contains 'notes.txt' -and
+        @($boundLeft -like '*-mp4.json').Count -eq 2) `
+        "The run record bound did not remove the oldest of that target's records and logs alone: $($boundLeft -join ', ')"
+    $addedFirst = @($byBytes | Where-Object { $plantedKept -notcontains $_ })
+    Assert-True ((Invoke-FuzzCase $boundRoot -With @{ Target = 'mp4'; CorpusMaxFiles = 2 }) -eq 0) 'A fuzz run bounded by count did not exit 0.'
+    $byCount = @(Get-ChildItem -LiteralPath $keptMp4 -File | ForEach-Object { $_.Name })
+    Assert-True ($byCount.Count -eq 2 -and $byCount -contains $addedFirst[0] -and $byCount -notcontains $plantedKept[1] -and
+        $byCount -notcontains $plantedKept[2]) "The corpus count bound did not keep the newest inputs: $($byCount -join ', ')"
+
+    # Saved findings are read into each run, as copies, and nothing of theirs is pruned or written,
+    # whatever the bounds. Their bytes would read as text but for the line endings.
+    $savedRoot = New-FuzzCaseRoot 'regressions'
+    $savedFolder = Join-Path $savedRoot 'tools/fuzz/regressions/mp4'
+    New-Item -ItemType Directory -Force -Path $savedFolder | Out-Null
+    $savedFinding = Join-Path $savedFolder 'minimized-crash-1'
+    $savedBytes = [byte[]](0x66, 0x74, 0x79, 0x70, 0x0D, 0x0A, 0x6D, 0x6F, 0x6F, 0x76, 0x0A)
+    [System.IO.File]::WriteAllBytes($savedFinding, $savedBytes)
+    $savedTime = [datetime]'2026-01-02T03:04:05Z'
+    [System.IO.File]::SetLastWriteTimeUtc($savedFinding, $savedTime.ToUniversalTime())
+    foreach ($attempt in 1, 2) {
+        Assert-True ((Invoke-FuzzCase $savedRoot -With @{ Target = 'mp4'; CorpusMaxFiles = 1 }) -eq 0) "Fuzz run $attempt with a saved finding did not exit 0."
+        Assert-True ((@(Read-FuzzCalls 'mp4') -join '|') -like '*regression-minimized-crash-1*') `
+            "Fuzz run $attempt did not start from a copy of the saved finding: $(@(Read-FuzzCalls 'mp4'))"
+    }
+    $savedLeft = @(Get-ChildItem -LiteralPath $savedFolder -Force | ForEach-Object { $_.Name })
+    Assert-True (($savedLeft -join ',') -eq 'minimized-crash-1' -and
+        ([System.BitConverter]::ToString([System.IO.File]::ReadAllBytes($savedFinding))) -eq [System.BitConverter]::ToString($savedBytes) -and
+        [System.IO.File]::GetLastWriteTimeUtc($savedFinding) -eq $savedTime.ToUniversalTime()) `
+        "A fuzz run pruned or rewrote a saved finding: $($savedLeft -join ', ')"
+    $savedKept = @(Get-ChildItem -LiteralPath (Join-Path $savedRoot 'build/fuzz/corpus/mp4') -File | ForEach-Object { $_.Name })
+    Assert-True ($savedKept.Count -eq 1 -and $savedKept[0] -cmatch '\A[0-9a-f]{40}\z') `
+        "The kept corpus took in the copy of a saved finding: $($savedKept -join ', ')"
+    # A kept folder that's a link to the saved findings stops the run before anything is read.
+    $linkedKept = Join-Path $savedRoot 'build/fuzz/corpus/mp4'
+    Remove-Item -LiteralPath $linkedKept -Recurse -Force
+    New-Item -ItemType Junction -Path $linkedKept -Target $savedFolder | Out-Null
+    $fuzzLinks += $linkedKept
+    Assert-True ((Invoke-FuzzCase $savedRoot -With @{ Target = 'mp4'; CorpusMaxFiles = 1 }) -eq 2) `
+        'A kept corpus folder linked to the saved findings did not stop the fuzz run as a harness failure (2).'
+    Assert-True (-not (Test-Path -LiteralPath $fuzzCalls) -and
+        ([System.BitConverter]::ToString([System.IO.File]::ReadAllBytes($savedFinding))) -eq [System.BitConverter]::ToString($savedBytes)) `
+        'A fuzz run went ahead through a kept corpus folder linked to the saved findings.'
+
+    # .gitattributes keeps a saved finding's bytes through git. The same bytes anywhere else go in
+    # with LF endings, which shows the check would see a conversion.
+    $attributesRepo = Join-Path $fuzzCases 'attributes'
+    New-Item -ItemType Directory -Force -Path $attributesRepo | Out-Null
+    & git -C $attributesRepo init --quiet
+    & git -C $attributesRepo config core.autocrlf true
+    & git -C $attributesRepo config core.safecrlf false
+    Copy-Item -LiteralPath (Join-Path $Root '.gitattributes') -Destination $attributesRepo
+    $textLike = [byte[]](0x3C, 0x61, 0x3E, 0x0D, 0x0A, 0x3C, 0x2F, 0x61, 0x3E, 0x0D, 0x0A)
+    $attributeCases = [ordered]@{ 'tools/fuzz/regressions/dash/minimized-crash-1' = $true; 'tools/fuzz/other/sample.mpd' = $false }
+    foreach ($relative in $attributeCases.Keys) {
+        $path = Join-Path $attributesRepo $relative
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $path) | Out-Null
+        [System.IO.File]::WriteAllBytes($path, $textLike)
+    }
+    & git -C $attributesRepo add -A
+    foreach ($relative in $attributeCases.Keys) {
+        $raw = (& git -C $attributesRepo hash-object --no-filters -- $relative).Trim()
+        $staged = (@(& git -C $attributesRepo ls-files -s -- $relative)[0] -split '\s+')[1]
+        if ($attributeCases[$relative]) {
+            Assert-True ($raw -eq $staged) "git changed the bytes of $relative on the way in, so its replay would test another input."
+        } else {
+            Assert-True ($raw -ne $staged) "git kept the CRLF bytes of $relative, so the saved-finding check above can't tell a conversion."
+        }
+    }
+    & git -C $attributesRepo -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -m fixture
+    $checkedOut = Join-Path $attributesRepo 'tools/fuzz/regressions/dash/minimized-crash-1'
+    Remove-Item -LiteralPath $checkedOut -Force
+    & git -C $attributesRepo checkout -- 'tools/fuzz/regressions/dash/minimized-crash-1'
+    Assert-True (([System.BitConverter]::ToString([System.IO.File]::ReadAllBytes($checkedOut))) -eq [System.BitConverter]::ToString($textLike)) `
+        'A checkout changed the bytes of a saved finding.'
+
+    # Outside 19:00 to 07:00, or too long to be over by 07:00, a run does nothing and exits 3.
+    # -AllowDaytime runs it, and its record says so.
+    $dayRoot = New-FuzzCaseRoot 'daytime'
+    $null = @(Read-QueueLog)
+    Assert-True ((Invoke-FuzzCase $dayRoot -With @{ Now = [datetime]'2026-10-13T12:00:00' }) -eq 3) 'A fuzz run at noon did not refuse with exit 3.'
+    Assert-True (-not (Test-Path -LiteralPath $fuzzCalls) -and -not (Test-Path -LiteralPath (Join-Path $dayRoot 'build'))) `
+        'A fuzz run refused for the hour still did something.'
+    Assert-True ((Invoke-FuzzCase $dayRoot -With @{ Now = [datetime]'2026-10-14T06:58:00'; Seconds = 600 }) -eq 3) `
+        'A fuzz run that would go past 07:00 did not refuse with exit 3.'
+    Assert-True ((Invoke-FuzzCase $dayRoot -With @{ Now = [datetime]'2026-10-13T18:59:00' }) -eq 3) 'A fuzz run at 18:59 did not refuse with exit 3.'
+    Assert-True (-not (Test-Path -LiteralPath $fuzzCalls) -and -not (Test-Path -LiteralPath (Join-Path $dayRoot 'build')) -and
+        @(Read-QueueLog) -notcontains 'hushfacebook parser fuzzing') 'A fuzz run refused for the hour still did something.'
+    Assert-True ((Invoke-FuzzCase $dayRoot -With @{ Now = [datetime]'2026-10-14T03:00:00'; Target = 'dash' }) -eq 0) `
+        'A fuzz run at 03:00 did not go ahead.'
+    Assert-True (([datetime](Read-FuzzRecord $dayRoot 'dash').window.start) -eq [datetime]'2026-10-13T19:00:00') `
+        "A run after midnight did not record the window that started the evening before."
+    Assert-True ((Invoke-FuzzCase $dayRoot -With @{ Now = [datetime]'2026-10-13T12:00:00'; AllowDaytime = $true; Target = 'dash' }) -eq 0) `
+        'A fuzz run at noon with -AllowDaytime did not go ahead.'
+    $dayRecord = Read-FuzzRecord $dayRoot 'dash'
+    Assert-True ($dayRecord.allowDaytime -eq $true -and $null -eq $dayRecord.window) `
+        "A daytime run's record does not say it ran outside the window: $($dayRecord | ConvertTo-Json -Depth 6 -Compress)"
+
+    # A finding exits 1 as before, minimized, with its log, under -FindingsPath, and the other
+    # target still runs. A Jazzer that fails without a finding, a planted bug it misses and a JDK
+    # with no javac are the harness failing, 2, never the 1 of a finding.
+    $findingRoot = New-FuzzCaseRoot 'finding'
+    $findings = Join-Path $findingRoot 'found'
+    Assert-True ((Invoke-FuzzCase $findingRoot -Mode @('dash=finding') -With @{ FindingsPath = $findings }) -eq 1) 'A fuzz finding did not exit 1.'
+    $foundLeft = @(Get-ChildItem -LiteralPath (Join-Path $findings 'dash') -File | ForEach-Object { $_.Name })
+    Assert-True ($foundLeft -contains 'jazzer.log' -and @($foundLeft -like 'crash-*').Count -eq 1 -and @($foundLeft -like 'minimized-crash-*').Count -eq 1) `
+        "A fuzz finding was not left with its log and a minimized copy: $($foundLeft -join ', ')"
+    Assert-True (@(Read-FuzzCalls 'minimize').Count -eq 1 -and @(Read-FuzzCalls 'mp4').Count -eq 1) `
+        'A fuzz finding was not minimized once, or the other target did not run after it.'
+    $findingRecord = Read-FuzzRecord $findingRoot 'dash'
+    Assert-True ($findingRecord.exitReason -eq 'finding' -and @($findingRecord.findings | Where-Object { $_ -like 'crash-*' }).Count -eq 1) `
+        "A finding's record does not name it: $($findingRecord | ConvertTo-Json -Depth 6 -Compress)"
+    Assert-True ((Invoke-FuzzCase $findingRoot -Mode @('mp4=fail') -With @{ Target = 'mp4'; FindingsPath = (Join-Path $findingRoot 'failed') }) -eq 2) `
+        'A Jazzer that failed without a finding was not a harness failure (2).'
+    Assert-True ((Read-FuzzRecord $findingRoot 'mp4').exitReason -eq 'jazzer-error') "A failed Jazzer's record does not say so."
+    Assert-True ((Invoke-FuzzCase $findingRoot -Mode @('faulty=miss') -With @{ Target = 'mp4' }) -eq 2) `
+        'A planted bug Jazzer missed was not a harness failure (2).'
+    Assert-True ((Read-FuzzRecord $findingRoot 'faulty').exitReason -eq 'planted-bug-missed' -and @(Read-FuzzCalls 'mp4').Count -eq 0) `
+        'A missed planted bug was not recorded, or a target ran after it.'
+    $noJavac = Join-Path $fuzzCases 'tools/no-javac'
+    New-Item -ItemType Directory -Force -Path (Join-Path $noJavac 'bin') | Out-Null
+    Copy-Item -LiteralPath $standIn -Destination (Join-Path $noJavac 'bin/java.exe')
+    Assert-True ((Invoke-FuzzCase $findingRoot -With @{ Java = $noJavac }) -eq 2) 'A JDK with no javac was not a harness failure (2).'
+    $null = @(Read-QueueLog)
+} finally {
+    # The junction first, so removing the cases can't reach through it.
+    foreach ($link in $fuzzLinks) { if (Test-Path -LiteralPath $link) { [System.IO.Directory]::Delete($link) } }
+    $fuzzSha1.Dispose()
+    Remove-Item -LiteralPath $fuzzCases -Recurse -Force -ErrorAction SilentlyContinue
+}
+$global:LASTEXITCODE = 0
+
+Write-Host '[scripts] parser fuzzing contracts passed'
+
 # --- tracked files name no machine -----------------------------------------------------------
 #
 # No tracked file names the working-notes folder .gitignore keeps out, the backup folders on the
