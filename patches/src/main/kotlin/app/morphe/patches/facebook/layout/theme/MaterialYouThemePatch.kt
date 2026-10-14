@@ -9,11 +9,13 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
+import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
+import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
@@ -418,6 +420,14 @@ val materialYouThemePatch = bytecodePatch(
         // React Native screens such as Marketplace home. With AMOLED in the build its call put
         // the hooks in already, and ReactColours runs both themes.
         hookReactColours()
+
+        // The older comment row's time (#138). With AMOLED in the build its call put the hook in
+        // already, and CommentTimeColour runs both themes.
+        try {
+            hookCommentTimeColour()
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. The theme goes on without the comment time's colour check.")
+        }
     }
 }
 

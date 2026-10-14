@@ -478,6 +478,14 @@ val amoledThemePatch = bytecodePatch(
         // as ints on props, past every route.
         hookReactColours()
 
+        // The older comment row's time, whose slot drew blank on a black sheet (#138). Material You
+        // calls the same hook and finds it in place.
+        try {
+            hookCommentTimeColour()
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. The theme goes on without the comment time's colour check.")
+        }
+
         enableStatus("amoledTheme")
     }
 }

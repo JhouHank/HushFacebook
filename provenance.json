@@ -207,9 +207,11 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/theme/CommentTimeColour.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/theme/MaterialYouTheme.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/theme/ReactColours.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/theme/TonePalette.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/layout/theme/CommentTimeColours.kt",
         "patches/src/main/kotlin/app/morphe/patches/facebook/layout/theme/MaterialYouThemePatch.kt",
         "patches/src/main/kotlin/app/morphe/patches/facebook/layout/theme/MaterialYouStyles.kt",
         "patches/src/main/kotlin/app/morphe/patches/facebook/layout/theme/ReactColourHooks.kt",
@@ -218,7 +220,7 @@
       "origin": "original",
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
-      "changes": "Written for Hushfacebook: the Material You theme. Dark-mode colours move to the wallpaper palette (Android 12 and newer) or to a fixed tonal palette of Facebook's blue (Android 11) at the same lightness, through the four colour routes the AMOLED patch uses and after it, and through night copies of Facebook's dark FDS styles for the views it inflates from its own layouts. React Native screens such as Marketplace home, whose colours come from their JavaScript, go through React's own background, border and image tint setters and its text colour span, which both themes hook. The colour tokens and dark surfaces it recolours were read off Facebook's own light and dark themes in the 577 and 580 builds, not taken from another patch source. For issue #65, the colour the tab bar asks for its selected tab, which draws the line over that tab and tints its icon, takes the wallpaper accent at tone 80 in dark mode; it's found through TabBarContainerLayout's colour setter and its Paint, and has exactly two readers on each build."
+      "changes": "Written for Hushfacebook: the Material You theme. Dark-mode colours move to the wallpaper palette (Android 12 and newer) or to a fixed tonal palette of Facebook's blue (Android 11) at the same lightness, through the four colour routes the AMOLED patch uses and after it, and through night copies of Facebook's dark FDS styles for the views it inflates from its own layouts. React Native screens such as Marketplace home, whose colours come from their JavaScript, go through React's own background, border and image tint setters and its text colour span, which both themes hook. The colour tokens and dark surfaces it recolours were read off Facebook's own light and dark themes in the 577 and 580 builds, not taken from another patch source. For issue #65, the colour the tab bar asks for its selected tab, which draws the line over that tab and tints its icon, takes the wallpaper accent at tone 80 in dark mode; it's found through TabBarContainerLayout's colour setter and its Paint, and has exactly two readers on each build. For issue #138, the time on Facebook's older comment row, which TimestampPlugin (a class Redex keeps) colours from one theme attribute read, goes through a check both themes share: in dark mode a colour too close to the page to read becomes Facebook's dark secondary text, themed like the rest."
     },
     {
       "paths": [

@@ -193,6 +193,15 @@ public final class MaterialYouTheme {
         return fds(color, ((Enum<?>) token).name());
     }
 
+    /**
+     * {@link #fds(int, Object)} for a token known by name, as the comment time's colour is
+     * ({@link CommentTimeColour}). Its own name, so a String token handed to the public route still
+     * finds no enum and fails open.
+     */
+    static int fdsNamed(int color, String name) {
+        return fds(color, name);
+    }
+
     private static int fds(int color, String name) {
         if (!DarkMode.on()) return color;
         if (listed(FDS.get(name), color) || madeByAmoled(FDS.get(name), color, name)
