@@ -64,7 +64,10 @@ internal const val OWN_CODEC_CONFIGURE = "$HDR_BRIGHTNESS->configure($MEDIA_CODE
  * a VP9 HLG reel on 582 went to the panel as HDR with none of those calls made), so each of
  * Facebook's calls of MediaCodec.configure goes to the extension too, which asks an HDR video
  * decoder drawing to a surface for the usual range (Android 12's color-transfer-request) before
- * setting it up, and counts whether the phone's decoder said yes.
+ * setting it up, and counts whether the phone's decoder said yes. An HLG video is also handed over
+ * naming the usual transfer, its BT.2020 colours kept: HLG shows as it is on an ordinary screen,
+ * and a VP9 stream, which names no transfer itself, then skips the decoder maker's tone map that
+ * left #93's reels bright and yellow.
  *
  * In the default selection with its switch off: HDR is how Facebook means those videos to look,
  * and some people want it.
