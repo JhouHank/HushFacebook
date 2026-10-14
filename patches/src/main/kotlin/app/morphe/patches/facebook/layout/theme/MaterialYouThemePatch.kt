@@ -330,9 +330,9 @@ private val materialYouResourcePatch = resourcePatch {
 @Suppress("unused")
 val materialYouThemePatch = bytecodePatch(
     name = "Material You theme",
-    description = "Gives Facebook's dark mode the colors of your wallpaper on Android 12 and newer, so it " +
-        "matches your phone. Turn on dark mode in Facebook first. It isn't selected by default because undoing " +
-        "it means patching again. Turn on Expert mode in Manager to pick it.",
+    description = "Gives Facebook the colors of your wallpaper on Android 12 and newer, so it matches your " +
+        "phone. Dark mode takes them everywhere, and light mode on its grays, blues and selected tab. It isn't " +
+        "selected by default because undoing it means patching again. Turn on Expert mode in Manager to pick it.",
     default = false,
 ) {
     category("Theme")
