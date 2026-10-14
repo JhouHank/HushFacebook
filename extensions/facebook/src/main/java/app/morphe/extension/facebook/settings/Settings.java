@@ -791,6 +791,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_chat_promotions", FALSE);
 
     /**
+     * The Meta AI button beside the search box in Facebook's own Chats, at the top of the list and
+     * on the search screen. Starts off. The search box and chats with Meta AI stay.
+     */
+    public static final BooleanSetting HIDE_CHAT_META_AI_BUTTON =
+            new BooleanSetting("hushfacebook_hide_chat_meta_ai_button", FALSE);
+
+    /**
      * A tap on the Messenger icon at the top of Facebook opens the Messenger app, while it's
      * installed, instead of Facebook's own Chats. Starts off. Without Messenger, Chats opens as it
      * always did.

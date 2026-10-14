@@ -389,6 +389,10 @@ Removes the row above your chats that shows friends' notes and who's active. You
 Hide chat list promotions	Ocultar promociones de la lista de chats
 # context: summary of that switch
 Hides the banners at the top of Chats, like the one asking you to turn on notifications.	Oculta los avisos de la parte superior de Chats, como el que te pide activar las notificaciones.
+# context: switch title under Chats; Meta AI is Meta's assistant and keeps its name; the button sits beside the search box at the top of Chats and on Chats' search screen
+Hide the Meta AI button in Chats	Ocultar el botón de Meta AI en Chats
+# context: summary of that switch; your chats with Meta AI are conversations with the assistant, which stay in the list
+Removes the Meta AI button beside the search box in Chats, at the top of the list and on the search screen. The search box stays, and so do your chats with Meta AI.	Quita el botón de Meta AI junto al cuadro de búsqueda en Chats, arriba de la lista y en la pantalla de búsqueda. El cuadro de búsqueda se queda, y tus chats con Meta AI también.
 # context: switch title under Chats; on, Facebook's Messenger icon opens the Messenger app
 Open the Messenger app	Abrir la app de Messenger
 # context: summary of that switch; Messenger is the app's name, Chats is Facebook's own chat screen as named above

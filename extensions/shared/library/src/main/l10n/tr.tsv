@@ -389,6 +389,10 @@ Removes the row above your chats that shows friends' notes and who's active. You
 Hide chat list promotions	Sohbet listesindeki tanıtımları gizle
 # context: summary of that switch
 Hides the banners at the top of Chats, like the one asking you to turn on notifications.	Sohbetler'in üstündeki, bildirimleri açmanızı isteyen gibi bannerları gizler.
+# context: switch title under Chats; Meta AI is Meta's assistant and keeps its name; the button sits beside the search box at the top of Chats and on Chats' search screen
+Hide the Meta AI button in Chats	Sohbetler'deki Meta AI düğmesini gizle
+# context: summary of that switch; your chats with Meta AI are conversations with the assistant, which stay in the list
+Removes the Meta AI button beside the search box in Chats, at the top of the list and on the search screen. The search box stays, and so do your chats with Meta AI.	Sohbetler'de arama kutusunun yanındaki Meta AI düğmesini, listenin üstünde ve arama ekranında kaldırır. Arama kutusu ve Meta AI ile sohbetleriniz kalır.
 # context: switch title under Chats; on, Facebook's Messenger icon opens the Messenger app
 Open the Messenger app	Messenger uygulamasını aç
 # context: summary of that switch; Messenger is the app's name, Chats is Facebook's own chat screen as named above

@@ -52,6 +52,7 @@ import app.morphe.extension.facebook.ads.ProfileAdFilterForTests;
 import app.morphe.extension.facebook.ads.FeedAdPills;
 import app.morphe.extension.facebook.ads.ReelsAdFilter;
 import app.morphe.extension.facebook.ads.SearchAdFilterForTests;
+import app.morphe.extension.facebook.chats.ChatList;
 import app.morphe.extension.facebook.chats.ChatListForTests;
 import app.morphe.extension.facebook.chats.MessengerCardForTests;
 import app.morphe.extension.facebook.chats.MessengerHandoffForTests;
@@ -628,7 +629,10 @@ public class PausedHooksTest {
         // The notes tray's tiles go in Chats, and a promotion banner's show question answers no.
         probes.put(PatchFamily.CHAT_LIST, Arrays.asList(
                 ChatListForTests::dropsTheNotesTiles,
-                ChatListForTests::hidesAPromotion));
+                ChatListForTests::hidesAPromotion,
+                // The search row at the top of Chats loses its Meta AI button, and so does the search screen.
+                () -> ChatList.metaAiButton(new Object()) == null,
+                () -> !ChatList.showsSearchMetaAiButton(true)));
         // With Messenger installed, a tap on the top bar's Messenger icon opens Messenger instead of
         // Chats, and an incoming call's push, its ring and a new message are left to Messenger.
         probes.put(PatchFamily.MESSENGER_ICON, Arrays.asList(

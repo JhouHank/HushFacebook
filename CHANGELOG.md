@@ -8,6 +8,7 @@ Changes in each Hushfacebook version, newest first.
 
 * **Facebook:** `Hide posts by words` has a new switch under News feed, **Hide reposts** (issue #133). With it on, a post that shares someone else's post stays out of the feed, whether the person sharing it wrote anything above it or not. Posts people write themselves stay, and so does any post Hushfacebook can't read. The diagnostic report counts how many it hid and keeps nothing a post says. It starts off, it hasn't been tried on a real feed yet, and a change applies to the posts Facebook loads next.
 * **Facebook:** A photo Story with music gets **Save photo** in its menu next to Save, with `Save any story` on (issue #38). Facebook plays that kind of Story as a video made from the photo, so Save keeps the video. Save photo keeps the picture it was made from, at the size Facebook serves it. Video Stories and plain photo Stories still get just Save. It hasn't been tried on a real music photo Story yet.
+* **Facebook:** `Clean up Facebook's chat list` has a third switch under Chats, **Hide the Meta AI button in Chats**. It takes the Meta AI button off the search row at the top of Chats and off Chats' search screen, and the search box gets the room. Your chats with Meta AI stay, and the diagnostic report counts how often it kept the button out. It starts off and takes effect the next time Chats opens.
 
 ### Changed
 

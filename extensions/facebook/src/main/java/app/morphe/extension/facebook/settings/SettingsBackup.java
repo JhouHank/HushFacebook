@@ -260,6 +260,7 @@ public final class SettingsBackup {
             Settings.HIDE_GET_MESSENGER_CARD,
             Settings.HIDE_CHAT_NOTES_TRAY,
             Settings.HIDE_CHAT_PROMOTIONS,
+            Settings.HIDE_CHAT_META_AI_BUTTON,
             Settings.OPEN_MESSENGER_APP,
             Settings.LEAVE_CALLS_AND_CHATS_TO_MESSENGER,
             Settings.HIDE_MENU_UPGRADES,
