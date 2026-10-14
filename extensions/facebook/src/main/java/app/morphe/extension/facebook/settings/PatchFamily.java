@@ -265,12 +265,14 @@ public enum PatchFamily {
 
     /**
      * The switches of the settings entry itself, which no family owns: every build with this screen
-     * carries them. These are the release check, the Saved and Watch history shortcuts and Lock Facebook. Pause
-     * turns them off like a family's switches, so the screen draws them above the Pause row with the rest.
+     * carries them. These are the release check, the Saved, Watch history and settings shortcuts and Lock
+     * Facebook. Pause turns them off like a family's switches, so the screen draws them above the Pause row
+     * with the rest, but for Lock Facebook and the settings shortcut, which a pause leaves as they are.
      */
     static final List<BooleanSetting> ENTRY_SWITCHES = Collections.unmodifiableList(
             java.util.Arrays.asList(Settings.CHECK_FOR_RELEASES, Settings.SAVED_SHORTCUT,
-                    Settings.WATCH_HISTORY_SHORTCUT, Settings.APP_LOCK, Settings.SAVE_CRASH_FILE));
+                    Settings.WATCH_HISTORY_SHORTCUT, Settings.SETTINGS_SHORTCUT, Settings.APP_LOCK,
+                    Settings.SAVE_CRASH_FILE));
 
     /**
      * The switches the download patches share and none of them owns: each shapes what every

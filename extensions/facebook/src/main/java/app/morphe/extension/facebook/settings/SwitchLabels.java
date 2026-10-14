@@ -148,6 +148,7 @@ final class SwitchLabels {
         if (setting == Settings.LEAVE_CALLS_AND_CHATS_TO_MESSENGER) return L10n.t("Leave calls and chats to Messenger");
         if (setting == Settings.SAVED_SHORTCUT) return L10n.t("Saved shortcut");
         if (setting == Settings.WATCH_HISTORY_SHORTCUT) return L10n.t("Watch history shortcut");
+        if (setting == Settings.SETTINGS_SHORTCUT) return L10n.t("Settings shortcut on the app icon");
         if (setting == Settings.APP_LOCK) return L10n.t("Lock Facebook");
         if (setting == Settings.SAVE_CRASH_FILE) return L10n.t("Save crashes to Downloads");
         if (setting == Settings.HIDE_MENU_UPGRADES) return L10n.t("Hide Upgrades");

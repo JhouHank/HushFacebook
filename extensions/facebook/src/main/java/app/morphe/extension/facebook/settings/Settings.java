@@ -1007,6 +1007,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_watch_history_shortcut", FALSE);
 
     /**
+     * The Hushfacebook settings shortcut in the menu a long press on Facebook's launcher icon opens
+     * ({@link SettingsEntry}). On by default, as it always was. Off, the shortcut goes at once and
+     * isn't published again; the Menu row and the logo's long press still open the screen (#146).
+     * Kept while paused, since it's a way back to the switch that resumes Hushfacebook.
+     */
+    public static final BooleanSetting SETTINGS_SHORTCUT =
+            new BooleanSetting("hushfacebook_settings_shortcut", TRUE);
+
+    /**
      * A cold start, and a return after {@link #APP_LOCK_AFTER}, ask for the phone's screen lock
      * before Facebook shows ({@link app.morphe.extension.facebook.misc.AppLock}). The settings
      * entry's own switch, so every build has it ({@link PatchFamily#ENTRY_SWITCHES}). Off by default.
@@ -1483,6 +1492,9 @@ public class Settings extends BaseSettings {
         // a few quick crashes can turn on. Its own switch, behind the lock, is the only way off.
         // Here, after both fields, since a static block runs in the order it's written.
         Setting.keepWhenPaused(APP_LOCK, APP_LOCK_AFTER);
+        // The launcher shortcut is a way back to the settings screen, where a pause is lifted, so a
+        // pause neither brings it back nor takes it away (#146).
+        Setting.keepWhenPaused(SETTINGS_SHORTCUT);
     }
 
     /**

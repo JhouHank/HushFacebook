@@ -1492,3 +1492,9 @@ Not enough free space to save this. Free some up and try again.	Zu wenig freier 
 Your phone couldn't put this video together. Try another Download quality.	Dein Handy konnte das Video nicht zusammensetzen. Probiere eine andere Download-Qualität.
 # context: toast and Last save row: the gallery refused a finished photo or video
 The file couldn't be copied into your phone's gallery. Try again in a moment.	Die Datei ließ sich nicht in die Galerie deines Handys kopieren. Versuche es gleich erneut.
+# context: title of a switch on the Menu settings page: whether the Hushfacebook settings shortcut shows when you hold Facebook's launcher icon
+Settings shortcut on the app icon	Einstellungsverknüpfung am App-Symbol
+# context: summary of that switch when the build has the Hushfacebook settings row in Facebook's Settings and privacy
+Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings from the Hushfacebook settings row in Settings and privacy or with a long press on the Facebook logo.	Zeigt die Hushfacebook-Einstellungen im Menü, das beim langen Drücken des Facebook-Symbols erscheint. Aus verschwinden sie aus diesem Menü, und du kannst die Einstellungen weiter über die Zeile Hushfacebook-Einstellungen unter Einstellungen und Privatsphäre oder durch langes Drücken des Facebook-Logos öffnen.
+# context: summary of that switch when the build has no settings row in Facebook's Menu
+Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings with a long press on the Facebook logo.	Zeigt die Hushfacebook-Einstellungen im Menü, das beim langen Drücken des Facebook-Symbols erscheint. Aus verschwinden sie aus diesem Menü, und du kannst die Einstellungen weiter durch langes Drücken des Facebook-Logos öffnen.

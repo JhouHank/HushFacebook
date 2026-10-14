@@ -246,6 +246,8 @@ public class PausedHooksTest {
         probes.put(Settings.CHECK_FOR_RELEASES, ReleaseCheckForTests::aStartAsksGitHub);
         probes.put(Settings.SAVED_SHORTCUT, SavedShortcutTest::aStartPublishes);
         probes.put(Settings.WATCH_HISTORY_SHORTCUT, WatchHistoryShortcutTest::aStartPublishes);
+        // A start puts the Hushfacebook settings shortcut in the launcher icon's menu.
+        probes.put(Settings.SETTINGS_SHORTCUT, SettingsEntryTest::aStartPublishes);
         // A cold start on a phone with a screen lock covers Facebook and asks for it.
         probes.put(Settings.APP_LOCK, AppLockForTests::aStartLocks);
         // A crash that ends the app writes its file to Downloads.
@@ -269,11 +271,12 @@ public class PausedHooksTest {
     /**
      * The switches that keep working while paused. Lock Facebook guards the phone's owner rather
      * than changing Facebook, and every way to pause is in reach of someone holding the phone: the
-     * Pause switch, a marker file left over USB, safe mode after a few quick crashes. A method, not
-     * a field, so the class doesn't load Settings before the rule hands it a context.
+     * Pause switch, a marker file left over USB, safe mode after a few quick crashes. The settings
+     * shortcut is a way back to the screen where a pause is lifted (#146). A method, not a field, so
+     * the class doesn't load Settings before the rule hands it a context.
      */
     private static Set<BooleanSetting> kept() {
-        return Collections.singleton(Settings.APP_LOCK);
+        return new HashSet<>(Arrays.asList(Settings.APP_LOCK, Settings.SETTINGS_SHORTCUT));
     }
 
     /** The probes whose switch is in [kept] when [keep], and the others otherwise. */

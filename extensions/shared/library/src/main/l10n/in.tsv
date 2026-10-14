@@ -1492,3 +1492,9 @@ Not enough free space to save this. Free some up and try again.	Ruang kosong tid
 Your phone couldn't put this video together. Try another Download quality.	Ponselmu tidak bisa menyusun video ini. Coba Kualitas unduhan yang lain.
 # context: toast and Last save row: the gallery refused a finished photo or video
 The file couldn't be copied into your phone's gallery. Try again in a moment.	File tidak bisa disalin ke galeri ponselmu. Coba lagi sebentar lagi.
+# context: title of a switch on the Menu settings page: whether the Hushfacebook settings shortcut shows when you hold Facebook's launcher icon
+Settings shortcut on the app icon	Pintasan pengaturan di ikon aplikasi
+# context: summary of that switch when the build has the Hushfacebook settings row in Facebook's Settings and privacy
+Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings from the Hushfacebook settings row in Settings and privacy or with a long press on the Facebook logo.	Menaruh Pengaturan Hushfacebook di menu yang muncul saat ikon Facebook ditekan lama. Jika dimatikan, pintasan itu hilang dari menu tersebut, dan kamu tetap bisa membuka pengaturan ini dari baris Pengaturan Hushfacebook di Pengaturan dan privasi atau dengan menekan lama logo Facebook.
+# context: summary of that switch when the build has no settings row in Facebook's Menu
+Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings with a long press on the Facebook logo.	Menaruh Pengaturan Hushfacebook di menu yang muncul saat ikon Facebook ditekan lama. Jika dimatikan, pintasan itu hilang dari menu tersebut, dan kamu tetap bisa membuka pengaturan ini dengan menekan lama logo Facebook.

@@ -224,6 +224,7 @@ public final class SettingsBackup {
             Settings.FOLLOWING_FEED_HOME,
             Settings.SAVED_SHORTCUT,
             Settings.WATCH_HISTORY_SHORTCUT,
+            Settings.SETTINGS_SHORTCUT,
             Settings.APP_LOCK,
             Settings.SAVE_CRASH_FILE,
             Settings.MARKETPLACE_ONLY,
