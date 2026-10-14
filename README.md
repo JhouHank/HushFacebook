@@ -174,7 +174,7 @@ Each row says what the patch does, how its switch starts and which settings page
 
 Morphe Manager's default selection has every patch except `AMOLED black theme`, `Material You theme` and `Disable Play Store updates`. The themes put their colors in when you patch, and the Play Store patch changes the version number Android sees, so undoing any of them means patching again. Turn on Expert mode in Manager to pick them.
 
-Both themes show in Facebook's dark mode, so turn that on first. A tablet whose Facebook settings have no Dark mode row can use **Force dark mode** under Appearance. `Material You theme` takes its colors from your wallpaper on Android 12 and newer, and Android 11 gets a fixed palette built from Facebook's blue. `AMOLED black theme` has one option, Background color. Leave it blank for black, or give a dark six-digit color such as #0D1117. A color too light to keep text readable is refused, and the message says what to pick instead. The two themes work together, with the background staying black (or your color) and the palette coloring what sits on top.
+`AMOLED black theme` shows in Facebook's dark mode, so turn that on first. `Material You theme` colors both modes. A tablet whose Facebook settings have no Dark mode row can use **Force dark mode** under Appearance. `Material You theme` takes its colors from your wallpaper on Android 12 and newer, and Android 11 gets a fixed palette built from Facebook's blue. `AMOLED black theme` has one option, Background color. Leave it blank for black, or give a dark six-digit color such as #0D1117. A color too light to keep text readable is refused, and the message says what to pick instead. The two themes work together, with the background staying black (or your color) and the palette coloring what sits on top.
 
 Videos save to your gallery at the quality you pick under Downloads, best by default. A running save shows its progress in a notification and at the top of the Downloads page, each with a Cancel button. Turn on **Quiet saves** there if the toasts at the start and end of a save bother you. A save that fails still says why.
 
@@ -262,7 +262,7 @@ A few rows hand a link to another app instead of going online themselves. **Send
 | Minimum Android version | Android 11 |
 | Download | [APKMirror](https://www.apkmirror.com/apk/facebook-2/facebook/) |
 
-There are 88 patches for `com.facebook.katana`, and a release only goes out once every one of them has applied to both builds. Older Facebook versions like 581 and 580 aren't supported any more, so update Facebook before you patch. When a newer stable Facebook comes out, Hushfacebook moves to it and drops the one before. Meta's builds for Android 9 and 8 can't be patched at all, since their code sits in a compressed archive the patcher can't read.
+There are 89 patches for `com.facebook.katana`, and a release only goes out once every one of them has applied to both builds. Older Facebook versions like 581 and 580 aren't supported any more, so update Facebook before you patch. When a newer stable Facebook comes out, Hushfacebook moves to it and drops the one before. Meta's builds for Android 9 and 8 can't be patched at all, since their code sits in a compressed archive the patcher can't read.
 
 SHA-256 of the two .apkm files the release checks ran against:
 

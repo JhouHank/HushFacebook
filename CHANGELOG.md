@@ -2,6 +2,21 @@
 
 Changes in each Hushfacebook version, newest first.
 
+## Unreleased
+
+### Added
+
+* **Facebook:** **Settings shortcut on the app icon**, a new switch under Menu, takes Hushfacebook settings out of the menu you get by holding Facebook's icon (issue #146). It starts on. The Menu row and the logo long press open settings either way, and Pause leaves the choice alone.
+* **Facebook:** New patch, `Hide carrier data banners`, for carriers with Facebook Flex (issue #70). **Hide the Data mode banner** takes away the Data mode bar and its buy mobile data button, and **Hide the Free mode banner** takes away the purple Free mode bar. Both switches are under Appearance and start off.
+* **Facebook:** `Picture-in-picture` puts a **Picture-in-picture** row in a reel's More menu, so a reel can float in the small window without leaving Facebook (issue #44). The new **Only from a reel's More menu** switch under it starts off. Turn it on and leaving Facebook no longer opens the window, so the row is the only way in.
+* **Facebook:** `Material You theme` colors Facebook's light mode too (issues #141 and #65). In light mode the grays, the blues, the pale blue highlights and the selected tab take your wallpaper's colors at the same lightness, so text stays as easy to read. White stays white, and dark mode looks as it did. There's no new switch.
+
+### Fixed
+
+* **Facebook:** With `AMOLED black theme` or `Material You theme` in your build, the time on Facebook's older comment row (left of Like and Reply) can't come out too dark to read on a dark page anymore (issue #138). It falls back to Facebook's own gray, themed like the rest. Light mode looks as it did.
+* **Facebook:** With `Material You theme`, the box under a link post (the site and title) takes your wallpaper's colors when Facebook doesn't send that box a color of its own (issue #37). Light mode stays as it was.
+* **Tooling:** A fixture test holds every declared build to the chime that `Save Facebook's notification sound` copies, so a Facebook build that renames or drops it stops the release (issue #83).
+
 ## 0.13.0 (2026-10-14)
 
 * **Facebook:** This release gathers everything since v0.12.0 and still brings 88 patches for Facebook 582.0.0.50.54. New switches hide reposts, save the picture behind a photo Story with music, take the Meta AI button out of Chats and keep saves quiet. With Picture-in-picture on, a link that opens while a reel floats brings Facebook back full screen. Link posts leave Home on 582 again, the kept top bar stops fading, and a reel waiting to play starts its bar at the beginning. A failed save says why, Morphe Manager shows this release's whole list of changes, and the Reported issues list below maps each report this release touches.
