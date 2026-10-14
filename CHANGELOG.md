@@ -18,6 +18,10 @@ Changes in each Hushfacebook version, newest first.
 
 * **Facebook:** A save that fails now says why. The toast and the `Last save` row under Downloads used to give the same "try again" whatever went wrong. No connection, an expired link, a download cut short, too little free space, a video the phone couldn't put together and a gallery that wouldn't take the file each get their own message now. Anything else still gets the plain "Download failed" one.
 
+### Fixed
+
+* **Facebook:** Export settings saves one whole set of choices, even when you change something while the file is being written. It used to read your settings one by one in the background, so a Quick setup tapped at that moment, or a change to both word lists, could leave the file with some settings from before and some from after. That was a mix you never picked. Now it takes all of them the moment you choose where to save, and the file holds your settings as they were then. Exporting while paused still saves what you chose, and import works as it did.
+
 ## 0.12.0 (2026-10-13)
 
 * **Facebook:** This release gathers everything since v0.11.0 and still brings 88 patches for Facebook 582.0.0.50.54. New switches leave calls and chat notifications to Messenger, keep the top bar and the tab bar on screen while you scroll, let a tap on a reel's progress bar seek, and take Muse out of the share sheet. The settings home page gets Quick setups and a Report a problem row, and a setting that needs a restart now shows a row that restarts Facebook and brings you back to the same page. You can name the patched app when you patch, and `Pick an app icon` opens Facebook's App icon page on accounts where Facebook doesn't list it. The kept progress bar shows on every reel and stays where you drag it, and the Reported issues list below maps each report this release touches.
