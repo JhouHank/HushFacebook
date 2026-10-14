@@ -169,6 +169,7 @@ Each row says what the patch does, how its switch starts and which settings page
 | `Turn off HDR brightness` | Stops HDR videos and photos from turning your screen up to full brightness, which can be harsh in the dark. They keep their resolution. Starts off. Turn it on in Hushfacebook settings > Playback. |
 | `Turn off screen transitions` | Shows Facebook's tabs, Menu and new screens at once, without the slide between them, so the app feels quicker. Swipes and animations inside a page stay. Starts off. Turn it on in Hushfacebook settings > Appearance. |
 | `Unlock app icons` | Lets you pick the app icons Facebook keeps for Facebook Plus on its App icon page (Menu > Settings and privacy > App icon), so your home screen icon can be any of them. Starts off. Turn it on in Hushfacebook settings > Appearance. |
+| `Upload Stories in HD` | Videos you post to your Story ask Facebook for its high upload quality instead of standard, so they can come out sharper. Starts off. Turn it on in Hushfacebook settings > Stories. |
 | `Use the phone's emoji` | Draws emoji with your phone's own emoji font instead of Meta's, so emoji in posts, comments and chats match your keyboard. Reactions and stickers stay as they are. Starts off. Turn it on in Hushfacebook settings > Appearance, then restart Facebook. |
 | `Use the system font` | Draws Facebook's text in your phone's font instead of Meta's, or in a font file you pick, so Facebook matches the rest of your phone. Icons and emoji keep their own. Starts off. Turn it on in Hushfacebook settings > Appearance, then restart Facebook. |
 | `View stories anonymously` | Keeps you off the viewer list of stories you watch, because Facebook isn't told which ones you've seen. Replying or reacting still shows you. Stories you watch to the end show as watched on this phone only, until that person posts a new one. Starts off. Turn it on in Hushfacebook settings > Stories. |
@@ -263,7 +264,7 @@ A few rows hand a link to another app instead of going online themselves. **Send
 | Minimum Android version | Android 11 |
 | Download | [APKMirror](https://www.apkmirror.com/apk/facebook-2/facebook/) |
 
-There are 90 patches for `com.facebook.katana`, and a release only goes out once every one of them has applied to both builds. Older Facebook versions like 581 and 580 aren't supported any more, so update Facebook before you patch. When a newer stable Facebook comes out, Hushfacebook moves to it and drops the one before. Meta's builds for Android 9 and 8 can't be patched at all, since their code sits in a compressed archive the patcher can't read.
+There are 91 patches for `com.facebook.katana`, and a release only goes out once every one of them has applied to both builds. Older Facebook versions like 581 and 580 aren't supported any more, so update Facebook before you patch. When a newer stable Facebook comes out, Hushfacebook moves to it and drops the one before. Meta's builds for Android 9 and 8 can't be patched at all, since their code sits in a compressed archive the patcher can't read.
 
 SHA-256 of the two .apkm files the release checks ran against:
 

@@ -767,6 +767,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/stories/StoryUpload.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/stories/upload/UploadStoriesInHdPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: Upload Stories in HD, for issue #123, from Facebook 582. The publisher's kept Kotlin internal name getUploadOperationForCreate builds a new post's UploadOperation, and for a post bound only for a Story it puts each video's upload quality into a Bundle under video_upload_quality. Facebook's video uploader passes only high on to the upload server as its encoding hint. The patch finds that one putString, asks the extension for the value into the value's own register right before it, and leaves the rest of the method alone. The extension answers high while its switch is on and keeps Facebook's raw."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/reels/DoubleTapLike.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/reels/doubletap/DoubleTapAnchors.kt",
         "patches/src/main/kotlin/app/morphe/patches/facebook/reels/doubletap/TurnOffDoubleTapLikePatch.kt"

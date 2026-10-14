@@ -133,6 +133,7 @@ import app.morphe.extension.facebook.reels.SeenStateSendForTests;
 import app.morphe.extension.facebook.search.MetaAiSearchForTests;
 import app.morphe.extension.facebook.stories.StoryAdvance;
 import app.morphe.extension.facebook.stories.StorySeenForTests;
+import app.morphe.extension.facebook.stories.StoryUpload;
 import app.morphe.extension.facebook.stories.SuggestedStoriesForTests;
 import app.morphe.extension.facebook.theme.ForceDarkModeForTests;
 import app.morphe.extension.facebook.updates.UpdatePrompts;
@@ -427,6 +428,8 @@ public class PausedHooksTest {
                 StorySeenForTests::holdsABatch,
                 StorySeenForTests::sendsOnlyTheMarked,
                 StorySeenForTests::pointsTheButton));
+        // A Story video's upload asks for high quality.
+        probes.put(PatchFamily.STORY_UPLOAD_HD, Collections.singletonList(() -> "high".equals(StoryUpload.quality("standard"))));
         probes.put(PatchFamily.SPONSORED_REELS, Arrays.asList(
                 () -> {
                     VideoAd ad = new VideoAd();

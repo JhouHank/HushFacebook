@@ -1518,3 +1518,7 @@ On carriers with Facebook Flex, hides the purple Free mode bar. That bar is also
 Only from a reel's More menu	Hanya dari menu reel
 # context: summary of that switch; Picture-in-picture is the name of the row in the reel's menu, translated as the row is; the three dots are the reel's own menu button
 Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's More menu (the three dots) when you want one. That row is there whenever Picture-in-picture is on.	Keluar dari Facebook tidak membuka jendela. Ketuk Gambar dalam gambar di menu reel (tiga titik) saat kamu menginginkannya. Baris itu ada setiap kali Gambar dalam gambar aktif.
+# context: switch title under Stories; it makes videos you post to your own Story ask for high quality when they upload
+Upload Stories in HD	Unggah cerita dalam HD
+# context: summary of that switch; standard is the normal upload quality, high the better one
+Videos you post to your Story ask Facebook for its high upload quality instead of standard. Applies to the next Story you post.	Video yang Anda posting ke cerita Anda meminta kualitas unggahan tinggi dari Facebook, bukan standar. Berlaku untuk cerita berikutnya yang Anda posting.

@@ -153,6 +153,7 @@ public final class SettingsBackup {
             Settings.LOOP_STORIES,
             Settings.VIEW_STORIES_ANONYMOUSLY,
             Settings.MARK_STORIES_SEEN,
+            Settings.UPLOAD_STORIES_IN_HD,
             Settings.HIDE_SPONSORED_REELS,
             Settings.HIDE_SPONSORED_SEARCH_RESULTS,
             Settings.HIDE_SPONSORED_PROFILE_POSTS,

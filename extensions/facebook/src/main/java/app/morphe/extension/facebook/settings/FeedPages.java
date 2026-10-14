@@ -300,7 +300,7 @@ final class FeedPages {
             Set<PatchFamily> build) {
         if (build.contains(PatchFamily.SPONSORED_STORIES) || build.contains(PatchFamily.SUGGESTED_STORIES)
                 || build.contains(PatchFamily.STORY_AUTO_ADVANCE) || build.contains(PatchFamily.STORY_SEEN)
-                || build.contains(PatchFamily.STORY_DOWNLOAD)) {
+                || build.contains(PatchFamily.STORY_DOWNLOAD) || build.contains(PatchFamily.STORY_UPLOAD_HD)) {
             PreferenceCategory stories = category(screen, L10n.t("Stories"));
             if (build.contains(PatchFamily.SPONSORED_STORIES)) {
                 stories.addPreference(toggle(context, Settings.HIDE_SPONSORED_STORIES,
@@ -338,6 +338,12 @@ final class FeedPages {
             if (build.contains(PatchFamily.STORY_DOWNLOAD)) {
                 stories.addPreference(toggle(context, Settings.DOWNLOAD_STORIES,
                         L10n.t("Add Save to every story menu, using your download quality. Off or paused, Facebook only saves your own stories.")));
+            }
+            if (build.contains(PatchFamily.STORY_UPLOAD_HD)) {
+                // Read as each Story's upload is set up, so a change applies to the next one you post.
+                stories.addPreference(toggle(context, Settings.UPLOAD_STORIES_IN_HD,
+                        L10n.t("Videos you post to your Story ask Facebook for its high upload quality instead of "
+                                + "standard. Applies to the next Story you post.")));
             }
         }
     }

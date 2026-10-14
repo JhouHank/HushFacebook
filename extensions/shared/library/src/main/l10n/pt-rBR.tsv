@@ -1410,3 +1410,7 @@ On carriers with Facebook Flex, hides the purple Free mode bar. That bar is also
 Only from a reel's More menu	Só pelo menu de um reel
 # context: summary of that switch; Picture-in-picture is the name of the row in the reel's menu, translated as the row is; the three dots are the reel's own menu button
 Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's More menu (the three dots) when you want one. That row is there whenever Picture-in-picture is on.	Sair do Facebook não abre a janela. Toque em Picture-in-picture no menu de um reel (os três pontos) quando quiser uma. Essa opção aparece sempre que Picture-in-picture está ligado.
+# context: switch title under Stories; it makes videos you post to your own Story ask for high quality when they upload
+Upload Stories in HD	Enviar Stories em HD
+# context: summary of that switch; standard is the normal upload quality, high the better one
+Videos you post to your Story ask Facebook for its high upload quality instead of standard. Applies to the next Story you post.	Vídeos que você posta no seu Story pedem ao Facebook a qualidade de envio alta em vez da padrão. Vale a partir do próximo Story que você postar.

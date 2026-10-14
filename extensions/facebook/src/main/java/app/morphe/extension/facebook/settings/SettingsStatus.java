@@ -62,6 +62,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean storyUploadHd() {
+        return false;
+    }
+
     public static boolean sponsoredReels() {
         return false;
     }

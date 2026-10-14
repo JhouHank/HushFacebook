@@ -317,6 +317,14 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting MARK_STORIES_SEEN =
             new BooleanSetting("hushfacebook_mark_stories_seen", FALSE);
 
+    /**
+     * A video posted only to your Story asks the upload server for high quality instead of the
+     * standard quality it gets otherwise ({@link
+     * app.morphe.extension.facebook.stories.StoryUpload}, #123). Starts off.
+     */
+    public static final BooleanSetting UPLOAD_STORIES_IN_HD =
+            new BooleanSetting("hushfacebook_upload_stories_in_hd", FALSE);
+
     /** The two page filters that take server-inlined ads out of Reels and Watch. */
     public static final BooleanSetting HIDE_SPONSORED_REELS =
             new BooleanSetting("hushfacebook_hide_sponsored_reels", TRUE);

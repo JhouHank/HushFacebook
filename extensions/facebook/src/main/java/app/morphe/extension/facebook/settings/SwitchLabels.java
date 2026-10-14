@@ -63,6 +63,7 @@ final class SwitchLabels {
         if (setting == Settings.LOOP_STORIES) return L10n.t("Loop stories");
         if (setting == Settings.VIEW_STORIES_ANONYMOUSLY) return L10n.t("View stories anonymously");
         if (setting == Settings.MARK_STORIES_SEEN) return L10n.t("Mark as seen button");
+        if (setting == Settings.UPLOAD_STORIES_IN_HD) return L10n.t("Upload Stories in HD");
         if (setting == Settings.DOWNLOAD_STORIES) return L10n.t("Save any story");
         if (setting == Settings.DEFAULT_COMMENT_ORDER) return L10n.t("Default comment order");
         if (setting == Settings.HIDE_META_AI_SUMMARIES) return L10n.t("Hide Meta AI comment summaries");

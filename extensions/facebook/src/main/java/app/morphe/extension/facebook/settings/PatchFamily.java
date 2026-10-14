@@ -80,6 +80,8 @@ public enum PatchFamily {
             Settings.BLOCK_STORY_AUTO_ADVANCE, Settings.LOOP_STORIES),
     STORY_SEEN(FamilyNames.STORY_SEEN, "storySeen", null,
             Settings.VIEW_STORIES_ANONYMOUSLY, Settings.MARK_STORIES_SEEN),
+    STORY_UPLOAD_HD(FamilyNames.STORY_UPLOAD_HD, "storyUploadHd", null,
+            Settings.UPLOAD_STORIES_IN_HD),
     SPONSORED_REELS(FamilyNames.SPONSORED_REELS, "sponsoredReels",
             "the part of the Reels ad blocking built in when you patched",
             Settings.HIDE_SPONSORED_REELS),

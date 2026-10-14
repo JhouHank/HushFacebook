@@ -105,6 +105,7 @@ import app.morphe.extension.facebook.reels.SeenStateSendForTests;
 import app.morphe.extension.facebook.search.MetaAiSearchForTests;
 import app.morphe.extension.facebook.stories.StoryAdvance;
 import app.morphe.extension.facebook.stories.StorySeenForTests;
+import app.morphe.extension.facebook.stories.StoryUpload;
 import app.morphe.extension.facebook.stories.SuggestedStoriesForTests;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.settings.PauseForTests;
@@ -295,6 +296,8 @@ public class ColdStartHooksTest {
         assertFalse("stories viewed before the context were kept off their viewer lists", StorySeenForTests.holdsABatch());
         assertFalse("a marked story viewed before the context went out alone", StorySeenForTests.sendsOnlyTheMarked());
         assertFalse("a story viewed before the context got the Mark as seen button", StorySeenForTests.pointsTheButton());
+        assertEquals("a Story upload asked for high quality before the context said yes",
+                "standard", StoryUpload.quality("standard"));
         assertFalse("a story that finished before the context played again", StoryAdvance.loop());
         assertFalse(PlayerSourcesForTests.recordsAPlayer());
         assertFalse("a post menu built before the context got the video item", VideoMenuItemForTests.addsAnItem());
