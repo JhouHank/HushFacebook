@@ -158,9 +158,10 @@ function Invoke-GitLabCoverageRequest {
 
 function New-GitLabCoverageSession {
     # What one run or one check keeps between requests: how many it made and why it has to stop.
-    param([int]$MaxRequests = 0, [int]$DelayMilliseconds = 1000)
+    # WaitPath, when given, is where a 429's wait is kept for the next run (Get-GitLabCoverageWaitPath).
+    param([int]$MaxRequests = 0, [int]$DelayMilliseconds = 1000, [string]$WaitPath)
     return [pscustomobject]@{ Requests = 0; MaxRequests = $MaxRequests; DelayMilliseconds = $DelayMilliseconds
-        Stopped = $null; RetryAfter = $null; WindowUsed = $false; WindowReset = $null }
+        Stopped = $null; RetryAfter = $null; WindowUsed = $false; WindowReset = $null; WaitPath = $WaitPath }
 }
 
 function Invoke-GitLabCoverageGet {
@@ -186,6 +187,7 @@ function Invoke-GitLabCoverageGet {
     if ($answer.Status -eq 429) {
         $Session.Stopped = 'rate-limited'
         $Session.RetryAfter = Get-GitLabCoverageRetryAfter $answer.Headers
+        if ($Session.WaitPath -and $null -ne $Session.RetryAfter) { Save-GitLabCoverageWait -WaitPath $Session.WaitPath -RetryAfter $Session.RetryAfter }
     } elseif ($answer.Status -eq 0) {
         $Session.Stopped = 'no-answer'
     }
@@ -234,6 +236,36 @@ function Get-GitLabCoverageWait {
     $left = ($at.ToUniversalTime().AddSeconds([long]$Record.retryAfter) - $Now.ToUniversalTime()).TotalSeconds
     if ($left -le 0) { return 0 }
     return [int][Math]::Ceiling($left)
+}
+
+function Get-GitLabCoverageWaitPath {
+    <#
+        Where the wait after a 429 is kept for every ledger in one directory. GitLab limits the
+        address that asks, not one ledger, and some 429s land where no ledger record is written:
+        the ceiling read before a ledger exists, and the sentinel check, which only reads.
+    #>
+    param([Parameter(Mandatory = $true)][string]$Path)
+    $full = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+    return Join-Path (Split-Path -Parent $full) 'rate-limit-waits.jsonl'
+}
+
+function Save-GitLabCoverageWait {
+    # Keeps the wait a 429 asked for, counted from now, as one more line of the waits file, through
+    # the ledger's own append. Only the last line counts, since no request goes out until the wait
+    # it holds is over.
+    param([Parameter(Mandatory = $true)][string]$WaitPath, [long]$RetryAfter)
+    $directory = Split-Path -Parent $WaitPath
+    if ($directory -and -not (Test-Path -LiteralPath $directory)) { New-Item -ItemType Directory -Path $directory -Force | Out-Null }
+    [void](Add-GitLabCoverageRecord -Path $WaitPath -Record ([ordered]@{ kind = 'wait'; result = 'rate-limited'; retryAfter = $RetryAfter }))
+}
+
+function Get-GitLabCoverageKeptWait {
+    # The seconds left of the wait kept beside the ledger at Path, or 0. The waits file is read the
+    # way the ledger is, so a line cut short by a crash is passed over.
+    param([Parameter(Mandatory = $true)][string]$Path, [datetime]$Now)
+    $waits = Read-GitLabCoverageLedger -Path (Get-GitLabCoverageWaitPath -Path $Path)
+    if ($waits.Records.Count -eq 0) { return 0 }
+    return Get-GitLabCoverageWait -Record $waits.Records[$waits.Records.Count - 1] -Now $Now
 }
 
 # --- the ledger on disk --------------------------------------------------------------------------
@@ -756,7 +788,10 @@ function Invoke-GitLabCoverageRun {
         answer left nothing in the window; WindowReset is when it reopens), no-answer or
         ceiling-unread. WindowUsed says the window was empty when the run ended, whatever ended
         it. A run started inside the wait a 429 asked for makes no request: it stops
-        as rate-limited with what is left of the wait. Test-GitLabCoverage says what is still open.
+        as rate-limited with what is left of the wait. That holds for a 429 on any ledger or check
+        in the same directory, the ceiling read and the sentinel check included, since the wait is
+        kept beside the ledgers (Get-GitLabCoverageWaitPath). Test-GitLabCoverage says what is
+        still open.
     #>
     param(
         [Parameter(Mandatory = $true)][string]$Path,
@@ -788,7 +823,7 @@ function Invoke-GitLabCoverageRun {
     if ($state.Problems.Count -gt 0) {
         throw "The coverage ledger can't be added to until this is settled: $($state.Problems[0])"
     }
-    $session = New-GitLabCoverageSession -MaxRequests $MaxRequests -DelayMilliseconds $DelayMilliseconds
+    $session = New-GitLabCoverageSession -MaxRequests $MaxRequests -DelayMilliseconds $DelayMilliseconds -WaitPath (Get-GitLabCoverageWaitPath -Path $Path)
     function Add-Record($Record) {
         $held = Add-GitLabCoverageRecord -Path $Path -Record $Record
         Add-GitLabCoverageStateRecord $state $held
@@ -797,6 +832,23 @@ function Invoke-GitLabCoverageRun {
     function Get-Outcome {
         return [pscustomobject]@{ Requests = $session.Requests; Stopped = $session.Stopped
             RetryAfter = $session.RetryAfter; WindowUsed = $session.WindowUsed; WindowReset = $session.WindowReset }
+    }
+
+    if ($null -ne $state.Run -and (($Ceiling -gt 0 -and $Ceiling -ne [long]$state.Run.ceiling) -or
+        ($PSBoundParameters.ContainsKey('StartAfter') -and $StartAfter -ne [long]$state.Run.startAfter))) {
+        throw ("This ledger is pinned to the projects after $($state.Run.startAfter) up to $($state.Run.ceiling). " +
+            'A run can''t move that; start another ledger for another range.')
+    }
+    # A 429 ended an earlier run or check. Until the wait it was given is over, this one asks for
+    # nothing. The ledger's last record still counts for a ledger written before the kept wait.
+    $wait = Get-GitLabCoverageKeptWait -Path $Path -Now $Now
+    if ($ledger.Records.Count -gt 0) {
+        $wait = [Math]::Max($wait, (Get-GitLabCoverageWait -Record $ledger.Records[$ledger.Records.Count - 1] -Now $Now))
+    }
+    if ($wait -gt 0) {
+        $session.Stopped = 'rate-limited'
+        $session.RetryAfter = $wait
+        return (Get-Outcome)
     }
 
     if ($null -eq $state.Run) {
@@ -816,19 +868,6 @@ function Invoke-GitLabCoverageRun {
         if ($StartAfter -lt 0 -or $Ceiling -le $StartAfter) { throw "The range after $StartAfter up to $Ceiling holds no project id." }
         Add-Record ([ordered]@{ kind = 'run'; schemaVersion = 1; host = 'gitlab.com'; startAfter = $StartAfter
             ceiling = $Ceiling; ceilingSource = $source })
-    } elseif (($Ceiling -gt 0 -and $Ceiling -ne [long]$state.Run.ceiling) -or
-        ($PSBoundParameters.ContainsKey('StartAfter') -and $StartAfter -ne [long]$state.Run.startAfter)) {
-        throw ("This ledger is pinned to the projects after $($state.Run.startAfter) up to $($state.Run.ceiling). " +
-            'A run can''t move that; start another ledger for another range.')
-    }
-    # The last run ended on a 429. Until the wait it was given is over, this one asks for nothing.
-    if ($ledger.Records.Count -gt 0) {
-        $wait = Get-GitLabCoverageWait -Record $ledger.Records[$ledger.Records.Count - 1] -Now $Now
-        if ($wait -gt 0) {
-            $session.Stopped = 'rate-limited'
-            $session.RetryAfter = $wait
-            return (Get-Outcome)
-        }
     }
 
     # What earlier runs listed and didn't settle comes first, in the order it was listed.
@@ -892,14 +931,17 @@ function Compare-GitLabCoverageSentinel {
 
         -Shape is what the project was picked for (Get-GitLabCoverageSentinels). A project that no
         longer has that shape is a difference too, since the check would prove less than it says.
-        Nothing here writes to the ledger.
+        Nothing here writes to the ledger. A 429 keeps its wait beside it like a run's does, and a
+        check started inside a kept wait asks for nothing.
     #>
     param([Parameter(Mandatory = $true)][string]$Path, [Parameter(Mandatory = $true)][long]$ProjectId,
-        [string]$Shape, [int]$DelayMilliseconds = 1000)
+        [string]$Shape, [int]$DelayMilliseconds = 1000,
+        # When the check starts, which is what the wait after a 429 is measured against.
+        [datetime]$Now = [datetime]::UtcNow)
 
     $api = Get-GitLabCoverageApi
     $state = Get-GitLabCoverageState -Path $Path
-    $session = New-GitLabCoverageSession -DelayMilliseconds $DelayMilliseconds
+    $session = New-GitLabCoverageSession -DelayMilliseconds $DelayMilliseconds -WaitPath (Get-GitLabCoverageWaitPath -Path $Path)
     $differences = New-Object System.Collections.Generic.List[string]
     $compared = 0
     function Get-Direct([string]$Uri, [string]$What) {
@@ -918,6 +960,14 @@ function Compare-GitLabCoverageSentinel {
         return [pscustomobject]@{ ProjectId = $ProjectId; Shape = $Shape; Matches = ($differences.Count -eq 0)
             Compared = $compared; Differences = [string[]]$differences.ToArray(); Requests = $session.Requests
             Stopped = $session.Stopped; RetryAfter = $session.RetryAfter; WindowUsed = $session.WindowUsed }
+    }
+
+    $wait = Get-GitLabCoverageKeptWait -Path $Path -Now $Now
+    if ($wait -gt 0) {
+        $session.Stopped = 'rate-limited'
+        $session.RetryAfter = $wait
+        $differences.Add("nothing was asked for: $wait s of the wait GitLab asked for are left")
+        return (Get-Outcome)
     }
 
     $key = [string]$ProjectId

@@ -23,7 +23,9 @@
 
     Requests are anonymous GETs to gitlab.com, one at a time, -DelayMilliseconds apart. A 429 or
     a used-up rate-limit window ends the run, and a run started before the wait GitLab asked for
-    is over asks for nothing. The ledgers go under build/gitlab-coverage, which git ignores.
+    is over asks for nothing. That wait is kept in rate-limit-waits.jsonl beside the ledgers, so
+    a 429 on the ceiling read or the sentinel check holds every ledger in the directory too. The
+    ledgers go under build/gitlab-coverage, which git ignores.
 
 .EXAMPLE
     pwsh -File scripts/scan-gitlab-coverage.ps1 -Sentinels

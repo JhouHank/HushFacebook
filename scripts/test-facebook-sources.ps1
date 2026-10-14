@@ -1289,8 +1289,9 @@ Assert-True (@($ledger.census.skipped) -contains 'gitlab-code-search') `
     # A 429 is recorded against what was being read, with the wait GitLab asked for, and ends the
     # run on the spot. So does a rate-limit window with nothing left in it, before the request
     # that would overrun it. Either way the next run carries on.
+    # The wait is kept for the whole directory, so the 429 cases get directories of their own.
     $fakeLab = New-FakeLab
-    $limited = Join-Path $coverageRoot 'limited.jsonl'
+    $limited = Join-Path (Join-Path $coverageRoot 'limited') 'limited.jsonl'
     $fakeLab.Failures.Add(@{ Pattern = '/projects/12/repository/branches\?'; Status = 429; Headers = @{ 'Retry-After' = '30' }; Times = 1 })
     $outcome = Invoke-Run $limited
     $coverage = Test-GitLabCoverage -Path $limited
@@ -1306,6 +1307,11 @@ Assert-True (@($ledger.census.skipped) -contains 'gitlab-code-search') `
     Assert-True ($outcome.Stopped -eq 'rate-limited' -and $outcome.Requests -eq 0 -and $fakeLab.Requests.Count -eq 0 -and
         $outcome.RetryAfter -gt 0 -and $outcome.RetryAfter -le 30 -and [IO.File]::ReadAllText($limited) -ceq $limitedText) `
         "A run started inside the wait a 429 asked for made a request or wrote a record ($($outcome.Requests) requests, $($outcome.RetryAfter) s left)."
+    # GitLab limits the address, not the ledger: another ledger beside it waits too.
+    $beside = Join-Path (Join-Path $coverageRoot 'limited') 'beside.jsonl'
+    $outcome = Invoke-Run $beside
+    Assert-True ($outcome.Stopped -eq 'rate-limited' -and $outcome.Requests -eq 0 -and $fakeLab.Requests.Count -eq 0 -and
+        -not (Test-Path -LiteralPath $beside)) "A ledger beside one that got a 429 made $($fakeLab.Requests.Count) request(s) inside its wait."
     $outcome = Invoke-Run $limited @{ Now = [datetime]::UtcNow.AddSeconds(31) }
     $held = @(Get-LedgerRecords $limited | Where-Object { $_.kind -eq 'project' -and $_.id -eq 12 } | ForEach-Object { $_.result })
     Assert-True ($null -eq $outcome.Stopped -and (Test-GitLabCoverage -Path $limited).Complete -and ($held -join ',') -eq 'rate-limited,empty' -and
@@ -1331,6 +1337,19 @@ Assert-True (@($ledger.census.skipped) -contains 'gitlab-code-search') `
     $fakeLab.Failures.Add(@{ Pattern = 'sort=desc'; Status = 429; Headers = @{}; Times = 1 })
     $outcome = Invoke-Run $unstarted
     Assert-True ($outcome.Stopped -eq 'rate-limited' -and -not (Test-Path -LiteralPath $unstarted)) 'A ledger was started without a ceiling to pin.'
+    # A 429 on the ceiling read has no ledger to hold its wait, and the next run keeps to it anyway.
+    $fakeLab = New-FakeLab
+    $unread = Join-Path (Join-Path $coverageRoot 'unread') 'unread.jsonl'
+    $fakeLab.Failures.Add(@{ Pattern = 'sort=desc'; Status = 429; Headers = @{ 'Retry-After' = '45' }; Times = 1 })
+    $outcome = Invoke-Run $unread
+    Assert-True ($outcome.Stopped -eq 'rate-limited' -and $outcome.RetryAfter -eq 45 -and $outcome.Requests -eq 1 -and -not (Test-Path -LiteralPath $unread) -and
+        (Test-Path -LiteralPath (Get-GitLabCoverageWaitPath -Path $unread))) 'A 429 on the ceiling read kept no wait.'
+    $outcome = Invoke-Run $unread
+    Assert-True ($outcome.Stopped -eq 'rate-limited' -and $outcome.Requests -eq 0 -and $fakeLab.Requests.Count -eq 0 -and
+        $outcome.RetryAfter -gt 0 -and $outcome.RetryAfter -le 45 -and -not (Test-Path -LiteralPath $unread)) `
+        "A run started inside the wait a 429 on the ceiling read asked for made $($fakeLab.Requests.Count) request(s)."
+    $outcome = Invoke-Run $unread @{ Now = [datetime]::UtcNow.AddSeconds(46) }
+    Assert-True ($null -eq $outcome.Stopped -and (Test-GitLabCoverage -Path $unread).Complete) 'The run after the ceiling read''s wait did not start the ledger.'
 
     # The ceiling is pinned by the first run. Projects created after it are past the ceiling: they
     # are counted on the page that reaches it and never read, and no later run can move it.
@@ -1470,7 +1489,15 @@ Assert-True (@($ledger.census.skipped) -contains 'gitlab-code-search') `
     $scan = Invoke-Scan @{ Sentinels = $true }
     Assert-True ($scan.ExitCode -eq 1 -and $fakeLab.Requests.Count -eq 1 -and $scan.Said -like '*the sentinel check stops here*') `
         "A 429 while checking a sentinel did not end the check after that request ($($fakeLab.Requests.Count) requests): $($scan.Said)"
-    $again = Join-Path $scanRoot 'build/gitlab-coverage/again'
+    # That 429 wrote no ledger record, and its wait still holds for the next scan and for a check asked for directly.
+    $scan = Invoke-Scan @{ Sentinels = $true }
+    Assert-True ($scan.ExitCode -eq 1 -and $fakeLab.Requests.Count -eq 0 -and $scan.Said -like '*of the wait GitLab asked for are left; nothing was requested*') `
+        "A scan started inside the wait a 429 asked for while checking a sentinel made $($fakeLab.Requests.Count) request(s): $($scan.Said)"
+    $fakeLab.Requests.Clear()
+    $check = Compare-GitLabCoverageSentinel -Path (Join-Path (Join-Path $scanRoot 'build/gitlab-coverage') "sentinel-$firstId.jsonl") -ProjectId $firstId -DelayMilliseconds 0
+    Assert-True (-not $check.Matches -and $check.Requests -eq 0 -and $fakeLab.Requests.Count -eq 0 -and $check.Stopped -eq 'rate-limited' -and $check.RetryAfter -gt 0) `
+        "A second-way check started inside a kept wait made $($fakeLab.Requests.Count) request(s)."
+    $again =Join-Path $scanRoot 'build/gitlab-coverage/again'
     $fakeLab.Failures.Add(@{ Pattern = 'id_after='; Status = 429; Headers = @{ 'Retry-After' = '60' }; Times = 1 })
     $scan = Invoke-Scan @{ Sentinels = $true; LedgerDirectory = $again }
     Assert-True ($scan.ExitCode -eq 1 -and $fakeLab.Requests.Count -eq 1 -and $scan.Said -like '*rate limited (HTTP 429) after 1 request(s); GitLab asked for 60 s*' -and
