@@ -35,6 +35,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** With `Picture-in-picture` on, opening a Facebook link, a notification or a settings shortcut while a reel floats in its window brings Facebook back full screen on that page. The page used to open inside the little window and stay there until you tapped the app icon.
 * **Facebook:** `Hide link posts` hides website links on 582. Facebook sends their preview card with a template style first and the plain link style second, and only the first one was checked, so these posts stayed in Home. A post goes now when its card lists the link style anywhere and the link leads off Facebook. Shared events and shared reels stay, and so does a photo post with a web address typed in its text.
 * **Facebook:** With `Hide the Meta AI button in Chats` on, the box on Chats' search screen stops short of the screen's right edge again. Hiding the button took the box's end margin with it, so the box ran all the way to the edge. It now keeps the same gap as the search box at the top of Chats.
+* **Facebook:** Morphe Manager lists every change of the release your Facebook was patched with, not just a short summary (issue #143). For that one release Manager shows the patch bundle's description instead of the changelog, and the description was a paragraph while every older release listed its changes. It now goes on with the release's changelog groups and bullets after the summary. You'll see it from the next release on.
 
 ## 0.12.0 (2026-10-13)
 

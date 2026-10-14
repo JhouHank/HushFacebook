@@ -3097,6 +3097,23 @@ try {
         }
     }
 
+    # The release's CHANGELOG groups follow the facts in the description (#143), and a bullet there
+    # may name an older build or another count, so the facts are read up to the first ### line.
+    Set-FactsFile 'patches-bundle.json' {
+        param($text) $text -replace '("description":\s*"(?:[^"\\]|\\.)*)"', '$1\n\n### Fixed\n\n* **Facebook:** Builds before Facebook 9.9.9.9.9 kept 3 patches."'
+    }
+    try {
+        Assert-True ((Get-Content -LiteralPath (Join-Path $factsRoot 'patches-bundle.json') -Raw | ConvertFrom-Json).description -match
+            '(?m)^### Fixed$') 'The description edit added no ### group, so the groups case would prove nothing.'
+        try {
+            Invoke-Facts
+        } catch {
+            throw "The release facts check read a CHANGELOG bullet under the description's facts as one: $($_.Exception.Message)"
+        }
+    } finally {
+        Reset-FactsFile 'patches-bundle.json'
+    }
+
     # The same number in the README, which is the other half of the same promise.
     Set-FactsFile 'README.md' {
         param($text) $text -replace '(?<!\d)\d+ patches\b', '3 patches'
