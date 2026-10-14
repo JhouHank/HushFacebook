@@ -479,6 +479,117 @@ internal fun MutableMethod.hearBucketMade() {
 
 internal fun MethodReference.smali(): String = "$definingClass->$name(${parameterTypes.joinToString("")})$returnType"
 
+/*
+ * The eye's timing (#150, read from both 582 builds on 2026-10-14).
+ *
+ * The seen helper's (StoryBucket, StoryCard) method runs as a card becomes active. After the
+ * bucket and card checks that decide a card is counted at all, it counts the card at once when the
+ * story's progress bar plays ("StoryViewerProgressBarPlayManager is null" is its log line), and
+ * otherwise makes a listener (constructor: StoryBucket, StoryCard, the helper, the peek flag) that
+ * counts it once the bar starts. A story still loading got the eye only then, about half a
+ * second late. The hook goes first in that listener's constructor and hands the bucket, the card
+ * and the helper to the button, whose stub reads the helper's one FbUserSession field. The
+ * constructor runs only for a card that passed the checks.
+ *
+ * Facebook keeps each story card's state in an immutable object that its two Litho state updates
+ * take ("updateState:StoryCardComponent.updateStoryCardState", sync and async), and the header
+ * (progress bar, name, menu) is drawn from it. Its long press flag is the boolean Facebook's own
+ * state dump reads just before it loads "LONG_PRESS_ACTIVE". Facebook sets it when the story is held
+ * and clears it on release, and the header hides meanwhile. The hook goes first in both updates
+ * and hands the state to the button, whose stub reads the flag.
+ */
+internal const val CARD_STATE_UPDATE = "updateState:StoryCardComponent.updateStoryCardState"
+internal const val LONG_PRESS_ACTIVE = "LONG_PRESS_ACTIVE"
+internal const val ON_STATE = "$STORY_SEEN_BUTTON->onState(Ljava/lang/Object;)V"
+internal const val ON_CARD_LATER = "$STORY_SEEN_BUTTON->onCardLater(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V"
+internal const val LONG_PRESSED_STUB = "longPressed"
+internal const val HELPER_SESSION_STUB = "helperSession"
+
+/** Whether [method] is one of the story card state's Litho updates: an instance void taking the state, loading [CARD_STATE_UPDATE]. */
+internal fun isCardStateUpdate(method: Method): Boolean =
+    !AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "V" && method.parameterTypes.size == 1 &&
+        method.parameterTypes.single().toString().startsWith("L") && holdsString(method, CARD_STATE_UPDATE)
+
+/**
+ * The long press flag of [state] in [method], Facebook's state dump: the boolean field of [state]
+ * read right before the branch that skips loading [LONG_PRESS_ACTIVE], or null when [method] isn't
+ * shaped that way.
+ */
+internal fun longPressFlag(method: Method, state: String): FieldReference? {
+    val code = method.implementation?.instructions?.toList() ?: return null
+    val literal = code.indexOfFirst { it.string() == LONG_PRESS_ACTIVE }
+    if (literal < 2 || code[literal - 1].opcode != Opcode.IF_EQZ) return null
+    val read = code[literal - 2]
+    if (read.opcode != Opcode.IGET_BOOLEAN) return null
+    if ((read as OneRegisterInstruction).registerA != (code[literal - 1] as OneRegisterInstruction).registerA) return null
+    val field = (read as ReferenceInstruction).reference as FieldReference
+    return if (field.definingClass == state && field.type == "Z") field else null
+}
+
+/** First thing in a card state update: hand the button the new state. */
+internal fun MutableMethod.reportState() {
+    addInstructions(0, "invoke-static/range { p1 .. p1 }, $ON_STATE")
+}
+
+/** The listener the seen helper makes to count a card once it plays, and the helper's session field. */
+internal class CountLater(val listener: ClassDef, val constructor: Method, val session: Field)
+
+/**
+ * In [helper]'s instance void (StoryBucket, StoryCard) method: the one class it creates with a
+ * constructor taking (StoryBucket, StoryCard, [helper], boolean), which [classes] looks up, and
+ * [helper]'s one FbUserSession field. Null when the helper isn't shaped that way.
+ */
+internal fun countLater(helper: ClassDef, classes: (String) -> ClassDef?): CountLater? {
+    val session = helper.fields.filter { !AccessFlags.STATIC.isSet(it.accessFlags) && it.type == FB_USER_SESSION }
+        .singleOrNull() ?: return null
+    val shape = listOf(STORY_BUCKET, STORY_CARD, helper.type, "Z")
+    val made = helper.methods.filter {
+        !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" &&
+            it.parameterTypes.map(Any::toString) == listOf(STORY_BUCKET, STORY_CARD)
+    }.flatMap { method ->
+        method.implementation?.instructions?.toList().orEmpty().mapNotNull { instruction ->
+            val call = instruction.call(Opcode.INVOKE_DIRECT, Opcode.INVOKE_DIRECT_RANGE)
+            if (call != null && call.name == "<init>" && call.takes(*shape.toTypedArray())) call.definingClass else null
+        }
+    }.toSet()
+    val type = made.singleOrNull() ?: return null
+    val listener = classes(type) ?: return null
+    val constructor = listener.methods.singleOrNull {
+        it.name == "<init>" && it.parameterTypes.map(Any::toString) == shape && it.implementation != null
+    } ?: return null
+    return CountLater(listener, constructor, session)
+}
+
+/** First thing in the listener's constructor: hand the button the bucket, the card and the helper. */
+internal fun MutableMethod.reportCardLater() {
+    addInstructions(0, "invoke-static/range { p1 .. p3 }, $ON_CARD_LATER")
+}
+
+/** The button's stubs: the long press flag of a card state, and the seen helper's session. */
+internal fun fillEyeStubs(
+    stub: (name: String, answer: String) -> MutableMethod,
+    flag: FieldReference,
+    helper: String,
+    session: Field,
+) {
+    stub(LONG_PRESSED_STUB, "Z").addInstructions(
+        0,
+        """
+            check-cast p0, ${flag.definingClass}
+            iget-boolean p0, p0, ${flag.definingClass}->${flag.name}:Z
+            return p0
+        """,
+    )
+    stub(HELPER_SESSION_STUB, OBJECT).addInstructions(
+        0,
+        """
+            check-cast p0, $helper
+            iget-object p0, p0, $helper->${session.name}:$FB_USER_SESSION
+            return-object p0
+        """,
+    )
+}
+
 /**
  * Fills the extension's stubs with the calls on Facebook's story classes and the publishing calls.
  * [stub] finds each by name, answer and parameters. Each uses only its parameter registers, so a

@@ -29,7 +29,8 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  * reactions are sent by another class. With the Mark as seen button's switch on as well, the hook
  * sends the cards you marked instead, in a set of their own, and a second hook in the seen helper
  * tells the button which card is on screen. A third hook, where Facebook's story controllers make a card the
- * active one, keeps the button on that card.
+ * active one, keeps the button on that card. Two more give the button a card as soon as it's active,
+ * before it plays, and the story card's state, so the eye hides while the story is held (#150).
  *
  * Facebook greys a ring only once its servers take the report, so a fourth hook in the seen helper
  * hears each card queued, and a fifth each story bucket Facebook builds, and the extension
@@ -90,8 +91,39 @@ val viewStoriesAnonymouslyPatch = bytecodePatch(
         if (store < 0) {
             throw PatchException("$PATCH: ${activationOwner.type}->${activation.name} doesn't store the activated $STORY_CARD once")
         }
+        val later = countLater(helper) { type -> classDefByOrNull(type) } ?: throw PatchException(
+            "$PATCH: ${helper.type} doesn't make one listener from (StoryBucket, StoryCard, ${helper.type}, boolean) " +
+                "in its (StoryBucket, StoryCard) method, or has no one FbUserSession field",
+        )
+        val updates = classDefByStrings(CARD_STATE_UPDATE, StringComparisonType.EQUALS)
+            .flatMap { owner -> owner.methods.filter(::isCardStateUpdate).map { owner to it } }
+        val cardState = updates.map { it.second.parameterTypes.single().toString() }.toSet().singleOrNull()
+        if (updates.isEmpty() || cardState == null) {
+            throw PatchException(
+                "$PATCH: expected the story card state's updates naming \"$CARD_STATE_UPDATE\" to take one state, " +
+                    "found ${updates.size} taking ${updates.map { it.second.parameterTypes }}",
+            )
+        }
+        val flags = classDefByStrings(LONG_PRESS_ACTIVE, StringComparisonType.EQUALS)
+            .flatMap { owner -> owner.methods.mapNotNull { longPressFlag(it, cardState) } }
+            .distinctBy { "${it.definingClass}->${it.name}" }
+        val flag = flags.singleOrNull() ?: throw PatchException(
+            "$PATCH: expected one boolean of $cardState read before \"$LONG_PRESS_ACTIVE\", found ${flags.size}",
+        )
+        for ((owner, field) in listOf(cardState to flag.name, helper.type to later.session.name)) {
+            val classDef = classDefByOrNull(owner)
+            val declared = classDef?.fields?.singleOrNull { it.name == field }
+            if (classDef == null || !AccessFlags.PUBLIC.isSet(classDef.accessFlags) || declared == null ||
+                !AccessFlags.PUBLIC.isSet(declared.accessFlags)
+            ) {
+                throw PatchException("$PATCH: $owner->$field isn't public in a public class, so the extension can't read it")
+            }
+        }
         val sendStub = stub(STORY_SEEN, SEND_STUB, "V")
         val cardIdStub = stub(STORY_SEEN_BUTTON, CARD_ID_STUB, "Ljava/lang/String;")
+        val eyeStubMethods = listOf(LONG_PRESSED_STUB to "Z", HELPER_SESSION_STUB to "Ljava/lang/Object;")
+            .associate { (name, answer) -> name to stub(STORY_SEEN_BUTTON, name, answer) }
+        val eyeStubs = { name: String, _: String -> eyeStubMethods.getValue(name) }
         val marking = seenMarking()
         val seenStubs = mutableClassDefBy(STORY_SEEN)
         val stubs = { name: String, answer: String, parameters: List<String> ->
@@ -107,9 +139,12 @@ val viewStoriesAnonymouslyPatch = bytecodePatch(
             hearViewedCards()
         }
         mutableClassDefBy(activationOwner.type).methods.single { it.sameAs(activation) }.reportActive(store)
+        mutableClassDefBy(later.listener.type).methods.single { it.sameAs(later.constructor) }.reportCardLater()
+        for ((owner, update) in updates) mutableClassDefBy(owner.type).methods.single { it.sameAs(update) }.reportState()
         mutableClassDefBy(REGULAR_BUCKET).methods.single { it.sameAs(marking.constructor) }.hearBucketMade()
         sendStub.fillSend(sender)
         cardIdStub.fillCardId()
+        fillEyeStubs(eyeStubs, flag, helper.type, later.session)
         fillSeenStubs(stubs, marking.buckets, marking.publisher)
         enableStatus("storySeen")
     }
