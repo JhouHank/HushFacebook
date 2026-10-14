@@ -99,9 +99,10 @@ public final class ChatList {
     }
 
     /**
-     * Injection point, right after the Chats search screen's row decides to show its Meta AI
-     * button. False while the Meta AI switch is on, so the row neither shortens the search box for
-     * the button nor builds it. Never throws.
+     * Injection point, right before the Chats search screen's row tests its Meta AI flag to build
+     * the button, on every way there, so {@code shows} is often already false. False while the Meta
+     * AI switch is on, so the button isn't built. The row has already given the search box the end
+     * margin it keeps beside the button, so the box still stops short of the screen's edge. Never throws.
      */
     public static boolean showsSearchMetaAiButton(boolean shows) {
         try {

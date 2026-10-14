@@ -150,14 +150,15 @@ internal fun MutableMethod.dropMetaAiButtonWhileHidden(site: MetaAiButtonSite) {
 }
 
 /**
- * Right after the search screen's row sets its Meta AI flag to 1, the flag goes through the
- * extension, which answers 0 while the switch is on. The row's paths that leave the flag at 0 jump
- * past this spot, so it only runs when Facebook would show the button.
+ * Right before the search screen's row tests its Meta AI flag to build the button, the flag goes
+ * through the extension, which answers 0 while the switch is on and keeps a 0 a 0. The row's earlier
+ * test still sees Facebook's own flag, so the search box keeps the end margin it has beside the
+ * button instead of running to the screen's edge. No jump lands on the test, so every way there asks.
  */
 internal fun MutableMethod.lowerMetaAiFlagWhileHidden(gate: PickerButtonGate) {
     val flag = gate.register
     addInstructions(
-        gate.set + 1,
+        gate.test,
         """
             invoke-static/range { v$flag .. v$flag }, $PICKER_META_AI_HOOK
             move-result v$flag

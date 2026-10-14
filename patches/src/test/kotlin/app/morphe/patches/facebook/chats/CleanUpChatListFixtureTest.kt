@@ -144,16 +144,17 @@ class CleanUpChatListFixtureTest {
                 val tests = (gate.set + 1 until tap).filter {
                     pickerStock[it].opcode == Opcode.IF_EQZ && (pickerStock[it] as OneRegisterInstruction).registerA == flag
                 }
-                assertEquals("$name: the flag shortens the search box, then builds the button", 2, tests.size)
-                // Up to the button's test, the flag is written twice: 0 at the start and the 1 the hook follows.
-                // So a path that skips the hook reaches the tests with 0, and the hook sees every 1. Inside the
-                // button block Facebook reuses the register for other values, which the hook never touches.
+                assertEquals("$name: the flag gives the search box its end margin, then builds the button", 2, tests.size)
+                assertEquals("$name: the gate is the button's test", gate.test, tests.last())
+                // Up to the button's test, the flag is written twice: 0 at the start and Facebook's 1. So the
+                // hook before that test only ever sees a 0 or a 1. Inside the button block Facebook reuses the
+                // register for other values, which the hook never touches.
                 val writes = (0 until tests.last()).filter {
                     pickerStock[it].opcode.setsRegister() && (pickerStock[it] as? OneRegisterInstruction)?.registerA == flag
                 }
                 assertEquals("$name: writes to the flag before the button's test", 2, writes.size)
                 assertEquals("$name: the first puts 0", 0, (pickerStock[writes[0]] as NarrowLiteralInstruction).narrowLiteral)
-                assertEquals("$name: the second is the hooked 1", gate.set, writes[1])
+                assertEquals("$name: the second is Facebook's 1", gate.set, writes[1])
 
                 // The patch on those classes.
                 val context = PatchContexts.of(
@@ -230,21 +231,23 @@ class CleanUpChatListFixtureTest {
                 assertEquals("$there: stock code after the hook", rowStock.drop(r + 1).map { it.target() }, rowHooked.drop(r + 4).map { it.target() })
 
                 val pickerHooked = patched(context, gate.method).body()
-                val s = gate.set
+                val t = gate.test
                 val screen = "$name ${gate.method.definingClass}->${gate.method.name}"
                 assertEquals("$screen: two instructions in", pickerStock.size + 2, pickerHooked.size)
-                assertEquals("$screen: stock code up to the flag", pickerStock.take(s + 1).map { it.opcode to it.target() }, pickerHooked.take(s + 1).map { it.opcode to it.target() })
-                assertEquals("$screen: the hook call", Opcode.INVOKE_STATIC_RANGE, pickerHooked[s + 1].opcode)
-                assertEquals("$screen: the hook", PICKER_META_AI_HOOK, pickerHooked[s + 1].target())
-                val asked = pickerHooked[s + 1] as RegisterRangeInstruction
+                // The margin's test comes before the hook, so the box keeps the margin it has beside the button.
+                assertEquals("$screen: stock code up to the button's test, the margin's test in it", pickerStock.take(t).map { it.opcode to it.target() }, pickerHooked.take(t).map { it.opcode to it.target() })
+                assertEquals("$screen: the hook call", Opcode.INVOKE_STATIC_RANGE, pickerHooked[t].opcode)
+                assertEquals("$screen: the hook", PICKER_META_AI_HOOK, pickerHooked[t].target())
+                val asked = pickerHooked[t] as RegisterRangeInstruction
                 assertEquals("$screen: hands over the flag", listOf(flag, 1), listOf(asked.startRegister, asked.registerCount))
-                assertEquals("$screen: the answer", Opcode.MOVE_RESULT, pickerHooked[s + 2].opcode)
-                assertEquals("$screen: lands in the flag", flag, (pickerHooked[s + 2] as OneRegisterInstruction).registerA)
-                assertEquals("$screen: stock code after the hook", pickerStock.drop(s + 1).map { it.opcode to it.target() }, pickerHooked.drop(s + 3).map { it.opcode to it.target() })
-                // Every branch still lands on the instruction it did, so the path that skips the 1 (the
-                // join right after it) skips the hook too, and nothing jumps into the middle of it.
-                assertTrue("$screen: a branch joins right after the 1", branches(pickerStock).any { it.second == s + 1 })
-                val moved = { at: Int -> if (at > s) at + 2 else at }
+                assertEquals("$screen: the answer", Opcode.MOVE_RESULT, pickerHooked[t + 1].opcode)
+                assertEquals("$screen: lands in the flag", flag, (pickerHooked[t + 1] as OneRegisterInstruction).registerA)
+                assertEquals("$screen: the button's test reads it", flag, (pickerHooked[t + 2] as OneRegisterInstruction).registerA)
+                assertEquals("$screen: stock code from the test on", pickerStock.drop(t).map { it.opcode to it.target() }, pickerHooked.drop(t + 2).map { it.opcode to it.target() })
+                // Nothing jumps to the button's test, so every way there runs the hook first, and every
+                // other branch still lands on the instruction it did.
+                assertTrue("$screen: no branch lands on the button's test", branches(pickerStock).none { it.second == t })
+                val moved = { at: Int -> if (at >= t) at + 2 else at }
                 assertEquals(
                     "$screen: branches land where they did",
                     branches(pickerStock).map { (from, to) -> moved(from) to moved(to) },

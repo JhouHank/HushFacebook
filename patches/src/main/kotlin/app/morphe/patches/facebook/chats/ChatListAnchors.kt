@@ -192,15 +192,15 @@ private fun callerContextBefore(code: List<Instruction>, at: Int): String? {
 
 /**
  * Where the search screen's row decides to show its Meta AI button: [set] in [method] is the one
- * instruction putting 1 in [register], the flag the row tests before it shortens the search box for
- * the button and again before it builds the button.
+ * instruction putting 1 in [register], the flag the row tests once to give the search box an end
+ * margin and again at [test] before it builds the button.
  */
-internal class PickerButtonGate(val method: Method, val set: Int, val register: Int)
+internal class PickerButtonGate(val method: Method, val set: Int, val test: Int, val register: Int)
 
 /**
  * The Meta AI gate of [method] when it's the search screen row's render: it creates one tap action
- * of type [opener], the last `if-eqz` before that jumps past it tests the flag, and exactly one
- * literal 1 is put in that register before the test. Null for any other method.
+ * of type [opener], the last `if-eqz` before that jumps past it tests the flag, no jump lands on that
+ * test, and exactly one literal 1 is put in that register before it. Null for any other method.
  */
 internal fun pickerButtonGate(method: Method, opener: String): PickerButtonGate? {
     val code = method.implementation?.instructions?.toList() ?: return null
@@ -214,12 +214,17 @@ internal fun pickerButtonGate(method: Method, opener: String): PickerButtonGate?
     val gate = (tap - 1 downTo 0).firstOrNull { at ->
         code[at].opcode == Opcode.IF_EQZ && address[at] + (code[at] as OffsetInstruction).codeOffset > address[tap]
     } ?: return null
+    val lands = code.indices.any { at ->
+        val jump = code[at] as? OffsetInstruction
+        jump != null && address[at] + jump.codeOffset == address[gate]
+    }
+    if (lands) return null
     val register = (code[gate] as OneRegisterInstruction).registerA
     val sets = (0 until gate).filter { at ->
         code[at].opcode in LITERAL_CONSTS && (code[at] as OneRegisterInstruction).registerA == register &&
             (code[at] as NarrowLiteralInstruction).narrowLiteral == 1
     }
-    return sets.singleOrNull()?.let { PickerButtonGate(method, it, register) }
+    return sets.singleOrNull()?.let { PickerButtonGate(method, it, gate, register) }
 }
 
 private val LITERAL_CONSTS = setOf(Opcode.CONST_4, Opcode.CONST_16, Opcode.CONST)
