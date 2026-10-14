@@ -699,6 +699,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_picture_in_picture", FALSE);
 
     /**
+     * With Picture-in-picture on, leaving Facebook opens no window and only the Picture-in-picture
+     * row in a reel's More menu does (#44,
+     * {@link app.morphe.extension.facebook.media.PictureInPictureRow}). Starts off, so leaving
+     * still opens it. Off, paused or with Picture-in-picture off, it changes nothing.
+     */
+    public static final BooleanSetting PICTURE_IN_PICTURE_FROM_MENU =
+            new BooleanSetting("hushfacebook_picture_in_picture_from_menu", FALSE);
+
+    /**
      * HDR videos and photos stay in the screen's usual range instead of turning it up to full
      * brightness ({@link app.morphe.extension.facebook.media.HdrBrightness}). Starts off. Off
      * or paused, Facebook asks for its HDR window again.

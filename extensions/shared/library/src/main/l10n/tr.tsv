@@ -1506,3 +1506,7 @@ Hide the Free mode banner	Ücretsiz mod bannerını gizle
 On carriers with Facebook Flex, hides the Data mode bar under the top bar and its button to buy mobile data.	Facebook Flex sunan operatörlerde üst çubuğun altındaki Veri modu çubuğunu ve mobil veri satın alma düğmesini gizler.
 # context: summary of the Hide the Free mode banner switch; the purple bar is also where you switch back to Data mode
 On carriers with Facebook Flex, hides the purple Free mode bar. That bar is also how you go back to Data mode, so turn this off when you want to switch.	Facebook Flex sunan operatörlerde mor Ücretsiz mod çubuğunu gizler. Bu çubuk Veri moduna geri dönmenin de yoludur, bu yüzden geçiş yapmak istediğinde bunu kapat.
+# context: switch title under Picture-in-picture on the Playback page: the small window opens only from the Picture-in-picture row this adds to a reel's three-dot More menu, not when you leave Facebook
+Only from a reel's More menu	Yalnızca bir reel'in menüsünden
+# context: summary of that switch; Picture-in-picture is the name of the row in the reel's menu, translated as the row is; the three dots are the reel's own menu button
+Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's More menu (the three dots) when you want one. That row is there whenever Picture-in-picture is on.	Facebook'tan çıkmak pencereyi açmaz. İstediğinde bir reel'in menüsünde (üç nokta) Pencere içinde pencere'ye dokun. Pencere içinde pencere açık olduğu sürece bu satır orada olur.

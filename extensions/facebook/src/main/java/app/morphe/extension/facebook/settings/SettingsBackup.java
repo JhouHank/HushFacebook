@@ -202,6 +202,7 @@ public final class SettingsBackup {
             Settings.FRAME_STEP,
             Settings.DEFAULT_PLAYBACK_QUALITY,
             Settings.PICTURE_IN_PICTURE,
+            Settings.PICTURE_IN_PICTURE_FROM_MENU,
             Settings.TURN_OFF_HDR_BRIGHTNESS,
             Settings.KEEP_PROGRESS_BAR,
             Settings.KEEP_PROGRESS_BAR_TIME,

@@ -14,6 +14,7 @@ import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod.Companion.toMutable
 import app.morphe.patcher.util.smali.ExternalLabel
+import app.morphe.patches.facebook.downloads.reel.moreSheet
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.media.taptoplay.GROOT_PLAY
@@ -23,6 +24,7 @@ import app.morphe.patches.facebook.media.taptoplay.innerPause
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
+import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.extension.requireParameterIntact
 import app.morphe.patches.facebook.misc.extension.requireThisIntact
@@ -159,6 +161,10 @@ internal const val HOME_FLAG_ALLOWED = "$PICTURE_IN_PICTURE->homeFlagAllowed(Z)Z
  * Facebook's own code then arms the window for the video on screen, and the rest here treats that
  * arming like any other: a paused video is held by the pause hook.
  *
+ * A reel's More sheet gets a Picture-in-picture row while the window is armed on its screen, and
+ * its tap opens the window at once (#44). A second switch, Only from a reel's More menu, keeps
+ * auto-enter off so that row is the only way in; the extension does that part.
+ *
  * In the default selection with its switch off: it changes what leaving Facebook does.
  */
 @Suppress("unused")
@@ -195,6 +201,13 @@ val pictureInPicturePatch = bytecodePatch(
         applyViewerId(opening)
         applyTopicFlag(topic)
         applyHome(home)
+        // The More sheet row (#44). The fixture tests hold it on every declared build; on another
+        // one, leaving Facebook still opens the window, so a miss here is a warning.
+        try {
+            addPictureInPictureRow(moreSheet(PATCH))
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so reels get no Picture-in-picture row in their More sheet.")
+        }
         enableStatus("pictureInPicture")
     }
 }

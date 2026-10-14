@@ -191,6 +191,10 @@ final class VideoPages {
             if (build.contains(PatchFamily.PICTURE_IN_PICTURE)) {
                 playback.addPreference(toggle(context, Settings.PICTURE_IN_PICTURE,
                         L10n.t("A playing reel or full-screen video keeps going in a small window when you leave Facebook. Android 12 or later.")));
+                // Asked as each window is armed and on each tap of the row, so a change shows from the next reel.
+                playback.addPreference(toggle(context, Settings.PICTURE_IN_PICTURE_FROM_MENU,
+                        L10n.t("Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's More menu "
+                                + "(the three dots) when you want one. That row is there whenever Picture-in-picture is on.")));
             }
             if (build.contains(PatchFamily.HDR_BRIGHTNESS)) {
                 // Asked as each screen comes to the front, so a change shows from the next one.

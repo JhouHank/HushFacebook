@@ -7,6 +7,8 @@ package app.morphe.extension.facebook.media;
 import android.app.Activity;
 import android.app.Application;
 import android.app.PictureInPictureParams;
+import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -63,6 +65,12 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * the window and left it there. A page opening in that task while the window floats brings Facebook
  * back full screen ({@link #arrived}).
  *
+ * <p>While the window is armed, a reel's More sheet opened on the armed screen gets a
+ * Picture-in-picture row ({@link PictureInPictureRow}), whose tap opens the window right away with
+ * the shape Facebook armed it with (#44). With Only from a reel's More menu on as well, leaving
+ * Facebook opens no window: auto-enter goes off once Facebook has armed, Facebook's own changes of
+ * it are set aside, and nothing here turns it back on, so the row is the only way in.
+ *
  * <p>Off, paused, before the settings are ready, or when anything here fails, the answer is
  * Facebook's own.
  */
@@ -99,6 +107,12 @@ public final class PictureInPicture {
 
     /** Counted each time a page opened in the floating window's task brought Facebook back full screen. */
     static final String BROUGHT_BACK = "page opened in the window brought back full screen";
+
+    /** Counted each time auto-enter goes off after an arming because the window opens only from the More menu. */
+    static final String MENU_ONLY = "auto-enter kept off for the More menu";
+
+    /** Counted each time the More sheet's Picture-in-picture row opened the window. */
+    static final String FROM_MENU = "opened from the More menu";
 
     /** How many new view ids the viewer may go through for one nothing on screen holds. */
     private static final int VIEWER_ID_TRIES = 64;
@@ -182,9 +196,76 @@ public final class PictureInPicture {
         try {
             arm(activity, player, arguments);
             if (activity != null) watch(activity.getApplication());
+            // Facebook turns auto-enter on right after this hook, so it goes off again once the arming is done.
+            if (activity != null && menuOnly()) Utils.runOnMainThread(() -> keepForMenu(activity));
             Logger.printDebug(() -> "Picture-in-picture: armed for player " + System.identityHashCode(player));
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "arming", failure);
+        }
+    }
+
+    /**
+     * Turns auto-enter off on [screen] after Facebook armed it, while the window opens only from the
+     * More menu, unless it was disarmed or armed on another screen since, or the window is open.
+     */
+    static void keepForMenu(Activity screen) {
+        try {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return;
+            synchronized (PictureInPicture.class) {
+                if (armedScreen.get() != screen) return;
+            }
+            if (screen.isInPictureInPictureMode() || !menuOnly()) return;
+            autoEnter(screen, false);
+            HookStatus.bound(FAMILY, "More menu only");
+            HookStatus.counted(FAMILY, MENU_ONLY);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "More menu only", failure);
+        }
+    }
+
+    /**
+     * The screen a reel's More sheet built in [context] may open the window on: the armed screen,
+     * when the sheet is on it, with the switch on, the phone's feature, and no window open yet.
+     * Null otherwise, so a sheet on another screen, such as a reel opened over the armed one, gets
+     * no row that would float the wrong screen.
+     */
+    static Activity menuScreen(@Nullable Context context) {
+        Activity screen;
+        synchronized (PictureInPicture.class) {
+            screen = armedScreen.get();
+        }
+        if (screen == null || !on() || activityOf(context) != screen) return null;
+        if (screen.isFinishing() || screen.isDestroyed() || screen.isInPictureInPictureMode()) return null;
+        if (!screen.getPackageManager().hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) return null;
+        return screen;
+    }
+
+    /** The activity [context] is, or wraps, or null. */
+    @Nullable
+    static Activity activityOf(@Nullable Context context) {
+        for (int depth = 0; context != null && depth < 16; depth++) {
+            if (context instanceof Activity) return (Activity) context;
+            if (!(context instanceof ContextWrapper)) return null;
+            context = ((ContextWrapper) context).getBaseContext();
+        }
+        return null;
+    }
+
+    /**
+     * The More sheet row's tap: opens the window on [screen] now, if it's still the armed screen and
+     * may. Params with nothing set keep the shape Facebook armed it with. True when it opened.
+     */
+    static boolean enterFromMenu(@Nullable Activity screen) {
+        try {
+            if (screen == null || menuScreen(screen) == null) return false;
+            boolean entered = screen.enterPictureInPictureMode(new PictureInPictureParams.Builder().build());
+            HookStatus.bound(FAMILY, "More menu row");
+            if (entered) HookStatus.counted(FAMILY, FROM_MENU);
+            Logger.printDebug(() -> "Picture-in-picture: the More menu row " + (entered ? "opened" : "didn't open") + " the window");
+            return entered;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "More menu row", failure);
+            return false;
         }
     }
 
@@ -428,7 +509,8 @@ public final class PictureInPicture {
      */
     public static boolean setAside() {
         try {
-            if (!tracking() || !on()) return false;
+            // Only from the More menu, Facebook's change is set aside armed or not: it may only turn auto-enter on.
+            if (!on() || !(tracking() || menuOnly())) return false;
             HookStatus.bound(FAMILY, "auto-enter change");
             HookStatus.counted(FAMILY, SET_ASIDE);
             return true;
@@ -523,16 +605,25 @@ public final class PictureInPicture {
         return armedScreen.get() != null && current.get() != null;
     }
 
-    /** Params with only auto-enter set change only auto-enter, as Facebook's own disarm relies on. */
+    /**
+     * Params with only auto-enter set change only auto-enter, as Facebook's own disarm relies on.
+     * While the window opens only from the More menu, it's always off.
+     */
     @RequiresApi(Build.VERSION_CODES.S)
     private static void autoEnter(Activity screen, boolean enabled) {
-        screen.setPictureInPictureParams(new PictureInPictureParams.Builder().setAutoEnterEnabled(enabled).build());
+        boolean answer = enabled && !menuOnly();
+        screen.setPictureInPictureParams(new PictureInPictureParams.Builder().setAutoEnterEnabled(answer).build());
     }
 
     /** Whether the switch is on, on Android 12 or later: Facebook's own code needs its auto-enter. */
     private static boolean on() {
         HookStatus.invoked(FAMILY);
         return Utils.settingsReady() && Settings.PICTURE_IN_PICTURE.get() && apiLevel >= Build.VERSION_CODES.S;
+    }
+
+    /** Whether the switch is on and the window opens only from the More menu. */
+    static boolean menuOnly() {
+        return on() && Settings.PICTURE_IN_PICTURE_FROM_MENU.get();
     }
 
     /** Forgets what was armed and when a page last brought Facebook back. Tests only. */
