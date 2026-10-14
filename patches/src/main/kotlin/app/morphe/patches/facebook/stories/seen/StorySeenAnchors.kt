@@ -12,15 +12,23 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.feed.namesString
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
+import app.morphe.patches.facebook.misc.extension.localRegisterCount
+import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import app.morphe.patches.facebook.misc.extension.requireLocals
+import app.morphe.patches.facebook.misc.extension.requireThisIntact
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
+import com.android.tools.smali.dexlib2.iface.Field
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 
 /*
@@ -290,6 +298,256 @@ internal fun MutableMethod.fillCardId() {
             invoke-virtual/range { p0 .. p0 }, $CARD_ID
             move-result-object p0
             return-object p0
+        """,
+    )
+}
+
+/*
+ * Marking a watched story's ring gray on the phone (#61).
+ *
+ * When the servers take a report, Facebook publishes the bucket's new is_bucket_seen_by_viewer:
+ * the session's GraphQLConsistency, a DirectMessageThreadBucket tree built with the bucket's id and
+ * that flag, and publishWithFullConsistency, which reaches every copy of the bucket the app holds,
+ * the tray ring's included. On 582 one success callback does it (arm64 LX/cPQ;->onSuccess,
+ * armeabi-v7a LX/Z73;->onSuccess), and the patch makes the same five calls for a bucket watched
+ * with the report held back. Every name involved is kept or a string except those five, which are
+ * read off Facebook's own code in the order it makes them.
+ *
+ * The seen helper's per-card method ([cardSeen]) takes the session, the bucket, the card, the helper
+ * and the peek flag, and that's where the patch hears that a bucket's newest card was watched.
+ * Facebook's story bucket, RegularStoryBucket, keeps its name, and so do StoryBucket and StoryCard
+ * with getId(). The bucket's cards come from StoryBucket's one public method answering an
+ * ImmutableList, its session from its one FbUserSession field, and whether it has a story not
+ * watched yet from the one method RegularStoryBucket answers by reading is_bucket_seen_by_viewer,
+ * turned around. Read from both 582 builds on 2026-10-14.
+ */
+internal const val REGULAR_BUCKET = "Lcom/facebook/audience/snacks/model/RegularStoryBucket;"
+internal const val CONSISTENCY = "Lcom/facebook/graphservice/interfaces/GraphQLConsistency;"
+internal const val PUBLISH = "publishWithFullConsistency"
+internal const val TREE = "Lcom/facebook/graphservice/interfaces/Tree;"
+internal const val TREE_BUILDER = "Lcom/facebook/graphservice/tree/TreeBuilderJNI;"
+internal const val TREE_JNI = "Lcom/facebook/graphservice/tree/TreeJNI;"
+internal const val IMMUTABLE_LIST = "Lcom/google/common/collect/ImmutableList;"
+private const val STRING = "Ljava/lang/String;"
+private const val OBJECT = "Ljava/lang/Object;"
+
+/** The tree type and field Facebook publishes for a bucket when its servers take a report. */
+internal const val BUCKET_TYPE = "DirectMessageThreadBucket"
+internal const val BUCKET_SEEN_FIELD = "is_bucket_seen_by_viewer"
+
+internal const val VIEWED = "$STORY_SEEN->viewed($OBJECT$OBJECT${OBJECT}Z)V"
+internal const val BUCKET_MADE = "$STORY_SEEN->bucketMade($OBJECT)V"
+
+/** The calls Facebook makes to publish a bucket's seen flag, in its order. */
+internal data class SeenPublisher(
+    /** Static: FbUserSession to its GraphQLConsistency. */
+    val consistency: MethodReference,
+    /** Static: a tree type's name to a new builder of it. */
+    val factory: MethodReference,
+    /** Static: sets a builder's id. */
+    val setId: MethodReference,
+    /** The builder's: sets a boolean field by name. */
+    val setFlag: MethodReference,
+    /** The builder's: the tree it built. */
+    val build: MethodReference,
+)
+
+private fun Instruction.string(): String? =
+    if (opcode == Opcode.CONST_STRING || opcode == Opcode.CONST_STRING_JUMBO) {
+        ((this as ReferenceInstruction).reference as StringReference).string
+    } else null
+
+private fun Instruction.call(vararg opcodes: Opcode): MethodReference? =
+    if (opcode in opcodes) (this as ReferenceInstruction).reference as? MethodReference else null
+
+private fun MethodReference.takes(vararg types: String) = parameterTypes.map { it.toString() } == types.toList()
+
+/**
+ * The calls [method] makes to publish a bucket's seen flag, or null when it doesn't: after it gets
+ * the consistency from a session, it loads [BUCKET_TYPE] and makes a builder of it from that name,
+ * sets the builder's id, loads [BUCKET_SEEN_FIELD] and sets that flag on the builder, builds it,
+ * and publishes what it built with full consistency.
+ */
+internal fun seenPublisher(method: Method): SeenPublisher? {
+    val code = method.implementation?.instructions?.toList() ?: return null
+    val type = code.indexOfFirst { it.string() == BUCKET_TYPE }
+    if (type < 0) return null
+    val consistency = code.subList(0, type).mapNotNull { it.call(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE) }
+        .lastOrNull { it.returnType == CONSISTENCY && it.takes(FB_USER_SESSION) } ?: return null
+
+    fun first(from: Int, opcodes: Array<Opcode>, wanted: (MethodReference) -> Boolean): Pair<Int, MethodReference>? {
+        for (index in from until code.size) {
+            val call = code[index].call(*opcodes) ?: continue
+            if (wanted(call)) return index to call
+        }
+        return null
+    }
+    val static = arrayOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE)
+    val virtual = arrayOf(Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RANGE)
+    val (made, factory) = first(type + 1, static) {
+        it.takes(STRING) && it.returnType.startsWith("L") && it.returnType != STRING
+    } ?: return null
+    val builder = factory.returnType
+    val (named, setId) = first(made + 1, static) { it.takes(TREE_BUILDER, STRING) && it.returnType == "V" } ?: return null
+    val field = (named + 1 until code.size).firstOrNull { code[it].string() == BUCKET_SEEN_FIELD } ?: return null
+    val (flagged, setFlag) = first(field + 1, virtual) {
+        it.definingClass == builder && it.takes(STRING, "Z") && it.returnType == "V"
+    } ?: return null
+    val (built, build) = first(flagged + 1, virtual) {
+        it.definingClass == builder && it.parameterTypes.isEmpty() && it.returnType.startsWith("L")
+    } ?: return null
+    first(built + 1, arrayOf(Opcode.INVOKE_INTERFACE, Opcode.INVOKE_INTERFACE_RANGE)) {
+        it.definingClass == CONSISTENCY && it.name == PUBLISH && it.takes(TREE) && it.returnType == "V"
+    } ?: return null
+    return SeenPublisher(consistency, factory, setId, setFlag, build)
+}
+
+/** What the patch calls on Facebook's story bucket. */
+internal class StoryBuckets(
+    /** StoryBucket's cards, oldest first. */
+    val cards: Method,
+    /** StoryBucket's session field. */
+    val session: Field,
+    /** StoryBucket's method answering whether a story isn't watched yet, which RegularStoryBucket overrides. */
+    val hasUnwatched: Method,
+)
+
+/** The instructions that load a 32-bit constant into a register. */
+private val CONSTANTS = setOf(Opcode.CONST, Opcode.CONST_4, Opcode.CONST_16, Opcode.CONST_HIGH16)
+
+/**
+ * Whether [method] answers "not watched yet" from is_bucket_seen_by_viewer: no parameters, a
+ * boolean answer, and it reads that field from a tree by its id, Java's hash of its name, and turns
+ * the answer around.
+ */
+internal fun readsUnwatched(method: Method): Boolean {
+    if (method.parameterTypes.isNotEmpty() || method.returnType != "Z") return false
+    val code = method.implementation?.instructions?.toList() ?: return false
+    val loads = code.any { it.opcode in CONSTANTS && (it as NarrowLiteralInstruction).narrowLiteral == BUCKET_SEEN_FIELD.hashCode() }
+    val reads = code.any { call ->
+        call.call(Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_VIRTUAL_RANGE)?.let {
+            it.definingClass == TREE_JNI && it.name == "getBooleanValue" && it.takes("I")
+        } == true
+    }
+    val flips = code.any { it.opcode == Opcode.XOR_INT_LIT8 && (it as NarrowLiteralInstruction).narrowLiteral == 1 }
+    return loads && reads && flips
+}
+
+/** [StoryBuckets] off StoryBucket and RegularStoryBucket, or null when either isn't shaped as described above. */
+internal fun storyBuckets(bucket: ClassDef, regular: ClassDef): StoryBuckets? {
+    if (regular.superclass != bucket.type) return null
+    val cards = bucket.methods.filter {
+        !AccessFlags.STATIC.isSet(it.accessFlags) && AccessFlags.PUBLIC.isSet(it.accessFlags) &&
+            it.parameterTypes.isEmpty() && it.returnType == IMMUTABLE_LIST
+    }.singleOrNull() ?: return null
+    val session = bucket.fields.filter { !AccessFlags.STATIC.isSet(it.accessFlags) && it.type == FB_USER_SESSION }
+        .singleOrNull() ?: return null
+    val override = regular.methods.filter(::readsUnwatched).singleOrNull() ?: return null
+    val hasUnwatched = bucket.methods.singleOrNull {
+        it.name == override.name && it.parameterTypes.isEmpty() && it.returnType == "Z" &&
+            !AccessFlags.STATIC.isSet(it.accessFlags) && !AccessFlags.FINAL.isSet(it.accessFlags)
+    } ?: return null
+    if (bucket.methods.none { it.name == "getId" && it.parameterTypes.isEmpty() && it.returnType == STRING }) return null
+    return StoryBuckets(cards, session, hasUnwatched)
+}
+
+/**
+ * First thing in the seen helper's per-card method: the bucket, the card, the helper and the peek
+ * flag go to the extension. Nothing has written a parameter yet, and the range form names the four
+ * registers wherever they sit.
+ */
+internal fun MutableMethod.hearViewedCards() {
+    val first = parameterRegisterNumber(1)
+    if (parameterRegisterNumber(4) != first + 3) refuse("$definingClass->$name's parameters aren't side by side")
+    addInstructions(0, "invoke-static/range { v$first .. v${first + 3} }, $VIEWED")
+}
+
+/**
+ * Last thing in RegularStoryBucket's constructor, in front of its one return: the built bucket goes
+ * to the extension. The constructor runs straight through, so every way out passes the hook, and
+ * nothing in it writes over this.
+ */
+internal fun MutableMethod.hearBucketMade() {
+    val code = implementation!!.instructions.toList()
+    val returns = code.indices.filter { code[it].opcode == Opcode.RETURN_VOID }
+    val at = returns.singleOrNull() ?: refuse("$definingClass's constructor returns from ${returns.size} places")
+    if (code.any { it is OffsetInstruction }) refuse("$definingClass's constructor branches")
+    requireThisIntact(PATCH, listOf(at))
+    val self = localRegisterCount()
+    addInstructions(at, "invoke-static/range { v$self .. v$self }, $BUCKET_MADE")
+}
+
+internal fun MethodReference.smali(): String = "$definingClass->$name(${parameterTypes.joinToString("")})$returnType"
+
+/**
+ * Fills the extension's stubs with the calls on Facebook's story classes and the publishing calls.
+ * [stub] finds each by name, answer and parameters. Each uses only its parameter registers, so a
+ * stub's own register count doesn't matter as long as its parameters sit in the first sixteen,
+ * which the non-range calls name.
+ */
+internal fun fillSeenStubs(
+    stub: (name: String, answer: String, parameters: List<String>) -> MutableMethod,
+    buckets: StoryBuckets,
+    publisher: SeenPublisher,
+) {
+    stub("bucketIdOf", OBJECT, listOf(OBJECT)).addInstructions(
+        0,
+        """
+            check-cast p0, $STORY_BUCKET
+            invoke-virtual { p0 }, $STORY_BUCKET->getId()$STRING
+            move-result-object p0
+            return-object p0
+        """,
+    )
+    stub("cardsOf", OBJECT, listOf(OBJECT)).addInstructions(
+        0,
+        """
+            check-cast p0, $STORY_BUCKET
+            invoke-virtual { p0 }, $STORY_BUCKET->${buckets.cards.name}()$IMMUTABLE_LIST
+            move-result-object p0
+            return-object p0
+        """,
+    )
+    stub("storyIdOf", OBJECT, listOf(OBJECT)).addInstructions(
+        0,
+        """
+            check-cast p0, $STORY_CARD
+            invoke-virtual { p0 }, $CARD_ID
+            move-result-object p0
+            return-object p0
+        """,
+    )
+    stub("hasUnwatchedOf", "Z", listOf(OBJECT)).addInstructions(
+        0,
+        """
+            check-cast p0, $STORY_BUCKET
+            invoke-virtual { p0 }, $STORY_BUCKET->${buckets.hasUnwatched.name}()Z
+            move-result p0
+            return p0
+        """,
+    )
+    stub("sessionOf", OBJECT, listOf(OBJECT)).addInstructions(
+        0,
+        """
+            check-cast p0, $STORY_BUCKET
+            iget-object p0, p0, $STORY_BUCKET->${buckets.session.name}:$FB_USER_SESSION
+            return-object p0
+        """,
+    )
+    stub("publishSeen", "V", listOf(OBJECT, STRING, STRING, STRING, "Z")).addInstructions(
+        0,
+        """
+            check-cast p0, $FB_USER_SESSION
+            invoke-static { p0 }, ${publisher.consistency.smali()}
+            move-result-object p0
+            invoke-static { p2 }, ${publisher.factory.smali()}
+            move-result-object p2
+            invoke-static { p2, p1 }, ${publisher.setId.smali()}
+            invoke-virtual { p2, p3, p4 }, ${publisher.setFlag.smali()}
+            invoke-virtual { p2 }, ${publisher.build.smali()}
+            move-result-object p2
+            invoke-interface { p0, p2 }, $CONSISTENCY->$PUBLISH($TREE)V
+            return-void
         """,
     )
 }

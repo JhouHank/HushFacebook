@@ -31,18 +31,22 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
  * tells the button which card is on screen. A third hook, where Facebook's story controllers make a card the
  * active one, keeps the button on that card.
  *
+ * Facebook greys a ring only once its servers take the report, so a fourth hook in the seen helper
+ * hears each card queued, and a fifth each story bucket Facebook builds, and the extension
+ * publishes a bucket watched to its newest story as watched, with the same calls Facebook makes
+ * when its servers answer (#61). The servers keep sending it as unwatched, so it's published again
+ * each time it's built, until a newer story arrives.
+ *
  * In the default selection with its switch and the button's both off, since it changes what other
- * people see, and stories you've viewed keep their unwatched ring: Facebook greys a ring only once
- * the server has taken the report, and a tray reloaded from the server still lists them as
- * unwatched.
+ * people see.
  */
 @Suppress("unused")
 val viewStoriesAnonymouslyPatch = bytecodePatch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "View stories anonymously",
     description = "Keeps you off the viewer list of stories you watch, because Facebook isn't told which ones " +
-        "you've seen. Replying or reacting still shows you, and watched stories still look new. Starts off. Turn " +
-        "it on in Hushfacebook settings > Stories.",
+        "you've seen. Replying or reacting still shows you. Stories you watch to the end show as watched on this " +
+        "phone only, until that person posts a new one. Starts off. Turn it on in Hushfacebook settings > Stories.",
 ) {
     category("Privacy")
     dependsOn(settingsPatch, facebookExtensionPatch)
@@ -88,14 +92,66 @@ val viewStoriesAnonymouslyPatch = bytecodePatch(
         }
         val sendStub = stub(STORY_SEEN, SEND_STUB, "V")
         val cardIdStub = stub(STORY_SEEN_BUTTON, CARD_ID_STUB, "Ljava/lang/String;")
+        val marking = seenMarking()
+        val seenStubs = mutableClassDefBy(STORY_SEEN)
+        val stubs = { name: String, answer: String, parameters: List<String> ->
+            seenStubs.methods.singleOrNull {
+                it.name == name && it.returnType == answer && AccessFlags.STATIC.isSet(it.accessFlags) &&
+                    it.parameterTypes.map(Any::toString) == parameters
+            } ?: throw PatchException("$PATCH: $STORY_SEEN has no static $answer $name(${parameters.joinToString("")})")
+        }
 
         mutableClassDefBy(sender.definingClass).methods.single { it.sameAs(sender) }.filterViews()
-        mutableClassDefBy(card.definingClass).methods.single { it.sameAs(card) }.reportCard()
+        mutableClassDefBy(card.definingClass).methods.single { it.sameAs(card) }.apply {
+            reportCard()
+            hearViewedCards()
+        }
         mutableClassDefBy(activationOwner.type).methods.single { it.sameAs(activation) }.reportActive(store)
+        mutableClassDefBy(REGULAR_BUCKET).methods.single { it.sameAs(marking.constructor) }.hearBucketMade()
         sendStub.fillSend(sender)
         cardIdStub.fillCardId()
+        fillSeenStubs(stubs, marking.buckets, marking.publisher)
         enableStatus("storySeen")
     }
+}
+
+/** What marking a watched bucket on the phone hooks and calls (#61), found before anything changes. */
+internal class SeenMarking(val constructor: Method, val publisher: SeenPublisher, val buckets: StoryBuckets)
+
+/**
+ * Facebook's way of publishing a bucket's seen flag, the story bucket's members and
+ * RegularStoryBucket's constructor, held to what StorySeenAnchors.kt describes: one way of
+ * publishing, however many methods use it; RegularStoryBucket with one constructor; and each call
+ * public in a public class, since the extension's stubs make them from another package.
+ */
+internal fun BytecodePatchContext.seenMarking(): SeenMarking {
+    val publishers = classDefByStrings(BUCKET_SEEN_FIELD, StringComparisonType.EQUALS)
+        .flatMap { classDef -> classDef.methods.mapNotNull(::seenPublisher) }.toSet()
+    val publisher = publishers.singleOrNull() ?: throw PatchException(
+        "$PATCH: expected one way of publishing \"$BUCKET_SEEN_FIELD\" on a \"$BUCKET_TYPE\" with $PUBLISH, " +
+            "found ${publishers.size}",
+    )
+    val regular = classDefByOrNull(REGULAR_BUCKET) ?: throw PatchException("$PATCH: this Facebook build has no $REGULAR_BUCKET")
+    val bucket = classDefByOrNull(STORY_BUCKET) ?: throw PatchException("$PATCH: this Facebook build has no $STORY_BUCKET")
+    val buckets = storyBuckets(bucket, regular) ?: throw PatchException(
+        "$PATCH: $REGULAR_BUCKET and $STORY_BUCKET aren't shaped as expected: one ImmutableList of cards, one " +
+            "FbUserSession field, getId(), and one override answering from \"$BUCKET_SEEN_FIELD\" turned around",
+    )
+    val constructor = regular.methods.filter { it.name == "<init>" }.singleOrNull()
+        ?: throw PatchException("$PATCH: expected one constructor of $REGULAR_BUCKET")
+    for (call in listOf(publisher.consistency, publisher.factory, publisher.setId, publisher.setFlag, publisher.build)) {
+        val owner = classDefByOrNull(call.definingClass)
+        val declared = owner?.methods?.singleOrNull {
+            it.name == call.name && it.returnType == call.returnType &&
+                it.parameterTypes.map(Any::toString) == call.parameterTypes.map(Any::toString)
+        }
+        if (owner == null || !AccessFlags.PUBLIC.isSet(owner.accessFlags) || declared == null ||
+            !AccessFlags.PUBLIC.isSet(declared.accessFlags)
+        ) {
+            throw PatchException("$PATCH: ${call.smali()} isn't public in a public class, so the extension can't call it")
+        }
+    }
+    return SeenMarking(constructor, publisher, buckets)
 }
 
 private fun Method.sameAs(other: Method) = name == other.name && returnType == other.returnType &&

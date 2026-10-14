@@ -303,8 +303,9 @@ public class Settings extends BaseSettings {
 
     /**
      * The batches of viewed story cards the story viewer sends as DirectSeenMutation, which put you
-     * on each story's viewer list. Held back, replies and reactions still show you, and stories you
-     * viewed keep their unwatched ring.
+     * on each story's viewer list. Held back, replies and reactions still show you, and a bucket
+     * watched to its newest story is marked watched on the phone only (StorySeen, #61). Saved off,
+     * the buckets kept for that are forgotten.
      */
     public static final BooleanSetting VIEW_STORIES_ANONYMOUSLY =
             new BooleanSetting("hushfacebook_view_stories_anonymously", FALSE);
