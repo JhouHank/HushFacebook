@@ -695,6 +695,8 @@ function Get-ElfPageFacts {
             elseif ($relro -eq 'absent') { $relro = 'aligned' }
         }
     }
+    # Nothing to load is nothing to hold to a page size, so it's named rather than passed.
+    if ($loads -eq 0) { $facts.reason = 'no loadable segment'; return $facts }
     $facts.format = if ($wide) { 'elf64' } else { 'elf32' }
     $facts.loadSegments = $loads
     $facts.loadMisaligned = $loadsOff
@@ -732,7 +734,8 @@ function Get-NativeLibraryAlignment {
     param([Parameter(Mandatory = $true)][string]$Apk, [int]$PageSize = 16384)
 
     Add-Type -AssemblyName System.IO.Compression.FileSystem
-    $stored = @{}
+    # Entry names are case-sensitive in a ZIP, and a plain hashtable would fold libFoo.so into libfoo.so.
+    $stored = New-Object System.Collections.Hashtable ([System.StringComparer]::Ordinal)
     $file = [System.IO.File]::OpenRead($Apk)
     try {
         $tail = New-Object byte[] ([int][Math]::Min($file.Length, 65557L))

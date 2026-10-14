@@ -6334,11 +6334,13 @@ try {
             "A 32-bit library was judged for 16 KB pages: $($oldRecord | ConvertTo-Json -Compress)"
 
         # A LOAD segment aligned to 4 KB and no RELRO at all, a file cut off inside its ELF header,
-        # and a 32-bit ELF in the 64-bit folder: each named under its own check, none passed.
+        # a 32-bit ELF in the 64-bit folder and an ELF with nothing to load: each named under its
+        # own check, none passed.
         $native = Get-BuiltNativeAlignment @(
             @{ Name = 'lib/arm64-v8a/libload.so'; Bytes = (New-TestElf -LoadAlign @(16384, 4096)); Stored = $false },
             @{ Name = 'lib/arm64-v8a/libcut.so'; Bytes = [byte[]]($alignedElf[0..39]); Stored = $false },
-            @{ Name = 'lib/arm64-v8a/libnarrow.so'; Bytes = (New-TestElf -Narrow); Stored = $false })
+            @{ Name = 'lib/arm64-v8a/libnarrow.so'; Bytes = (New-TestElf -Narrow); Stored = $false },
+            @{ Name = 'lib/arm64-v8a/libstub.so'; Bytes = (New-TestElf -LoadAlign @() -RelroEnd 32768); Stored = $false })
         Assert-True ($native.staticChecksPass -eq $false -and $native.loadSegments.aligned -eq $false -and
             (@($native.loadSegments.misaligned) -join ',') -ceq 'lib/arm64-v8a/libload.so') `
             "A LOAD segment aligned to 4 KB wasn't named as off 16 KB: $($native.loadSegments | ConvertTo-Json -Compress)"
@@ -6346,8 +6348,21 @@ try {
             (@($native.relroEnds.absent) -join ',') -ceq 'lib/arm64-v8a/libload.so') `
             "A library with no RELRO wasn't recorded as having none: $($native.relroEnds | ConvertTo-Json -Compress)"
         Assert-True ((@($native.malformed) -join '|') -ceq
-            'lib/arm64-v8a/libcut.so (ends inside the ELF header)|lib/arm64-v8a/libnarrow.so (a 32-bit ELF in a 64-bit folder)') `
+            ('lib/arm64-v8a/libcut.so (ends inside the ELF header)|lib/arm64-v8a/libnarrow.so (a 32-bit ELF in a 64-bit folder)|' +
+            'lib/arm64-v8a/libstub.so (no loadable segment)')) `
             "The unreadable libraries weren't named with why: $(@($native.malformed) -join '|')"
+
+        # Entry names are case-sensitive in a ZIP: two that differ only by case stay two libraries,
+        # each with its own storage, hash and verdict.
+        $native = Get-BuiltNativeAlignment @(
+            @{ Name = 'lib/x86_64/libPair.so'; Bytes = $alignedElf; Stored = $true },
+            @{ Name = 'lib/x86_64/libpair.so'; Bytes = (New-TestElf -RelroEnd 36864); Stored = $false })
+        $pair = @($native.libraries)
+        Assert-True ($pair.Count -eq 2 -and $pair[0].entry -ceq 'lib/x86_64/libPair.so' -and $pair[0].stored -eq $true -and
+            $pair[1].entry -ceq 'lib/x86_64/libpair.so' -and $pair[1].stored -eq $false -and $pair[0].sha256 -cne $pair[1].sha256 -and
+            $native.zipOffsets.stored -eq 1 -and $native.zipOffsets.compressed -eq 1 -and
+            (@($native.relroEnds.misaligned) -join ',') -ceq 'lib/x86_64/libpair.so') `
+            "Two libraries whose names differ only by case weren't kept apart: $($native | ConvertTo-Json -Depth 5 -Compress)"
     } finally {
         [System.IO.File]::WriteAllBytes($apkStandIn, $apkStandInBytes)
         [System.IO.File]::WriteAllBytes($releaseReceipt, $builtReceiptBytes)
