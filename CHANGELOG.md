@@ -26,6 +26,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** A video manifest that gives a track an empty type no longer lists it as a track. The track now takes its adaptation set's type, or is skipped when there's none to take. The parser fuzzer found this one too.
 * **Facebook:** A saved video now carries only the sample descriptions its track counts. A few stray bytes after the last one used to be copied into the saved file, where players that read that box to its end could take them for another description. The fuzzer turned this one up on its second hour.
 * **Facebook:** With `Default comment order` on All comments, a post's comments that come back as Most relevant or Newest after a refresh get All comments picked again (#110). The first pick held, but a reload Facebook built from the post's first request came back in its own order with nothing to pick it. It's picked once per answer, so a post where Facebook won't give All comments isn't asked over and over. A link to one comment still opens in Facebook's own view.
+* **Facebook:** `Keep the top bar on screen` now keeps the bar from fading out too. Facebook fades the top bar as it scrolls away on some phones and accounts, and only the slide was held before, so the bar could stay put and still disappear.
 
 ## 0.12.0 (2026-10-13)
 
