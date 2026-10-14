@@ -725,6 +725,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_turn_off_hdr_brightness", FALSE);
 
     /**
+     * Videos, reels and stories play past the silent stretches in their sound ({@link
+     * app.morphe.extension.facebook.media.SkipSilence}). Starts off. Off or paused, each player
+     * gets Facebook's own flag again from its next seek or video.
+     */
+    public static final BooleanSetting SKIP_SILENT_PARTS =
+            new BooleanSetting("hushfacebook_skip_silent_parts", FALSE);
+
+    /**
      * A reel's progress bar stays full size, thumb and all, and a full-screen video's controls stay
      * until a tap hides them ({@link app.morphe.extension.facebook.media.ProgressBar}). Off by
      * default. Off or paused, Facebook shrinks the bar and fades the controls as before.

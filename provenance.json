@@ -756,6 +756,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/media/SkipSilence.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/media/silence/SkipSilentPartsPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: Skip silent parts, for issue #144, from Facebook 582. Each of the two ExoPlayer copies Facebook ships has a DefaultAudioSink that hands its processor chain, a field of its own, the skip-silence flag and then calls the kept-name AudioSink.Listener method onSkipSilenceEnabledChanged. The patch finds each method calling that name after handing one boolean to such a chain, asks the extension for the flag into a register nothing reads there, and hands the chain that answer, leaving the sink's stored flag alone. The listener's own dispatch, which hands nothing on, is left out. The extension answers yes while its switch is on."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/reels/DoubleTapLike.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/reels/doubletap/DoubleTapAnchors.kt",
         "patches/src/main/kotlin/app/morphe/patches/facebook/reels/doubletap/TurnOffDoubleTapLikePatch.kt"

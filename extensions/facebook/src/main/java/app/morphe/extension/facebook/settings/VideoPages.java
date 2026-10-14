@@ -160,7 +160,8 @@ final class VideoPages {
         if (build.contains(PatchFamily.TAP_TO_PLAY) || build.contains(PatchFamily.RESUME_LONG_VIDEOS)
                 || build.contains(PatchFamily.FRAME_STEP)
                 || build.contains(PatchFamily.PLAYBACK_QUALITY) || build.contains(PatchFamily.PICTURE_IN_PICTURE)
-                || build.contains(PatchFamily.HDR_BRIGHTNESS) || build.contains(PatchFamily.PROGRESS_BAR)) {
+                || build.contains(PatchFamily.HDR_BRIGHTNESS) || build.contains(PatchFamily.SKIP_SILENCE)
+                || build.contains(PatchFamily.PROGRESS_BAR)) {
             PreferenceCategory playback = category(screen, L10n.t("Playback"));
             if (build.contains(PatchFamily.TAP_TO_PLAY)) {
                 playback.addPreference(toggle(context, Settings.TAP_TO_PLAY,
@@ -201,6 +202,12 @@ final class VideoPages {
                 playback.addPreference(toggle(context, Settings.TURN_OFF_HDR_BRIGHTNESS,
                         L10n.t("HDR videos and photos stay at your screen's usual brightness instead of turning it up to "
                                 + "full. They keep their resolution.")));
+            }
+            if (build.contains(PatchFamily.SKIP_SILENCE)) {
+                // Asked as each player's sound starts, so a change shows from the next seek or video.
+                playback.addPreference(toggle(context, Settings.SKIP_SILENT_PARTS,
+                        L10n.t("Videos, reels and stories jump past the quiet stretches in their sound, so talks and "
+                                + "how-tos get to the point sooner.")));
             }
             if (build.contains(PatchFamily.PROGRESS_BAR)) {
                 playback.addPreference(toggle(context, Settings.KEEP_PROGRESS_BAR,

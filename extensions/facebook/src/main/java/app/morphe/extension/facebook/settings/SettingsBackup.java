@@ -205,6 +205,7 @@ public final class SettingsBackup {
             Settings.PICTURE_IN_PICTURE,
             Settings.PICTURE_IN_PICTURE_FROM_MENU,
             Settings.TURN_OFF_HDR_BRIGHTNESS,
+            Settings.SKIP_SILENT_PARTS,
             Settings.KEEP_PROGRESS_BAR,
             Settings.KEEP_PROGRESS_BAR_TIME,
             Settings.TAP_TO_SEEK,

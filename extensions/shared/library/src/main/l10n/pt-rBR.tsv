@@ -878,6 +878,10 @@ A playing reel or full-screen video keeps going in a small window when you leave
 Turn off HDR brightness	Desativar o brilho HDR
 # context: summary of that switch
 HDR videos and photos stay at your screen's usual brightness instead of turning it up to full. They keep their resolution.	Vídeos e fotos HDR ficam no brilho de sempre da sua tela em vez de aumentá-lo ao máximo. Eles mantêm a resolução.
+# context: switch title under Playback; it makes videos play past the silent stretches of their sound
+Skip silent parts	Pular partes em silêncio
+# context: summary of that switch; how-tos are tutorial videos
+Videos, reels and stories jump past the quiet stretches in their sound, so talks and how-tos get to the point sooner.	Vídeos, Reels e Stories pulam os trechos em silêncio do áudio, então palestras e tutoriais chegam mais rápido ao ponto.
 # context: switch title under Playback; keeps a video's progress bar (the line showing how far it has played) on screen
 Keep the progress bar	Manter a barra de progresso
 # context: summary of that switch; a reel is a short vertical video

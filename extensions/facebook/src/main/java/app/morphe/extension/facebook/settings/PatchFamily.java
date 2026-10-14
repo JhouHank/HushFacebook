@@ -128,6 +128,8 @@ public enum PatchFamily {
             Settings.PICTURE_IN_PICTURE, Settings.PICTURE_IN_PICTURE_FROM_MENU),
     HDR_BRIGHTNESS(FamilyNames.HDR_BRIGHTNESS, "turnOffHdrBrightness", null,
             Settings.TURN_OFF_HDR_BRIGHTNESS),
+    SKIP_SILENCE(FamilyNames.SKIP_SILENCE, "skipSilentParts", null,
+            Settings.SKIP_SILENT_PARTS),
     PROGRESS_BAR(FamilyNames.PROGRESS_BAR, "keepProgressBar", null,
             Settings.KEEP_PROGRESS_BAR, Settings.KEEP_PROGRESS_BAR_TIME, Settings.TAP_TO_SEEK),
     SYSTEM_FONT(FamilyNames.SYSTEM_FONT, "systemFont", null,

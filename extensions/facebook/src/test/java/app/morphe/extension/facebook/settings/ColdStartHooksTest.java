@@ -68,6 +68,7 @@ import app.morphe.extension.facebook.media.PictureInPictureForTests;
 import app.morphe.extension.facebook.media.ProgressBar;
 import app.morphe.extension.facebook.media.FrameStepForTests;
 import app.morphe.extension.facebook.media.QualityChoiceForTests;
+import app.morphe.extension.facebook.media.SkipSilence;
 import app.morphe.extension.facebook.media.ReelSpeedForTests;
 import app.morphe.extension.facebook.media.ResumePlaybackForTests;
 import app.morphe.extension.facebook.misc.AppLockForTests;
@@ -260,6 +261,7 @@ public class ColdStartHooksTest {
         assertFalse("a headroom held before the context said yes", HdrBrightnessForTests.holdsTheHeadroom());
         assertFalse("the screen answered as showing no HDR before the context said yes",
                 HdrBrightnessForTests.answersTheScreenAsShowingNoHdr());
+        assertFalse("a sink's sound skipped its silent parts before the context said yes", SkipSilence.skipSilence(false));
         assertFalse("a reel's bar kept full size before the context said yes", ProgressBar.keepsReelBar());
         assertFalse("a fade timer skipped before the context said yes", ProgressBar.keepsControls());
         assertFalse("a reel's caption lifted before the context said yes", ProgressBar.liftsFooter());
