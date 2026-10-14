@@ -84,7 +84,8 @@ public class StoryPhotoSaveTest {
      */
     public static final class MusicPhotoCard {
         final String id = "1234567890";
-        final TreeJNI story = new TreeJNI().with("creation_time", 1_756_728_000L);
+        final TreeJNI story = new TreeJNI().with("creation_time", 1_756_728_000L)
+                .with(StoryPhoto.MADE_FROM_PHOTO, new TreeJNI());
         final TreeJNI media = new TreeJNI().with("playable_url", VIDEO).with("stories_photo_uri", new TreeJNI().with("uri", PHOTO));
         private final Shown shown = new Shown();
 
@@ -113,6 +114,8 @@ public class StoryPhotoSaveTest {
 
         TreeJNI video = new TreeJNI().with("playable_url", VIDEO);
         assertNull("a video Story keeps its single Save", StoryPhoto.menuTitle(new StoryPhotoTest.Card(new TreeJNI(), video)));
+        TreeJNI covered = new TreeJNI().with("playable_url", VIDEO).with("stories_photo_uri", new TreeJNI().with("uri", PHOTO));
+        assertNull("so does a video Story with a cover photo", StoryPhoto.menuTitle(new StoryPhotoTest.Card(new TreeJNI(), covered)));
         assertNull(StoryPhoto.menuTitle(null));
 
         Settings.DOWNLOAD_STORIES.save(false);

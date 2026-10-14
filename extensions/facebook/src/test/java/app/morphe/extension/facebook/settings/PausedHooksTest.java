@@ -196,8 +196,12 @@ public class PausedHooksTest {
         }
     }
 
-    /** A photo Story with music's card: its media holds the video and the photo it was made from. */
+    /**
+     * A photo Story with music's card: its node holds the tree Facebook's card kind asks for
+     * (StoryPhoto.MADE_FROM_PHOTO), and its media the video and the photo it was made from.
+     */
     public static final class MusicPhotoStoryCard {
+        final TreeJNI story = new TreeJNI().with(0xaa18ee7f, new TreeJNI());
         final TreeJNI media = new TreeJNI().with("playable_url", "https://video.xx.fbcdn.net/v/t42/story.mp4")
                 .with("stories_photo_uri", new TreeJNI().with("uri", "https://scontent.xx.fbcdn.net/v/t39/story.jpg"));
     }

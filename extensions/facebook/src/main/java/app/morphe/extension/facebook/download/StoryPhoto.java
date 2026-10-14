@@ -24,9 +24,11 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * gets for it beside Save. Facebook plays such a Story as a video made from the photo, and its
  * media model carries both: {@code playable_url}, the video, and {@code stories_photo_uri}, the
  * photo it was made from, whose {@code uri} Facebook shows instead when it reverts the Story to a
- * still (582: the PHOTO_REVERT_P2V card kind). A video Story's media has a
- * {@code stories_video_thumbnail} in its place, and a plain photo Story's has the photo and no
- * video.
+ * still (582: the PHOTO_REVERT_P2V card kind). A plain photo Story's media has the photo and no
+ * video. A video Story's media can hold a {@code stories_photo_uri} too, as its cover (seen on
+ * Instagram cross-posts), so the photo alone doesn't make a Story one made from a photo. Facebook's
+ * own card kind asks one more thing first: that the story card's node holds the tree
+ * {@link #MADE_FROM_PHOTO}, and only then calls it PHOTO_REVERT_P2V.
  *
  * <p>The story card's kept {@code getMedia} takes the video thumbnail whenever the media has a
  * video, so a save reading it never sees the photo. The media model itself is a field of the card,
@@ -41,6 +43,12 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
 public final class StoryPhoto {
     static final int STORIES_PHOTO_URI = "stories_photo_uri".hashCode();
     static final int URI = "uri".hashCode();
+    /**
+     * The tree of a story card's node that Facebook's card kind needs, with the media's photo,
+     * before it calls a Story PHOTO_REVERT_P2V (582 RegularStoryCard's card kind getter reads it
+     * by this GraphQL id). The client never spells its name, so it's kept by the id.
+     */
+    static final int MADE_FROM_PHOTO = 0xaa18ee7f;
 
     /**
      * The Save photo items the menu built, kept no longer than the menu keeps them and told apart
@@ -52,17 +60,36 @@ public final class StoryPhoto {
     }
 
     /**
-     * The address of the photo [card]'s Story was made from, when its media holds both a video and
-     * that photo. Null for a video Story, a plain photo Story, a card whose media isn't cached in it
-     * or a released tree. Never throws.
+     * The address of the photo [card]'s Story was made from, when its node holds
+     * {@link #MADE_FROM_PHOTO} and its media holds both a video and that photo. Null for a video
+     * Story, a plain photo Story, a card whose media isn't cached in it or a released tree. Never
+     * throws.
      */
     static String originalOf(Object card) {
-        for (Object tree : PostDetails.treesIn(card)) {
+        List<Object> trees = PostDetails.treesIn(card);
+        if (!madeFromPhoto(trees)) return null;
+        for (Object tree : trees) {
             if (!PostDetails.isLiveTree(tree) || PostDetails.string(tree, VideoMenuItem.PLAYABLE_URL) == null) continue;
             String uri = PostDetails.string(PostDetails.tree(tree, STORIES_PHOTO_URI), URI);
             if (uri != null && !uri.trim().isEmpty()) return uri;
         }
         return null;
+    }
+
+    /** Whether any tree of [card] holds a video and a photo, made from it or not. For the log only. */
+    private static boolean hasPhoto(Object card) {
+        for (Object tree : PostDetails.treesIn(card)) {
+            if (PostDetails.isLiveTree(tree) && PostDetails.string(tree, VideoMenuItem.PLAYABLE_URL) != null
+                && PostDetails.tree(tree, STORIES_PHOTO_URI) != null) return true;
+        }
+        return false;
+    }
+
+    private static boolean madeFromPhoto(List<Object> trees) {
+        for (Object tree : trees) {
+            if (PostDetails.tree(tree, MADE_FROM_PHOTO) != null) return true;
+        }
+        return false;
     }
 
     /**
@@ -75,7 +102,12 @@ public final class StoryPhoto {
         try {
             if (!Utils.settingsReady() || !Settings.DOWNLOAD_STORIES.get()) return null;
             media(card);
-            if (originalOf(card) == null) return null;
+            if (originalOf(card) == null) {
+                Logger.diagnosticDebug(DiagnosticCategory.DOWNLOADS, StoryPhoto.class.getSimpleName(),
+                    () -> "a story's menu keeps one Save: made from a photo "
+                        + madeFromPhoto(PostDetails.treesIn(card)) + ", photo " + hasPhoto(card));
+                return null;
+            }
             HookStatus.bound(FamilyNames.STORY_DOWNLOAD, "story menu photo item");
             return L10n.t("Save photo");
         } catch (Throwable t) {
