@@ -10,6 +10,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Changed
 
+* **Facebook:** Quick setups can be hidden from the settings home with a long press on its row, and its help line now says so. The **Quick setups on the home page** row on Pause, backup and diagnostics brings it back. Settings files and the Quick setups choices leave it alone.
 * **Facebook:** The README's two settings screenshots come from 0.12.0 now, so the overview shows the Quick setups row.
 * **Facebook:** The release receipt records what each native library says about 16 KB pages in separate parts now (ZIP offsets, LOAD segments and RELRO ends, each library with its hash). It used to keep one flag that only spoke for the ZIP.
 * **Facebook:** The `Support Hushfacebook` row at the bottom of settings is just its name now. The "Buy me a coffee on Ko-fi" line under it is gone, and a tap still opens the Ko-fi page.

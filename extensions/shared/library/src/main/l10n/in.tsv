@@ -1449,7 +1449,13 @@ Report a problem	Laporkan masalah
 Opens a GitHub report with your versions and settings filled in. Add what happened.	Membuka laporan GitHub dengan versi dan pengaturan Anda yang sudah terisi. Tambahkan apa yang terjadi.
 # context: row near the top of the settings home page; a list of ready-made sets of switches
 Quick setups	Pengaturan cepat
-Turn on a set of switches in one tap, or put every switch back the way it started.	Nyalakan sekumpulan sakelar dengan sekali ketuk, atau kembalikan setiap sakelar seperti semula.
+Turn on a set of switches in one tap, or put every switch back the way it started. Press and hold to hide this row.	Nyalakan sekumpulan sakelar dengan sekali ketuk, atau kembalikan setiap sakelar seperti semula. Tekan dan tahan untuk menyembunyikan baris ini.
+# context: toast after a long press hides the Quick setups row from the settings home page; the page name is the one holding the row that brings it back
+Quick setups hidden. Bring it back from %1$s.	Pengaturan cepat disembunyikan. Tampilkan lagi lewat %1$s.
+# context: row on the Pause, backup and diagnostics page; shows or hides the Quick setups row on the settings home page
+Quick setups on the home page	Pengaturan cepat di Beranda
+Shown. Tap to hide it.	Ditampilkan. Ketuk untuk menyembunyikan.
+Hidden. Tap to show it again.	Disembunyikan. Ketuk untuk menampilkannya lagi.
 # context: name of a Quick setups choice that hides ads and nags; an adjective, as in a quiet feed
 Quiet	Tenang
 Hides ads, suggestions, promos and prompts, and stops nagging notifications.	Menyembunyikan iklan, saran, promosi, dan ajakan, serta menghentikan notifikasi yang mengganggu.

@@ -1449,7 +1449,13 @@ Report a problem	Sorun bildir
 Opens a GitHub report with your versions and settings filled in. Add what happened.	Sürümleriniz ve ayarlarınız doldurulmuş bir GitHub raporu açar. Ne olduğunu ekleyin.
 # context: row near the top of the settings home page; a list of ready-made sets of switches
 Quick setups	Hızlı kurulumlar
-Turn on a set of switches in one tap, or put every switch back the way it started.	Bir grup anahtarı tek dokunuşla açın veya her anahtarı başlangıçtaki hâline döndürün.
+Turn on a set of switches in one tap, or put every switch back the way it started. Press and hold to hide this row.	Bir grup anahtarı tek dokunuşla açın veya her anahtarı başlangıçtaki hâline döndürün. Bu satırı gizlemek için basılı tut.
+# context: toast after a long press hides the Quick setups row from the settings home page; the page name is the one holding the row that brings it back
+Quick setups hidden. Bring it back from %1$s.	Hızlı kurulumlar gizlendi. %1$s bölümünden geri getirebilirsin.
+# context: row on the Pause, backup and diagnostics page; shows or hides the Quick setups row on the settings home page
+Quick setups on the home page	Ana Sayfada hızlı kurulumlar
+Shown. Tap to hide it.	Gösteriliyor. Gizlemek için dokun.
+Hidden. Tap to show it again.	Gizli. Tekrar göstermek için dokun.
 # context: name of a Quick setups choice that hides ads and nags; an adjective, as in a quiet feed
 Quiet	Sakin
 Hides ads, suggestions, promos and prompts, and stops nagging notifications.	Reklamları, önerileri, tanıtımları ve yönlendirmeleri gizler, rahatsız eden bildirimleri durdurur.

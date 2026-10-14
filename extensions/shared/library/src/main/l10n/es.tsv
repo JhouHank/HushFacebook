@@ -1449,7 +1449,13 @@ Report a problem	Informar de un problema
 Opens a GitHub report with your versions and settings filled in. Add what happened.	Abre un informe en GitHub con tus versiones y ajustes ya rellenados. Añade lo que pasó.
 # context: row near the top of the settings home page; a list of ready-made sets of switches
 Quick setups	Ajustes rápidos
-Turn on a set of switches in one tap, or put every switch back the way it started.	Activa un grupo de interruptores con un toque o devuelve cada interruptor a como estaba al principio.
+Turn on a set of switches in one tap, or put every switch back the way it started. Press and hold to hide this row.	Activa un grupo de interruptores con un toque o devuelve cada interruptor a como estaba al principio. Mantén pulsado para ocultar esta fila.
+# context: toast after a long press hides the Quick setups row from the settings home page; the page name is the one holding the row that brings it back
+Quick setups hidden. Bring it back from %1$s.	Ajustes rápidos ocultos. Puedes recuperarlos en %1$s.
+# context: row on the Pause, backup and diagnostics page; shows or hides the Quick setups row on the settings home page
+Quick setups on the home page	Ajustes rápidos en Inicio
+Shown. Tap to hide it.	Visible. Toca para ocultarlo.
+Hidden. Tap to show it again.	Oculto. Toca para mostrarlo de nuevo.
 # context: name of a Quick setups choice that hides ads and nags; an adjective, as in a quiet feed
 Quiet	Tranquilo
 Hides ads, suggestions, promos and prompts, and stops nagging notifications.	Oculta anuncios, sugerencias, promociones y avisos, y detiene las notificaciones insistentes.
