@@ -148,26 +148,34 @@ public class PictureInPictureBringBackTest {
         assertFalse("paused", decides(page, 10_000));
     }
 
-    @Test
-    public void arrivingStartsFacebooksLauncherAndCountsIt() {
-        // The launcher entry Facebook's manifest declares, so getLaunchIntentForPackage answers.
+    /** The launcher entry Facebook's manifest declares, so getLaunchIntentForPackage answers. */
+    private static void addLauncher() {
         String packageName = RuntimeEnvironment.getApplication().getPackageName();
         ComponentName launcher = new ComponentName(packageName, "com.facebook.katana.LoginActivity");
         shadowOf(RuntimeEnvironment.getApplication().getPackageManager()).addActivityIfNotPresent(launcher);
         IntentFilter filter = new IntentFilter(Intent.ACTION_MAIN);
         filter.addCategory(Intent.CATEGORY_LAUNCHER);
         shadowOf(RuntimeEnvironment.getApplication().getPackageManager()).addIntentFilterForActivity(launcher, filter);
+    }
 
-        PictureInPicture.armed(screen, new Object(), null);
-        screen.floating = true;
+    /** [page] created on Android [api], through the lifecycle callback the page watch registers, and the main thread run. */
+    private static void arrive(Activity page, int api) {
         int was = PictureInPicture.apiLevel;
-        PictureInPicture.apiLevel = 31;
+        PictureInPicture.apiLevel = api;
         try {
-            PictureInPicture.arrived(page);
+            new PictureInPicture.Arrivals().onActivityCreated(page, null);
             shadowOf(Looper.getMainLooper()).idle();
         } finally {
             PictureInPicture.apiLevel = was;
         }
+    }
+
+    @Test
+    public void arrivingStartsFacebooksLauncherAndCountsIt() {
+        addLauncher();
+        PictureInPicture.armed(screen, new Object(), null);
+        screen.floating = true;
+        arrive(page, 31);
         Intent started = shadowOf(page).getNextStartedActivity();
         assertNotNull("Facebook started again", started);
         assertEquals(Intent.ACTION_MAIN, started.getAction());
@@ -184,9 +192,24 @@ public class PictureInPictureBringBackTest {
 
     @Test
     public void arrivingOutsideTheWindowStartsNothing() {
+        addLauncher();
         PictureInPicture.armed(screen, new Object(), null);
-        PictureInPicture.arrived(page);
-        shadowOf(Looper.getMainLooper()).idle();
+        arrive(page, 31);
         assertNull(shadowOf(page).getNextStartedActivity());
+    }
+
+    @Test
+    public void arrivingWithTheSwitchOffOrBeforeAndroid12StartsNothing() {
+        addLauncher();
+        PictureInPicture.armed(screen, new Object(), null);
+        screen.floating = true;
+        Settings.PICTURE_IN_PICTURE.save(false);
+        arrive(page, 31);
+        assertNull("off", shadowOf(page).getNextStartedActivity());
+        Settings.PICTURE_IN_PICTURE.save(true);
+        arrive(page, 30);
+        assertNull("Android 11", shadowOf(page).getNextStartedActivity());
+        arrive(page, 31);
+        assertNotNull("on, Android 12: the control", shadowOf(page).getNextStartedActivity());
     }
 }
