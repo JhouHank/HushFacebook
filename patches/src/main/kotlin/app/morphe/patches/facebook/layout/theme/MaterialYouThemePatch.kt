@@ -392,6 +392,18 @@ val materialYouThemePatch = bytecodePatch(
         // The box under a link post's picture (issue #37), whose dark-mode colour MobileConfig sends.
         check(hookLinkBoxColour(darkCheck) > 0) { "No parse of the link box's colour found, so link posts would keep a grey box" }
 
+        // What a link box takes when that config's string is empty (#37 leftover): a colour a parent
+        // hands FDS's link attachment, a second config's grey, and FDS's light or dark chooser, which
+        // the footer's box goes through with a colour from the attachment's model.
+        if (hookLinkBoxFallbacks() == 0) {
+            patchLog.warning("No link box fallback colour found. Link boxes still take the palette when MobileConfig sends their colour.")
+        }
+        try {
+            hookDarkPick(darkCheck)
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. The theme goes on without FDS's light or dark chooser.")
+        }
+
         // Bloks screens such as the Menu's profile card (issue #37): the server sends each colour as
         // a light and a dark hex string, and the screen's model parses the one Bloks' theme picks.
         check(hookBloksColourPairs() > 0) { "No parse of a Bloks colour pair found, so the Menu's profile card would stay grey" }
@@ -438,7 +450,8 @@ val materialYouThemePatch = bytecodePatch(
  * more renders. In dark mode each reads this config's string first and parses it when it isn't
  * empty, and only then falls back to a grey a second config picks or to CARD_BACKGROUND_FLAT's
  * token, which route one already themes. The string came out #333334, a grey light mode draws too,
- * so route four's parser leaves it.
+ * so route four's parser leaves it. The fallbacks that route one doesn't reach are in
+ * LinkBoxFallbacks.kt.
  */
 internal const val LINK_BOX_COLOUR_CONFIG = 0x103074c000203a8L
 
@@ -693,7 +706,7 @@ internal fun MutableMethod.readDarkBranchLiterals(darkCheck: String): Int {
 }
 
 /** The indexes some branch or switch case of a method jumps to. */
-private fun branchTargets(instructions: List<Instruction>): Set<Int> {
+internal fun branchTargets(instructions: List<Instruction>): Set<Int> {
     val addresses = instructions.runningFold(0) { address, it -> address + it.codeUnits }
     val indexOfAddress = addresses.withIndex().associate { (index, address) -> address to index }
     val targets = mutableSetOf<Int>()

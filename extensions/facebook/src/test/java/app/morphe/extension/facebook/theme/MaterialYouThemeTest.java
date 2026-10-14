@@ -468,6 +468,27 @@ public class MaterialYouThemeTest {
     }
 
     /**
+     * Issue #37's link box when MobileConfig sends no colour: the second config's GRAY_25 and GRAY_10
+     * and the grey a parent or the attachment's model hands it go through the same stand-in, as does
+     * what FDS's chooser answers on its dark side. Each takes the palette in dark mode; the model's
+     * clear white default and light mode stay.
+     */
+    @Test
+    public void aLinkBoxsFallbackGreyTakesThePalette() {
+        DarkMode.answer(true);
+        assertEquals("GRAY_25", palette.sameLightness(TonePalette.NEUTRAL, 0xFF3B3C3E), MaterialYouTheme.darkBranch(0xFF3B3C3E));
+        assertEquals("GRAY_10", palette.sameLightness(TonePalette.NEUTRAL, 0xFF1C1C1D), MaterialYouTheme.darkBranch(0xFF1C1C1D));
+        assertEquals("the card's grey", palette.sameLightness(TonePalette.NEUTRAL, 0xFF333334), MaterialYouTheme.darkBranch(0xFF333334));
+        assertNotEquals("the palette moves GRAY_25", 0xFF3B3C3E, MaterialYouTheme.darkBranch(0xFF3B3C3E));
+        assertEquals("the model's clear white default", 0x19FFFFFF, MaterialYouTheme.darkBranch(0x19FFFFFF));
+
+        DarkMode.answer(false);
+        for (int grey : new int[]{0xFF3B3C3E, 0xFF1C1C1D, 0xFF333334}) {
+            assertEquals("light mode", grey, MaterialYouTheme.darkBranch(grey));
+        }
+    }
+
+    /**
      * Issue #37: the profile's Add to story button and Marketplace's chips come from Facebook's
      * server as "#0866FF", and some icons read a #3E93F8 colour resource. Once Facebook says dark
      * mode is on, those exact blues take the palette's accent at the same lightness and keep their

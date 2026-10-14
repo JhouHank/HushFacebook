@@ -360,6 +360,12 @@ public final class MaterialYouTheme {
      * it has already said dark, so a grey {@link #FDS_DARK} lists takes the palette's neutral at the
      * same lightness unless Facebook has said light, and any other colour goes the way
      * {@link #withoutToken} sends it.
+     *
+     * <p>The patch sends two more kinds of dark-only colour here. A link box's colour when
+     * MobileConfig sends none: a colour a parent hands FDS's link attachment, or a second config's
+     * GRAY_10 (#1C1C1D) or GRAY_25 (#3B3C3E). And the colour FDS's light or dark chooser answers once
+     * its dark check said yes, which the attachment footer's box goes through with a colour from the
+     * attachment's model.
      */
     public static int darkBranch(int color) {
         HookStatus.invoked(FamilyNames.MATERIAL_YOU_THEME);
