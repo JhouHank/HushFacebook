@@ -394,10 +394,13 @@ public class PausedHooksTest {
         // A post the store remembers is dropped by the feed guard while the switch is on.
         probes.put(PatchFamily.SEEN_POSTS, Collections.singletonList(SeenPostsForTests::hidesARememberedPost));
         // The pill socket's yes for Meta AI's questions is answered as a no, so it draws no row for
-        // them, and its default way of drawing a pill drops one typed meta_ai.
+        // them, and its default way of drawing a pill drops one typed meta_ai. The call-to-action
+        // selector hears Meta AI's question chips don't apply, and the caption deep dive reads as missing.
         probes.put(PatchFamily.META_AI_QUESTIONS, Arrays.asList(
                 () -> !MetaAiQuestions.keep(1, MetaAiQuestions.META_AI_PILL),
-                () -> MetaAiQuestions.dropsDefaultPill(MetaAiQuestions.META_AI_TYPE)));
+                () -> MetaAiQuestions.dropsDefaultPill(MetaAiQuestions.META_AI_TYPE),
+                () -> MetaAiQuestions.hidesQuestionButton(MetaAiQuestions.QUESTION_BUTTON),
+                MetaAiQuestions::hidesQuestionsBelowCaption));
         // A post header's yes to rotating its subtitle is answered as a no, so it keeps the one line.
         probes.put(PatchFamily.POST_DATES, Collections.singletonList(() -> !PostDates.cycling(true)));
         // A post marked for automatic translation reads as one to translate on request, and the
