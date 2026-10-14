@@ -220,6 +220,7 @@ public final class SettingsBackup {
             Settings.HIDE_SHARE_GROUP_BUTTONS,
             Settings.STOP_UPDATE_PROMPTS,
             Settings.DOWNLOAD_STORIES,
+            Settings.SAVE_STORY_PHOTOS,
             Settings.DOWNLOAD_REELS,
             Settings.DOWNLOAD_VIDEOS,
             Settings.CLIPBOARD_DOWNLOAD,

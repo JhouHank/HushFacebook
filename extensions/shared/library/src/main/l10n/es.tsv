@@ -19,6 +19,10 @@ Hides ad cards between people's stories.	Oculta las tarjetas de anuncios entre l
 Ad tracking blocked	Seguimiento de anuncios bloqueado
 Add Download to phone to feed and Watch video menus. Uses the quality below. Off or paused, Facebook's menu returns.	Añade Descargar al teléfono a los menús de vídeos del feed y Watch. Usa la calidad de abajo. Desactivado o en pausa, vuelve el menú de Facebook.
 Add Save to every story menu, using your download quality. Off or paused, Facebook only saves your own stories.	Añade Guardar a todas las historias con tu calidad de descarga. Desactivado o en pausa, Facebook solo guarda tus propias historias.
+# context: switch title on the Stories page, under Save any story; offers the Save photo menu item on more stories than before
+Save photo on more stories	Guardar foto en más historias
+# context: summary of that switch; "Save photo" is the menu item's name, keep it as translated for that item; the cover picture is the still image shown before a video plays
+Adds Save photo to any story that carries a picture beside its video, like a photo story with music that Facebook didn't mark as one. On a video story it saves the cover picture. Untested on a real account, so it starts off.	Añade Guardar foto a cualquier historia que lleve una imagen junto a su vídeo, como una historia de foto con música que Facebook no marcó como tal. En una historia de vídeo guarda la imagen de portada. Aún sin probar en una cuenta real, por eso empieza apagado.
 Hides ads in Reels, starting with the next batch Facebook loads. Banner ads, mid-video ads and other ads added by the app stay blocked even while paused.	Oculta los anuncios en Reels, a partir del próximo lote que cargue Facebook. Los banners, los anuncios a mitad de vídeo y otros anuncios que añade la app siguen bloqueados incluso en pausa.
 AMOLED black theme	Tema negro AMOLED
 Appearance	Apariencia

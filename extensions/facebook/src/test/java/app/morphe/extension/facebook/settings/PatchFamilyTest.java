@@ -105,7 +105,8 @@ public class PatchFamilyTest {
     public void theReportSaysWhatTheSharedDownloadSwitchesAreSetTo() {
         try {
             List<String> lines = PatchFamily.reportLines(EnumSet.of(PatchFamily.STORY_DOWNLOAD), false);
-            assertEquals("Download any story: on (hushfacebook_download_stories=on)", lines.get(0));
+            assertEquals("Download any story: on (hushfacebook_download_stories=on, hushfacebook_save_story_photos=off)",
+                    lines.get(0));
             assertEquals("Every download patch: hushfacebook_download_compatible=off, hushfacebook_download_quiet=off",
                     lines.get(1));
             assertTrue(lines.get(2), lines.get(2).startsWith("not in this build: "));

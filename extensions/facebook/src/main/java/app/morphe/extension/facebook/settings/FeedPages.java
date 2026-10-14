@@ -338,6 +338,11 @@ final class FeedPages {
             if (build.contains(PatchFamily.STORY_DOWNLOAD)) {
                 stories.addPreference(toggle(context, Settings.DOWNLOAD_STORIES,
                         L10n.t("Add Save to every story menu, using your download quality. Off or paused, Facebook only saves your own stories.")));
+                // Read as each story's menu opens, so a change shows on the next menu.
+                stories.addPreference(toggle(context, Settings.SAVE_STORY_PHOTOS,
+                        L10n.t("Adds Save photo to any story that carries a picture beside its video, like a photo "
+                                + "story with music that Facebook didn't mark as one. On a video story it saves the "
+                                + "cover picture. Untested on a real account, so it starts off.")));
             }
             if (build.contains(PatchFamily.STORY_UPLOAD_HD)) {
                 // Read as each Story's upload is set up, so a change applies to the next one you post.

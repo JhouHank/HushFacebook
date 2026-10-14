@@ -211,6 +211,12 @@ public class PausedHooksTest {
                 .with("stories_photo_uri", new TreeJNI().with("uri", "https://scontent.xx.fbcdn.net/v/t39/story.jpg"));
     }
 
+    /** The same media on a node without that tree, which Facebook plays and labels as a video (#38). */
+    public static final class UnmarkedPhotoStoryCard {
+        final TreeJNI story = new TreeJNI();
+        final TreeJNI media = new MusicPhotoStoryCard().media;
+    }
+
     /** One hook with its switch on: true when it changed what Facebook would have done. */
     interface Probe {
         boolean changedFacebook();
@@ -564,6 +570,8 @@ public class PausedHooksTest {
                 () -> MediaDownload.offersSave(false),
                 // A photo Story with music gets Save photo beside Save.
                 () -> StoryPhoto.menuTitle(new MusicPhotoStoryCard()) != null,
+                // Save photo on more stories: so does one Facebook doesn't mark as made from a photo.
+                () -> StoryPhoto.menuTitle(new UnmarkedPhotoStoryCard()) != null,
                 // The recorder runs in every player Facebook builds, not only in stories.
                 PlayerSourcesForTests::recordsAPlayer));
         // Every reel's sidebar gets the Download button.

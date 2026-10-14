@@ -135,9 +135,15 @@ private fun Instruction.method() = (this as? ReferenceInstruction)?.reference as
  * Fills the extension's [CDN_RESIZE_STUB] with Facebook's modifier call, through a helper on the
  * save's class that builds the options as the save does, with the extension's width and height.
  * A build where the call isn't found keeps the stub empty, and Save photo saves the largest copy
- * the photo's model holds, as it did before.
+ * the photo's model holds, as it did before. Download any story fills it too, for a story's photo
+ * (#38), so whichever of the two runs second finds it filled and leaves it.
  */
 internal fun BytecodePatchContext.fillCdnResize() {
+    val filled = mutableClassDefByOrNull(PHOTO_SAVE)?.methods?.singleOrNull { it.name == CDN_RESIZE_STUB }
+        ?.implementation?.instructions?.any {
+            ((it as? ReferenceInstruction)?.reference as? MethodReference)?.name == CDN_RESIZE_HELPER
+        } == true
+    if (filled) return
     val saves = mutableListOf<Method>()
     classDefForEach { classDef ->
         if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEach

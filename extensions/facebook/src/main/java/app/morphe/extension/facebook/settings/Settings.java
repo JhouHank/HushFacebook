@@ -1104,6 +1104,13 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting DOWNLOAD_STORIES =
             new BooleanSetting("hushfacebook_download_stories", TRUE);
 
+    /**
+     * Save photo goes on every story whose media carries a picture beside its video, not only on
+     * the ones Facebook marks as made from a photo (#38). See StoryPhoto.
+     */
+    public static final BooleanSetting SAVE_STORY_PHOTOS =
+            new BooleanSetting("hushfacebook_save_story_photos", FALSE);
+
     /** The Download button the reel patch adds to every reel's sidebar. */
     public static final BooleanSetting DOWNLOAD_REELS =
             new BooleanSetting("hushfacebook_download_reels", TRUE);

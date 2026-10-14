@@ -154,7 +154,7 @@ public enum PatchFamily {
     UPDATE_PROMPTS(FamilyNames.UPDATE_PROMPTS, "updatePrompts", null,
             Settings.STOP_UPDATE_PROMPTS),
     STORY_DOWNLOAD(FamilyNames.STORY_DOWNLOAD, "storyDownload", null,
-            Settings.DOWNLOAD_STORIES),
+            Settings.DOWNLOAD_STORIES, Settings.SAVE_STORY_PHOTOS),
     REEL_DOWNLOAD(FamilyNames.REEL_DOWNLOAD, "reelDownload", null,
             Settings.DOWNLOAD_REELS),
     VIDEO_DOWNLOAD(FamilyNames.VIDEO_DOWNLOAD, "videoDownload", null,

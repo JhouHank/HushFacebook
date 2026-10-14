@@ -19,6 +19,10 @@ Hides ad cards between people's stories.	İnsanların hikayeleri arasındaki rek
 Ad tracking blocked	Reklam takibi engellendi
 Add Download to phone to feed and Watch video menus. Uses the quality below. Off or paused, Facebook's menu returns.	Akış ve Watch video menülerine Telefona indir ekler. Aşağıdaki kaliteyi kullanır. Kapalı veya duraklatılmışken Facebook menüsü geri gelir.
 Add Save to every story menu, using your download quality. Off or paused, Facebook only saves your own stories.	Her hikaye menüsüne indirme kalitenizle Kaydet ekler. Kapalı veya duraklatılmışken Facebook yalnızca kendi hikayelerinizi kaydeder.
+# context: switch title on the Stories page, under Save any story; offers the Save photo menu item on more stories than before
+Save photo on more stories	Daha fazla hikayede fotoğrafı kaydet
+# context: summary of that switch; "Save photo" is the menu item's name, keep it as translated for that item; the cover picture is the still image shown before a video plays
+Adds Save photo to any story that carries a picture beside its video, like a photo story with music that Facebook didn't mark as one. On a video story it saves the cover picture. Untested on a real account, so it starts off.	Videosunun yanında bir resim taşıyan her hikayeye Fotoğrafı kaydet seçeneğini ekler; örneğin Facebook'un fotoğraf olarak işaretlemediği müzikli bir fotoğraf hikayesi. Video hikayesinde kapak resmini kaydeder. Gerçek bir hesapta henüz denenmedi, bu yüzden kapalı başlar.
 Hides ads in Reels, starting with the next batch Facebook loads. Banner ads, mid-video ads and other ads added by the app stay blocked even while paused.	Facebook'un yükleyeceği bir sonraki gruptan başlayarak Reels içindeki reklamları gizler. Banner reklamlar, video ortası reklamlar ve uygulamanın eklediği diğer reklamlar duraklatılmışken bile engelli kalır.
 AMOLED black theme	AMOLED siyah tema
 Appearance	Görünüm

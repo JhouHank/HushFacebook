@@ -7,6 +7,7 @@
  */
 package app.morphe.patches.facebook.downloads.story
 
+import app.morphe.patches.facebook.downloads.photo.fillCdnResize
 import app.morphe.patches.facebook.feed.resolveStatic
 import app.morphe.patches.facebook.shared.reportedFieldNames
 import app.morphe.patches.shared.compat.AppCompatibilities
@@ -212,6 +213,11 @@ val downloadStoryPatch = bytecodePatch(
         )
 
         addSavePhotoItem(builder, action, storyCardField)
+
+        // #38: Save photo on a story asks Meta's CDN for the photo at its full size, as Save photo
+        // on a post does. Download any photo fills the same stub when it's in; whichever runs
+        // second leaves it.
+        fillCdnResize()
 
         rememberPlayerSources()
 
