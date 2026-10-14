@@ -21,6 +21,7 @@ import com.facebook.common.util.TriState;
 import com.facebook.graphql.model.GraphQLComment;
 import com.facebook.graphql.model.GraphQLPagesYouMayLikeFeedUnit;
 import com.facebook.graphql.model.GraphQLStory;
+import com.facebook.graphservice.tree.TreeJNI;
 
 import org.junit.After;
 import org.junit.Rule;
@@ -65,6 +66,7 @@ import app.morphe.extension.facebook.download.PhotoSave;
 import app.morphe.extension.facebook.download.PlayerSourcesForTests;
 import app.morphe.extension.facebook.download.ReelDownload;
 import app.morphe.extension.facebook.download.SaveRulesForTests;
+import app.morphe.extension.facebook.download.StoryPhoto;
 import app.morphe.extension.facebook.download.VideoMenuItemForTests;
 import app.morphe.extension.facebook.emoji.SystemEmoji;
 import app.morphe.extension.facebook.feed.AutoTranslationForTests;
@@ -192,6 +194,12 @@ public class PausedHooksTest {
             asked = true;
             return null;
         }
+    }
+
+    /** A photo Story with music's card: its media holds the video and the photo it was made from. */
+    public static final class MusicPhotoStoryCard {
+        final TreeJNI media = new TreeJNI().with("playable_url", "https://video.xx.fbcdn.net/v/t42/story.mp4")
+                .with("stories_photo_uri", new TreeJNI().with("uri", "https://scontent.xx.fbcdn.net/v/t39/story.jpg"));
     }
 
     /** One hook with its switch on: true when it changed what Facebook would have done. */
@@ -533,6 +541,8 @@ public class PausedHooksTest {
                 },
                 // The menu offers Save on someone else's story.
                 () -> MediaDownload.offersSave(false),
+                // A photo Story with music gets Save photo beside Save.
+                () -> StoryPhoto.menuTitle(new MusicPhotoStoryCard()) != null,
                 // The recorder runs in every player Facebook builds, not only in stories.
                 PlayerSourcesForTests::recordsAPlayer));
         // Every reel's sidebar gets the Download button.

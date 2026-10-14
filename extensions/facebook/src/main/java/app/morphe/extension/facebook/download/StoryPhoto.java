@@ -4,12 +4,28 @@
  */
 package app.morphe.extension.facebook.download;
 
+import android.content.Context;
+
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import app.morphe.extension.facebook.settings.FamilyNames;
+import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.shared.L10n;
+import app.morphe.extension.shared.Logger;
+import app.morphe.extension.shared.Utils;
+import app.morphe.extension.shared.diagnostics.DiagnosticCategory;
+import app.morphe.extension.shared.diagnostics.HookStatus;
+
 /**
- * The original picture of a photo Story with music (#38). Facebook plays such a Story as a video
- * made from the photo, and its media model carries both: {@code playable_url}, the video, and
- * {@code stories_photo_uri}, the photo it was made from, whose {@code uri} Facebook shows instead
- * when it reverts the Story to a still (582: the PHOTO_REVERT_P2V card kind). A video Story's media
- * has a {@code stories_video_thumbnail} in its place, and a plain photo Story's has the photo and no
+ * The original picture of a photo Story with music (#38), and the Save photo item the story menu
+ * gets for it beside Save. Facebook plays such a Story as a video made from the photo, and its
+ * media model carries both: {@code playable_url}, the video, and {@code stories_photo_uri}, the
+ * photo it was made from, whose {@code uri} Facebook shows instead when it reverts the Story to a
+ * still (582: the PHOTO_REVERT_P2V card kind). A video Story's media has a
+ * {@code stories_video_thumbnail} in its place, and a plain photo Story's has the photo and no
  * video.
  *
  * <p>The story card's kept {@code getMedia} takes the video thumbnail whenever the media has a
@@ -17,10 +33,20 @@ package app.morphe.extension.facebook.download;
  * cached there once {@code getMedia} has run, so it's found among the card's own trees by what it
  * holds, and read through the kept {@code getString} and {@code getTree} by the hash of each field's
  * GraphQL name, as {@link PostDetails} reads a post. No getter Redex renames is used.
+ *
+ * <p>The menu's builder makes Save photo as a copy of its Save item with a title of its own, so a
+ * tap on it reaches the same action, which hands over the item tapped. The copies made here are
+ * remembered, and a tap on one saves the photo while a tap on Save still saves the video.
  */
-final class StoryPhoto {
+public final class StoryPhoto {
     static final int STORIES_PHOTO_URI = "stories_photo_uri".hashCode();
     static final int URI = "uri".hashCode();
+
+    /**
+     * The Save photo items the menu built, kept no longer than the menu keeps them and told apart
+     * by identity, so an item class whose equals compares fields can't pass Save for Save photo.
+     */
+    private static final List<WeakReference<Object>> OFFERED = new ArrayList<>();
 
     private StoryPhoto() {
     }
@@ -37,5 +63,84 @@ final class StoryPhoto {
             if (uri != null && !uri.trim().isEmpty()) return uri;
         }
         return null;
+    }
+
+    /**
+     * The title of the Save photo item the story menu adds beside Save, or null when the menu keeps
+     * its single Save: Save any story off, paused or not ready, or a Story not made from a photo.
+     * The viewer has asked the card for its media by the time its menu opens, which caches the
+     * model; asking once more here makes sure. Never throws: it runs inside Facebook's menu code.
+     */
+    public static String menuTitle(Object card) {
+        try {
+            if (!Utils.settingsReady() || !Settings.DOWNLOAD_STORIES.get()) return null;
+            media(card);
+            if (originalOf(card) == null) return null;
+            HookStatus.bound(FamilyNames.STORY_DOWNLOAD, "story menu photo item");
+            return L10n.t("Save photo");
+        } catch (Throwable t) {
+            HookStatus.threw(FamilyNames.STORY_DOWNLOAD, "story menu photo item", t);
+            Logger.diagnosticError(DiagnosticCategory.DOWNLOADS, StoryPhoto.class.getSimpleName(),
+                () -> "could not add Save photo to a story's menu", t);
+            return null;
+        }
+    }
+
+    /** Remembers [item] as a Save photo item the menu's builder just made. Never throws. */
+    public static void offered(Object item) {
+        if (item == null) return;
+        synchronized (OFFERED) {
+            for (Iterator<WeakReference<Object>> each = OFFERED.iterator(); each.hasNext(); ) {
+                if (each.next().get() == null) each.remove();
+            }
+            OFFERED.add(new WeakReference<>(item));
+        }
+    }
+
+    /** Whether [item] is a Save photo item, rather than Facebook's own Save. */
+    static boolean isOffered(Object item) {
+        if (item == null) return false;
+        synchronized (OFFERED) {
+            for (WeakReference<Object> offered : OFFERED) {
+                if (offered.get() == item) return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * A tap on Save photo: saves the photo [card]'s Story was made from, at the size Facebook
+     * serves it, or says it couldn't. Always answers true, since the item is Hushfacebook's and
+     * Facebook's own save would only save the video. A tap after the switch went off does nothing.
+     */
+    static boolean save(Context context, Object card) {
+        try {
+            if (!Utils.settingsReady() || !Settings.DOWNLOAD_STORIES.get()) {
+                Logger.diagnosticInfo(DiagnosticCategory.DOWNLOADS, StoryPhoto.class.getSimpleName(),
+                    () -> "Save photo tapped on a story after Save any story went off");
+                return true;
+            }
+            Context application = context == null ? Utils.getContext() : context.getApplicationContext();
+            Logger.diagnosticInfo(DiagnosticCategory.DOWNLOADS, StoryPhoto.class.getSimpleName(),
+                () -> "Save photo tapped on a story's menu");
+            if (MediaDownload.busy(application)) return true;
+            if (!MediaDownload.savePhoto(application, originalOf(card), PostDetails.ofCard(null, card))) {
+                Feedback.show(application, L10n.t(application, "Couldn't save this story's photo. Try again in a moment."), true);
+            }
+        } catch (Throwable t) {
+            HookStatus.threw(FamilyNames.STORY_DOWNLOAD, "story photo save", t);
+            Logger.diagnosticError(DiagnosticCategory.DOWNLOADS, StoryPhoto.class.getSimpleName(),
+                () -> "the story's Save photo tap failed", t);
+        }
+        return true;
+    }
+
+    private static void media(Object card) {
+        if (card == null) return;
+        try {
+            card.getClass().getMethod("getMedia").invoke(card);
+        } catch (Throwable ignored) {
+            // No getMedia, or it failed: the cached model, if any, is read as it is.
+        }
     }
 }

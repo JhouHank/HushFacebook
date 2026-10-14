@@ -1055,6 +1055,7 @@ Save photo	Simpan foto
 Save all photos	Simpan semua foto
 # context: short message shown when the photos of a post could not start saving
 Couldn't save this post's photos. Try again in a moment.	Foto postingan ini tidak dapat disimpan. Coba lagi sebentar lagi.
+Couldn't save this story's photo. Try again in a moment.	Foto cerita ini tidak dapat disimpan. Coba lagi sebentar lagi.
 Too many saves at once. Try again when one finishes.	Terlalu banyak unduhan sekaligus. Coba lagi setelah salah satunya selesai.
 # context: settings switch under Block Instant Games ads that makes a game's rewarded ad count as watched
 Answer rewarded game ads as watched	Anggap iklan berhadiah game sudah ditonton

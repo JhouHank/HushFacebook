@@ -195,6 +195,16 @@ public final class MediaDownload {
     }
 
     /**
+     * The same, for a tap on [tapped], the item of the story menu that was tapped: Save photo, which
+     * the menu got beside Save for a photo Story with music, saves the photo the Story was made
+     * from ({@link StoryPhoto}); Save saves the story's media as above.
+     */
+    public static boolean saveStory(Context context, Object host, Object tapped) {
+        if (StoryPhoto.isOffered(tapped)) return StoryPhoto.save(context, host);
+        return saveStory(context, host);
+    }
+
+    /**
      * Save the video that the player is streaming.
      *
      * <p>[hdField] and [sdField] are the real names of the two fields of the source that hold a
