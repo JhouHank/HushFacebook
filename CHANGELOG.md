@@ -17,9 +17,6 @@ Changes in each Hushfacebook version, newest first.
 ### Fixed
 
 * **Facebook:** A save that fails now says why. The toast and the `Last save` row under Downloads used to give the same "try again" whatever went wrong. No connection, an expired link, a download cut short, too little free space, a video the phone couldn't put together and a gallery that wouldn't take the file each get their own message now. Anything else still gets the plain "Download failed" one.
-
-### Fixed
-
 * **Facebook:** Export settings saves one whole set of choices, even when you change something while the file is being written. It used to read your settings one by one in the background, so a Quick setup tapped at that moment, or a change to both word lists, could leave the file with some settings from before and some from after. That was a mix you never picked. Now it takes all of them the moment you choose where to save, and the file holds your settings as they were then. Exporting while paused still saves what you chose, and import works as it did.
 
 ## 0.12.0 (2026-10-13)
