@@ -23,6 +23,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** Export settings saves one whole set of choices, even when you change something while the file is being written. It used to read your settings one by one in the background, so a Quick setup tapped at that moment, or a change to both word lists, could leave the file with some settings from before and some from after. That was a mix you never picked. Now it takes all of them the moment you choose where to save, and the file holds your settings as they were then. Exporting while paused still saves what you chose, and import works as it did.
 * **Facebook:** If the settings screen is rebuilt while you're typing in its search box, the box keeps what you typed and gets the cursor back, and the screen asks for the keyboard again. Android 17 stopped bringing the keyboard back by itself after a change like a rotation, and the box never got its focus back on any version, so you had to tap it again.
 * **Facebook:** A saved video whose track holds only empty samples now gets a size table other players can read. When every sample had the same size and that size was 0, the join wrote just the 0, which in an MP4 means "the sizes follow", and none did. An hour of fuzzing the joiner found it.
+* **Facebook:** A video manifest that gives a track an empty type no longer lists it as a track. The track now takes its adaptation set's type, or is skipped when there's none to take. The parser fuzzer found this one too.
 
 ## 0.12.0 (2026-10-13)
 
