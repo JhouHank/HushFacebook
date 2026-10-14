@@ -76,6 +76,8 @@ public final class SettingsDialog extends DialogFragment {
     private boolean settingSearch;
     /** The screen was recreated while its search box was being typed in. */
     private boolean typingAgain;
+    /** The search box had the focus and the keyboard when the screen last paused. */
+    private boolean typingAtPause;
 
     /** The page's colours, or null for the black page. Read when the dialog is created. */
     @Nullable
@@ -341,6 +343,8 @@ public final class SettingsDialog extends DialogFragment {
         if (typing) {
             // Posted, since a restored page can get here before the dialog's window holds the box.
             search.post(() -> {
+                // A requested setting may have moved the page on since, and the box with it.
+                if (searchBox.getVisibility() != View.VISIBLE) return;
                 search.requestFocus();
                 search.setSelection(search.length());
                 WindowInsetsController keyboard = search.getWindowInsetsController();
@@ -352,10 +356,26 @@ public final class SettingsDialog extends DialogFragment {
         }
     }
 
+    /**
+     * Read at pause, while the dialog still shows: its onStop hides the dialog, which takes the
+     * focus off the box before the state is saved on Android 9 and newer.
+     */
+    @Override
+    public void onPause() {
+        typingAtPause = search != null && search.hasFocus() && keyboardUp.test(search);
+        super.onPause();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        typingAtPause = false;
+    }
+
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        if (search != null && search.hasFocus() && keyboardUp.test(search)) outState.putBoolean(TYPING, true);
+        if (typingAtPause) outState.putBoolean(TYPING, true);
     }
 
     private static boolean keyboardShowing(View view) {
