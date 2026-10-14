@@ -168,6 +168,7 @@ public final class SettingsBackup {
             Settings.HIDE_REEL_THREADS_CARDS,
             Settings.REEL_CLEAN_MODE,
             Settings.PLAY_REELS_ONCE,
+            Settings.ORIGINAL_AUDIO,
             Settings.DONT_SEND_REEL_WATCH_HISTORY,
             Settings.HOLD_ANALYTICS_UPLOADS,
             Settings.HOLD_CAMERA_ROLL_PROCESSING,

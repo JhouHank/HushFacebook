@@ -107,6 +107,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_REEL_THREADS_CARDS) return L10n.t("Hide Threads cards between reels");
         if (setting == Settings.REEL_CLEAN_MODE) return L10n.t("Always use Clean mode");
         if (setting == Settings.PLAY_REELS_ONCE) return L10n.t("Play reels once");
+        if (setting == Settings.ORIGINAL_AUDIO) return L10n.t("Keep the original audio");
         if (setting == Settings.DONT_SEND_REEL_WATCH_HISTORY) return L10n.t("Don't send reel watch history");
         if (setting == Settings.HOLD_ANALYTICS_UPLOADS) return L10n.t("Hold back analytics uploads");
         if (setting == Settings.HOLD_CAMERA_ROLL_PROCESSING) return L10n.t("Hold back camera roll processing");

@@ -915,6 +915,10 @@ Opens reels and videos in Facebook's Clean mode, which hides the buttons down th
 Play reels once	Reproduzir reels uma vez
 # context: summary of that switch; "last frame" is the final picture of the video, which stays on screen
 A reel stops on its last frame instead of starting over. Tap it to watch again, or swipe to the next one. Feed videos and stories aren't changed. Untested on a real account, so it starts off.	Um reel para no último quadro em vez de recomeçar. Toque nele para assistir de novo ou deslize para o próximo. Vídeos do feed e stories não mudam. Ainda não testado em uma conta real, por isso começa desligado.
+# context: switch title under Reels and Watch, part of Clean up Reels; reels and videos play in the language they were recorded in instead of an audio track Facebook translated
+Keep the original audio	Manter o áudio original
+# context: summary of that switch; "dubbed" means the spoken audio was replaced by a translated voice; Meta AI is the company's AI assistant, keep the name
+Reels and videos play with the sound they were made with, not a version Facebook dubbed into your language with Meta AI. Untested on a real account, so it starts off.	Reels e vídeos tocam com o som com que foram feitos, não com uma versão que o Facebook dublou para o seu idioma com a Meta AI. Ainda não testado em uma conta real, por isso começa desligado.
 # context: settings section title on the App page, above the switches of Hide Meta upsells; Meta is the company
 Meta's other products	Outros produtos da Meta
 # context: switch title; Edits is Meta's video editing app, keep its name

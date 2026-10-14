@@ -118,6 +118,10 @@ final class VideoPages {
                     L10n.t("A reel stops on its last frame instead of starting over. Tap it to watch again, or swipe to "
                             + "the next one. Feed videos and stories aren't changed. Untested on a real account, so it "
                             + "starts off.")));
+            // Asked as each video's audio is picked, so a change shows from the next video.
+            reels.addPreference(toggle(context, Settings.ORIGINAL_AUDIO,
+                    L10n.t("Reels and videos play with the sound they were made with, not a version Facebook dubbed "
+                            + "into your language with Meta AI. Untested on a real account, so it starts off.")));
         }
         if (build.contains(PatchFamily.REEL_WATCH_HISTORY)) {
             reels.addPreference(toggle(context, Settings.DONT_SEND_REEL_WATCH_HISTORY,

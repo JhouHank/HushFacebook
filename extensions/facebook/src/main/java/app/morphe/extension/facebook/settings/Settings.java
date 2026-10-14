@@ -425,6 +425,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_play_reels_once", FALSE);
 
     /**
+     * Reels and videos keep the sound they were made with instead of a version Facebook dubbed into
+     * your language with Meta AI ({@link app.morphe.extension.facebook.reels.OriginalAudio}). The
+     * player is told no language was asked for, so it keeps the video's main audio track. Off until
+     * it's turned on, since nobody has seen it on a phone yet.
+     */
+    public static final BooleanSetting ORIGINAL_AUDIO =
+            new BooleanSetting("hushfacebook_original_audio", FALSE);
+
+    /**
      * The batches of watched reels the Reels viewer sends as FbShortsSeenStateMutation: only their
      * ids, the record Facebook ranks the Reels feed with, which nobody else sees. Held back, reels
      * already watched may come back in the feed.

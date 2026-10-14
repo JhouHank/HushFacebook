@@ -122,6 +122,7 @@ import app.morphe.extension.facebook.navigation.TabBadgesForTests;
 import app.morphe.extension.facebook.navigation.StartTabRouteForTests;
 import app.morphe.extension.facebook.notifications.NotificationKindsForTests;
 import app.morphe.extension.facebook.reels.DoubleTapLike;
+import app.morphe.extension.facebook.reels.OriginalAudio;
 import app.morphe.extension.facebook.reels.ReelHold;
 import app.morphe.extension.facebook.reels.ReelHoldForTests;
 import app.morphe.extension.facebook.reels.ReelCleanMode;
@@ -476,7 +477,9 @@ public class PausedHooksTest {
                 ReelDeclutter::skipSocialBubbles,
                 ReelMidCardsForTests::dropsAThreadsCard,
                 () -> ReelCleanMode.startClean(false),
-                ReelLoopForTests::stopsAReel));
+                ReelLoopForTests::stopsAReel,
+                // A video whose audio Facebook would pick in Spanish is asked for no language.
+                () -> !"es".equals(OriginalAudio.language("es"))));
         // A reel that would get the interest prompt is answered as one that doesn't.
         probes.put(PatchFamily.REEL_PROMPTS, Collections.singletonList(() -> !ReelPrompts.keep(true)));
         // The Reels batcher's send of the reels you watched never reaches its executor.
