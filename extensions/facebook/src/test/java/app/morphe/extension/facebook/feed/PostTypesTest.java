@@ -200,6 +200,7 @@ public class PostTypesTest {
 
         Settings.HIDE_LINK_POSTS.save(false);
         Settings.HIDE_PHOTO_POSTS.save(true);
+        assertTrue("the photo switch hides", guard(new GraphQLStory(null, stand.attachment(Style.PHOTO)), stand.readers()));
         assertFalse("only the link switch asks", guard(new GraphQLStory(null, site), stand.readers()));
     }
 
