@@ -26,6 +26,7 @@ Changes in each Hushfacebook version, newest first.
 ### Fixed
 
 * **Facebook:** A copy made with Clone app builds Facebook's rich notifications from its own layouts, so a notification no longer closes the clone (issue #36). Tapping a push or chat notification opens the clone instead of the stock app, and the notification's icon and color come from the clone. There's no switch.
+* **Facebook:** A copy made with Clone app no longer closes when you tap the chat icon at the top (issue #113). Facebook's chat backup looks for the app among Meta's own by its package name and gave up on the clone's renamed one. The clone now answers to Facebook's name there.
 * **Facebook:** `Turn off HDR brightness` no longer leaves HLG reels bright and warm (issue #93). HLG video reaches the decoder at the usual range in its own colors, the way HDR10 reels already did.
 * **Facebook:** With `Tap to play` on, tapping a reel in the Reels row on Home plays that reel right away, since the tap already asked for it (issue #106). Reels sitting in the feed still wait for a tap.
 * **Facebook:** Home keeps loading posts when Hushfacebook hides most of a page. Once the end of the list is on screen, it asks Facebook for the next page again, at most every 2 seconds, and stays stock while paused.
