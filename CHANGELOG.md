@@ -32,6 +32,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* **Facebook:** `Leave calls and chats to Messenger` no longer leaves incoming calls silent in both apps (issue #157). When the switch is on and Messenger is installed and enabled, Facebook stops registering itself for Messenger calls at its next start, so the call reaches Messenger instead. Facebook's local call blocks stay as a fallback for calls already sent its way. Restart Facebook after changing the switch or installing, enabling or disabling Messenger.
 * **Facebook:** `Keep the top bar on screen` no longer leaves the top bar sitting over the Reels tab (issue #159). Facebook hides its bars itself as it opens Reels or a full-screen page and brings them back on the feed, and the kept bar now goes along with that. On the feed it stays put as before.
 * **Facebook:** Picking an alternate app icon now changes the Facebook wordmark at the top of Home to the same icon without changing the top bar's height (issue #160). The normal blue choice keeps Facebook's wordmark.
 * **Facebook:** With `Material You theme` in your build, dark mode no longer crashes Facebook as the feed loads on Android 12 and newer (issue #154). The likes line under a post reads its text color as a plain number, and the theme had turned that color into a day and night pair it couldn't read. The colors Facebook reads that way now get the nearest plain wallpaper tone instead. Light mode and the rest of dark mode look as they did.

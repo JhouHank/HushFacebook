@@ -416,7 +416,7 @@ Tapping the Messenger icon at the top of Facebook opens the Messenger app instea
 # context: switch title under Chats; on, Facebook leaves ringing for calls and notifying about chats to the Messenger app
 Leave calls and chats to Messenger	Dejar llamadas y chats a Messenger
 # context: summary of that switch; signed out means not logged in to the Messenger app, turned off means the app is disabled in Android's settings
-Facebook stops ringing for calls and notifying you about chats while Messenger is installed, so only Messenger does. Without Messenger, or with it turned off, Facebook rings and notifies as before. If you're signed out of Messenger, you'll miss calls and messages.	Facebook deja de sonar con las llamadas y de avisarte de los chats mientras Messenger esté instalado, así que solo lo hace Messenger. Sin Messenger, o si está desactivado, Facebook suena y avisa como antes. Si cerraste sesión en Messenger, te perderás llamadas y mensajes.
+Facebook leaves calls and chat notifications to Messenger while Messenger is installed and enabled. Restart Facebook after changing this switch, or after installing, removing, enabling or disabling Messenger, so call routing updates. If you're signed out of Messenger, you'll miss calls and messages.	Facebook deja las llamadas y las notificaciones de chat a Messenger mientras Messenger esté instalado y activado. Reinicia Facebook después de cambiar este interruptor o de instalar, eliminar, activar o desactivar Messenger para actualizar el enrutamiento de llamadas. Si cerraste sesión en Messenger, te perderás llamadas y mensajes.
 # context: settings section heading for the Tap to play switch
 Playback	Reproducción
 # context: switch title; on, videos and music wait for a tap before they play

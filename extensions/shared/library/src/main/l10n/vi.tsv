@@ -416,7 +416,7 @@ Tapping the Messenger icon at the top of Facebook opens the Messenger app instea
 # context: switch title under Chats; on, Facebook leaves ringing for calls and notifying about chats to the Messenger app
 Leave calls and chats to Messenger	Để Messenger lo cuộc gọi và chat
 # context: summary of that switch; signed out means not logged in to the Messenger app, turned off means the app is disabled in Android's settings
-Facebook stops ringing for calls and notifying you about chats while Messenger is installed, so only Messenger does. Without Messenger, or with it turned off, Facebook rings and notifies as before. If you're signed out of Messenger, you'll miss calls and messages.	Khi Messenger đã được cài, Facebook ngừng đổ chuông cuộc gọi và thông báo chat, chỉ Messenger làm việc đó. Nếu không có Messenger hoặc Messenger bị tắt, Facebook đổ chuông và thông báo như trước. Nếu bạn đã đăng xuất khỏi Messenger, bạn sẽ lỡ cuộc gọi và tin nhắn.
+Facebook leaves calls and chat notifications to Messenger while Messenger is installed and enabled. Restart Facebook after changing this switch, or after installing, removing, enabling or disabling Messenger, so call routing updates. If you're signed out of Messenger, you'll miss calls and messages.	Facebook chuyển cuộc gọi và thông báo chat cho Messenger khi Messenger được cài đặt và bật. Hãy khởi động lại Facebook sau khi thay đổi công tắc này hoặc sau khi cài đặt, gỡ, bật hay tắt Messenger để cập nhật định tuyến cuộc gọi. Nếu đã đăng xuất khỏi Messenger, bạn sẽ bỏ lỡ cuộc gọi và tin nhắn.
 # context: settings section heading for the Tap to play switch
 Playback	Phát lại
 # context: switch title; on, videos and music wait for a tap before they play

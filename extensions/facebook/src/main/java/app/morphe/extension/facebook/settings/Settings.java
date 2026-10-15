@@ -875,11 +875,12 @@ public class Settings extends BaseSettings {
     /**
      * While Messenger is installed and enabled, Facebook doesn't ring for calls or post
      * notifications for new messages, reactions, message requests and missed calls, so only
-     * Messenger does. Starts off. Without Messenger, or with it disabled, Facebook rings and
-     * notifies as it always did. Read on every call and notification, so it needs no restart.
+     * Messenger does. Starts off. Without Messenger, or with it disabled when Facebook starts,
+     * Facebook rings and notifies as it always did. A restart rebuilds Facebook's MQTT connection
+     * without its VOIP capability.
      */
     public static final BooleanSetting LEAVE_CALLS_AND_CHATS_TO_MESSENGER =
-            new BooleanSetting("hushfacebook_leave_calls_and_chats_to_messenger", FALSE);
+            new BooleanSetting("hushfacebook_leave_calls_and_chats_to_messenger", FALSE, true);
 
     /**
      * The Upgrades section of Facebook's Menu, the group Facebook types UPSELL, with its offers.

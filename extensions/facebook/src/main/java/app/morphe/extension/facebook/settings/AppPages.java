@@ -68,11 +68,12 @@ final class AppPages {
                 chats.addPreference(toggle(context, Settings.OPEN_MESSENGER_APP,
                         L10n.t("Tapping the Messenger icon at the top of Facebook opens the Messenger app instead of Chats. Without "
                                 + "Messenger, Chats opens as before.")));
-                // Read on every call and chat notification, so a change applies without a restart.
+                // The restart refreshes Facebook's MQTT call capability; the local drops also read it live.
                 chats.addPreference(toggle(context, Settings.LEAVE_CALLS_AND_CHATS_TO_MESSENGER,
-                        L10n.t("Facebook stops ringing for calls and notifying you about chats while Messenger is installed, "
-                                + "so only Messenger does. Without Messenger, or with it turned off, Facebook rings and notifies "
-                                + "as before. If you're signed out of Messenger, you'll miss calls and messages.")));
+                        L10n.t("Facebook leaves calls and chat notifications to Messenger while Messenger is installed and "
+                                + "enabled. Restart Facebook after changing this switch, or after installing, removing, enabling "
+                                + "or disabling Messenger, so call routing updates. If you're signed out of Messenger, you'll "
+                                + "miss calls and messages.")));
             }
             if (build.contains(PatchFamily.ORIGINAL_CHAT_MEDIA)) {
                 chats.addPreference(toggle(context, Settings.ORIGINAL_CHAT_MEDIA,

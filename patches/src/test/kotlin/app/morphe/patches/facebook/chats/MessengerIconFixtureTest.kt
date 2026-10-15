@@ -88,8 +88,9 @@ class MessengerIconFixtureTest {
     /**
      * The patch itself, run on each build's own tap, handler and screen classes and the classes
      * Leave calls and chats to Messenger hooks. The tap and the handler ask the extension first,
-     * every touch on a Facebook screen goes to the extension before Facebook sees it, and the call
-     * pushes, the ring parse and the chat dispatcher ask before Facebook rings or notifies. Where the icon's long-click listener is off (MobileConfig builds it
+     * every touch on a Facebook screen goes to the extension before Facebook sees it, the MQTT
+     * connection gives the extension its call capability, and the call pushes, the ring parse and
+     * the chat dispatcher ask before Facebook rings or notifies. Where the icon's long-click listener is off (MobileConfig builds it
      * behind a flag, the same flag that gives the top bar's touch listener its long-press detector),
      * a press held on the icon reaches the tap as a plain click when the finger lifts, with 0 for
      * the long press, and only the touch tells the extension it was held.
@@ -132,6 +133,14 @@ class MessengerIconFixtureTest {
                 // dispatcher, once the notification is in its local, before the notifiers see it.
                 fun firstCall(method: Method, wanted: String) =
                     method.implementation!!.instructions.indexOfFirst { it.call?.toString() == wanted }
+                val mqttTarget = mqttCapabilitiesTarget(
+                    handoffClasses.single { it.type == MQTT_XPLAT_SERVICE_DELEGATE },
+                )!!
+                val mqtt = context.mutableClassDefBy(MQTT_XPLAT_SERVICE_DELEGATE).methods.single {
+                    it.name == mqttTarget.method.name && it.returnType == mqttTarget.method.returnType
+                }
+                assertEquals("$name: MQTT capabilities aren't changed at their construction",
+                    mqttTarget.constructionIndex, firstCall(mqtt, CLIENT_CAPABILITIES))
                 val voip = voipConstant(handoffClasses.single { it.type == NOTIFICATION_TYPE })!!
                 val handles = handoffClasses.filter { claimsVoip(it, voip) }.map { handler ->
                     context.mutableClassDefBy(handler.type).methods.single(::isPushHandle)
