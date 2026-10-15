@@ -743,6 +743,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_turn_off_hdr_brightness", FALSE);
 
     /**
+     * An HDR video Facebook also serves in SDR at the same height or taller plays the SDR version
+     * ({@link app.morphe.extension.facebook.media.SdrRenditions}, #66). Works with {@link
+     * #TURN_OFF_HDR_BRIGHTNESS} on or off. Starts off. Off or paused, the next video's manifest
+     * reaches the player whole.
+     */
+    public static final BooleanSetting PREFER_SDR_RENDITIONS =
+            new BooleanSetting("hushfacebook_prefer_sdr_renditions", FALSE);
+
+    /**
      * Videos, reels and stories play past the silent stretches in their sound ({@link
      * app.morphe.extension.facebook.media.SkipSilence}). Starts off. Off or paused, each player
      * gets Facebook's own flag again from its next seek or video.

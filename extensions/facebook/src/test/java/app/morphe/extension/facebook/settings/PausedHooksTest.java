@@ -724,11 +724,11 @@ public class PausedHooksTest {
                 PictureInPictureForTests::allowsWithTheFeature, PictureInPictureForTests::surfaceAllows,
                 PictureInPictureForTests::immersiveAllows, PictureInPictureForTests::homeGateAllows,
                 PictureInPictureForTests::homeFlagAllows, PictureInPictureForTests::offersTheMenuRow));
-        // An HDR window comes out in the default colour mode, a headroom as none, and the screen
-        // answers as one that shows no HDR.
+        // An HDR window comes out in the default colour mode, a headroom as none, the screen
+        // answers as one that shows no HDR, and a manifest loses the HDR twin of an SDR rendition.
         probes.put(PatchFamily.HDR_BRIGHTNESS, Arrays.asList(
                 HdrBrightnessForTests::keepsAnHdrWindowInTheUsualRange, HdrBrightnessForTests::holdsTheHeadroom,
-                HdrBrightnessForTests::answersTheScreenAsShowingNoHdr));
+                HdrBrightnessForTests::answersTheScreenAsShowingNoHdr, HdrBrightnessForTests::dropsTheHdrRendition));
         // A sink's sound starts with its silent parts skipped.
         probes.put(PatchFamily.SKIP_SILENCE, Collections.singletonList(() -> SkipSilence.skipSilence(false)));
         // A reel's bar is kept full size, a full-screen video sets no fade timer, a press off the

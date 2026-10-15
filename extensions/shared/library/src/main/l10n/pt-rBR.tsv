@@ -886,6 +886,10 @@ A playing reel or full-screen video keeps going in a small window when you leave
 Turn off HDR brightness	Desativar o brilho HDR
 # context: summary of that switch
 HDR videos and photos stay at your screen's usual brightness instead of turning it up to full. They keep their resolution.	Vídeos e fotos HDR ficam no brilho de sempre da sua tela em vez de aumentá-lo ao máximo. Eles mantêm a resolução.
+# context: switch title under Playback, below Turn off HDR brightness; when a video comes in both HDR and SDR, the SDR copy plays. Keep HDR and SDR as they are
+Play SDR versions of HDR videos	Reproduzir versões SDR de vídeos HDR
+# context: summary of that switch; "the same size" means the same resolution; "the switch above" is Turn off HDR brightness
+When Facebook also sends an HDR video in SDR at the same size, play that version instead. The screen doesn't brighten and the picture stays as sharp. Works with the switch above on or off.	Quando o Facebook também envia um vídeo HDR em SDR no mesmo tamanho, essa versão é reproduzida. A tela não fica mais clara e a imagem continua igualmente nítida. Funciona com a opção acima ativada ou desativada.
 # context: switch title under Playback; it makes videos play past the silent stretches of their sound
 Skip silent parts	Pular partes em silêncio
 # context: summary of that switch; how-tos are tutorial videos

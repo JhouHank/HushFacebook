@@ -1413,9 +1413,9 @@ public class SettingsNavigationTest {
         assertTrue(contains(Settings.TAP_TO_PLAY.key));
         // Playback: Tap to play and Only the first reel waits, Resume long videos, Frame step, Default playback
         // quality and its Playback quality, Reels quality and Stories quality lists, Picture-in-picture and
-        // Only from a reel's More menu, Turn off HDR brightness, Skip silent parts, Keep the progress bar,
-        // Show a reel's time and Tap the bar to seek.
-        assertEquals(15, list().getCount());
+        // Only from a reel's More menu, Turn off HDR brightness, Play SDR versions of HDR videos, Skip silent
+        // parts, Keep the progress bar, Show a reel's time and Tap the bar to seek.
+        assertEquals(16, list().getCount());
         page.navigation.back();
         findSearch(dialog.getView()).setText("other apps");
         recreate();

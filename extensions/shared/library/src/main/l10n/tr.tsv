@@ -994,6 +994,10 @@ A playing reel or full-screen video keeps going in a small window when you leave
 Turn off HDR brightness	HDR parlaklığını kapat
 # context: summary of that switch
 HDR videos and photos stay at your screen's usual brightness instead of turning it up to full. They keep their resolution.	HDR videolar ve fotoğraflar, ekranı tam parlaklığa çıkarmak yerine ekranın her zamanki parlaklığında kalır. Çözünürlükleri değişmez.
+# context: switch title under Playback, below Turn off HDR brightness; when a video comes in both HDR and SDR, the SDR copy plays. Keep HDR and SDR as they are
+Play SDR versions of HDR videos	HDR videoların SDR sürümlerini oynat
+# context: summary of that switch; "the same size" means the same resolution; "the switch above" is Turn off HDR brightness
+When Facebook also sends an HDR video in SDR at the same size, play that version instead. The screen doesn't brighten and the picture stays as sharp. Works with the switch above on or off.	Facebook bir HDR videoyu aynı boyutta SDR olarak da gönderdiğinde onun yerine o sürüm oynatılır. Ekran parlamaz ve görüntü aynı netlikte kalır. Yukarıdaki anahtar açıkken de kapalıyken de çalışır.
 # context: switch title under Playback; it makes videos play past the silent stretches of their sound
 Skip silent parts	Sessiz kısımları atla
 # context: summary of that switch; how-tos are tutorial videos

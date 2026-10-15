@@ -206,6 +206,11 @@ final class VideoPages {
                 playback.addPreference(toggle(context, Settings.TURN_OFF_HDR_BRIGHTNESS,
                         L10n.t("HDR videos and photos stay at your screen's usual brightness instead of turning it up to "
                                 + "full. They keep their resolution.")));
+                // Asked as each video's manifest is read, so a change shows from the next new video.
+                playback.addPreference(toggle(context, Settings.PREFER_SDR_RENDITIONS,
+                        L10n.t("When Facebook also sends an HDR video in SDR at the same size, play that version instead. "
+                                + "The screen doesn't brighten and the picture stays as sharp. Works with the switch above "
+                                + "on or off.")));
             }
             if (build.contains(PatchFamily.SKIP_SILENCE)) {
                 // Asked as each player's sound starts, so a change shows from the next seek or video.
