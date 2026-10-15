@@ -23,6 +23,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Changed
 
+* **Testing:** The signed-in Facebook 582 acceptance pass now covers safe profile navigation from a private group post and both DASH and progressive video saves. Each saved video opened in Photos and reached Android's share chooser without sending it, and the test files and temporary settings were removed afterward.
 * **Facebook:** With `View stories anonymously` on, a story you watch to the end now shows as watched on your phone until that person posts a new one (issue #61). Facebook still isn't told you saw it.
 * **Facebook:** Patching no longer prints six warnings for the feed units Facebook took out before 582 (issue #162). `Hide suggested and promoted posts` says it in one plain line instead, so a warning in the patch log now means something is missing that shouldn't be.
 
