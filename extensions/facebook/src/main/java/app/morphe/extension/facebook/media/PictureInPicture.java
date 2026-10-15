@@ -11,11 +11,13 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Rational;
 import android.view.View;
+import android.view.ViewGroup;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
@@ -100,6 +102,9 @@ public final class PictureInPicture {
     /** Counted each time a reel of a shape Facebook arms no window for turns auto-enter off. */
     static final String KEPT_OUT = "wide reel kept out of the window";
 
+    /** Counted each time a player whose video is off screen plays and the window stays with the reel on screen. */
+    static final String OFF_SCREEN = "off-screen player left out of the window";
+
     /**
      * The narrowest and widest window Facebook arms for a reel, width to height, as its arming
      * checks it: 1 by 2.39, Android's own narrowest, up to square.
@@ -165,7 +170,42 @@ public final class PictureInPicture {
     /** The application the page watch went on, so arming again adds no second one. */
     private static WeakReference<Application> watching = new WeakReference<>(null);
 
+    /** Reads the view a player's video is attached to. Tests stand in their own. */
+    interface Views {
+        @Nullable
+        View of(Object player);
+    }
+
+    static volatile Views views = PictureInPicture::playerView;
+
     private PictureInPicture() {
+    }
+
+    /** Filled in by the patch: the view FbGrootPlayer's video is attached to, or null. Only a player may be passed. */
+    @Nullable
+    public static ViewGroup playerView(Object player) {
+        return null;
+    }
+
+    /**
+     * Whether [player]'s video is attached to a view that isn't on screen: not shown, or less than
+     * half of it visible. Facebook starts the reel next to the one on screen for a moment and pauses
+     * it again as it gets it ready, and that reel's view sits beside the screen. A player with no
+     * view known, or a view that can't be read, counts as on screen, as before (#126).
+     */
+    static boolean offScreen(Object player) {
+        try {
+            View view = views.of(player);
+            if (view == null) return false;
+            int width = view.getWidth();
+            int height = view.getHeight();
+            if (!view.isAttachedToWindow() || !view.isShown() || width <= 0 || height <= 0) return true;
+            Rect visible = new Rect();
+            if (!view.getGlobalVisibleRect(visible)) return true;
+            return (long) visible.width() * visible.height() * 2 < (long) width * height;
+        } catch (Throwable failure) {
+            return false;
+        }
     }
 
     /**
@@ -449,11 +489,18 @@ public final class PictureInPicture {
      * The hook, in FbGrootPlayer's play once it goes ahead. While the window is armed, [player] is
      * the reel on screen from now on: a held auto-enter goes back on, switch or no switch, since it
      * was the extension that turned it off, and a reel other than the armed one gets the window
-     * armed again for it.
+     * armed again for it. Unless that other player's video is off screen: Facebook getting the next
+     * reel ready plays it for a moment, and the window then opened on that reel, or on a purple
+     * block where its video wasn't drawn (#126).
      */
     public static void playerPlaying(Object player) {
         try {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || player == null) return;
+            if (anotherReel(player) && offScreen(player)) {
+                HookStatus.counted(FAMILY, OFF_SCREEN);
+                Logger.printDebug(() -> "Picture-in-picture: player " + System.identityHashCode(player) + " plays off screen, left out");
+                return;
+            }
             Object[] next = switching(player);
             Activity screen = releasing();
             if (screen != null) {
@@ -464,6 +511,11 @@ public final class PictureInPicture {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "player play", failure);
         }
+    }
+
+    /** Whether the window is armed and [player] isn't the reel on screen. */
+    private static synchronized boolean anotherReel(Object player) {
+        return armedScreen.get() != null && player != current.get();
     }
 
     /**

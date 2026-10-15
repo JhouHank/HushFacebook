@@ -79,6 +79,7 @@ public class PictureInPictureHoldTest {
     @After
     public void restore() {
         PauseForTests.resume();
+        PictureInPicture.views = PictureInPicture::playerView;
         Settings.PICTURE_IN_PICTURE.resetToDefault();
         PictureInPicture.forget();
         HookStatus.clear();
@@ -241,6 +242,34 @@ public class PictureInPictureHoldTest {
         PictureInPicture.playerPaused(other);
         PictureInPicture.playerPlaying(other);
         assertEquals("after Facebook's arming, pause and play", Arrays.asList(false, false, false, true), screen.autoEnter);
+    }
+
+    /**
+     * #126: Facebook readies the reel next to the one on screen by playing it for a moment while its
+     * video is off screen. That play leaves the window with the reel on screen, whose pause still holds.
+     */
+    @Test
+    public void aPlayerPlayingOffScreenLeavesTheWindowWithTheReelOnScreen() {
+        View offScreen = new View(screen);
+        PictureInPicture.views = played -> played == other ? offScreen : null;
+        PictureInPicture.armed(screen, player, null);
+        PictureInPicture.playerPlaying(other);
+        PictureInPicture.playerPaused(other);
+        assertEquals("the readied reel took the window", Collections.emptyList(), screen.autoEnter);
+        PictureInPicture.playerPaused(player);
+        PictureInPicture.playerPlaying(player);
+        assertEquals("the reel on screen's pause and play", Arrays.asList(false, true), screen.autoEnter);
+        assertTrue(statusLine(), statusLine().contains(PictureInPicture.OFF_SCREEN + " 1"));
+    }
+
+    @Test
+    public void withNoViewToReadEveryPlayerThatPlaysIsTheReelOnScreen() {
+        PictureInPicture.views = played -> null;
+        PictureInPicture.armed(screen, player, null);
+        PictureInPicture.playerPlaying(other);
+        PictureInPicture.playerPaused(player);
+        PictureInPicture.playerPaused(other);
+        assertEquals("the next reel's pause held", Collections.singletonList(false), screen.autoEnter);
     }
 
     /** The window's shape for a reel, as Facebook works it out when it arms: tall up to square, nothing wider. */
