@@ -16,6 +16,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** **Keep the original audio**, a new switch under Reels and Watch, plays reels and videos with the sound they were made with instead of a Meta AI dubbed track (issue #148). It starts off and takes effect from the next video.
 * **Facebook:** **Save photo on more stories**, a new switch under Stories, adds Save photo to photo stories with music, which Facebook plays as videos (issue #38). Save photo also takes the story's photo at the biggest size Meta serves, on Android 12 and newer. It starts off.
 * **Facebook:** **Phone layout on big screens**, a new switch under Appearance, gives tablets and unfolded phones Facebook's phone layout, so the tab bar switches work there too (issue #149). It starts off, needs a restart, and drops Facebook's wider big screen layout while it's on.
+* **Facebook:** **Play SDR versions of HDR videos**, a new switch under Playback, plays the regular copy of an HDR video when Facebook sends one at the same size, so the screen doesn't brighten and the picture stays as sharp (issue #66). It starts off.
 
 ### Changed
 
@@ -31,6 +32,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** With `Keep the progress bar` on, a reel's bar and time don't stay frozen on the last reel when Facebook moves on without handing the bar over, and they no longer read 0:00 over the old length (issues #90 and #120). The bar hides until the new reel takes it, then comes back with that reel's own time.
 * **Facebook:** The Mark as seen eye on a story shows with the story's header right away, instead of half a second later, and hides with the header while you hold the story (issue #150).
 * **Facebook:** With `AMOLED black theme` or `Material You theme`, the ring between a post's overlapping reaction icons shows the page through it, so it can't come out as white boxes on a dark page (issue #147).
+* **Facebook:** Turning `Keep the progress bar` on or off while Reels is open changes the reel you're watching right away (issue #73). The bar used to stay thin after turning it on, or stay full size with its time stuck after turning it off, until you touched it or restarted Facebook.
 * **Facebook:** The README's Help entry on Facebook links now names the Messenger setting that stops Messenger claiming facebook.com links: Open supported links, or In your browser on newer Android (issue #111).
 * **Facebook:** `Hide Meta AI questions under posts` also takes away the row of Meta AI question chips Facebook puts under some photos and captions (issue #48). Those chips came through a different part of the post than the questions the switch already caught. It's under News feed and starts on.
 * **Facebook:** With `Use the system font` on, a font that draws past its own line box keeps its extra room in Reels captions and other text with a set line height, so letter tails and Bengali vowel signs aren't cut off (issue #96).
