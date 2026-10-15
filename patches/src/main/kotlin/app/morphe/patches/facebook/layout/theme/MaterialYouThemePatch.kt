@@ -448,6 +448,14 @@ val materialYouThemePatch = bytecodePatch(
         } catch (moved: PatchException) {
             patchLog.warning("${moved.message}. The theme goes on without the reaction ring's cut.")
         }
+
+        // The reactions token pile's discs (#147). With AMOLED in the build its call put the hook in
+        // already, and ReactionRing runs both themes.
+        try {
+            hookReactionPile()
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. The theme goes on without the reactions token pile's page colour.")
+        }
     }
 }
 

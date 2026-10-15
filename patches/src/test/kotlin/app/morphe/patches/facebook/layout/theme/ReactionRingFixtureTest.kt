@@ -11,6 +11,7 @@ import app.morphe.patches.facebook.feed.refresh.enumConstant
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
@@ -111,5 +112,43 @@ class ReactionRingFixtureTest {
         assertEquals("$name: in the same register", register, (patched[read + 2] as OneRegisterInstruction).registerA)
         assertEquals("$name: Facebook's code stays", original.map { it.opcode },
             patched.take(read + 1).map { it.opcode } + patched.drop(read + 3).map { it.opcode })
+    }
+
+    /**
+     * The second facepile (#147): PillsBlingBarView makes one Drawable from a Context alone, the
+     * reactions token pile, whose constructor sets one Paint colour and whose draw paints a disc of it
+     * behind each icon unless its maker switched it to cutting. The hook hands that colour to the
+     * extension right before it's set, and the other theme's second call leaves it as it is.
+     */
+    @Test
+    fun `the reactions token pile's disc colour goes through the extension on every declared build`() = bundles { bundle ->
+        val name = bundle.name
+        val bar = FixtureDex.classes(bundle, setOf(PILLS_BLING_BAR))[PILLS_BLING_BAR]
+        assertTrue("$name: no $PILLS_BLING_BAR", bar != null)
+        val made = reactionPiles(bar!!) { "Landroid/graphics/drawable/Drawable;" }
+        val classes = FixtureDex.classes(bundle, made.toSet())
+        val piles = reactionPiles(bar) { classes[it]?.superclass }
+        assertEquals("$name: Drawables $PILLS_BLING_BAR makes from a Context", 1, piles.size)
+        val pile = classes.getValue(piles.single())
+        assertTrue("$name: the token pile paints no disc", pile.calls("Landroid/graphics/Canvas;", "drawCircle"))
+        val constructor = pile.methods.single { it.name == "<init>" && it.parameterTypes.map(Any::toString) == listOf("Landroid/content/Context;") }
+        val original = constructor.implementation!!.instructions.toList()
+        val at = pileColourSets(constructor).single()
+        val colour = (original[at] as FiveRegisterInstruction).registerD
+
+        val context = PatchContexts.of(listOf(bar, pile))
+        context.hookReactionPile()
+        context.hookReactionPile()
+        val method = context.mutableClassDefBy(pile.type).methods.single { it.name == "<init>" && it.parameterTypes.map(Any::toString) == listOf("Landroid/content/Context;") }
+        val patched = method.implementation!!.instructions.toList()
+        assertEquals("$name: two instructions added, once", original.size + 2, patched.size)
+        assertEquals("$name: a range call", Opcode.INVOKE_STATIC_RANGE, patched[at].opcode)
+        assertEquals("$name: to the extension", REACTION_PILE, patched[at].reference())
+        val call = patched[at] as RegisterRangeInstruction
+        assertEquals("$name: on the colour's register", listOf(colour, 1), listOf(call.startRegister, call.registerCount))
+        assertEquals("$name: the answer is kept", colour, (patched[at + 1] as OneRegisterInstruction).registerA)
+        assertEquals("$name: then Facebook sets it", PILE_SETS_COLOUR, patched[at + 2].reference())
+        assertEquals("$name: Facebook's code stays", original.map { it.opcode },
+            patched.take(at).map { it.opcode } + patched.drop(at + 2).map { it.opcode })
     }
 }

@@ -494,6 +494,14 @@ val amoledThemePatch = bytecodePatch(
             patchLog.warning("${moved.message}. The theme goes on without the reaction ring's cut.")
         }
 
+        // The other facepile, the reactions token pile, which paints its discs in a colour resolved
+        // on its own context (#147). Material You calls the same hook and finds it in place.
+        try {
+            hookReactionPile()
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. The theme goes on without the reactions token pile's page colour.")
+        }
+
         enableStatus("amoledTheme")
     }
 }
