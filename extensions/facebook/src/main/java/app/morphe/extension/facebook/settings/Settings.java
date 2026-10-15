@@ -1311,6 +1311,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_keep_top_bar", FALSE);
 
     /**
+     * A tablet or an unfolded phone gets Facebook's phone layout, so the tab bar switches work on
+     * the big screen too (#149, {@link app.morphe.extension.facebook.navigation.BottomTabBar#phoneLayout}).
+     * Facebook decides on its big screen layout as its main screen starts, so a change waits for a
+     * restart.
+     */
+    public static final BooleanSetting PHONE_LAYOUT_ON_BIG_SCREENS =
+            new BooleanSetting("hushfacebook_phone_layout_big_screens", FALSE, true);
+
+    /**
      * Facebook's dark mode controller answers dark whatever its own setting says
      * ({@link app.morphe.extension.facebook.theme.ForceDarkMode}), for tablets whose Facebook
      * settings have no Dark mode row. Facebook asks as each screen applies its theme, so a change

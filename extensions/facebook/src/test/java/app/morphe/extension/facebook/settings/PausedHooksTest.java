@@ -614,9 +614,10 @@ public class PausedHooksTest {
         // Facebook's own override of where the tab bar goes reads YES, for the bottom, where it read NO.
         // With the bar at the bottom, Facebook's check of whether it slides away answers yes. The top
         // bar's entry is told to move 0 and fade by 0. (A kept bottom bar has its own test: with every
-        // switch on, the slide wins over it.)
+        // switch on, the slide wins over it.) Facebook's big screen layout gate is answered no.
         probes.put(PatchFamily.BOTTOM_TAB_BAR, Arrays.asList(
                 () -> BottomTabBar.override(TriState.NO.ordinal()) == TriState.YES.ordinal(),
+                BottomTabBar::phoneLayout,
                 TabBarScrollAway::slidesAway,
                 () -> TabBarScrollAway.topBarOffset("app_header_container", -120) == 0,
                 () -> TabBarScrollAway.topBarFade("app_header_container", 1f) == 0f));

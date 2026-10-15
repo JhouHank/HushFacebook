@@ -123,6 +123,11 @@ final class HushfacebookPages {
             // Asked each time Facebook moves the top bar, so it takes effect on the next scroll.
             appearance.addPreference(toggle(context, Settings.KEEP_TOP_BAR,
                     L10n.t("The top bar with search and Messenger stays put while you scroll down, instead of sliding away.")));
+            // Facebook decides on its big screen layout as its main screen starts, so a change waits for a restart.
+            appearance.addPreference(toggle(context, Settings.PHONE_LAYOUT_ON_BIG_SCREENS,
+                    L10n.t("A tablet or an unfolded phone gets the layout Facebook uses on a phone, so the tab bar switches "
+                            + "above work on the big screen too. Facebook's wider big screen layout goes away. Untested on a "
+                            + "big screen, so it starts off. Restart Facebook to see the change.")));
         }
         if (build.contains(PatchFamily.HIDDEN_TABS)) {
             // Facebook builds the tab bar once, so a change waits for a restart.

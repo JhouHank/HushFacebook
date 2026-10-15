@@ -265,6 +265,7 @@ public final class SettingsBackup {
             Settings.TAB_BAR_SCROLL_AWAY,
             Settings.KEEP_TAB_BAR,
             Settings.KEEP_TOP_BAR,
+            Settings.PHONE_LAYOUT_ON_BIG_SCREENS,
             Settings.FORCE_DARK_MODE,
             Settings.HIDE_REEL_PROMPTS,
             Settings.HIDE_GET_MESSENGER_CARD,
