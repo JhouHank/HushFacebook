@@ -13,6 +13,9 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** New patch, `Skip silent parts`, plays videos, reels and stories past the quiet stretches in their sound, so talks and how-tos get to the point sooner (issue #144). Its switch is under Playback and starts off. A change takes effect from the next video or the next seek.
 * **Facebook:** **Load whole reply threads** under Comment sheet options keeps loading an open reply thread as you scroll, so you don't have to keep tapping View more replies (issue #140). It starts off.
 * **Facebook:** New patch, `Upload Stories in HD`, makes videos you post to your Story ask Facebook for its high upload quality instead of standard, so they can come out sharper (issue #123). Its switch is under Stories and starts off. Facebook's servers still pick the final quality.
+* **Facebook:** **Keep the original audio**, a new switch under Reels and Watch, plays reels and videos with the sound they were made with instead of a Meta AI dubbed track (issue #148). It starts off and takes effect from the next video.
+* **Facebook:** **Save photo on more stories**, a new switch under Stories, adds Save photo to photo stories with music, which Facebook plays as videos (issue #38). Save photo also takes the story's photo at the biggest size Meta serves, on Android 12 and newer. It starts off.
+* **Facebook:** **Phone layout on big screens**, a new switch under Appearance, gives tablets and unfolded phones Facebook's phone layout, so the tab bar switches work there too (issue #149). It starts off, needs a restart, and drops Facebook's wider big screen layout while it's on.
 
 ### Changed
 
@@ -26,6 +29,8 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** Home keeps loading posts when Hushfacebook hides most of a page. Once the end of the list is on screen, it asks Facebook for the next page again, at most every 2 seconds, and stays stock while paused.
 * **Facebook:** Picture-in-picture opens each reel in its own shape after a swipe, so a landscape reel no longer opens a tall window around a wide video (issue #126). Like Facebook's own window, it opens none for a reel wider than square.
 * **Facebook:** With `Keep the progress bar` on, a reel's bar and time don't stay frozen on the last reel when Facebook moves on without handing the bar over, and they no longer read 0:00 over the old length (issues #90 and #120). The bar hides until the new reel takes it, then comes back with that reel's own time.
+* **Facebook:** The Mark as seen eye on a story shows with the story's header right away, instead of half a second later, and hides with the header while you hold the story (issue #150).
+* **Facebook:** With `AMOLED black theme` or `Material You theme`, the ring between a post's overlapping reaction icons shows the page through it, so it can't come out as white boxes on a dark page (issue #147).
 * **Facebook:** The README's Help entry on Facebook links now names the Messenger setting that stops Messenger claiming facebook.com links: Open supported links, or In your browser on newer Android (issue #111).
 * **Facebook:** `Hide Meta AI questions under posts` also takes away the row of Meta AI question chips Facebook puts under some photos and captions (issue #48). Those chips came through a different part of the post than the questions the switch already caught. It's under News feed and starts on.
 * **Facebook:** With `Use the system font` on, a font that draws past its own line box keeps its extra room in Reels captions and other text with a set line height, so letter tails and Bengali vowel signs aren't cut off (issue #96).
