@@ -49,12 +49,24 @@ public class HeldInsertsTest {
         assertTrue(report, report.contains(HeldInserts.LET_IN + " 2"));
     }
 
-    /** Paused, the list decides as it ships, so a held row stays held. */
+    /** A finished layout that fits is kept, and the report counts it apart from the rows let in. */
+    @Test
+    public void aFittingLayoutIsKeptAndCounted() {
+        assertFalse("a layout for another size: dropped as Facebook does", HeldInserts.keepLayout(false));
+        assertTrue(HeldInserts.keepLayout(true));
+        String report = String.join("\n", HookStatus.report());
+        assertTrue(report, report.contains(HeldInserts.KEPT + " 1"));
+        assertFalse(report, report.contains(HeldInserts.LET_IN));
+    }
+
+    /** Paused, the list and the layout step decide as they ship, so a held row stays held. */
     @Test
     public void pausedLetsNothingIn() {
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         assertFalse(HeldInserts.letIn(true));
+        assertFalse(HeldInserts.keepLayout(true));
         PauseForTests.resume();
         assertTrue(HeldInserts.letIn(true));
+        assertTrue(HeldInserts.keepLayout(true));
     }
 }

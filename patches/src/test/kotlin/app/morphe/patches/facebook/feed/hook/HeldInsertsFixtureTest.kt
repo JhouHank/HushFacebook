@@ -12,24 +12,34 @@ import app.morphe.util.ControlFlow
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The held rows hook on every Facebook build the bundle declares: exactly one class holding the
+ * The held rows hooks on every Facebook build the bundle declares: exactly one class holding the
  * RecyclerBinder's applyReadyBatches trace answers the hook's rule, its row holder and Litho's
  * ComponentTree give the helper its reads, and the patch adds the helper to the holder and puts the
  * extension's answer in front of the if-nez on the holder's own, with the rest of applyReadyBatches
- * left as it was. Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
+ * left as it was. Exactly one commit step holding Litho's dropped layout log calls the same layout
+ * test, and the patch swaps that call for a helper added to ComponentTree and changes nothing else.
+ * Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class HeldInsertsFixtureTest {
     private fun Method.body(): List<Instruction> = implementation!!.instructions.toList()
 
     private fun Instruction.call(): String? = ((this as? ReferenceInstruction)?.reference)?.toString()
+
+    private fun Instruction.registers(): List<Int> = when (this) {
+        is FiveRegisterInstruction -> listOf(registerC, registerD, registerE, registerF, registerG).take(registerCount)
+        is RegisterRangeInstruction -> (startRegister until startRegister + registerCount).toList()
+        else -> emptyList()
+    }
 
     @Test
     fun `each declared build lets a row in that only an accessibility change holds back`() {
@@ -52,8 +62,19 @@ class HeldInsertsFixtureTest {
                 assertEquals("$name: the layouts are the tree's", setOf(COMPONENT_TREE), parts.layouts.map { it.definingClass }.toSet())
                 assertEquals("$name: the size test is the layout's", parts.layouts[0].type, parts.fits.definingClass)
 
+                // Litho's commit step runs the same layout test on a layout it finished.
+                val tree = classes.getValue(COMPONENT_TREE)
+                val dropOwners = FixtureDex.classesHolding(bundle, LAYOUT_DROPPED)
+                val drops = dropOwners.mapNotNull { droppedLayoutSite(it, tree) }
+                assertEquals("$name: commit steps among ${dropOwners.map { it.type }}", 1, drops.size)
+                val drop = drops.single()
+                assertEquals("$name: the commit's size test is the holder's", parts.fits, drop.fits)
+
                 val before = site.method.body()
-                val context = PatchContexts.of(owners.filter { it.type != holderType } + holder + classes.getValue(COMPONENT_TREE))
+                val commitBefore = drop.method.body()
+                val context = PatchContexts.of(
+                    (owners.filter { it.type != holderType } + holder + tree + dropOwners).distinctBy { it.type },
+                )
                 heldInsertsPatch.execute(context)
 
                 // The helper: static, takes the holder, and reads the tree, both specs, both layouts
@@ -89,6 +110,27 @@ class HeldInsertsFixtureTest {
                 assertEquals("$name: where a laid out holder goes", site.index + 6, skip)
                 assertEquals("$name: the rest of applyReadyBatches", before.map { it.opcode },
                     after.filterIndexed { index, _ -> index !in site.index until site.index + 6 }.map { it.opcode })
+
+                // The tree's helper: the test's own answer, then the size test, then the extension.
+                val committable = context.mutableClassDefBy(COMPONENT_TREE).methods.single { it.name == COMMITTABLE_HELPER }
+                assertTrue("$name: the tree's helper is static", AccessFlags.STATIC.isSet(committable.accessFlags))
+                assertEquals("$name: the tree's helper takes the test's parameters",
+                    drop.test.parameterTypes.map(CharSequence::toString), committable.parameterTypes.map(CharSequence::toString))
+                assertEquals("$name: what the tree's helper calls",
+                    listOf(drop.test.toString(), drop.fits.toString(), KEEP_LAYOUT), committable.body().mapNotNull { it.call() })
+
+                // The commit step calls the helper instead, on the same registers, and nothing else moves.
+                val commit = context.mutableClassDefBy(drop.method.definingClass).methods.single {
+                    it.name == drop.method.name && it.returnType == drop.method.returnType &&
+                        it.parameterTypes.map(CharSequence::toString) == drop.method.parameterTypes.map(CharSequence::toString)
+                }
+                val commitAfter = commit.body()
+                assertEquals("$name: the commit's call", committableCall(drop), commitAfter[drop.index].call())
+                assertEquals("$name: on the same registers", commitBefore[drop.index].registers(), commitAfter[drop.index].registers())
+                assertEquals("$name: the commit's opcodes", commitBefore.map { it.opcode }, commitAfter.map { it.opcode })
+                assertEquals("$name: the commit's other references",
+                    commitBefore.filterIndexed { index, _ -> index != drop.index }.map { it.call() },
+                    commitAfter.filterIndexed { index, _ -> index != drop.index }.map { it.call() })
                 checked += version
             }
         }

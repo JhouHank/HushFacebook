@@ -7,6 +7,7 @@ package app.morphe.patches.facebook.feed.hook
 import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
+import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
@@ -26,6 +27,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -59,6 +61,15 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
  * reaches the screen that way: the tree's measure step does compare the accessibility state, so
  * when the list measures the row it lays it out again on the main thread, as it does for any row
  * on screen after such a change.
+ *
+ * A layout the tree started before such a change and finished after it never gets that far. Litho's
+ * commit step runs the same layout test, so it drops the layout (it logs Litho.AsyncLayout.Dropped)
+ * and asks for no other: the holder counts its ask as done and the tree holds no layout at all. An
+ * emulator scan reading the screen back to back left Home's head row that way, its resolve result
+ * in place and neither layout set, with the queue at 60 batches. So the commit step's call of the
+ * layout test goes through a helper added to ComponentTree, which also takes a layout made in the
+ * other state when it fits the tree's specs and the extension agrees. The tree then holds a layout
+ * the first hook finds the next time the binder checks the row.
  */
 
 /** Kept literal: the trace section applyReadyBatches opens with, which no other method loads. */
@@ -77,6 +88,28 @@ internal const val LET_IN = "$EXTENSION_PACKAGE/feed/HeldInserts;->letIn(Z)Z"
 
 /** How a refusal of the held rows hook names it. */
 private const val HELD_ROWS = "Feed filter (held rows)"
+
+/** Kept literal: what Litho logs when it drops a layout it finished, which only its commit step loads. */
+internal const val LAYOUT_DROPPED = "Litho.AsyncLayout.Dropped"
+
+/** The helper this adds to ComponentTree. */
+internal const val COMMITTABLE_HELPER = "hushfacebookCommittable"
+
+internal const val KEEP_LAYOUT = "$EXTENSION_PACKAGE/feed/HeldInserts;->keepLayout(Z)Z"
+
+/** How a refusal of the held layouts hook names it. */
+private const val HELD_LAYOUTS = "Feed filter (held layouts)"
+
+/**
+ * Where Litho's commit step tests a layout it finished: [method]: [index], its call of the tree's
+ * layout test [test], and [fits], the layout's own size test that [test] calls.
+ */
+internal data class DroppedLayoutSite(
+    val method: Method,
+    val index: Int,
+    val test: MethodReference,
+    val fits: MethodReference,
+)
 
 /**
  * Where the held rows hook goes in applyReadyBatches, [method]: [index], the if-nez on the holder's
@@ -171,12 +204,7 @@ internal fun laidOutParts(holder: ClassDef, check: MethodReference, tree: ClassD
     val treeField = code.filter { it.opcode == Opcode.IGET_OBJECT }.mapNotNull { it.reference() as? FieldReference }
         .singleOrNull { it.definingClass == holder.type && it.type == COMPONENT_TREE } ?: return null
 
-    val tests = code.indices.filter { at ->
-        val ref = code[at].reference() as? MethodReference
-        code[at].opcode == Opcode.INVOKE_STATIC && ref != null && ref.definingClass == COMPONENT_TREE &&
-            ref.returnType == "Z" && ref.parameterTypes.size == 4 && ref.parameterTypes[0] == COMPONENT_TREE &&
-            ref.parameterTypes[2] == "I" && ref.parameterTypes[3] == "I"
-    }
+    val tests = code.indices.filter { code[it].opcode == Opcode.INVOKE_STATIC && isTreeLayoutTest(code[it].reference()) }
     if (tests.size != 2) return null
     val test = code[tests[0]].reference() as MethodReference
     if (code[tests[1]].reference() != test) return null
@@ -192,17 +220,49 @@ internal fun laidOutParts(holder: ClassDef, check: MethodReference, tree: ClassD
     if (reads[1].drop(1) != listOf(width, height) || width == height) return null
     if (listOf(width, height).any { it.definingClass != holder.type || it.type != "I" }) return null
 
+    val fits = layoutFits(tree, test) ?: return null
+    return LaidOutParts(holder.type, treeField, width, height, layouts, fits)
+}
+
+/** Whether [ref] is a static ComponentTree method shaped (tree, layout, int, int) boolean. */
+private fun isTreeLayoutTest(ref: Any?): Boolean = ref is MethodReference && ref.definingClass == COMPONENT_TREE &&
+    ref.returnType == "Z" && ref.parameterTypes.size == 4 && ref.parameterTypes[0] == COMPONENT_TREE &&
+    ref.parameterTypes[2] == "I" && ref.parameterTypes[3] == "I"
+
+/**
+ * The layout's own size test that the tree's layout test [test] in [tree] calls, or null when [test]
+ * isn't the one that also compares the accessibility state: it has to read the accessibility manager
+ * and call exactly one (int, int) boolean on its layout parameter's type.
+ */
+private fun layoutFits(tree: ClassDef, test: MethodReference): MethodReference? {
+    val layoutType = test.parameterTypes[1].toString()
     val treeTest = tree.methods.singleOrNull {
         it.name == test.name && AccessFlags.STATIC.isSet(it.accessFlags) &&
             it.parameterTypes.map(CharSequence::toString) == test.parameterTypes.map(CharSequence::toString)
     } ?: return null
     val treeCode = treeTest.code()
     if (treeCode.none { (it.reference() as? FieldReference)?.type == ACCESSIBILITY_MANAGER }) return null
-    val fits = treeCode.mapNotNull { it.reference() as? MethodReference }.filter {
+    return treeCode.mapNotNull { it.reference() as? MethodReference }.filter {
         it.definingClass == layoutType && it.returnType == "Z" && it.parameterTypes.map(CharSequence::toString) == listOf("I", "I")
-    }.distinct().singleOrNull() ?: return null
+    }.distinct().singleOrNull()
+}
 
-    return LaidOutParts(holder.type, treeField, width, height, layouts, fits)
+/**
+ * Where Litho's commit step tests a layout it finished, in [owner], or null when [owner] isn't that
+ * step: one method holding [LAYOUT_DROPPED], and in it one static call of the tree's layout test,
+ * the one that compares the accessibility state, whose answer a move-result takes.
+ */
+internal fun droppedLayoutSite(owner: ClassDef, tree: ClassDef): DroppedLayoutSite? {
+    val commit = owner.methods.singleOrNull { holdsString(it, LAYOUT_DROPPED) } ?: return null
+    val code = commit.code()
+    val at = code.indices.singleOrNull {
+        (code[it].opcode == Opcode.INVOKE_STATIC || code[it].opcode == Opcode.INVOKE_STATIC_RANGE) &&
+            isTreeLayoutTest(code[it].reference())
+    } ?: return null
+    if (code.getOrNull(at + 1)?.opcode != Opcode.MOVE_RESULT) return null
+    val test = code[at].reference() as MethodReference
+    val fits = layoutFits(tree, test) ?: return null
+    return DroppedLayoutSite(commit, at, test, fits)
 }
 
 /**
@@ -225,6 +285,21 @@ internal fun BytecodePatchContext.heldInsertSite(): Pair<HeldInsertSite, LaidOut
         "$HELD_ROWS: ${site.layoutCheck} no longer reads one tree, two size specs and the tree's two layouts the way this expects",
     )
     return site to parts
+}
+
+/**
+ * Litho's commit step. Exactly one class holding [LAYOUT_DROPPED] has to answer [droppedLayoutSite];
+ * anything else stops the patch, as a call swapped in the wrong place could keep layouts Litho is
+ * right to drop.
+ */
+internal fun BytecodePatchContext.droppedLayoutSite(): DroppedLayoutSite {
+    val tree = classDefByOrNull(COMPONENT_TREE) ?: throw PatchException("$HELD_LAYOUTS: $COMPONENT_TREE isn't in the app")
+    val owners = classDefByStrings(LAYOUT_DROPPED, StringComparisonType.EQUALS)
+    val sites = owners.mapNotNull { droppedLayoutSite(it, tree) }
+    return sites.singleOrNull() ?: throw PatchException(
+        "$HELD_LAYOUTS: expected one commit step holding \"$LAYOUT_DROPPED\" that calls the tree's layout test once, " +
+            "found ${sites.size} among ${owners.count()} class(es) holding the string.",
+    )
 }
 
 /**
@@ -294,20 +369,81 @@ internal fun MutableMethod.askAboutHeldRows(site: HeldInsertSite, parts: LaidOut
     )
 }
 
+/** How the commit step calls the helper added to ComponentTree. */
+internal fun committableCall(site: DroppedLayoutSite) =
+    "$COMPONENT_TREE->$COMMITTABLE_HELPER(${site.test.parameterTypes.joinToString("")})Z"
+
+/**
+ * The helper added to ComponentTree, in place of the tree's layout test at the commit step: the
+ * test's own answer when it's yes, and otherwise, when the layout fits the specs it was tested
+ * against, the extension's answer on keeping it although it was made in the other accessibility
+ * state.
+ */
+internal fun committableHelper(site: DroppedLayoutSite) = ImmutableMethod(
+    COMPONENT_TREE,
+    COMMITTABLE_HELPER,
+    site.test.parameterTypes.map { ImmutableMethodParameter(it.toString(), null, null) },
+    "Z",
+    AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
+    null,
+    null,
+    MutableMethodImplementation(5),
+).toMutable().apply {
+    addInstructionsWithLabels(
+        0,
+        """
+            invoke-static { p0, p1, p2, p3 }, ${site.test}
+            move-result v0
+            if-nez v0, :done
+            if-eqz p1, :done
+            invoke-virtual { p1, p2, p3 }, ${site.fits}
+            move-result v0
+            invoke-static { v0 }, $KEEP_LAYOUT
+            move-result v0
+            :done
+            return v0
+        """,
+    )
+}
+
+/**
+ * Swaps the commit step's call of the tree's layout test for the helper, on the same registers,
+ * so its move-result and the branch after it read the helper's answer.
+ */
+internal fun MutableMethod.keepHeldLayouts(site: DroppedLayoutSite) {
+    val call = getInstruction(site.index)
+    val registers = when (call) {
+        is FiveRegisterInstruction -> "invoke-static { " +
+            listOf(call.registerC, call.registerD, call.registerE, call.registerF, call.registerG)
+                .take(call.registerCount).joinToString { "v$it" } + " }"
+        is RegisterRangeInstruction ->
+            "invoke-static/range { v${call.startRegister} .. v${call.startRegister + call.registerCount - 1} }"
+        else -> throw PatchException("$HELD_LAYOUTS: ${call.opcode} at ${site.index} isn't a call")
+    }
+    replaceInstruction(site.index, "$registers, ${committableCall(site)}")
+}
+
 /**
  * Lets a list's new row in when only an accessibility change holds it back (HeldInserts in the
- * extension). The feed guard brings it along with the tail fetch hook, as both keep Home showing
- * what it loads, and the extension leaves the list's answer alone while paused.
+ * extension), whether its layout was made before the change or finished after it. The feed guard
+ * brings it along with the tail fetch hook, as both keep Home showing what it loads, and the
+ * extension leaves Litho's answers alone while paused.
  */
 internal val heldInsertsPatch = bytecodePatch {
     dependsOn(facebookExtensionPatch)
 
     execute {
         val (site, parts) = heldInsertSite()
+        val dropped = droppedLayoutSite()
         mutableClassDefBy(parts.holder).methods.add(laidOutHelper(parts))
         mutableClassDefBy(site.method.definingClass).methods.single {
             it.name == site.method.name && AccessFlags.STATIC.isSet(it.accessFlags) &&
                 it.parameterTypes.map(CharSequence::toString) == site.method.parameterTypes.map(CharSequence::toString)
         }.askAboutHeldRows(site, parts)
+        mutableClassDefBy(COMPONENT_TREE).methods.add(committableHelper(dropped))
+        mutableClassDefBy(dropped.method.definingClass).methods.single {
+            it.name == dropped.method.name && it.returnType == dropped.method.returnType &&
+                it.parameterTypes.map(CharSequence::toString) == dropped.method.parameterTypes.map(CharSequence::toString)
+        }.keepHeldLayouts(dropped)
     }
 }
