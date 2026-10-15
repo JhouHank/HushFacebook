@@ -121,6 +121,7 @@ internal const val HANDS_OVER =
 internal const val LEFT_ON_LAST_REEL = "$PROGRESS_BAR->leftOnLastReel()V"
 internal const val MOUNTS = "$PROGRESS_BAR->mounts(Landroid/view/ViewGroup;)V"
 internal const val LOOK_FOR = "$PROGRESS_BAR->lookFor(Landroid/view/ViewGroup;Ljava/lang/Integer;)Ljava/lang/Integer;"
+internal const val LOOKS_AGAIN = "$PROGRESS_BAR->looksAgain(Landroid/view/ViewGroup;)Z"
 
 /** The trace name of the Reels scrubber registry's hand-over as a new reel shows, a kept literal. */
 internal const val NEW_REELS_UNIT_SHOWN = ".onNewReelsUnitShown"
@@ -163,7 +164,11 @@ internal const val INVALIDATE = "Landroid/view/View;->invalidate()V"
  * puts the bar back where it was after running it, as the passive look never moves the bar. Letting
  * go of a drag switches to the passive look just before Facebook reads the bar to seek, so on a reel
  * showing preview frames during the drag, whose player hasn't moved, the seek went back to where the
- * drag began, and where the reel's length wasn't known yet the bar went to the start.
+ * drag began, and where the reel's length wasn't known yet the bar went to the start. Facebook asks
+ * for a look only on a touch or a change of look, so ahead of the refresh the update asks the
+ * extension whether the scrubber's look still matches the switch, and runs the passive look when it
+ * doesn't: flipped with Reels open, the bar had stayed thin (on) or full size with its time stopped
+ * (off) until a touch or a restart.
  *
  * More hooks finish the Reels bar (582, issue #73). The scrubber's bar info says first whether a
  * reel has a bar at all, and Facebook says no for an ad, for what the viewer's config rules out and
@@ -354,8 +359,13 @@ val keepProgressBarPatch = bytecodePatch(
             if (check.sameAs(lengthCheck)) method.longEnoughWhileKept() else method.notShortWhileKept()
         }
         mutableClassDefBy(progress.base.type).methods.single { it.sameAs(info.builder) }.hasBarWhileKept(info.call)
-        mutableClassDefBy(progress.base.type).methods.single { it.sameAs(progress.update) }
-            .refreshesTimeWithBar(progress, scrubber)
+        // The look check goes in after the time refresh, at the index the refresh took, so it lands
+        // in front of it and a no to the look check still runs the refresh.
+        mutableClassDefBy(progress.base.type).methods.single { it.sameAs(progress.update) }.apply {
+            val dragAt = dragCheck(this, progress)
+            refreshesTimeWithBar(progress, scrubber)
+            looksAgainFirst(scrubber, dragAt)
+        }
         mutableClassDefBy(progress.base.type).methods.single { it.sameAs(delay) }.smoothWhileKept()
         // The skip's index is the unpatched selector's, so its hook goes in before the one at the top.
         mutableClassDefBy(progress.base.type).methods.single { it.sameAs(selector) }.apply {
@@ -1469,6 +1479,40 @@ internal fun MutableMethod.refreshesTimeWithBar(progress: ProgressUpdate, looks:
             move-result v$v
             if-eqz v$v, :facebook
             invoke-static/range { p0 .. p0 }, $base->${progress.writeTime.name}($base)V
+        """,
+        ExternalLabel("facebook", getInstruction(at)),
+    )
+}
+
+/**
+ * In the scrubber's progress update, at [at], the index the time refresh took ([refreshesTimeWithBar]
+ * goes in first): on a scrubber of [looks]' class, hand the extension the time label, and when it
+ * answers yes, run the scrubber's passive look, which the hook in it turns into the active one while
+ * the bar is kept. Facebook asks for a look only on a touch or a change of look, so a switch flipped
+ * with Reels open left the bar in the look it had: Facebook's thin line after turning it on, or full
+ * size with its time stopped after turning it off. A scrubber of another class or a views holder that
+ * isn't there yet goes straight on to the refresh. The hook borrows two low locals that nothing reads
+ * from there on.
+ */
+internal fun MutableMethod.looksAgainFirst(looks: ScrubberLooks, at: Int) {
+    if (AccessFlags.PRIVATE.isSet(looks.passive.accessFlags) || AccessFlags.STATIC.isSet(looks.passive.accessFlags)) {
+        refuse("${looks.type}->${looks.passive.name} is private or static, so the progress update can't run it")
+    }
+    val (v, flag) = freeLocalsAt(PATCH, at, 2)
+    addInstructionsWithLabels(
+        at,
+        """
+            move-object/from16 v$v, p0
+            instance-of v$flag, v$v, ${looks.type}
+            if-eqz v$flag, :facebook
+            iget-object v$flag, v$v, ${looks.viewsField}
+            if-eqz v$flag, :facebook
+            iget-object v$flag, v$flag, ${looks.labelField}
+            invoke-static { v$flag }, $LOOKS_AGAIN
+            move-result v$flag
+            if-eqz v$flag, :facebook
+            check-cast v$v, ${looks.type}
+            invoke-virtual { v$v }, ${looks.type}->${looks.passive.name}()V
         """,
         ExternalLabel("facebook", getInstruction(at)),
     )

@@ -11,7 +11,9 @@ import android.view.ViewGroup;
 import androidx.annotation.Nullable;
 
 import java.lang.ref.WeakReference;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.WeakHashMap;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -32,7 +34,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * so one reel's doesn't stay over the next. When Facebook's Reels registry returns from a hand-over
  * without giving the scrubber the reel on screen, {@link #handsOver} and {@link #leftOnLastReel} hide
  * the bar and its time instead of leaving the last reel's stopped there, until a reel takes the
- * scrubber ({@link #mounts}). Older builds' viewer used a bottom bar
+ * scrubber ({@link #mounts}). When the switch changes with Reels open, {@link #looksAgain} has the
+ * scrubber's next progress update give the bar the look the switch now asks for. Older builds' viewer used a bottom bar
  * (FbShortsViewerBottomSeekBarPlugin), which has two sizes. Facebook
  * makes it full size, with the thumb showing and the bar taking drags, when it shows a reel's
  * controls or while you scrub, and shrinks it to a line 2 dp high with the thumb hidden and drags
@@ -104,6 +107,12 @@ public final class ProgressBar {
     /** Counted each time a look that would show the bar is dropped while the bar holds the last reel. */
     static final String LAST_REEL_LOOK = "Reel bar kept from showing the last reel";
 
+    /** Counted each time a bar still in Facebook's thin look is made full size, after the switch went on. */
+    static final String KEPT_LOOK_AGAIN = "Reel bar made full size after the switch went on";
+
+    /** Counted each time a bar still in the kept look goes back to Facebook's look, after the switch went off. */
+    static final String FACEBOOK_LOOK_AGAIN = "Reel bar given back to Facebook after the switch went off";
+
     /** Counted each time a bar hidden for holding the last reel comes back once a reel takes it. */
     static final String LAST_REEL_BACK = "Reel bar back once a reel takes it";
 
@@ -125,6 +134,15 @@ public final class ProgressBar {
      * one being readied), and each is held to {@link #TIME_REFRESH_MS} on its own.
      */
     private static final Map<View, Long> lastRefresh = new WeakHashMap<>();
+
+    /**
+     * The time labels of the scrubbers that have the kept look: {@link #hideTimeLabel} ran for them,
+     * from the passive look's hook. Facebook's own passive look running anywhere ({@link
+     * #keepsReelBar} answering no) empties it. Facebook asks for a look only on a touch or a change
+     * of look, so a switch flipped with Reels open left each scrubber in the look it had, and
+     * {@link #looksAgain} compares the two.
+     */
+    private static final Set<View> keptLooks = Collections.newSetFromMap(new WeakHashMap<>());
 
     /**
      * A reel hand-over Facebook may leave unfinished: the reel the scrubber holds, the one on screen,
@@ -169,7 +187,46 @@ public final class ProgressBar {
      * the bar full size instead; false lets Facebook shrink it.
      */
     public static boolean keepsReelBar() {
-        return keeps("reel progress bar", REEL_BAR_KEPT);
+        boolean kept = keeps("reel progress bar", REEL_BAR_KEPT);
+        // Facebook's own look goes on: no scrubber can be counted on to keep the kept look past it.
+        if (!kept) keptLooks.clear();
+        return kept;
+    }
+
+    /**
+     * The hook in the scrubber's progress update, ahead of the time refresh, with the scrubber's time
+     * label. True has the patch run the scrubber's passive look, which the hook in it turns into the
+     * active one while the bar is kept and leaves as Facebook's otherwise. That happens once the look
+     * the scrubber has stops matching the switch: turned on with Reels open, the bar stayed Facebook's
+     * thin line, and turned off, it stayed full size with its time stopped there and carried onto the
+     * next reel, until a touch or a restart. While a hand-over hides the bar for holding the last reel,
+     * nothing changes.
+     */
+    public static boolean looksAgain(@Nullable ViewGroup label) {
+        try {
+            if (label == null) return false;
+            boolean kept = Utils.settingsReady() && Settings.KEEP_PROGRESS_BAR.get();
+            if (kept == keptLooks.contains(label)) return false;
+            HandOver over = handOvers.get(label);
+            if (over != null && over.hidden) return false;
+            HookStatus.invoked(FAMILY);
+            if (kept) {
+                HookStatus.bound(FAMILY, "reel bar look again");
+                // The passive look's hook adds it too. Added here, a hook that didn't run isn't asked
+                // for again on every update.
+                keptLooks.add(label);
+                HookStatus.counted(FAMILY, KEPT_LOOK_AGAIN);
+                Logger.printDebug(() -> "Reel bar: the switch is on, so the bar takes the kept look");
+            } else {
+                keptLooks.remove(label);
+                HookStatus.counted(FAMILY, FACEBOOK_LOOK_AGAIN);
+                Logger.printDebug(() -> "Reel bar: the switch is off, so the bar goes back to Facebook's look");
+            }
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel bar look again", failure);
+            return false;
+        }
     }
 
     /**
@@ -375,6 +432,7 @@ public final class ProgressBar {
     public static void hideTimeLabel(ViewGroup label) {
         try {
             if (label == null) return;
+            keptLooks.add(label);
             if (showsTime()) {
                 if (label.getVisibility() != View.VISIBLE) {
                     label.setVisibility(View.VISIBLE);

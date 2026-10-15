@@ -732,10 +732,11 @@ public class PausedHooksTest {
         // A sink's sound starts with its silent parts skipped.
         probes.put(PatchFamily.SKIP_SILENCE, Collections.singletonList(() -> SkipSilence.skipSilence(false)));
         // A reel's bar is kept full size, a full-screen video sets no fade timer, a press off the
-        // bar's thumb is held as a tap to seek, and the next reel's bar starts over.
+        // bar's thumb is held as a tap to seek, the next reel's bar starts over, and a bar still in
+        // Facebook's thin look takes the kept look.
         probes.put(PatchFamily.PROGRESS_BAR, Arrays.asList(ProgressBar::keepsReelBar, ProgressBar::keepsControls,
                 ProgressBar::liftsFooter, ProgressBar::noFadedBar, PausedHooksTest::holdsATapOnTheBar,
-                PausedHooksTest::startsTheNextReelOver));
+                PausedHooksTest::startsTheNextReelOver, PausedHooksTest::givesAThinBarTheKeptLook));
         // A tab asked for shows without its slide.
         probes.put(PatchFamily.SCREEN_TRANSITIONS, Collections.singletonList(() -> !ScreenTransitionsForTests.slides()));
         // The app icon benefit is answered yes, at the provider's check and at the picker's own look,
@@ -818,6 +819,11 @@ public class PausedHooksTest {
         bar.setProgress(47);
         ProgressBar.nextReel(null, bar);
         return bar.getProgress() == 0;
+    }
+
+    /** A scrubber still in Facebook's thin look, which an update would give the kept look. */
+    private static boolean givesAThinBarTheKeptLook() {
+        return ProgressBar.looksAgain(new android.widget.LinearLayout(RuntimeEnvironment.getApplication()));
     }
 
     /** A press at the far end of a bar whose thumb sits at its start, then a cancel to end it. */

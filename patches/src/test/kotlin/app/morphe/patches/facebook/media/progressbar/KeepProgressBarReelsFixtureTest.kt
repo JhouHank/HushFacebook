@@ -39,7 +39,8 @@ import java.io.File
  * minimum length check answering yes while kept, so a short reel gets a bar, on the scrubber and on
  * the Reels tab's subclass overriding it (issue #73), its progress update
  * having Facebook's own time writer refresh the time label once the update has moved the bar (never
- * before its position checks, issue #120), the wait before its next update cut to a frame, the
+ * before its position checks, issue #120) after running the passive look where the scrubber's look no
+ * longer matches the switch (issue #73), the wait before its next update cut to a frame, the
  * short reel check answering no so the bar isn't faded out, the look selector reporting each look
  * and letting a look that shows the bar take the place of a parked hide (issue #73),
  * and the Reels footer's seek bar status starting and staying VISIBLE, so a playing reel's caption
@@ -278,6 +279,75 @@ class KeepProgressBarReelsFixtureTest {
         assertEquals("$where: a no lands on the drag check", setOf(at + 8, at + 9), flow.normal[at + 7].toSet())
         val into = patched.indices.filter { at + 9 in flow.normal[it] }.toSet()
         assertEquals("$where: something jumps to the drag check past the hook", setOf(at + 2, at + 7, at + 8), into)
+    }
+
+    @Test
+    fun `each declared build has the progress update give the bar the switch's look before the time refresh`() = bundles { bundle ->
+        val name = bundle.name
+        val found = scrubber(bundle)
+        val looks = found.looks
+        val progress = found.progress
+        val base = progress.base
+        val where = "$name: ${base.type}->${progress.update.name}"
+        // The hook runs the passive look on the scrubber, which takes the active one in its place while kept.
+        assertTrue("$name: ${looks.type}->${looks.passive.name} can't be run from the base's update",
+            !AccessFlags.PRIVATE.isSet(looks.passive.accessFlags) && !AccessFlags.STATIC.isSet(looks.passive.accessFlags))
+        assertEquals("$name: the scrubber's base isn't the update's", base.type, found.scrubber.superclass)
+
+        val context = PatchContexts.of(listOf(base))
+        val method = context.mutableClassDefBy(base.type).methods.single { it.sameAs(progress.update) }
+        val original = method.code()
+        val at = dragCheck(method, progress)
+        val live = RegisterLiveness.of(progress.update).liveInto(at)
+        // In the patch's order: the refresh goes in first, and the look check at the same index lands in front of it.
+        method.refreshesTimeWithBar(progress, looks)
+        method.looksAgainFirst(looks, at)
+        val patched = method.code()
+        val local = method.localRegisterCount()
+        val refresh = at + 11
+        assertEquals("$where gains eleven instructions ahead of the refresh's nine", original.size + 20, patched.size)
+        // Twenty more instructions can push a goto across the hooks past a short goto's reach, so the
+        // assembler writes the long form of the same jump.
+        val shapes = { code: List<Instruction> ->
+            code.map { if (it.opcode == Opcode.GOTO_16 || it.opcode == Opcode.GOTO_32) Opcode.GOTO else it.opcode }
+        }
+        assertEquals("$where: Facebook's code up to the drag check stays", shapes(original.take(at)), shapes(patched.take(at)))
+        assertEquals("$where: the hook's code",
+            listOf(Opcode.MOVE_OBJECT_FROM16, Opcode.INSTANCE_OF, Opcode.IF_EQZ, Opcode.IGET_OBJECT, Opcode.IF_EQZ,
+                Opcode.IGET_OBJECT, Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.CHECK_CAST,
+                Opcode.INVOKE_VIRTUAL),
+            patched.subList(at, refresh).map { it.opcode })
+        val scrubber = (patched[at] as TwoRegisterInstruction).registerA
+        assertEquals("$where: from p0", local, (patched[at] as TwoRegisterInstruction).registerB)
+        assertEquals("$where: only a scrubber of ${looks.type}", looks.type, patched[at + 1].reference())
+        val flag = (patched[at + 1] as TwoRegisterInstruction).registerA
+        assertEquals("$where: the instance is checked", scrubber, (patched[at + 1] as TwoRegisterInstruction).registerB)
+        for (borrowed in listOf(scrubber, flag)) {
+            assertTrue("$where: the hook writes v$borrowed, which isn't a low local", borrowed < minOf(local, 16))
+            assertTrue("$where: the hook borrows v$borrowed, which Facebook reads on", borrowed !in live)
+        }
+        assertNotEquals("$where: the scrubber and the flag share a register", scrubber, flag)
+        assertEquals("$where: the views holder", looks.viewsField, patched[at + 3].reference())
+        assertEquals("$where: off the scrubber", scrubber, (patched[at + 3] as TwoRegisterInstruction).registerB)
+        assertEquals("$where: then the time label", looks.labelField, patched[at + 5].reference())
+        assertEquals("$where: the extension is asked about the label", LOOKS_AGAIN, patched[at + 6].reference())
+        assertEquals("$where: with the label", listOf(1, flag),
+            (patched[at + 6] as FiveRegisterInstruction).let { listOf(it.registerCount, it.registerC) })
+        assertEquals("$where: its answer is kept", flag, (patched[at + 7] as OneRegisterInstruction).registerA)
+        assertEquals("$where: cast for the look", looks.type, patched[at + 9].reference())
+        assertEquals("$where: a yes runs the passive look", "${looks.type}->${looks.passive.name}()V", patched[at + 10].reference())
+        assertEquals("$where: on this scrubber", listOf(1, scrubber),
+            (patched[at + 10] as FiveRegisterInstruction).let { listOf(it.registerCount, it.registerC) })
+        assertEquals("$where: then the refresh as before", REFRESHES_TIME, patched[refresh + 5].reference())
+        assertEquals("$where: Facebook's drag check and the rest stay", shapes(original.drop(at)), shapes(patched.drop(refresh + 9)))
+        val flow = ControlFlow.of(method)
+        for (no in listOf(at + 2, at + 4, at + 8)) {
+            assertEquals("$where: a no at $no goes on to the refresh", setOf(no + 1, refresh), flow.normal[no].toSet())
+        }
+        assertEquals("$where: the look goes on to the refresh", setOf(refresh), flow.normal[at + 10].toSet())
+        assertEquals("$where: something jumps onto the refresh past the hook", setOf(at + 2, at + 4, at + 8, at + 10),
+            patched.indices.filter { refresh in flow.normal[it] }.toSet())
+        extensionHas(where, LOOKS_AGAIN)
     }
 
     @Test
