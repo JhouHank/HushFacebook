@@ -105,6 +105,15 @@ public final class PictureInPicture {
     /** Counted each time a player whose video is off screen plays and the window stays with the reel on screen. */
     static final String OFF_SCREEN = "off-screen player left out of the window";
 
+    /** Counted each time the window is armed again because Facebook didn't after it was opened full screen. */
+    static final String REARMED_AFTER_WINDOW = "armed again after the window closed";
+
+    /** How long after its screen pauses the page watch looks whether it went into the window. */
+    static final long FLOAT_CHECK_MS = 800;
+
+    /** How long Facebook gets to arm the window itself once its screen comes back full screen. */
+    static final long REARM_AFTER_WINDOW_MS = 1000;
+
     /**
      * The narrowest and widest window Facebook arms for a reel, width to height, as its arming
      * checks it: 1 by 2.39, Android's own narrowest, up to square.
@@ -169,6 +178,12 @@ public final class PictureInPicture {
 
     /** The application the page watch went on, so arming again adds no second one. */
     private static WeakReference<Application> watching = new WeakReference<>(null);
+
+    /** The armed screen while the page watch saw it in the window, until it comes back full screen. */
+    private static WeakReference<Activity> floating = new WeakReference<>(null);
+
+    /** Goes up with each arming and disarm, so a later look can tell whether Facebook did either. */
+    private static int armings;
 
     /** Reads the view a player's video is attached to. Tests stand in their own. */
     interface Views {
@@ -349,10 +364,12 @@ public final class PictureInPicture {
 
         @Override
         public void onActivityResumed(Activity activity) {
+            cameBack(activity);
         }
 
         @Override
         public void onActivityPaused(Activity activity) {
+            if (activity != null && activity == armedScreen()) Utils.runOnMainThreadDelayed(() -> floats(activity), FLOAT_CHECK_MS);
         }
 
         @Override
@@ -405,6 +422,67 @@ public final class PictureInPicture {
         return true;
     }
 
+    private static synchronized Activity armedScreen() {
+        return armedScreen.get();
+    }
+
+    /** [activity] paused a moment ago. If it's the armed screen and it floats in the window now, that's noted. */
+    static synchronized void floats(Activity activity) {
+        try {
+            if (activity == armedScreen.get() && activity.isInPictureInPictureMode()) floating = new WeakReference<>(activity);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "window watch", failure);
+        }
+    }
+
+    /**
+     * [activity] resumed. If it's the screen that floated in the window, it was just opened full
+     * screen again, and Facebook gets {@link #REARM_AFTER_WINDOW_MS} to arm the window for it.
+     */
+    static void cameBack(Activity activity) {
+        int seen;
+        synchronized (PictureInPicture.class) {
+            if (activity == null || activity != floating.get()) return;
+            floating = new WeakReference<>(null);
+            seen = armings;
+        }
+        Utils.runOnMainThreadDelayed(() -> armAfterWindow(activity, seen), REARM_AFTER_WINDOW_MS);
+    }
+
+    /**
+     * Facebook mostly arms the window again once it's opened full screen, but not every time, and
+     * then its last arming stays on: leaving Facebook opened the window on its whole screen, with a
+     * purple block where the reel should be (#126). Unless Facebook armed or disarmed since [seen],
+     * the window is armed again for the reel on screen, as a swipe arms it, or kept closed for a
+     * reel it doesn't take. A pause holding auto-enter still holds it.
+     */
+    static void armAfterWindow(Activity activity, int seen) {
+        try {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return;
+            Object[] arguments;
+            Object player;
+            boolean wasHeld;
+            synchronized (PictureInPicture.class) {
+                if (armings != seen || activity != armedScreen.get() || !on()) return;
+                arguments = arming;
+                player = current.get();
+                wasHeld = held;
+            }
+            if (arguments == null || player == null || activity.isFinishing() || activity.isDestroyed()
+                    || activity.isInPictureInPictureMode()) return;
+            if (!rearm(arguments, player)) {
+                keepOut(activity, player);
+                return;
+            }
+            if (wasHeld && holding(player) != null) autoEnter(activity, false);
+            HookStatus.bound(FAMILY, "arming after the window");
+            HookStatus.counted(FAMILY, REARMED_AFTER_WINDOW);
+            Logger.printDebug(() -> "Picture-in-picture: armed again after the window closed, for player " + System.identityHashCode(player));
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "arming after the window", failure);
+        }
+    }
+
     /** Starts Facebook from [activity] with its own launcher [launch], counting it under [page]. */
     private static void bringBack(Activity activity, Intent launch, String page) {
         try {
@@ -434,6 +512,7 @@ public final class PictureInPicture {
         arming = arguments;
         held = false;
         unfit = false;
+        armings++;
     }
 
     /**
@@ -746,6 +825,7 @@ public final class PictureInPicture {
         arm(null, null, null);
         synchronized (PictureInPicture.class) {
             broughtBackAt = -BRING_BACK_GAP_MS;
+            floating = new WeakReference<>(null);
         }
     }
 }
