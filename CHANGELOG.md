@@ -23,6 +23,7 @@ Changes in each Hushfacebook version, newest first.
 ### Changed
 
 * **Facebook:** With `View stories anonymously` on, a story you watch to the end now shows as watched on your phone until that person posts a new one (issue #61). Facebook still isn't told you saw it.
+* **Facebook:** Patching no longer prints six warnings for the feed units Facebook took out before 582 (issue #162). `Hide suggested and promoted posts` says it in one plain line instead, so a warning in the patch log now means something is missing that shouldn't be.
 
 ### Fixed
 

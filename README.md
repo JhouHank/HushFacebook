@@ -196,7 +196,7 @@ If Hushfacebook still stops on the supported bundle with the other sources off, 
 
 ### The log says a patch goes on without something
 
-Four patches work down a list of separate targets, `Block background ad prefetch`, `Block ad telemetry`, `Disable Audience Network` and `Hide suggested and promoted posts`. They stop only when a build has none of their list, so a `WARNING:` line naming a missing target means the patch still applied to the rest. On Facebook 582, `Hide suggested and promoted posts` names six feed units Facebook took out earlier, and that's expected. Any other one is worth [reporting](https://github.com/SysAdminDoc/Hushfacebook/issues/new?template=bug_report.yml) with the log.
+Four patches work down a list of separate targets, `Block background ad prefetch`, `Block ad telemetry`, `Disable Audience Network` and `Hide suggested and promoted posts`. They stop only when a build has none of their list, so a `WARNING:` line naming a missing target means the patch still applied to the rest. On Facebook 582, `Hide suggested and promoted posts` says in one plain line that six feed units left Facebook before this build. That's expected and isn't a warning. Any warning is worth [reporting](https://github.com/SysAdminDoc/Hushfacebook/issues/new?template=bug_report.yml) with the log.
 
 ### Unexpected end of ZLIB input stream
 
