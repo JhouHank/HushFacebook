@@ -271,6 +271,34 @@ public class StoryPhotoSaveTest {
         assertFalse(looked.contains(FULL_HOST));
     }
 
+    /**
+     * When Facebook's modifier fails on a story's photo, the report names the story save that asked,
+     * not Download any photo, which may not even be in the build, and the story's own copy goes.
+     */
+    @Test
+    public void aModifierFailureOnAStorysPhotoIsReportedUnderDownloadAnyStory() throws InterruptedException {
+        PhotoFormat.readsAvifForTests = true;
+        PhotoSave.resizerForTests = (address, width, height) -> {
+            throw new IllegalStateException("the modifier failed");
+        };
+        Object item = new Object();
+        StoryPhoto.offered(item);
+
+        assertTrue(MediaDownload.saveStory(context(), new MusicPhotoCard(SIZED), item));
+        settle();
+        assertTrue("the story's own copy went: " + looked, looked.contains(PHOTO_HOST));
+        assertEquals("one miss under the story's patch: " + HookStatus.report(), 1,
+                HookStatus.missing(FamilyNames.STORY_DOWNLOAD).size());
+        assertTrue(HookStatus.missing(FamilyNames.STORY_DOWNLOAD).toString(),
+                HookStatus.missing(FamilyNames.STORY_DOWNLOAD).get(0).contains("photo address modifier"));
+        assertTrue("none under Download any photo: " + HookStatus.report(),
+                HookStatus.missing(FamilyNames.PHOTO_DOWNLOAD).isEmpty());
+
+        // A post's Save photo still reports its own failure under Download any photo.
+        assertNull(PhotoSave.resized(SIZED));
+        assertEquals(1, HookStatus.missing(FamilyNames.PHOTO_DOWNLOAD).size());
+    }
+
     private static String statusLine() {
         for (String line : HookStatus.report()) {
             if (line.startsWith(FamilyNames.STORY_DOWNLOAD + ":")) return line;
