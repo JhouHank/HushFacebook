@@ -515,9 +515,13 @@ Hide "Stories you might like"	Sembunyikan “Cerita yang mungkin Anda sukai”
 Hide Memories in the feed	Sembunyikan Kenangan di feed
 Hide friend requests in the feed	Sembunyikan permintaan pertemanan di feed
 Hide friends' locations	Sembunyikan lokasi teman
+# context: switch title under News feed, part of Hide suggested and promoted posts; a post opened by tapping a notification
+Hide more posts under notification posts	Sembunyikan postingan lain di bawah postingan dari notifikasi
 Hides Memories between posts, like "On this day" and friendship anniversaries. Your Memories page stays.	Menyembunyikan Kenangan di antara postingan, seperti “Pada hari ini” dan hari jadi pertemanan. Halaman Kenanganmu tetap ada.
 Hides friend requests shown between posts. Your requests stay under Friends.	Menyembunyikan permintaan pertemanan yang muncul di antara postingan. Permintaanmu tetap ada di Teman.
 Hides the card between posts that shows where your friends are.	Menyembunyikan kartu di antara postingan yang menunjukkan di mana teman-temanmu berada.
+# context: summary of that switch; "More from your friends" is the heading Facebook shows over that list
+A post you open from a notification ends without the "More from your friends" list Facebook adds under it, which can carry ads.	Postingan yang kamu buka dari notifikasi berakhir tanpa daftar "Lainnya dari temanmu" yang ditambahkan Facebook di bawahnya, yang bisa berisi iklan.
 # context: summary of that switch; the Stories tray is the row of Stories at the top of the feed
 Hides the row of Stories from people you aren't connected to, between posts. Your friends' Stories and the Stories tray stay.	Menyembunyikan baris Cerita dari orang yang tidak terhubung denganmu, di antara postingan. Cerita teman dan baris Cerita tetap ada.
 # context: switch title under Notifications; trending videos Facebook sends as push notifications

@@ -462,9 +462,13 @@ Hide "Stories you might like"	Ocultar “Stories que você talvez curta”
 Hide Memories in the feed	Ocultar lembranças no feed
 Hide friend requests in the feed	Ocultar solicitações de amizade no feed
 Hide friends' locations	Ocultar localização de amigos
+# context: switch title under News feed, part of Hide suggested and promoted posts; a post opened by tapping a notification
+Hide more posts under notification posts	Ocultar mais publicações abaixo de publicações de notificações
 Hides Memories between posts, like "On this day" and friendship anniversaries. Your Memories page stays.	Oculta lembranças entre as publicações, como “Neste dia” e aniversários de amizade. Sua página de Lembranças continua.
 Hides friend requests shown between posts. Your requests stay under Friends.	Oculta os pedidos de amizade exibidos entre as publicações. Seus pedidos continuam em Amigos.
 Hides the card between posts that shows where your friends are.	Oculta o cartão entre as publicações que mostra onde seus amigos estão.
+# context: summary of that switch; "More from your friends" is the heading Facebook shows over that list
+A post you open from a notification ends without the "More from your friends" list Facebook adds under it, which can carry ads.	Uma publicação que você abre a partir de uma notificação termina sem a lista "Mais dos seus amigos" que o Facebook adiciona abaixo dela, que pode conter anúncios.
 Hides the row of Stories from people you aren't connected to, between posts. Your friends' Stories and the Stories tray stay.	Oculta a fileira de stories de pessoas com quem você não tem conexão, entre as publicações. Os stories dos seus amigos e a bandeja de stories continuam.
 Block trending video notifications	Bloquear notificações de vídeos em alta
 Trending videos and the reels Facebook picked for you stop showing up in your notifications.	Vídeos em alta e os Reels que o Facebook selecionou para você deixam de aparecer nas notificações.

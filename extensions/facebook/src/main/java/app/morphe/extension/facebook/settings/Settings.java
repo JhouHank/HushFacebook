@@ -108,6 +108,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_friends_locations", FALSE);
 
     /**
+     * The "More from your friends" list under a post opened from a notification, ads among it (#163).
+     * It's a server-built footer asked for with the post, never a feed unit, so the query is told not
+     * to ask for it ({@link app.morphe.extension.facebook.feed.NotificationFooter}).
+     */
+    public static final BooleanSetting HIDE_NOTIFICATION_POST_FOOTER =
+            new BooleanSetting("hushfacebook_hide_notification_post_footer", FALSE);
+
+    /**
      * The row of stories at the top of the feed. The feed's adapter list builds it as an adapter of
      * its own, and the patch has both tray adapters count no rows while this is on.
      */

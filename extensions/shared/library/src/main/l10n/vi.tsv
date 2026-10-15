@@ -515,9 +515,13 @@ Hide "Stories you might like"	Ẩn "Tin bạn có thể thích"
 Hide Memories in the feed	Ẩn Kỷ niệm trên bảng tin
 Hide friend requests in the feed	Ẩn lời mời kết bạn trên bảng tin
 Hide friends' locations	Ẩn vị trí của bạn bè
+# context: switch title under News feed, part of Hide suggested and promoted posts; a post opened by tapping a notification
+Hide more posts under notification posts	Ẩn bài viết khác bên dưới bài viết từ thông báo
 Hides Memories between posts, like "On this day" and friendship anniversaries. Your Memories page stays.	Ẩn Kỷ niệm giữa các bài viết, như "Ngày này năm xưa" và kỷ niệm ngày kết bạn. Trang Kỷ niệm của bạn vẫn giữ nguyên.
 Hides friend requests shown between posts. Your requests stay under Friends.	Ẩn lời mời kết bạn hiện giữa các bài viết. Lời mời vẫn có trong Bạn bè.
 Hides the card between posts that shows where your friends are.	Ẩn thẻ giữa các bài viết cho biết bạn bè đang ở đâu.
+# context: summary of that switch; "More from your friends" is the heading Facebook shows over that list
+A post you open from a notification ends without the "More from your friends" list Facebook adds under it, which can carry ads.	Bài viết bạn mở từ thông báo sẽ kết thúc mà không có danh sách "Thêm từ bạn bè" mà Facebook thêm bên dưới, vốn có thể chứa quảng cáo.
 # context: summary of that switch; the Stories tray is the row of Stories at the top of the feed
 Hides the row of Stories from people you aren't connected to, between posts. Your friends' Stories and the Stories tray stay.	Ẩn hàng tin của những người bạn chưa kết nối, hiện giữa các bài viết. Tin của bạn bè và khay tin vẫn giữ nguyên.
 # context: switch title under Notifications; trending videos Facebook sends as push notifications

@@ -515,9 +515,13 @@ Hide "Stories you might like"	„Stories, die dir gefallen könnten“ ausblende
 Hide Memories in the feed	Erinnerungen im Feed ausblenden
 Hide friend requests in the feed	Freundschaftsanfragen im Feed ausblenden
 Hide friends' locations	Standorte von Freunden ausblenden
+# context: switch title under News feed, part of Hide suggested and promoted posts; a post opened by tapping a notification
+Hide more posts under notification posts	Weitere Beiträge unter Beiträgen aus Benachrichtigungen ausblenden
 Hides Memories between posts, like "On this day" and friendship anniversaries. Your Memories page stays.	Blendet Erinnerungen zwischen Beiträgen aus, etwa „An diesem Tag“ und Freundschaftsjubiläen. Deine Erinnerungsseite bleibt.
 Hides friend requests shown between posts. Your requests stay under Friends.	Blendet Freundschaftsanfragen zwischen Beiträgen aus. Deine Anfragen bleiben unter Freunde.
 Hides the card between posts that shows where your friends are.	Blendet die Karte zwischen Beiträgen aus, die zeigt, wo deine Freunde sind.
+# context: summary of that switch; "More from your friends" is the heading Facebook shows over that list
+A post you open from a notification ends without the "More from your friends" list Facebook adds under it, which can carry ads.	Ein Beitrag, den du über eine Benachrichtigung öffnest, endet ohne die Liste „Mehr von deinen Freunden“, die Facebook darunter anhängt und die Werbung enthalten kann.
 # context: summary of that switch; the Stories tray is the row of Stories at the top of the feed
 Hides the row of Stories from people you aren't connected to, between posts. Your friends' Stories and the Stories tray stay.	Blendet die Reihe mit Stories von Personen aus, mit denen du nicht verbunden bist, zwischen Beiträgen. Die Stories deiner Freunde und die Stories-Leiste bleiben.
 # context: switch title under Notifications; trending videos Facebook sends as push notifications

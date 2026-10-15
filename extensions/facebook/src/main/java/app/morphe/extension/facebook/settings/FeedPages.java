@@ -158,6 +158,10 @@ final class FeedPages {
                         L10n.t("Hides friend requests shown between posts. Your requests stay under Friends.")));
                 feed.addPreference(toggle(context, Settings.HIDE_FRIENDS_LOCATIONS,
                         L10n.t("Hides the card between posts that shows where your friends are.")));
+                // Asked as a post loads, so a change shows from the next post you open.
+                feed.addPreference(toggle(context, Settings.HIDE_NOTIFICATION_POST_FOOTER,
+                        L10n.t("A post you open from a notification ends without the \"More from your friends\" list "
+                                + "Facebook adds under it, which can carry ads.")));
             }
             if (build.contains(PatchFamily.STORIES_TRAY)) {
                 // Facebook builds the feed's adapters once, when the feed is set up, and the tray is
