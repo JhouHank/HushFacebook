@@ -15,6 +15,13 @@
       "changes": "Written for Hushfacebook from Facebook 582: one check for each way a build reads a MobileConfig flag (straight from the config, through a static helper, or through a helper that casts its argument to the config first), shared by the patches that hook a flag read."
     },
     {
+      "paths": ["patches/src/main/kotlin/app/morphe/patches/facebook/layout/theme/StyleableTokens.kt"],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook from Facebook 582 for issue #154. It follows styleable arrays from obtainStyledAttributes through their TypedArray index reads, so Material You keeps a plain colour for tokens read with getInteger or getInt."
+    },
+    {
       "paths": [
         "extensions/shared/**",
         "patches/src/main/kotlin/app/morphe/util/**",
