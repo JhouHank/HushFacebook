@@ -18,6 +18,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** **Phone layout on big screens**, a new switch under Appearance, gives tablets and unfolded phones Facebook's phone layout, so the tab bar switches work there too (issue #149). It starts off, needs a restart, and drops Facebook's wider big screen layout while it's on.
 * **Facebook:** **Play SDR versions of HDR videos**, a new switch under Playback, plays the regular copy of an HDR video when Facebook sends one at the same size, so the screen doesn't brighten and the picture stays as sharp (issue #66). It starts off.
 * **Facebook:** **See-through bars**, a new switch under Appearance, lets the feed show through the top bar and the tab bar as you scroll, frosted on Android 12 and newer (issue #124). It starts off. The status bar strip above Facebook's top bar stays solid.
+* **Facebook:** A **Restart Facebook** row now sits at the end of the settings home page, just above Support Hushfacebook, so you can restart Facebook from settings whenever you like (issue #155). It steps aside while a changed switch is waiting for its own restart row.
 
 ### Changed
 

@@ -55,7 +55,7 @@ The overview groups the main pages in one list, with search and **Pause** above 
 
 Switches act straight away, with no restart and no new patching, but what's already on screen stays as it was until Facebook draws it again. A reel keeps the buttons it was built with, and rows already in the feed stay until it loads fresh posts. The Stories tray switch shows the next time you pull the feed down to refresh. A row that tells you to restart Facebook, such as the font and tab switches, waits for that restart.
 
-Changing one of those brings up a **Restart Facebook** row at the top of the page, and a tap reopens Facebook on the same page. **Quick setups** turns on a ready-made set of switches at once, and **Report a problem** opens a GitHub bug report with your versions and switches filled in.
+Changing one of those brings up a **Restart Facebook** row at the top of the page, and a tap reopens Facebook on the same page. The end of the home page has a Restart Facebook row of its own for whenever Facebook needs a fresh start. **Quick setups** turns on a ready-made set of switches at once, and **Report a problem** opens a GitHub bug report with your versions and switches filled in.
 
 **Pause Hushfacebook** turns every switch off from the next start without forgetting your choices. A few things stay in, Lock Facebook among them, and the screen lists them. If Facebook crashes or freezes within a minute of starting three times in a row, Hushfacebook pauses itself and the screen says so.
 

@@ -1481,6 +1481,8 @@ Restart Facebook to apply this change	Mulai ulang Facebook untuk menerapkan peru
 Restart Facebook to apply %1$d changes	Mulai ulang Facebook untuk menerapkan %1$d perubahan
 # context: summary of that row; after the restart the settings screen opens again on the same page
 Facebook closes and reopens on this page.	Facebook ditutup lalu dibuka lagi di halaman ini.
+# context: title of the row just above Support at the end of the settings home page; a tap restarts Facebook at any time
+Restart Facebook	Mulai ulang Facebook
 # context: row near the end of the settings home page; opens a new bug report on GitHub
 Report a problem	Laporkan masalah
 Opens a GitHub report with your versions and settings filled in. Add what happened.	Membuka laporan GitHub dengan versi dan pengaturan Anda yang sudah terisi. Tambahkan apa yang terjadi.

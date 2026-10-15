@@ -1481,6 +1481,8 @@ Restart Facebook to apply this change	Reinicia Facebook para aplicar este cambio
 Restart Facebook to apply %1$d changes	Reinicia Facebook para aplicar %1$d cambios
 # context: summary of that row; after the restart the settings screen opens again on the same page
 Facebook closes and reopens on this page.	Facebook se cierra y se vuelve a abrir en esta página.
+# context: title of the row just above Support at the end of the settings home page; a tap restarts Facebook at any time
+Restart Facebook	Reiniciar Facebook
 # context: row near the end of the settings home page; opens a new bug report on GitHub
 Report a problem	Informar de un problema
 Opens a GitHub report with your versions and settings filled in. Add what happened.	Abre un informe en GitHub con tus versiones y ajustes ya rellenados. Añade lo que pasó.
