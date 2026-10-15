@@ -10,6 +10,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.PixelFormat;
+import android.graphics.Rect;
 import android.graphics.RecordingCanvas;
 import android.graphics.RenderEffect;
 import android.graphics.RenderNode;
@@ -254,6 +255,9 @@ public final class TranslucentBars {
         final Map<Drawable, Fill> fills = new IdentityHashMap<>();
         /** Each bar's frost, by the bar. */
         private final Map<View, Object> frosts = new IdentityHashMap<>();
+        /** The part of one bar's fills on screen this frame, in the window, and one fill's part. */
+        private final Rect seen = new Rect();
+        private final Rect visible = new Rect();
         private long nextLook;
         private int frame;
         private boolean stopped;
@@ -304,8 +308,17 @@ public final class TranslucentBars {
                 View bar = barOf(anchor, height);
                 if (bar.getWidth() <= 0 || bar.getHeight() <= 0) continue;
                 View under = blurs ? under(bar) : null;
+                seen.setEmpty();
                 float shown = keep(bar, bar, under != null, 1f, 0);
-                if (under != null && shown > 0f && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) frost(bar, under, shown);
+                if (under != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    if (shown > 0f && !seen.isEmpty()) {
+                        frost(bar, under, seen, shown);
+                    } else {
+                        // Slid or faded out of sight: its frost waits, empty, for it to come back.
+                        Frost waiting = (Frost) frosts.get(bar);
+                        if (waiting != null) waiting.empty(frame);
+                    }
+                }
             }
             forgetUnseen();
             dropStaleFrost();
@@ -360,9 +373,11 @@ public final class TranslucentBars {
         }
 
         /**
-         * Makes each fill in [view] and under it, down to {@link #MAX_DEPTH}, see-through. [alpha] is
-         * how drawn [view]'s parents in the bar are. Answers how drawn the most drawn fill is, 0 for
-         * none, which the frost takes.
+         * Makes each fill in [view] and under it, down to {@link #MAX_DEPTH}, see-through, and adds
+         * the part of each fill on screen to {@link #seen}. [alpha] is how drawn [view]'s parents in
+         * the bar are. Answers how drawn the most drawn fill on screen is, 0 for none, which the
+         * frost takes. A bar Facebook slides or fades away moves a view inside it, so the frost
+         * follows the fills rather than the bar's top view.
          */
         private float keep(View view, View bar, boolean frosted, float alpha, int depth) {
             if (view.getVisibility() != View.VISIBLE) return 0f;
@@ -371,7 +386,10 @@ public final class TranslucentBars {
             Drawable background = view.getBackground();
             if (fills(view, background, bar)) {
                 makeSeeThrough(background, frosted);
-                most = drawn;
+                if (frosted && drawn > 0f && view.getGlobalVisibleRect(visible)) {
+                    seen.union(visible);
+                    most = drawn;
+                }
             }
             if (depth < MAX_DEPTH && view instanceof ViewGroup) {
                 ViewGroup group = (ViewGroup) view;
@@ -453,7 +471,7 @@ public final class TranslucentBars {
         }
 
         @RequiresApi(Build.VERSION_CODES.S)
-        private void frost(View bar, View under, float shown) {
+        private void frost(View bar, View under, Rect area, float shown) {
             Frost frost = (Frost) frosts.get(bar);
             if (frost != null && frost.host != under) {
                 frost.remove();
@@ -465,7 +483,7 @@ public final class TranslucentBars {
                 frosts.put(bar, frost);
                 HookStatus.counted(FAMILY, FROSTED);
             }
-            frost.update(bar, shown, frame);
+            frost.update(area, shown, frame);
         }
 
         /** Takes away the frost of each bar that wasn't drawn this frame. */
@@ -490,7 +508,6 @@ public final class TranslucentBars {
     static final class Frost extends Drawable {
         final View host;
         private final RenderNode node = new RenderNode("Hushfacebook frost");
-        private final int[] bar = new int[2];
         private final int[] origin = new int[2];
         private boolean recording;
         int frame;
@@ -503,18 +520,17 @@ public final class TranslucentBars {
             host.getOverlay().add(this);
         }
 
-        /** Records what's under [bar] for this frame, drawn as much as [shown]. */
-        void update(View bar, float shown, int frame) {
+        /** Records what's under [area], the bar's fills on screen in the window, drawn as much as [shown]. */
+        void update(Rect area, float shown, int frame) {
             this.frame = frame;
             if (getBounds().width() != host.getWidth() || getBounds().height() != host.getHeight()) {
                 setBounds(0, 0, host.getWidth(), host.getHeight());
             }
-            bar.getLocationInWindow(this.bar);
             host.getLocationInWindow(origin);
-            int left = this.bar[0] - origin[0];
-            int top = this.bar[1] - origin[1];
-            int width = bar.getWidth();
-            int height = bar.getHeight();
+            int left = area.left - origin[0];
+            int top = area.top - origin[1];
+            int width = area.width();
+            int height = area.height();
             node.setPosition(left, top, left + width, top + height);
             node.setAlpha(shown);
             RecordingCanvas canvas = node.beginRecording(width, height);
@@ -526,6 +542,14 @@ public final class TranslucentBars {
                 recording = false;
                 node.endRecording();
             }
+        }
+
+        /** Draws nothing this frame, for a bar out of sight. */
+        void empty(int frame) {
+            this.frame = frame;
+            node.setPosition(0, 0, 0, 0);
+            node.beginRecording(0, 0);
+            node.endRecording();
         }
 
         void remove() {
