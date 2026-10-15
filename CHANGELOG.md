@@ -23,6 +23,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Changed
 
+* **Testing:** The captured Report a problem link opened in an authenticated isolated browser with its version, device, five problem-template line breaks and all 42 enabled switch names intact. The draft was canceled, and no GitHub issue was created.
 * **Testing:** A signed-in Facebook 582 clone now passes the native Dark mode and Active status checks. Each changed value survived reopening, then Dark mode was restored to Off and Active status to On without losing the clone login.
 * **Testing:** The signed-in Facebook 582 acceptance pass now covers safe profile navigation from a private group post and both DASH and progressive video saves. Each saved video opened in Photos and reached Android's share chooser without sending it, and the test files and temporary settings were removed afterward.
 * **Facebook:** With `View stories anonymously` on, a story you watch to the end now shows as watched on your phone until that person posts a new one (issue #61). Facebook still isn't told you saw it.
