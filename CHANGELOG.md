@@ -27,6 +27,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* **Facebook:** `Keep the top bar on screen` no longer leaves the top bar sitting over the Reels tab (issue #159). Facebook hides its bars itself as it opens Reels or a full-screen page and brings them back on the feed, and the kept bar now goes along with that. On the feed it stays put as before.
 * **Facebook:** With `Material You theme` in your build, dark mode no longer crashes Facebook as the feed loads on Android 12 and newer (issue #154). The likes line under a post reads its text color as a plain number, and the theme had turned that color into a day and night pair it couldn't read. The colors Facebook reads that way now get the nearest plain wallpaper tone instead. Light mode and the rest of dark mode look as they did.
 * **Facebook:** A copy made with Clone app builds Facebook's rich notifications from its own layouts, so a notification no longer closes the clone (issue #36). Tapping a push or chat notification opens the clone instead of the stock app, and the notification's icon and color come from the clone. There's no switch.
 * **Facebook:** A copy made with Clone app no longer closes when you tap the chat icon at the top (issue #113). Facebook's chat backup looks for the app among Meta's own by its package name and gave up on the clone's renamed one. The clone now answers to Facebook's name there.
