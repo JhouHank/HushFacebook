@@ -61,7 +61,7 @@ Changing one of those brings up a **Restart Facebook** row at the top of the pag
 
 Morphe Manager can back up your patch choices but not these switches. **Export settings** saves them to a JSON file, word lists included, and **Import settings** reads one back on this phone or a new one. It shows what the file would change before anything does. **Check for new Hushfacebook releases** under Updates is off until you turn it on. Then it asks GitHub once a day and tells you when there's a newer release, and you update through Morphe Manager as usual.
 
-The settings follow the language Facebook shows. German, Spanish, Indonesian, Brazilian Portuguese and Turkish are translated, and any other language gets English.
+The settings follow the language Facebook shows. German, Spanish, Indonesian, Brazilian Portuguese, Turkish and Vietnamese are translated, and any other language gets English.
 
 ### Blocking Reels
 
