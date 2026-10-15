@@ -24,6 +24,8 @@ import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowSystemClock;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -55,6 +57,8 @@ public class ProgressBarTest {
         PauseForTests.resume();
         Settings.KEEP_PROGRESS_BAR.resetToDefault();
         Settings.TAP_TO_PLAY.resetToDefault();
+        ProgressBar.footerLiftForTests = null;
+        ProgressBar.forgetFootersForTests();
         HookStatus.clear();
     }
 
@@ -537,6 +541,70 @@ public class ProgressBarTest {
         String line = statusLine();
         assertTrue(line, line.contains(ProgressBar.KEPT_LOOK_AGAIN + " 1"));
         assertFalse(line, line.contains(ProgressBar.FACEBOOK_LOOK_AGAIN));
+    }
+
+    /**
+     * #73: the reel on screen as the switch goes on kept its playing footer, with the caption where
+     * the kept bar and its time now go. The update that gives the bar the kept look lifts every
+     * footer Facebook still holds, once, and the patch's lift changes only a playing one.
+     */
+    @Test
+    public void turnedOnWithReelsOpenThePlayingReelsFooterIsLiftedOnce() {
+        Object playing = new Object();
+        Object paused = new Object();
+        List<Object> asked = new ArrayList<>();
+        ProgressBar.footerLiftForTests = footer -> {
+            asked.add(footer);
+            return footer == playing;
+        };
+        ProgressBar.footerMade(playing);
+        ProgressBar.footerMade(paused);
+        ProgressBar.footerMade(null);
+        LinearLayout label = new LinearLayout(RuntimeEnvironment.getApplication());
+
+        assertFalse(ProgressBar.looksAgain(label));
+        assertTrue("off, a footer was lifted: " + asked, asked.isEmpty());
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        assertFalse(ProgressBar.looksAgain(label));
+        assertTrue("paused, a footer was lifted: " + asked, asked.isEmpty());
+        PauseForTests.resume();
+
+        assertTrue("on, the thin bar stayed until a touch", ProgressBar.looksAgain(label));
+        assertEquals("every footer Facebook holds is asked, once each", 2, asked.size());
+        assertTrue(asked.contains(playing) && asked.contains(paused));
+        String line = statusLine();
+        assertTrue(line, line.contains(ProgressBar.FOOTER_LIFTED_AGAIN + " 1"));
+
+        // The patch runs the passive look, whose hook runs the active one; later updates lift nothing.
+        ProgressBar.hideTimeLabel(label);
+        assertFalse(ProgressBar.looksAgain(label));
+        assertEquals("a footer was asked again", 2, asked.size());
+
+        // Off again: Facebook's look comes back and its next player event sets the footer.
+        Settings.KEEP_PROGRESS_BAR.save(false);
+        assertTrue(ProgressBar.looksAgain(label));
+        assertEquals("off, a footer was lifted", 2, asked.size());
+    }
+
+    @Test
+    public void aFooterLiftThatFailsIsReportedAndTheOthersStillLift() {
+        Object first = new Object();
+        Object second = new Object();
+        ProgressBar.footerLiftForTests = footer -> {
+            if (footer == first) throw new IllegalStateException("the lift failed");
+            return true;
+        };
+        ProgressBar.footerMade(first);
+        ProgressBar.footerMade(second);
+        assertEquals(1, ProgressBar.liftFooters());
+        assertTrue(HookStatus.missing(FamilyNames.PROGRESS_BAR).toString(),
+                HookStatus.missing(FamilyNames.PROGRESS_BAR).get(0).contains("reel caption lift"));
+
+        // Unpatched, the stub lifts nothing.
+        ProgressBar.footerLiftForTests = null;
+        assertFalse(ProgressBar.liftFooter(new Object()));
+        assertEquals(0, ProgressBar.liftFooters());
     }
 
     @Test

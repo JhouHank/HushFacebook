@@ -533,6 +533,78 @@ class KeepProgressBarReelsFixtureTest {
         assertEquals("$where: something jumps past the hook", setOf(store), into)
     }
 
+    /**
+     * #73's reel on screen as the switch goes on: each footer status holder reports itself as it's
+     * made, the update handed no event lifts HIDDEN to VISIBLE through Facebook's own store while the
+     * bar is kept, and the extension's stub reaches that through a helper on the holder's class.
+     */
+    @Test
+    fun `each declared build lets the extension lift the footer of the reel on screen`() = bundles { bundle ->
+        val name = bundle.name
+        val status = seekBarStatus(FixtureDex.classesHolding(bundle, STATUS_DRAGGING).filterNot { it.type.startsWith(EXTENSION_CLASSES) })
+        val owners = mutableListOf<ClassDef>()
+        FixtureDex.forEach(bundle) { dex ->
+            dex.classes.filterTo(owners) { owner -> owner.fields.any { it.type == status.type } }
+        }
+        val holder = statusHolder(owners, status)
+        val owner = ImmutableClassDef.of(owners.first { it.type == holder.type })
+        val where = "$name: ${holder.type}"
+        checkFooterLift(owner, holder)
+        // Facebook's update tells its events apart by class first, so one handed none does nothing.
+        val original = holder.update.code()
+        assertEquals("$where: the update doesn't test its event first", Opcode.INSTANCE_OF, original[0].opcode)
+        assertEquals("$where: on the event", holder.self + 1, (original[0] as TwoRegisterInstruction).registerB)
+
+        val context = PatchContexts.of(listOf(owner, ExtensionDex.classDef(PROGRESS_BAR)))
+        val methods = context.mutableClassDefBy(holder.type).methods
+        val init = methods.single { it.sameAs(holder.constructor) }
+        val constructor = init.code()
+        init.startsLifted(holder, status)
+        init.reportsFooter(holder)
+        val made = init.code()
+        val at = holder.initialStore + 1
+        assertEquals("$where: the holder is reported right after its start is stored", FOOTER_MADE, made[at].reference())
+        assertEquals("$where: with itself", (constructor[holder.initialStore] as TwoRegisterInstruction).registerB,
+            (made[at] as FiveRegisterInstruction).registerC)
+        assertEquals("$where: then the start's lift", LIFTS_FOOTER, made[at + 1].reference())
+
+        val update = methods.single { it.sameAs(holder.update) }
+        update.staysLifted(holder, status)
+        val stayed = update.code()
+        update.liftsWhenAsked(holder, status)
+        val patched = update.code()
+        val entry = 10
+        assertEquals("$where: the entry's code",
+            listOf(Opcode.IF_NEZ, Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.IGET_OBJECT, Opcode.SGET_OBJECT,
+                Opcode.IF_NE, Opcode.SGET_OBJECT, Opcode.GOTO, Opcode.RETURN_VOID),
+            patched.take(entry).map { if (it.opcode == Opcode.GOTO_16 || it.opcode == Opcode.GOTO_32) Opcode.GOTO else it.opcode })
+        assertEquals("$where: the extension is asked", LIFTS_FOOTER, patched[1].reference())
+        assertEquals("$where: the status now is read", holder.field, patched[4].reference())
+        assertEquals("$where: into the old status' register", holder.old, (patched[4] as TwoRegisterInstruction).registerA)
+        assertEquals("$where: compared with $STATUS_HIDDEN", status.hidden, patched[5].reference())
+        assertEquals("$where: $STATUS_VISIBLE is the new status", status.visible, patched[7].reference())
+        assertEquals("$where: in the new status' register", holder.new, (patched[7] as OneRegisterInstruction).registerA)
+        assertEquals("$where: Facebook's code after the entry stays", stayed.map { it.opcode }, patched.drop(entry).map { it.opcode })
+        val flow = ControlFlow.of(update)
+        assertEquals("$where: an event goes to Facebook's code", setOf(1, entry), flow.normal[0].toSet())
+        val store = holder.store + entry
+        assertEquals("$where: the goto lands on Facebook's store", holder.field, patched[store].reference())
+        assertEquals("$where: from the goto", setOf(store), flow.normal[8].toSet())
+        for (no in listOf(3, 6)) assertTrue("$where: a no at $no returns", 9 in flow.normal[no])
+
+        context.fillFooterLift(holder)
+        val helper = context.mutableClassDefBy(holder.type).methods.single { it.name == FOOTER_LIFT_HELPER }
+        assertTrue("$where: the helper is public and static",
+            AccessFlags.PUBLIC.isSet(helper.accessFlags) && AccessFlags.STATIC.isSet(helper.accessFlags))
+        val call = helper.code().single { it.opcode == Opcode.INVOKE_VIRTUAL }
+        assertEquals("$where: the helper runs the update",
+            "${holder.type}->${holder.update.name}(${holder.update.parameterTypes.single()})V", call.reference())
+        val stub = context.mutableClassDefBy(PROGRESS_BAR).methods.single(::isLiftFooterStub).code()
+        assertEquals("$where: the stub calls the helper", "${holder.type}->$FOOTER_LIFT_HELPER(Ljava/lang/Object;)Z", stub[0].reference())
+        assertEquals("$where: and answers what it answers", listOf(Opcode.MOVE_RESULT, Opcode.RETURN), stub.subList(1, 3).map { it.opcode })
+        extensionHas(where, FOOTER_MADE)
+    }
+
     private fun extensionHas(where: String, descriptor: String) {
         val method = ExtensionDex.classDef(PROGRESS_BAR).methods.singleOrNull {
             "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" == descriptor

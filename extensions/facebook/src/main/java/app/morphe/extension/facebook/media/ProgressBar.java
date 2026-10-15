@@ -35,7 +35,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * without giving the scrubber the reel on screen, {@link #handsOver} and {@link #leftOnLastReel} hide
  * the bar and its time instead of leaving the last reel's stopped there, until a reel takes the
  * scrubber ({@link #mounts}). When the switch changes with Reels open, {@link #looksAgain} has the
- * scrubber's next progress update give the bar the look the switch now asks for. Older builds' viewer used a bottom bar
+ * scrubber's next progress update give the bar the look the switch now asks for, and turned on, it
+ * lifts a playing reel's caption above the bar ({@link #liftFooters}). Older builds' viewer used a bottom bar
  * (FbShortsViewerBottomSeekBarPlugin), which has two sizes. Facebook
  * makes it full size, with the thumb showing and the bar taking drags, when it shows a reel's
  * controls or while you scrub, and shrinks it to a line 2 dp high with the thumb hidden and drags
@@ -88,6 +89,9 @@ public final class ProgressBar {
 
     /** Counted each time a reel's footer is kept in its paused layout, with the caption above the bar. */
     static final String FOOTER_LIFTED = "Reel caption kept above the bar";
+
+    /** Counted each time a footer laid out for a playing reel is lifted above the bar after the switch went on. */
+    static final String FOOTER_LIFTED_AGAIN = "Reel caption lifted above the bar after the switch went on";
 
     /** Counted each time a short reel's check for the faded bar look is answered no. */
     static final String FADED_LOOK_SKIPPED = "Short reel kept from the faded bar";
@@ -145,6 +149,29 @@ public final class ProgressBar {
     private static final Set<View> keptLooks = Collections.newSetFromMap(new WeakHashMap<>());
 
     /**
+     * The Reels footers' seek bar status holders Facebook made, each reported by {@link #footerMade}
+     * and held no longer than Facebook holds it. Facebook sets a footer's status only on a player
+     * event, so the reel on screen when the switch went on kept its playing layout, with the caption
+     * where the kept bar and its time go (#73), and {@link #looksAgain} lifts these.
+     */
+    private static final Set<Object> footers = Collections.newSetFromMap(new WeakHashMap<>());
+
+    /** Forgets every footer {@link #footerMade} reported, for tests, which share one process. */
+    static void forgetFootersForTests() {
+        synchronized (footers) {
+            footers.clear();
+        }
+    }
+
+    /** Facebook's footer lift in its place, for tests, where the stub has nothing behind it. */
+    @Nullable
+    static volatile FooterLift footerLiftForTests;
+
+    interface FooterLift {
+        boolean lift(Object footer);
+    }
+
+    /**
      * A reel hand-over Facebook may leave unfinished: the reel the scrubber holds, the one on screen,
      * and what the extension did about it.
      */
@@ -200,7 +227,8 @@ public final class ProgressBar {
      * the scrubber has stops matching the switch: turned on with Reels open, the bar stayed Facebook's
      * thin line, and turned off, it stayed full size with its time stopped there and carried onto the
      * next reel, until a touch or a restart. While a hand-over hides the bar for holding the last reel,
-     * nothing changes.
+     * nothing changes. Turned on, the footers laid out for a playing reel are lifted too ({@link
+     * #liftFooters}), so the bar and its time don't sit on that reel's caption.
      */
     public static boolean looksAgain(@Nullable ViewGroup label) {
         try {
@@ -217,6 +245,7 @@ public final class ProgressBar {
                 keptLooks.add(label);
                 HookStatus.counted(FAMILY, KEPT_LOOK_AGAIN);
                 Logger.printDebug(() -> "Reel bar: the switch is on, so the bar takes the kept look");
+                liftFooters();
             } else {
                 keptLooks.remove(label);
                 HookStatus.counted(FAMILY, FACEBOOK_LOOK_AGAIN);
@@ -530,6 +559,60 @@ public final class ProgressBar {
      */
     public static boolean liftsFooter() {
         return keeps("reel caption lift", FOOTER_LIFTED);
+    }
+
+    /**
+     * The hook in the Reels footer's seek bar status holder, as Facebook makes one, with the holder.
+     * Changes nothing: it's remembered, whatever the switch, so {@link #liftFooters} can reach it.
+     */
+    public static void footerMade(@Nullable Object footer) {
+        if (footer == null) return;
+        try {
+            synchronized (footers) {
+                footers.add(footer);
+            }
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel caption lift", failure);
+        }
+    }
+
+    /**
+     * Lifts every footer Facebook still holds whose status is the playing one, HIDDEN, through
+     * {@link #liftFooter}, as the switch goes on with Reels open. Facebook sets the status only on a
+     * player event, so the reel on screen kept the caption where the kept bar and its time now go
+     * (#73) until it was paused or played again. A footer that's paused, dragged or already lifted
+     * stays as it is. Answers how many were lifted.
+     */
+    static int liftFooters() {
+        Object[] held;
+        synchronized (footers) {
+            held = footers.toArray();
+        }
+        int lifted = 0;
+        for (Object footer : held) {
+            if (footer == null) continue;
+            try {
+                FooterLift forced = footerLiftForTests;
+                if (forced != null ? forced.lift(footer) : liftFooter(footer)) lifted++;
+            } catch (Throwable failure) {
+                HookStatus.threw(FAMILY, "reel caption lift", failure);
+            }
+        }
+        for (int i = 0; i < lifted; i++) HookStatus.counted(FAMILY, FOOTER_LIFTED_AGAIN);
+        if (lifted > 0) {
+            int count = lifted;
+            Logger.printDebug(() -> "Reel bar: the switch is on, so " + count + " playing reel footer(s) lift the caption above the bar");
+        }
+        return lifted;
+    }
+
+    /**
+     * Filled in by the patch: runs [footer]'s own status update with no player event, which the
+     * patch turns into Facebook's change from HIDDEN to VISIBLE while the bar is kept, and answers
+     * whether the status changed. False until filled.
+     */
+    public static boolean liftFooter(Object footer) {
+        return false;
     }
 
     /**
