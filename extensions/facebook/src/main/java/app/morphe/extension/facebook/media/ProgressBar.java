@@ -456,12 +456,14 @@ public final class ProgressBar {
      * the scrubber's time label, the elapsed and total time. With the time switch on it stays, and
      * {@link #refreshesTime} keeps it current. Otherwise this hides it the way the passive look does
      * (invisible, not gone, which keeps the layout), as Facebook's update only writes it during a
-     * drag, and a drag shows it again.
+     * drag, and a drag shows it again. The first time a bar takes the kept look this way, the playing
+     * footers are lifted too ({@link #liftFooters}), as {@link #looksAgain} does when it gets there
+     * first.
      */
     public static void hideTimeLabel(ViewGroup label) {
         try {
             if (label == null) return;
-            keptLooks.add(label);
+            boolean newlyKept = keptLooks.add(label);
             if (showsTime()) {
                 if (label.getVisibility() != View.VISIBLE) {
                     label.setVisibility(View.VISIBLE);
@@ -470,6 +472,15 @@ public final class ProgressBar {
             } else if (label.getVisibility() != View.INVISIBLE) {
                 label.setVisibility(View.INVISIBLE);
                 HookStatus.counted(FAMILY, TIME_LABEL_HIDDEN);
+            }
+            // Facebook's own look can be the first to give a bar the kept look after the switch went
+            // on: the reel on screen asks for its look again as it plays on or loops once the
+            // settings close, before its next progress update, so looksAgain then finds the look
+            // already kept and lifts nothing. That reel's footer, and the next reel's already laid
+            // out, stayed HIDDEN, and a play event changes nothing (HIDDEN again), so the bar's time
+            // sat on their captions (#73).
+            if (newlyKept && liftFooters() > 0) {
+                Logger.printDebug(() -> "Reel bar: Facebook's look gave the bar the kept look, so the playing footers lift too");
             }
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "reel time label", failure);

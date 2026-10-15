@@ -587,6 +587,38 @@ public class ProgressBarTest {
         assertEquals("off, a footer was lifted", 2, asked.size());
     }
 
+    /**
+     * #73 on the S22 and the emulator: the switch went on in the settings opened over Reels, and as
+     * the reel played on or looped after Back, Facebook's own look ran first, so the bar had the kept
+     * look before its next progress update and that update lifted nothing. The footer stayed HIDDEN
+     * and a play event changed nothing. Facebook's look giving a bar the kept look lifts the footers too.
+     */
+    @Test
+    public void turnedOnUnderTheSettingsTheFooterLiftsWhenFacebooksLookGetsThereFirst() {
+        Object playing = new Object();
+        List<Object> asked = new ArrayList<>();
+        ProgressBar.footerLiftForTests = footer -> {
+            asked.add(footer);
+            return footer == playing;
+        };
+        ProgressBar.footerMade(playing);
+        LinearLayout label = new LinearLayout(RuntimeEnvironment.getApplication());
+        // Off: Facebook's passive look ran, so no bar has the kept look.
+        assertFalse(ProgressBar.keepsReelBar());
+
+        Settings.KEEP_PROGRESS_BAR.save(true);
+        // The reel plays on: Facebook asks for its passive look, whose hook runs the active one and this.
+        assertTrue(ProgressBar.keepsReelBar());
+        ProgressBar.hideTimeLabel(label);
+        assertEquals("the playing footer wasn't lifted", java.util.Collections.singletonList(playing), asked);
+        // The next progress update finds the look kept and lifts nothing more, nor does the next look.
+        assertFalse(ProgressBar.looksAgain(label));
+        ProgressBar.hideTimeLabel(label);
+        assertEquals("a footer was asked again", 1, asked.size());
+        String line = statusLine();
+        assertTrue(line, line.contains(ProgressBar.FOOTER_LIFTED_AGAIN + " 1"));
+    }
+
     @Test
     public void aFooterLiftThatFailsIsReportedAndTheOthersStillLift() {
         Object first = new Object();
