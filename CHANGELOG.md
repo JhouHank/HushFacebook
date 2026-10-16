@@ -2,6 +2,12 @@
 
 Changes in each Hushfacebook version, newest first.
 
+## Unreleased
+
+### Fixed
+
+* **Tooling:** The script contract tests pass on a published index again. Their check that the release facts refuse a second Facebook build swapped one into the CHANGELOG part of the index, which the facts check skips on purpose, so it failed as soon as a changelog bullet named the target build. It now swaps it into the facts.
+
 ## 0.14.0 (2026-10-16)
 
 * **Facebook:** This release moves Hushfacebook to Facebook 583.0.0.39.55. There are new patches to skip the quiet stretches in videos and to post Stories in HD, plus switches that put the tab bar back at the top, keep a reel's original sound instead of a Meta AI dub, give tablets the phone layout and hide the Meta AI shortcut in the Menu. Picture-in-picture got a round of fixes, and dark mode with Material You shouldn't crash Facebook on Android 12 and newer anymore.
