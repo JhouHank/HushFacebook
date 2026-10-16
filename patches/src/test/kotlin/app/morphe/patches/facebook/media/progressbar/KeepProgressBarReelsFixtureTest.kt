@@ -222,12 +222,15 @@ class KeepProgressBarReelsFixtureTest {
         assertTrue("$name: the writer doesn't reach the views holder the time label is in",
             progress.writeTime.code().any { it.reference()?.startsWith(looks.labelField.substringBefore("->")) == true })
         // Issue #120: the writer moves the bar with no check of its own, so it may run only where Facebook's update
-        // has found a usable position and length. The update reads the bar's maximum only past both checks.
+        // has found a usable position and length. The update reads the bar's maximum only past both checks, itself
+        // or, on 583, through the base's helper that scales the position to the bar (LX/9gJ;->A01).
         assertTrue("$name: the writer no longer moves the bar", progress.writeTime.code().any { it.reference() == SET_PROGRESS })
         val at = dragCheck(progress.update, progress)
         val inflow = ControlFlow.of(progress.update)
         val update = progress.update.code()
-        val maxReads = update.indices.filter { update[it].reference() == GET_MAX }.toSet()
+        val scalers = base.methods.filter { method -> method.implementation?.instructions?.any { it.reference() == GET_MAX } == true }
+            .map { "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" }.toSet()
+        val maxReads = update.indices.filter { update[it].reference() == GET_MAX || update[it].reference() in scalers }.toSet()
         assertTrue("$where reads no bar maximum", maxReads.isNotEmpty())
         val reached = mutableSetOf(0)
         val queue = ArrayDeque(listOf(0))
@@ -434,10 +437,12 @@ class KeepProgressBarReelsFixtureTest {
         val skip = sameLookSkip(selector) { FixtureDex.classes(bundle, setOf(it))[it] }
         // #73: the parked look is the state's second Integer, the one the selector stores the look it's asked for in
         // while a reel's player changes. A hide parked as one reel left landed on the next one after its own look
-        // was skipped as the one the bar had.
+        // was skipped as the one the bar had. The state is made by a constructor taking both looks, or on 583 by a
+        // static factory of the state's class (LX/9JM;->A00), which stores them the same way.
         val state = FixtureDex.classes(bundle, setOf(skip.state)).getValue(skip.state)
         val init = state.methods.single { method ->
-            method.name == "<init>" && method.parameterTypes.count { it.toString() == "Ljava/lang/Integer;" } == 2
+            (method.name == "<init>" || AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == state.type) &&
+                method.parameterTypes.count { it.toString() == "Ljava/lang/Integer;" } == 2
         }
         val parameters = init.parameterTypes.map(CharSequence::toString)
         assertTrue("$where: the state's constructor takes a wide value", parameters.none { it == "J" || it == "D" })
