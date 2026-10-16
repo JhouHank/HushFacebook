@@ -255,7 +255,8 @@ internal const val INVALIDATE = "Landroid/view/View;->invalidate()V"
  * Reels controls component instead, whose updater traces [PLAYER_CONTROL_UPDATE] (581
  * `LX/87v;->Don`). A controller built with that updater's interface (581 `LX/87w;`) shows the
  * controls on a tap and posts its hide runnable (581 `LX/87x;`), whose `run()` asks the controller
- * to hide them about 3 seconds later. On the S25 (581, 2026-10-08) a stack trace of that hide went
+ * to hide them about 3 seconds later. On 583 the updater is folded into the controller, a static
+ * method of it (`LX/8Mz;->A00`), and the runnable is `LX/8N0;`. On the S25 (581, 2026-10-08) a stack trace of that hide went
  * from this `run()` through the controller to the updater, and none of the hooks above ran in that
  * player. So the same hook goes first in this `run()`. A tap still hides the controls, as the tap
  * handler calls the controller's hide itself.
@@ -1217,25 +1218,45 @@ internal fun extensionFadeTimer(holders: List<ClassDef>): Pair<ClassDef, Method>
 }
 
 /**
- * The interface the landscape player's controls updater implements (581 `LX/9Wi;`): the one
- * interface, among those of [holders] found with [classOf], declaring an instance `V` method of
- * theirs that traces [PLAYER_CONTROL_UPDATE].
+ * The landscape player's controls updater as its controller is built on it: [type] is the interface
+ * the updater implements (581 `LX/9Wi;`, 582 `LX/9tH;`), which the controller's constructor takes,
+ * unless [folded]. On 583 Redex folded the updater into its one controller, as a static method of the
+ * controller taking it last (`LX/8Mz;->A00`), and [type] is that controller. [update] is the call the
+ * controller makes to hand the updater a new control state.
  */
-internal fun controlsUpdater(holders: List<ClassDef>, classOf: (String) -> ClassDef?): String {
+internal class ControlsUpdater(val type: String, val folded: Boolean, val update: String)
+
+/**
+ * The landscape player's controls updater, among [holders], whose interfaces are found with
+ * [classOf]: an instance `V` method tracing [PLAYER_CONTROL_UPDATE] that an interface of its class
+ * declares, or a static `V` method tracing it that takes its own class. Refuses unless there's
+ * exactly one such interface or class.
+ */
+internal fun controlsUpdater(holders: List<ClassDef>, classOf: (String) -> ClassDef?): ControlsUpdater {
     val found = holders.distinctBy { it.type }.flatMap { holder ->
-        methodsHolding(holder, PLAYER_CONTROL_UPDATE)
-            .filter { !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" }
-            .flatMap { update ->
+        methodsHolding(holder, PLAYER_CONTROL_UPDATE).filter { it.returnType == "V" }.flatMap { update ->
+            val shape = "${update.name}(${update.parameterTypes.joinToString("")})V"
+            if (AccessFlags.STATIC.isSet(update.accessFlags)) {
+                listOf(ControlsUpdater(holder.type, true, "${holder.type}->$shape"))
+                    .filter { holder.type in update.parameterTypes.map(CharSequence::toString) }
+            } else {
                 holder.interfaces.mapNotNull(classOf).filter { face -> face.methods.any { it.sameAs(update) } }
+                    .map { ControlsUpdater(it.type, false, "${it.type}->$shape") }
             }
-    }.map { it.type }.distinct()
+        }
+    }.distinctBy { it.type }
     return found.singleOrNull()
-        ?: refuse("expected one interface for the controls updater tracing \"$PLAYER_CONTROL_UPDATE\", found ${found.size}")
+        ?: refuse("expected one interface or controller for the controls updater tracing \"$PLAYER_CONTROL_UPDATE\", found ${found.size}")
 }
 
-/** Whether a constructor of [classDef] takes the controls updater, as their controller's does. */
-internal fun takesUpdater(classDef: ClassDef, updater: String) = classDef.methods.any { method ->
-    method.name == "<init>" && method.parameterTypes.any { it.toString() == updater }
+/**
+ * Whether [classDef] is a controller of the controls [updater]: one whose constructor takes the
+ * updater's interface, or the controller the updater is folded into.
+ */
+internal fun takesUpdater(classDef: ClassDef, updater: ControlsUpdater) = if (updater.folded) {
+    classDef.type == updater.type
+} else {
+    classDef.methods.any { method -> method.name == "<init>" && method.parameterTypes.any { it.toString() == updater.type } }
 }
 
 /** The fields of [owner]'s own [RUNNABLE]s that [method] hands to an interface method with a delay. */

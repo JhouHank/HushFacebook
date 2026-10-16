@@ -415,13 +415,15 @@ class KeepProgressBarFixtureTest {
         }
         val (runnable, run) = controlsHideRunnable(controllers, ::classOf)
         val where = "$name: ${runnable.type}->run"
-        // The hide the runnable asks for has to reach the updater, which hands the player the hide.
+        // The hide the runnable asks for has to reach the updater, which hands the player the hide: through its
+        // interface, or on 583 the static method of the controller the updater is folded into.
         val asked = run.code().mapNotNull { (it as? ReferenceInstruction)?.reference as? MethodReference }
             .filter { call -> controllers.any { it.type == call.definingClass } }
         assertEquals("$where asks its controller for more than the hide", 1, asked.size)
         val hide = controllers.single { it.type == asked.single().definingClass }.methods.single { it.name == asked.single().name }
         assertTrue("$where: ${hide.name} doesn't hand the updater the hide",
-            hide.code().any { it.opcode == Opcode.INVOKE_INTERFACE && it.reference()!!.startsWith("$updater->") })
+            hide.code().any { it.opcode == (if (updater.folded) Opcode.INVOKE_STATIC else Opcode.INVOKE_INTERFACE) &&
+                it.reference() == updater.update })
         assertTrue("$where has no local register for the hook", run.implementation!!.registerCount - 1 >= 1)
 
         val context = PatchContexts.of(listOf(runnable))
