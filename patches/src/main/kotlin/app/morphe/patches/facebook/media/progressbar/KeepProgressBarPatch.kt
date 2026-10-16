@@ -66,7 +66,7 @@ internal const val SCRUBBER_UPDATE = "UDDScrubberBasePlugin.updateProgress"
 /** The trace name of the scrubber base's light mount, run as it takes each video, a kept literal. */
 internal const val SCRUBBER_LIGHT_MOUNT = "UDDScrubberBasePlugin.onLightMount"
 
-/** The surface name both of the scrubber's `(IZ)Z` length checks compare first, a kept literal. */
+/** The surface name both of the scrubber's length checks compare first, a kept literal. */
 internal const val LENGTH_CHECK_SURFACE = "ai_styles_drafts"
 
 /** The names of the Reels footer's seek bar status values, kept enum literals (582 `LX/AGw;`). */
@@ -772,23 +772,30 @@ internal fun mountOverridesSkippingBase(
 }.map { it.first }
 
 /**
- * The scrubber's instance `(IZ)Z` length checks loading [LENGTH_CHECK_SURFACE] that compare the
- * reel's length, their int parameter, first in an [opcode] against Facebook's minimum.
+ * Whether [parameters] are a length check's: the reel's length and a boolean, in either order. 582
+ * takes `(IZ)Z`, 583 `(ZI)Z`.
+ */
+private fun isLengthCheckShape(parameters: List<String>) = parameters.sorted() == listOf("I", "Z")
+
+/**
+ * The scrubber's instance length checks loading [LENGTH_CHECK_SURFACE] that compare the reel's
+ * length, their int parameter, first in an [opcode] against Facebook's minimum.
  */
 private fun lengthChecks(scrubber: ClassDef, opcode: Opcode): List<Method> =
     methodsHolding(scrubber, LENGTH_CHECK_SURFACE).filter {
         !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "Z" &&
-            it.parameterTypes.map(CharSequence::toString) == listOf("I", "Z")
+            isLengthCheckShape(it.parameterTypes.map(CharSequence::toString))
     }.filter { check ->
         val implementation = check.implementation!!
-        // The parameters take the last three registers: this, the length, then the boolean.
-        val length = implementation.registerCount - 2
+        // The parameters take the last three registers: this, then the length and the boolean in their order.
+        val parameters = check.parameterTypes.map(CharSequence::toString)
+        val length = implementation.registerCount - parameters.size + parameters.indexOf("I")
         implementation.instructions.any { it.opcode == opcode && (it as TwoRegisterInstruction).registerA == length }
     }
 
 /**
- * The scrubber's check that a reel is long enough for a bar (582 `LX/9d9;->A1O`). The scrubber has
- * two instance `(IZ)Z` length checks, each loading [LENGTH_CHECK_SURFACE] first. This one answers no
+ * The scrubber's check that a reel is long enough for a bar (583 `LX/9h9;->A1U`). The scrubber has
+ * two instance length checks, each loading [LENGTH_CHECK_SURFACE] first. This one answers no
  * through an `if-lt` of the reel's length against Facebook's minimum, and its answer decides between
  * the passive look and no bar at all. Refuses unless there's exactly one such check.
  */
@@ -799,7 +806,7 @@ internal fun minimumLengthCheck(scrubber: ClassDef): Method {
 }
 
 /**
- * The scrubber's other length check (582 `LX/9d9;->A1N`), which answers no through an `if-gt` of
+ * The scrubber's other length check (583 `LX/9h9;->A1T`), which answers no through an `if-gt` of
  * the reel's length against the same minimum, so yes for a short reel, when a server flag is on.
  * The scrubber asks it first, and its yes gives the reel the look that sets the bar's alpha to 0,
  * so a short reel's bar showed for a moment and went. Refuses unless there's exactly one.
@@ -925,10 +932,10 @@ internal fun sameLookSkip(selector: Method, stateClass: (String) -> ClassDef?): 
 internal class BarInfo(val builder: Method, val call: Int)
 
 /**
- * The scrubber base's builder of a reel's bar info (582 `LX/9c4;->A03`, building `LX/AGr;`): the one
+ * The scrubber base's builder of a reel's bar info (583 `LX/9gJ;->A04`, building `LX/AOM;`): the one
  * static method of [base] that asks [lengthCheck] and returns an object it makes with a
  * [BAR_INFO_INIT] constructor. That constructor's first boolean says whether the reel has a bar at
- * all (582 `LX/AGr;->A04`), and on no the scrubber picks the invisible look before anything else.
+ * all (583 `LX/AOM;->A04`), and on no the scrubber picks the invisible look before anything else.
  * Facebook works it out from the reel, and an ad, the viewer's config and a few kinds of reel it
  * flags on its servers get none, so a kept bar was missing from some reels (#73). The builder hands
  * the same flag to both length checks, which the hooks already answer while kept, on the scrubber
@@ -938,10 +945,11 @@ internal class BarInfo(val builder: Method, val call: Int)
  * unless the flag it passes is the one the length check gets.
  */
 internal fun barInfo(base: ClassDef, lengthCheck: Method): BarInfo {
+    val checkParameters = lengthCheck.parameterTypes.map(CharSequence::toString)
     fun Method.asksLengthCheck() = implementation?.instructions?.any {
         val call = (it as? ReferenceInstruction)?.reference as? MethodReference
         it.opcode.name.startsWith("invoke-virtual") && call != null && call.name == lengthCheck.name &&
-            call.returnType == "Z" && call.parameterTypes.map(CharSequence::toString) == listOf("I", "Z")
+            call.returnType == "Z" && call.parameterTypes.map(CharSequence::toString) == checkParameters
     } == true
     val builders = base.methods.filter { method ->
         AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType.startsWith("L") && method.asksLengthCheck() &&
@@ -967,8 +975,12 @@ internal fun barInfo(base: ClassDef, lengthCheck: Method): BarInfo {
         refuse("$where has a jump or a try block onto its bar info's constructor")
     }
     val has = range.startRegister + 1
-    val asks = code.filter { it.opcode == Opcode.INVOKE_VIRTUAL && (it.reference()?.contains("->${lengthCheck.name}(IZ)Z") == true) }
-    if (asks.isEmpty() || asks.any { (it as FiveRegisterInstruction).registerE != has }) {
+    val asking = "->${lengthCheck.name}(${checkParameters.joinToString("")})Z"
+    val asks = code.filter { it.opcode == Opcode.INVOKE_VIRTUAL && (it.reference()?.contains(asking) == true) }
+    // The call names this first, then the length and the flag in the order the check takes them.
+    fun flagOf(ask: FiveRegisterInstruction) =
+        listOf(ask.registerD, ask.registerE)[checkParameters.indexOf("Z")]
+    if (asks.isEmpty() || asks.any { flagOf(it as FiveRegisterInstruction) != has }) {
         refuse("$where no longer hands its length check the bar info's first flag")
     }
     if (range.startRegister + 4 > 15) refuse("$where builds its bar info past v15")
