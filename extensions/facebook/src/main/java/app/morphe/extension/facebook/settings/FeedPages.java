@@ -10,7 +10,6 @@ import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragm
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.commentOrderRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.feedsSubtabRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.homeFeedRow;
-import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.mark;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.reactionCeilingRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.seenKeepRow;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.startTabRow;
@@ -285,7 +284,6 @@ final class FeedPages {
             Utils.showToastShort(SeenPosts.clearedMessage());
             return true;
         });
-        mark(forget, SettingsIcons.DELETE);
         // The keep time follows the switch and is greyed out until it's on. Forget seen posts
         // works either way, so a list is never out of reach.
         keep.setEnabled(Settings.HIDE_SEEN_POSTS.savedValue());
@@ -423,7 +421,8 @@ final class FeedPages {
             }
             return true;
         });
-        return mark(row, SettingsIcons.OPENING);
+        // No icon: it shares a card with switches, which have none, and an icon would push its text in.
+        return row;
     }
 
     /** Writing: when Facebook suggests someone to tag. */

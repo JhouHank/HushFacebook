@@ -233,9 +233,9 @@ final class HushfacebookPages {
                         L10n.t("Messenger, Facebook Lite, Business Suite and Workplace can install next to this Facebook. Their "
                                 + "shared permissions no longer clash.")), SettingsIcons.PHONE));
             }
-            patched.addPreference(info(context, L10n.t("Changing these"),
+            patched.addPreference(mark(info(context, L10n.t("Changing these"),
                     L10n.t("They're chosen in Morphe Manager when you patch, and Pause doesn't turn them off. "
-                            + "Patch again to change them.")));
+                            + "Patch again to change them.")), SettingsIcons.ABOUT));
         }
     }
 
@@ -321,7 +321,7 @@ final class HushfacebookPages {
         // are for someone looking into what the app does. About only describes Hushfacebook.
         hushfacebook.addPreference(mark(WhitehatScreen.row(context), SettingsIcons.NETWORK));
         // Keep the detailed patch-time exception list after the controls people come here for.
-        if (stays != null) hushfacebook.addPreference(info(context, L10n.t(STAYS_WHILE_PAUSED), stays));
+        if (stays != null) hushfacebook.addPreference(mark(info(context, L10n.t(STAYS_WHILE_PAUSED), stays), SettingsIcons.PATCHED));
     }
 
     /** About, in every build. */

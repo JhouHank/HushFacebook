@@ -643,7 +643,7 @@ final class SettingsNavigation extends BaseAdapter {
 
     private int dp(int value) { return Math.round(value * screen.getContext().getResources().getDisplayMetrics().density); }
 
-    private Object group(Preference item) {
+    Object group(Preference item) {
         if (item == more || item == support || item == browse || item == screen.getPreference(0)
                 || item == restart || item == quickSetups || item == report) return item;
         for (Section section : sections) if (item == section.link) return section.primary ? sections : more;

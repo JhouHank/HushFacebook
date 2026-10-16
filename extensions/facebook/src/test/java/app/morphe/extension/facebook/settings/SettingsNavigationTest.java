@@ -372,6 +372,48 @@ public class SettingsNavigationTest {
         assertEquals(13, list().getCount());
     }
 
+    /**
+     * A row's icon pushes its text in, so every row of a card has an icon or none does, and the
+     * card's text starts in one line. "Forget seen posts" and "Hide reaction counts" started theirs
+     * 78 px in from the switches around them (device audit, 2026-10-15). A card is a run of rows of
+     * one group, the way the list draws it, on every page, running and paused.
+     */
+    @Test public void aCardHasAnIconOnEveryRowOrOnNone() {
+        List<String> mixed = new ArrayList<>();
+        for (boolean paused : new boolean[]{false, true}) {
+            if (paused) {
+                PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+                recreate();
+            }
+            mixedCards("home", mixed);
+            for (Preference section : page.sections()) {
+                String title = String.valueOf(section.getTitle());
+                page.navigation.navigate(title);
+                mixedCards(title, mixed);
+                page.navigation.back();
+            }
+        }
+        assertEquals("cards mixing rows with and without an icon", new ArrayList<String>(), mixed);
+    }
+
+    /** Adds each card of the page shown now whose rows mix icons and none to [mixed]. */
+    private void mixedCards(String pageName, List<String> mixed) {
+        Object card = null;
+        List<String> with = new ArrayList<>();
+        List<String> without = new ArrayList<>();
+        for (int position = 0; position <= list().getCount(); position++) {
+            Preference row = position < list().getCount() ? (Preference) list().getItemAtPosition(position) : null;
+            Object group = row == null || row instanceof PreferenceCategory ? null : page.navigation.group(row);
+            if (group == null || group != card) {
+                if (!with.isEmpty() && !without.isEmpty()) mixed.add(pageName + ": " + with + " beside " + without);
+                with = new ArrayList<>();
+                without = new ArrayList<>();
+                card = group;
+            }
+            if (group != null) (row.getIcon() != null ? with : without).add(String.valueOf(row.getTitle()));
+        }
+    }
+
     /** A switch that needs a restart brings the row up the moment it's flipped, and flipping it back takes it away. */
     @Test public void flippingARestartGatedSwitchShowsTheRowAtOnce() {
         try {
