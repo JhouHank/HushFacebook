@@ -464,15 +464,16 @@ val materialYouThemePatch = bytecodePatch(
 
 /**
  * The MobileConfig colour the box under a link post's picture takes in Facebook's dark mode (issue
- * #37). On 582 ten methods read it, one for each kind of link attachment: the attachment footer's
- * (arm64 `LX/4sz;->A0E` and `A0J`), FDSPostLinkAttachment's render (`LX/Vzq;->render`) and seven
+ * #37). On 583 ten methods read it, one for each kind of link attachment: the attachment footer's
+ * (arm64 `LX/4vd;->A0E` and `A0J`), FDSPostLinkAttachment's render (`LX/S3r;->render`) and seven
  * more renders. In dark mode each reads this config's string first and parses it when it isn't
  * empty, and only then falls back to a grey a second config picks or to CARD_BACKGROUND_FLAT's
  * token, which route one already themes. The string came out #333334, a grey light mode draws too,
  * so route four's parser leaves it. The fallbacks that route one doesn't reach are in
- * LinkBoxFallbacks.kt.
+ * LinkBoxFallbacks.kt. Facebook renumbers MobileConfig ids between builds: 582 had it at
+ * `0x103074c000203a8`, and 583's ten readers, with the same shapes, load it as the id below.
  */
-internal const val LINK_BOX_COLOUR_CONFIG = 0x103074c000203a8L
+internal const val LINK_BOX_COLOUR_CONFIG = 0x1030747000203a7L
 
 /** Where the parse of [LINK_BOX_COLOUR_CONFIG]'s string goes instead of route four's parser. */
 internal const val PARSE_LINK_BOX = "$MATERIAL_YOU->parseLinkBox(Ljava/lang/String;)I"
