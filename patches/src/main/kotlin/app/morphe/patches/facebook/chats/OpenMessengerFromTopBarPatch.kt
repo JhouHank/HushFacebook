@@ -82,7 +82,7 @@ val openMessengerFromTopBarPatch = bytecodePatch(
         val calls = buttonHandlerCalls(tap).distinctBy { it.toString() }
         val call = calls.singleOrNull() ?: throw PatchException(
             "$ICON_PATCH: expected the tap to call one Messenger button handler " +
-                "(Context, FbUserSession, String, Z, Z)V, found ${calls.size}",
+                "(Context, FbUserSession, String, [String,] Z, Z)V, found ${calls.size}",
         )
         val handler = classDefByOrNull(call.definingClass)?.let { buttonHandler(it, call) }
             ?: throw PatchException(
@@ -95,7 +95,7 @@ val openMessengerFromTopBarPatch = bytecodePatch(
         )
         val handoff = handoffTargets()
         mutableClassDefBy(tap.definingClass).methods.single { it.isSameAs(tap) }.openMessengerFirst(TAP_LONG_PRESS)
-        mutableClassDefBy(handler.definingClass).methods.single { it.isSameAs(handler) }.openMessengerFirst(BUTTON_LONG_PRESS)
+        mutableClassDefBy(handler.definingClass).methods.single { it.isSameAs(handler) }.openMessengerFirst(buttonLongPress(handler))
         mutableClassDefBy(FRAGMENT_ACTIVITY).methods.single { it.isSameAs(dispatch) }.handTouchesToIcon()
         mutableClassDefBy(handoff.mqtt.method.definingClass).methods.single { it.isSameAs(handoff.mqtt.method) }
             .leaveCallRegistrationToMessenger(handoff.mqtt.constructionIndex, handoff.mqtt.capabilitiesRegister)
