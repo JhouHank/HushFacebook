@@ -3003,15 +3003,22 @@ try {
     }
 
     # The sync's version edit is bounded on both sides, because a version can sit in the build
-    # number the index describes. Inside one, as 0.10.1 is in 583.0.0.10.10, either bound stops the
-    # edit; at the end of one, as in 583.0.0.10.1, only the dot before it does; at the start, as in
+    # number the index describes. Inside one, as 0.10.1 is in 586.0.0.10.10, either bound stops the
+    # edit; at the end of one, as in 586.0.0.10.1, only the dot before it does; at the start, as in
     # 0.10.15, only the digit after it. Unbounded, syncing that index to 0.10.2 rewrote the build, the
     # build edit then found nothing to move, and the control would have refused the tree over a
-    # build nobody released.
-    foreach ($describedBuild in @('583.0.0.10.10', '583.0.0.10.1', '0.10.15')) {
+    # build nobody released. The described builds sit three majors past the catalog's, so none is
+    # the catalog's own, and the edit starts from what the index names: between a retarget and its
+    # release the index still names the last release's version and build, not the catalog's.
+    $indexBefore = Get-Content -LiteralPath (Join-Path $factsRoot 'patches-bundle.json') -Raw | ConvertFrom-Json
+    $indexedVersion = [string]$indexBefore.version
+    $indexedBuild = [regex]::Match([string]$indexBefore.description, 'Facebook (\d+(?:\.\d+){4})').Groups[1].Value
+    Assert-True ($indexedVersion -and $indexedBuild) "The index names no version or Facebook build: $($indexBefore.description)"
+    $unreleasedMajor = [int]($newestBuild -split '\.')[0] + 3
+    foreach ($describedBuild in @("$unreleasedMajor.0.0.10.10", "$unreleasedMajor.0.0.10.1", '0.10.15')) {
         Set-FactsFile 'patches-bundle.json' {
-            param($text) ($text -replace ('(?<![\d.])' + [regex]::Escape($catalogVersion) + '(?!\d)'), '0.10.1').Replace(
-                $newestBuild, $describedBuild)
+            param($text) ($text -replace ('(?<![\d.])' + [regex]::Escape($indexedVersion) + '(?!\d)'), '0.10.1').Replace(
+                $indexedBuild, $describedBuild)
         }
         Set-FactsFile 'gradle.properties' { param($text) $text -replace '(?m)^(\s*version\s*=\s*)\S+', '${1}0.10.2' }
         try {
@@ -3019,7 +3026,7 @@ try {
             $syncedDescription = [string](Get-Content -LiteralPath (Join-Path $factsRoot 'patches-bundle.json') -Raw | ConvertFrom-Json).description
             Assert-True ($syncedDescription -match "\bv0\.10\.2\b" -and
                 $syncedDescription -match "Facebook $([regex]::Escape($newestBuild))(?!\d)" -and
-                $syncedDescription -notmatch 'Facebook (?:583|0\.10)\.') `
+                $syncedDescription -notmatch "Facebook (?:$unreleasedMajor|0\.10)\.") `
                 "Syncing an index at 0.10.1 that describes Facebook $describedBuild to 0.10.2 did not move it to the catalog's build: $syncedDescription"
         } finally {
             Reset-FactsFile 'gradle.properties'
