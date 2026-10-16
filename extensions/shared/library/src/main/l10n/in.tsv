@@ -10,25 +10,20 @@ Hides "Pages you may like" cards, cards promoting Facebook's own features, and s
 %1$s so far	%1$s terunduh
 %1$s a second	%1$s per detik
 %1$s elapsed	%1$s berlalu
-%1$s. It was set when you patched, so Pause can't turn it off. To rule it out, patch again and leave out that patch.	%1$s. Ini diatur saat Anda menambal, jadi Jeda tidak dapat mematikannya. Untuk memastikan bukan ini penyebabnya, tambal ulang tanpa tambalan yang tertera dalam kurung setelahnya.
-%1$s. They were set when you patched, so Pause can't turn them off. To rule one out, patch again and leave out the patch in brackets after it.	%1$s. Ini diatur saat Anda menambal, jadi Jeda tidak dapat mematikannya. Untuk memastikan bukan ini penyebabnya, tambal ulang tanpa tambalan yang tertera dalam kurung setelahnya.
 Add a Download button to reels, using your download quality. Off or paused, Facebook's own buttons return.	Tambahkan tombol Unduh ke reel dengan kualitas unduhan Anda. Saat mati atau dijeda, tombol asli Facebook kembali.
 A file named %1$s in %2$s paused Hushfacebook.	File bernama %1$s di %2$s menjeda Hushfacebook.
 About	Tentang
 Hides ad cards between people's stories.	Menyembunyikan kartu iklan di antara cerita orang.
-Ad tracking blocked	Pelacakan iklan diblokir
 Add Download to phone to feed and Watch video menus. Uses the quality below. Off or paused, Facebook's menu returns.	Tambahkan Unduh ke ponsel pada menu video feed dan Watch. Menggunakan kualitas di bawah. Saat mati atau dijeda, menu Facebook kembali.
 Add Save to every story menu, using your download quality. Off or paused, Facebook only saves your own stories.	Tambahkan Simpan ke semua menu cerita dengan kualitas unduhan Anda. Saat mati atau dijeda, Facebook hanya menyimpan cerita sendiri.
 # context: switch title on the Stories page, under Save any story; offers the Save photo menu item on more stories than before
 Save photo on more stories	Simpan foto di lebih banyak cerita
 # context: summary of that switch; "Save photo" is the menu item's name, keep it as translated for that item; the cover picture is the still image shown before a video plays
-Adds Save photo to any story that carries a picture beside its video, like a photo story with music that Facebook didn't mark as one. On a video story it saves the cover picture. Untested on a real account, so it starts off.	Menambahkan Simpan foto ke cerita apa pun yang membawa gambar di samping videonya, seperti cerita foto dengan musik yang tidak ditandai Facebook sebagai cerita foto. Di cerita video, yang disimpan adalah gambar sampulnya. Belum diuji di akun sungguhan, jadi awalnya mati.
+Adds Save photo to any story that carries a picture beside its video, like a photo story with music that Facebook didn't mark as one. On a video story it saves the cover picture. Off by default, since it hasn't been tried on a real account yet.	Menambahkan Simpan foto ke cerita apa pun yang membawa gambar di samping videonya, seperti cerita foto dengan musik yang tidak ditandai Facebook sebagai cerita foto. Di cerita video, yang disimpan adalah gambar sampulnya. Mati secara bawaan, karena belum dicoba di akun sungguhan.
 Hides ads in Reels, starting with the next batch Facebook loads. Banner ads, mid-video ads and other ads added by the app stay blocked even while paused.	Menyembunyikan iklan di Reels, mulai dari kumpulan berikutnya yang dimuat Facebook. Iklan banner, iklan di tengah video, dan iklan lain yang ditambahkan aplikasi tetap diblokir meski dijeda.
 AMOLED black theme	Tema hitam AMOLED
 Appearance	Tampilan
-Audience Network off	Audience Network nonaktif
 Back	Kembali
-Ads aren't downloaded in advance	Iklan tidak diunduh lebih dulu
 Cancel	Batal
 Cancel saving this photo	Batalkan penyimpanan foto ini
 Cancel saving this video	Batalkan penyimpanan video ini
@@ -115,7 +110,7 @@ The top bar with search and Messenger stays put while you scroll down, instead o
 # context: switch title under Appearance, after Keep the top bar on screen; a big screen is a tablet or the inner screen of a folding phone, and the phone layout is the one Facebook shows on a normal phone
 Phone layout on big screens	Tata letak ponsel di layar besar
 # context: description of that switch; on a big screen Facebook keeps the tab bar at the top in a wider layout, so the tab bar switches above it do nothing there
-A tablet or an unfolded phone gets the layout Facebook uses on a phone, so the tab bar switches above work on the big screen too. Facebook's wider big screen layout goes away. Untested on a big screen, so it starts off. Restart Facebook to see the change.	Tablet atau ponsel lipat yang terbuka mendapat tata letak yang dipakai Facebook di ponsel, jadi pengaturan bilah tab di atas juga berfungsi di layar besar. Tata letak layar besar Facebook yang lebih lebar hilang. Belum diuji di layar besar, jadi awalnya mati. Mulai ulang Facebook untuk melihat perubahannya.
+A tablet or an unfolded phone gets the layout Facebook uses on a phone, so the tab bar switches above work on the big screen too. Facebook's wider big screen layout goes away. Off by default, since it hasn't been tried on a big screen yet. Restart Facebook to see the change.	Tablet atau ponsel lipat yang terbuka mendapat tata letak yang dipakai Facebook di ponsel, jadi pengaturan bilah tab di atas juga berfungsi di layar besar. Tata letak layar besar Facebook yang lebih lebar hilang. Mati secara bawaan, karena belum dicoba di layar besar. Mulai ulang Facebook untuk melihat perubahannya.
 # context: switch title under Appearance, after Phone layout on big screens; it makes Facebook's top bar (search and Messenger) and its tab bar partly transparent
 See-through bars	Bilah tembus pandang
 # context: description of that switch; the feed is the list of posts on Home, and blurred means frosted like glass
@@ -175,7 +170,7 @@ Hides paid ads in the feed. They're removed before they appear, so no gap is lef
 Pause Hushfacebook	Jeda Hushfacebook
 Hides posts Facebook labels as promotions rather than ads.	Menyembunyikan postingan yang oleh Facebook dikelompokkan sebagai promosi, bukan iklan.
 Hides posts Facebook adds from people and Pages you don't follow and groups you haven't joined.	Menyembunyikan postingan yang ditambahkan Facebook dari orang dan Halaman yang tidak kamu ikuti serta grup yang belum kamu ikuti.
-Hides posts that Facebook's own detection marks as made with AI. Posts only their creator labeled stay. Untested on a real feed, so it starts off.	Menyembunyikan postingan yang oleh deteksi Facebook ditandai sebagai buatan AI. Postingan yang hanya ditandai pembuatnya tetap ada. Belum diuji di feed sungguhan, jadi awalnya mati.
+Hides posts that Facebook's own detection marks as made with AI. Posts only their creator labeled stay. Off by default, since it hasn't been tried on a real feed yet.	Menyembunyikan postingan yang oleh deteksi Facebook ditandai sebagai buatan AI. Postingan yang hanya ditandai pembuatnya tetap ada. Mati secara bawaan, karena belum dicoba di feed sungguhan.
 On a patched Facebook, profiles, photos, posts and some Settings pages wouldn't open. This fixes that.	Di Facebook yang sudah dipatch, profil, foto, postingan, dan beberapa halaman Pengaturan tidak akan terbuka. Ini memperbaikinya.
 Profiles, photos and posts won't open	Profil, foto, dan postingan tidak akan terbuka
 Patch again with %1$s selected. A patched Facebook needs it to open profiles, photos, posts and some of Facebook's Settings pages.	Patch ulang dengan %1$s dipilih. Facebook yang sudah dipatch memerlukannya untuk membuka profil, foto, postingan, dan beberapa halaman Pengaturan Facebook.
@@ -256,17 +251,9 @@ That settings file holds a value Hushfacebook can't read. Nothing was changed.	F
 The word lists in that file are longer than the two lists have room for. Nothing was changed.	Daftar kata dalam file itu lebih panjang daripada ruang yang dimiliki kedua daftar. Tidak ada yang diubah.
 That settings file is damaged or only partly downloaded. Nothing was changed.	File pengaturan itu rusak atau hanya terunduh sebagian. Tidak ada yang diubah.
 That settings file was written by a newer Hushfacebook than this one. Nothing was changed.	File pengaturan itu dibuat oleh versi Hushfacebook yang lebih baru daripada versi ini. Tidak ada yang diubah.
-the Audience Network block	pemblokir Audience Network
-the black background in dark mode	latar belakang hitam dalam mode gelap
-the block on downloading ads in the background	pemblokir unduhan iklan di latar belakang
-the block on reports of ad screenshots and app installs	pemblokir laporan tangkapan layar iklan dan aplikasi yang dipasang
 The diagnostic report couldn't be saved yet. Try again in a moment.	Laporan diagnostik belum dapat disimpan. Coba lagi dalam beberapa saat.
 The diagnostic report couldn't be saved. Try again.	Laporan diagnostik tidak dapat disimpan. Coba lagi.
 The file %1$s couldn't be removed. Delete it from %2$s to turn Hushfacebook back on.	File %1$s tidak dapat dihapus. Hapus file itu dari %2$s untuk mengaktifkan Hushfacebook lagi.
-the part of the Reels ad blocking built in when you patched	bagian pemblokiran iklan Reels yang dipasang saat kamu mem-patch
-the re-signed build fix	perbaikan build yang ditandatangani ulang
-the start-up fix for x86 devices	perbaikan saat mulai untuk perangkat x86
-the recolored dark mode	mode gelap yang diwarnai ulang
 Hides friend suggestions between posts and on your own profile.	Menyembunyikan saran teman di antara postingan dan di profilmu sendiri.
 Hides the row of stories at the top of the feed, including Create story.	Menyembunyikan baris cerita di bagian atas feed, termasuk Buat cerita.
 Hides rows of reels between posts, and the reels Facebook adds where your feed ends.	Menyembunyikan baris reel di antara postingan, dan reel yang ditambahkan Facebook di akhir feed kamu.
@@ -304,7 +291,7 @@ The Follow button next to the reel's author. You can still follow them from thei
 Hide comment and reaction previews	Sembunyikan pratinjau komentar dan reaksi
 The comment Facebook previews under a reel and the bubbles of friends who reacted. Open the comments to see them all.	Komentar yang ditampilkan Facebook sebagai pratinjau di bawah reel, dan gelembung teman yang memberi reaksi. Buka komentar untuk melihat semuanya.
 Hide Threads cards between reels	Sembunyikan kartu Threads di antara reel
-Hides the "Threads you might like" card between reels. Untested on a real account, so it starts off.	Menyembunyikan kartu “Threads yang mungkin kamu suka” di antara reel. Belum diuji di akun sungguhan, jadi awalnya mati.
+Hides the "Threads you might like" card between reels. Off by default, since it hasn't been tried on a real account yet.	Menyembunyikan kartu “Threads yang mungkin kamu suka” di antara reel. Mati secara bawaan, karena belum dicoba di akun sungguhan.
 Download quality	Kualitas unduhan
 Best	Terbaik
 Smallest	Terkecil
@@ -332,7 +319,7 @@ Pause, backup and diagnostics	Jeda, cadangan, dan diagnostik
 Updates	Pembaruan
 Stop update prompts	Hentikan permintaan pembaruan
 Stops update nagging through Meta App Manager and hides chat promotions for older versions. A patched Facebook can't use Meta's updates anyway.	Menghentikan desakan pembaruan lewat Meta App Manager dan menyembunyikan promosi obrolan untuk versi lama. Facebook yang sudah dipatch tidak bisa memakai pembaruan Meta.
-Hides reels and Watch videos that Facebook marks as made with AI. Ones only their creator labeled stay. Untested on a real account, so it starts off.	Menyembunyikan reel dan video Watch yang ditandai Facebook sebagai buatan AI. Yang hanya ditandai pembuatnya tetap ada. Belum diuji di akun sungguhan, jadi awalnya mati.
+Hides reels and Watch videos that Facebook marks as made with AI. Ones only their creator labeled stay. Off by default, since it hasn't been tried on a real account yet.	Menyembunyikan reel dan video Watch yang ditandai Facebook sebagai buatan AI. Yang hanya ditandai pembuatnya tetap ada. Mati secara bawaan, karena belum dicoba di akun sungguhan.
 Don't send reel watch history	Jangan kirim riwayat tontonan reel
 Hold back analytics uploads	Tahan unggahan analitik
 Stops Facebook sending usage statistics in the background and running its on-phone learning tasks. Restart Facebook to see the change.	Facebook berhenti mengirim statistik penggunaan di latar belakang dan menjalankan tugas pembelajarannya di ponsel. Mulai ulang Facebook untuk melihat perubahannya.
@@ -355,9 +342,7 @@ Hide read receipts	Sembunyikan tanda dibaca
 People you chat with in Facebook's own chats can't see that you've read their messages. The chat can stay unread on this phone.	Orang yang chat denganmu di chat Facebook sendiri tidak bisa melihat bahwa kamu sudah membaca pesan mereka. Chat bisa tetap belum dibaca di ponsel ini.
 Facebook can't tell when you take a screenshot or record your screen, so it can't react.	Facebook tidak tahu saat kamu mengambil tangkapan layar atau merekam layar, jadi tidak bisa bereaksi.
 Stops sending Facebook your list of watched reels. It uses the list to rank your feed, so reels you've watched may come back.	Berhenti mengirim daftar reel yang sudah kamu tonton ke Facebook. Facebook memakainya untuk menyusun feed kamu, jadi reel yang sudah ditonton bisa muncul lagi.
-the new names for shared permissions	nama baru untuk izin bersama
 # context: what stays in while Hushfacebook is paused, shown before the patch's name in brackets; the patch raises the app's version number so Google Play never offers an update
-the version number Google Play sees	nomor versi yang dilihat Google Play
 Meta's apps can install beside this one	Aplikasi Meta bisa dipasang berdampingan
 Messenger, Facebook Lite, Business Suite and Workplace can install next to this Facebook. Their shared permissions no longer clash.	Messenger, Facebook Lite, Business Suite, dan Workplace bisa dipasang berdampingan dengan Facebook ini. Izin yang mereka bagi tidak lagi bentrok.
 # context: settings section heading for the Open on a chosen tab rows
@@ -511,7 +496,6 @@ Hide sponsored profile posts	Sembunyikan postingan bersponsor di profil
 # context: summary of that switch; Page is Facebook's name for a business or public figure's page
 Hides ads between posts on someone's profile or a Page. Their own posts stay.	Menyembunyikan iklan di antara postingan pada profil seseorang atau sebuah Halaman. Postingan mereka sendiri tetap ada.
 # context: what stays in while Hushfacebook is paused, followed by the patch name in brackets; the row in Facebook's own Menu that opens Hushfacebook settings
-the settings row in Facebook's Menu	baris pengaturan di Menu Facebook
 # context: a short message when the Hushfacebook row in Facebook's Menu couldn't open the settings
 Hushfacebook settings can't open here. Long-press the Facebook logo instead.	Pengaturan Hushfacebook tidak bisa dibuka di sini. Tekan lama logo Facebook sebagai gantinya.
 # context: switch title under News feed; the row of groups Facebook suggests joining, shown between posts
@@ -674,9 +658,9 @@ Also hide posts labeled as AI	Sembunyikan juga postingan berlabel AI
 Hide Meta AI in the feed	Sembunyikan Meta AI di feed
 Hides Meta AI cards between posts and cards promoting the Vibes app. People's posts stay, whatever they say about AI.	Menyembunyikan kartu Meta AI di antara postingan dan kartu yang mempromosikan aplikasi Vibes. Postingan orang tetap ada, apa pun yang mereka katakan tentang AI.
 Hide AI character posts	Sembunyikan postingan karakter AI
-Hides posts featuring Meta's AI characters, the chatbots people make with Meta AI Studio. Untested on a real feed, so it starts off.	Menyembunyikan postingan yang menampilkan karakter AI Meta, chatbot yang dibuat orang dengan Meta AI Studio. Belum diuji di feed sungguhan, jadi awalnya mati.
+Hides posts featuring Meta's AI characters, the chatbots people make with Meta AI Studio. Off by default, since it hasn't been tried on a real feed yet.	Menyembunyikan postingan yang menampilkan karakter AI Meta, chatbot yang dibuat orang dengan Meta AI Studio. Mati secara bawaan, karena belum dicoba di feed sungguhan.
 # context: summary of that switch; the AI label is the one Facebook shows next to the poster's name on such posts
-Also hides posts their creator labeled as made with AI, not just the ones Facebook detects itself. Untested on a real feed, so it starts off.	Juga menyembunyikan postingan yang ditandai pembuatnya sebagai buatan AI, bukan hanya yang dideteksi Facebook sendiri. Belum diuji di feed sungguhan, jadi awalnya mati.
+Also hides posts their creator labeled as made with AI, not just the ones Facebook detects itself. Off by default, since it hasn't been tried on a real feed yet.	Juga menyembunyikan postingan yang ditandai pembuatnya sebagai buatan AI, bukan hanya yang dideteksi Facebook sendiri. Mati secara bawaan, karena belum dicoba di feed sungguhan.
 Return to regular Facebook	Kembali ke Facebook biasa
 Restore the normal tabs at the next restart. Your other settings stay saved.	Pulihkan tab biasa saat aplikasi dimulai ulang. Setelan lainnya tetap tersimpan.
 Marketplace only and Events only are off. Restart Facebook to restore its normal tabs.	Mode Marketplace dan mode Acara nonaktif. Mulai ulang Facebook untuk memulihkan tab biasa.
@@ -1062,15 +1046,15 @@ Hides the "What's on your mind?" row at the top of Home. The create button in th
 # context: switch title under Reels and Watch; Clean mode is Facebook's own three-dot menu item on a reel or video that hides the buttons down the side, so use Facebook's name for it in this language (#75)
 Always use Clean mode	Selalu gunakan mode bersih
 # context: summary of that switch; "the usual way" means Facebook's own way out of Clean mode
-Opens reels and videos in Facebook's Clean mode, which hides the buttons down the side. You can still leave Clean mode as usual. Untested on a real account, so it starts off.	Membuka reel dan video dalam mode bersih Facebook, yang menyembunyikan tombol di sisi. Kamu tetap bisa keluar dari mode bersih seperti biasa. Belum diuji di akun sungguhan, jadi awalnya mati.
+Opens reels and videos in Facebook's Clean mode, which hides the buttons down the side. You can still leave Clean mode as usual. Off by default, since it hasn't been tried on a real account yet.	Membuka reel dan video dalam mode bersih Facebook, yang menyembunyikan tombol di sisi. Kamu tetap bisa keluar dari mode bersih seperti biasa. Mati secara bawaan, karena belum dicoba di akun sungguhan.
 # context: switch title under Reels and Watch, part of Clean up Reels; each reel plays to its end one time and stops there instead of starting over
 Play reels once	Putar reel sekali saja
 # context: summary of that switch; "last frame" is the final picture of the video, which stays on screen
-A reel stops on its last frame instead of starting over. Tap it to watch again, or swipe to the next one. Feed videos and stories aren't changed. Untested on a real account, so it starts off.	Reel berhenti di bingkai terakhirnya alih-alih diputar ulang dari awal. Ketuk untuk menonton lagi, atau geser ke reel berikutnya. Video di feed dan cerita tidak berubah. Belum diuji di akun sungguhan, jadi awalnya mati.
+A reel stops on its last frame instead of starting over. Tap it to watch again, or swipe to the next one. Feed videos and stories aren't changed. Off by default, since it hasn't been tried on a real account yet.	Reel berhenti di bingkai terakhirnya alih-alih diputar ulang dari awal. Ketuk untuk menonton lagi, atau geser ke reel berikutnya. Video di feed dan cerita tidak berubah. Mati secara bawaan, karena belum dicoba di akun sungguhan.
 # context: switch title under Reels and Watch, part of Clean up Reels; reels and videos play in the language they were recorded in instead of an audio track Facebook translated
 Keep the original audio	Pertahankan audio asli
 # context: summary of that switch; "dubbed" means the spoken audio was replaced by a translated voice; Meta AI is the company's AI assistant, keep the name
-Reels and videos play with the sound they were made with, not a version Facebook dubbed into your language with Meta AI. Untested on a real account, so it starts off.	Reel dan video diputar dengan suara aslinya, bukan versi yang di-dubbing Facebook ke bahasamu dengan Meta AI. Belum diuji di akun sungguhan, jadi awalnya mati.
+Reels and videos play with the sound they were made with, not a version Facebook dubbed into your language with Meta AI. Off by default, since it hasn't been tried on a real account yet.	Reel dan video diputar dengan suara aslinya, bukan versi yang di-dubbing Facebook ke bahasamu dengan Meta AI. Mati secara bawaan, karena belum dicoba di akun sungguhan.
 # context: settings section title on the App page, above the switches of Hide Meta upsells; Meta is the company
 Meta's other products	Produk Meta lainnya
 # context: switch title; Edits is Meta's video editing app, keep its name
@@ -1180,7 +1164,7 @@ Posts and reel captions stay in the language they were written in. Facebook's Se
 # context: switch title under Reels and Watch, below Keep the reel speed; it keeps a playback speed picked on a feed or Watch video for the next videos
 Keep the video speed	Pertahankan kecepatan video
 # context: description of that switch; the gear menu is the settings button on a video's player, where Playback speed is picked
-The speed you pick in a feed or Watch video's menu carries over to the next videos. Reels keep their own speed. Untested on a real account, so it starts off.	Kecepatan yang kamu pilih di menu video feed atau Watch berlaku juga untuk video berikutnya. Reel punya kecepatannya sendiri. Belum diuji di akun sungguhan, jadi awalnya mati.
+The speed you pick in a feed or Watch video's menu carries over to the next videos. Reels keep their own speed. Off by default, since it hasn't been tried on a real account yet.	Kecepatan yang kamu pilih di menu video feed atau Watch berlaku juga untuk video berikutnya. Reel punya kecepatannya sendiri. Mati secara bawaan, karena belum dicoba di akun sungguhan.
 # context: switch title under Downloads, below Download feed and Watch videos; it offers to download a reel or video whose link the user copied
 Offer to download copied links	Tawarkan unduhan untuk tautan yang disalin
 # context: description of that switch; Download feed and Watch videos is the name of the switch above it
@@ -1228,7 +1212,7 @@ Hides short posts shown as big text on a colored background.	Menyembunyikan post
 # context: switch title under News feed: hides posts that share someone else's post, the ones Facebook heads "shared a post"; use Facebook's own word for a shared post in this language
 Hide reposts	Sembunyikan postingan yang dibagikan ulang
 # context: summary of the Hide reposts switch; a caption is what the sharer wrote above the shared post
-Hides posts that share another post, with or without a caption. Original posts stay. Untested on a real feed, so it starts off.	Menyembunyikan postingan yang membagikan postingan lain, dengan atau tanpa keterangan. Postingan asli tetap ada. Belum diuji di feed sungguhan, jadi awalnya mati.
+Hides posts that share another post, with or without a caption. Original posts stay. Off by default, since it hasn't been tried on a real feed yet.	Menyembunyikan postingan yang membagikan postingan lain, dengan atau tanpa keterangan. Postingan asli tetap ada. Mati secara bawaan, karena belum dicoba di feed sungguhan.
 # context: switch title in Privacy: asks for the phone's own screen lock before Facebook shows
 Lock Facebook	Kunci Facebook
 Save crashes to Downloads	Simpan crash ke Download
@@ -1447,7 +1431,6 @@ Ads downloaded in advance	Iklan yang diunduh lebih dulu
 # context: a line of that list: Facebook's reports used to target ads
 Ad tracking	Pelacakan iklan
 # context: a line of that list: ads Facebook serves inside other apps on the phone (Audience Network)
-Facebook's ads in other apps	Iklan Facebook di aplikasi lain
 # context: added to that line's summary: what blocking it does to those other apps; rewarded ads give a reward for watching
 Those apps show their own ads or none, and their rewarded ads may fail.	Aplikasi itu menampilkan iklannya sendiri atau tidak sama sekali, dan iklan berhadiahnya bisa gagal.
 # context: a line of that list: the usage statistics Facebook uploads in the background
@@ -1574,3 +1557,14 @@ Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's Mor
 Upload Stories in HD	Unggah cerita dalam HD
 # context: summary of that switch; standard is the normal upload quality, high the better one
 Videos you post to your Story ask Facebook for its high upload quality instead of standard. Applies to the next Story you post.	Video yang Anda posting ke cerita Anda meminta kualitas unggahan tinggi dari Facebook, bukan standar. Berlaku untuk cerita berikutnya yang Anda posting.
+No ads downloaded in advance	Tanpa iklan yang diunduh lebih dulu
+No ad tracking	Tanpa pelacakan iklan
+No Facebook ads in other apps	Tanpa iklan Facebook di aplikasi lain
+Facebook ads in other apps	Iklan Facebook di aplikasi lain
+Part of the Reels ad blocking	Sebagian pemblokiran iklan di Reels
+Start-up fix for x86 phones	Perbaikan saat mulai untuk ponsel x86
+Version number Google Play sees	Nomor versi yang dilihat Google Play
+Hushfacebook in the Menu	Hushfacebook di Menu
+Set when you patched, so Pause can't turn it off:\n%1$s\nTo rule it out, patch again and leave out its patch.	Diatur saat menambal, jadi Jeda tidak dapat mematikannya:\n%1$s\nUntuk memastikan bukan ini penyebabnya, tambal ulang tanpa tambalannya.
+Set when you patched, so Pause can't turn these off:\n%1$s\nTo rule one out, patch again and leave out its patch.	Diatur saat menambal, jadi Jeda tidak dapat mematikannya:\n%1$s\nUntuk memastikan salah satunya bukan penyebabnya, tambal ulang tanpa tambalannya.
+For when Marketplace only or Events only is on. Neither is on now.	Untuk saat Hanya Marketplace atau Hanya Acara aktif. Sekarang keduanya tidak aktif.

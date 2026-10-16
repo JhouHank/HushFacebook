@@ -732,7 +732,10 @@ public class SettingsNavigationTest {
     }
 
     private android.widget.Button pageAction() {
-        android.view.ViewGroup frame = list().getChildAt(0).findViewById(android.R.id.widget_frame);
+        // Bound like tap() binds a row: out of touch mode the list keeps its selected row in place,
+        // so a page taller than the viewport can open a row down. A phone has no selection.
+        android.view.ViewGroup frame = list().getAdapter().getView(0, null, list())
+                .findViewById(android.R.id.widget_frame);
         assertEquals(1, frame.getChildCount());
         return (android.widget.Button) frame.getChildAt(0);
     }
@@ -1396,7 +1399,7 @@ public class SettingsNavigationTest {
 
     private static final List<String> ADS_MAP = Arrays.asList("Where ads and tracking are blocked", "Ads in the feed",
             "Ads on profiles", "Ads in Stories", "Ads in Reels", "Ads in search results", "Ads in Marketplace",
-            "Ads in Instant Games", "Ads downloaded in advance", "Ad tracking", "Facebook's ads in other apps",
+            "Ads in Instant Games", "Ads downloaded in advance", "Ad tracking", "Facebook ads in other apps",
             "Usage statistics uploads", "Reel watch history");
 
     /**
@@ -1412,7 +1415,7 @@ public class SettingsNavigationTest {
         assertEquals("Its switch is " + L10n.isolate("Hide sponsored posts") + ", in " + L10n.isolate("News feed") + ".",
                 summaryOf("Ads in the feed"));
         assertEquals("Blocked since you patched. There's no switch for it. Those apps show their own ads or none, and "
-                + "their rewarded ads may fail.", summaryOf("Facebook's ads in other apps"));
+                + "their rewarded ads may fail.", summaryOf("Facebook ads in other apps"));
         assertEquals("Its switch is " + L10n.isolate("Hold back analytics uploads") + ", in " + L10n.isolate("Privacy")
                 + ". Facebook's on-phone learning jobs stop too, and a change applies after Facebook restarts.",
                 summaryOf("Usage statistics uploads"));
@@ -1466,7 +1469,7 @@ public class SettingsNavigationTest {
         assertEquals("Blocked since you patched. There's no switch for it.", summaryOf("Ads downloaded in advance"));
         assertEquals("Not in this build. To block this, choose the " + L10n.isolate("Disable Audience Network")
                 + " patch in Morphe Manager and patch again. Those apps show their own ads or none, and their rewarded "
-                + "ads may fail.", summaryOf("Facebook's ads in other apps"));
+                + "ads may fail.", summaryOf("Facebook ads in other apps"));
         assertEquals("Not in this build. To block this, choose the " + L10n.isolate("Hold back analytics uploads")
                 + " patch in Morphe Manager and patch again. Facebook's on-phone learning jobs stop too, and a change "
                 + "applies after Facebook restarts.", summaryOf("Usage statistics uploads"));

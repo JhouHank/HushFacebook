@@ -10,25 +10,20 @@ Hides "Pages you may like" cards, cards promoting Facebook's own features, and s
 %1$s so far	Đã được %1$s
 %1$s a second	%1$s mỗi giây
 %1$s elapsed	Đã trôi qua %1$s
-%1$s. It was set when you patched, so Pause can't turn it off. To rule it out, patch again and leave out that patch.	%1$s. Mục này được đặt khi bạn vá, nên Tạm dừng không tắt được. Để loại trừ mục này, hãy vá lại và bỏ bản vá đó ra.
-%1$s. They were set when you patched, so Pause can't turn them off. To rule one out, patch again and leave out the patch in brackets after it.	%1$s. Các mục này được đặt khi bạn vá, nên Tạm dừng không tắt được. Để loại trừ một mục, hãy vá lại và bỏ bản vá ghi trong ngoặc sau mục đó.
 Add a Download button to reels, using your download quality. Off or paused, Facebook's own buttons return.	Thêm nút Tải xuống vào reel, dùng chất lượng tải xuống của bạn. Khi tắt hoặc tạm dừng, các nút của Facebook sẽ trở lại.
 A file named %1$s in %2$s paused Hushfacebook.	Một tệp tên %1$s trong %2$s đã tạm dừng Hushfacebook.
 About	Giới thiệu
 Hides ad cards between people's stories.	Ẩn thẻ quảng cáo giữa tin của mọi người.
-Ad tracking blocked	Đã chặn theo dõi quảng cáo
 Add Download to phone to feed and Watch video menus. Uses the quality below. Off or paused, Facebook's menu returns.	Thêm Tải về điện thoại vào menu video trên bảng tin và Watch. Dùng chất lượng bên dưới. Khi tắt hoặc tạm dừng, menu của Facebook sẽ trở lại.
 Add Save to every story menu, using your download quality. Off or paused, Facebook only saves your own stories.	Thêm Lưu vào menu của mọi tin, dùng chất lượng tải xuống của bạn. Khi tắt hoặc tạm dừng, Facebook chỉ cho lưu tin của chính bạn.
 # context: switch title on the Stories page, under Save any story; offers the Save photo menu item on more stories than before
 Save photo on more stories	Lưu ảnh trên nhiều tin hơn
 # context: summary of that switch; "Save photo" is the menu item's name, keep it as translated for that item; the cover picture is the still image shown before a video plays
-Adds Save photo to any story that carries a picture beside its video, like a photo story with music that Facebook didn't mark as one. On a video story it saves the cover picture. Untested on a real account, so it starts off.	Thêm Lưu ảnh vào mọi tin có kèm ảnh bên cạnh video, như tin ảnh có nhạc mà Facebook không đánh dấu là tin ảnh. Với tin video, mục này lưu ảnh bìa. Chưa được thử trên tài khoản thật nên mặc định tắt.
+Adds Save photo to any story that carries a picture beside its video, like a photo story with music that Facebook didn't mark as one. On a video story it saves the cover picture. Off by default, since it hasn't been tried on a real account yet.	Thêm Lưu ảnh vào mọi tin có kèm ảnh bên cạnh video, như tin ảnh có nhạc mà Facebook không đánh dấu là tin ảnh. Với tin video, mục này lưu ảnh bìa. Mặc định tắt vì chưa được thử trên tài khoản thật.
 Hides ads in Reels, starting with the next batch Facebook loads. Banner ads, mid-video ads and other ads added by the app stay blocked even while paused.	Ẩn quảng cáo trong Reels, bắt đầu từ đợt tiếp theo Facebook tải. Quảng cáo biểu ngữ, quảng cáo giữa video và các quảng cáo khác do ứng dụng chèn vẫn bị chặn kể cả khi tạm dừng.
 AMOLED black theme	Giao diện đen AMOLED
 Appearance	Hiển thị
-Audience Network off	Đã tắt Audience Network
 Back	Quay lại
-Ads aren't downloaded in advance	Không tải trước quảng cáo
 Cancel	Hủy
 Cancel saving this photo	Hủy lưu ảnh này
 Cancel saving this video	Hủy lưu video này
@@ -115,7 +110,7 @@ The top bar with search and Messenger stays put while you scroll down, instead o
 # context: switch title under Appearance, after Keep the top bar on screen; a big screen is a tablet or the inner screen of a folding phone, and the phone layout is the one Facebook shows on a normal phone
 Phone layout on big screens	Bố cục điện thoại trên màn hình lớn
 # context: description of that switch; on a big screen Facebook keeps the tab bar at the top in a wider layout, so the tab bar switches above it do nothing there
-A tablet or an unfolded phone gets the layout Facebook uses on a phone, so the tab bar switches above work on the big screen too. Facebook's wider big screen layout goes away. Untested on a big screen, so it starts off. Restart Facebook to see the change.	Máy tính bảng hoặc điện thoại gập khi mở ra sẽ dùng bố cục Facebook dành cho điện thoại, nên các công tắc thanh tab ở trên cũng hoạt động trên màn hình lớn. Bố cục rộng hơn dành cho màn hình lớn của Facebook sẽ mất đi. Chưa được thử trên màn hình lớn nên mặc định tắt. Khởi động lại Facebook để thấy thay đổi.
+A tablet or an unfolded phone gets the layout Facebook uses on a phone, so the tab bar switches above work on the big screen too. Facebook's wider big screen layout goes away. Off by default, since it hasn't been tried on a big screen yet. Restart Facebook to see the change.	Máy tính bảng hoặc điện thoại gập khi mở ra sẽ dùng bố cục Facebook dành cho điện thoại, nên các công tắc thanh tab ở trên cũng hoạt động trên màn hình lớn. Bố cục rộng hơn dành cho màn hình lớn của Facebook sẽ mất đi. Mặc định tắt vì chưa được thử trên màn hình lớn. Khởi động lại Facebook để thấy thay đổi.
 # context: switch title under Appearance, after Phone layout on big screens; it makes Facebook's top bar (search and Messenger) and its tab bar partly transparent
 See-through bars	Thanh trong suốt
 # context: description of that switch; the feed is the list of posts on Home, and blurred means frosted like glass
@@ -175,7 +170,7 @@ Hides paid ads in the feed. They're removed before they appear, so no gap is lef
 Pause Hushfacebook	Tạm dừng Hushfacebook
 Hides posts Facebook labels as promotions rather than ads.	Ẩn bài viết mà Facebook gắn nhãn là quảng bá thay vì quảng cáo.
 Hides posts Facebook adds from people and Pages you don't follow and groups you haven't joined.	Ẩn bài viết Facebook chèn vào từ những người và Trang bạn không theo dõi, cũng như nhóm bạn chưa tham gia.
-Hides posts that Facebook's own detection marks as made with AI. Posts only their creator labeled stay. Untested on a real feed, so it starts off.	Ẩn bài viết mà hệ thống nhận diện của Facebook đánh dấu là tạo bằng AI. Bài viết chỉ được người tạo gắn nhãn vẫn giữ lại. Chưa được thử trên bảng tin thật nên mặc định tắt.
+Hides posts that Facebook's own detection marks as made with AI. Posts only their creator labeled stay. Off by default, since it hasn't been tried on a real feed yet.	Ẩn bài viết mà hệ thống nhận diện của Facebook đánh dấu là tạo bằng AI. Bài viết chỉ được người tạo gắn nhãn vẫn giữ lại. Mặc định tắt vì chưa được thử trên bảng tin thật.
 On a patched Facebook, profiles, photos, posts and some Settings pages wouldn't open. This fixes that.	Trên Facebook đã vá, trang cá nhân, ảnh, bài viết và một số trang Cài đặt sẽ không mở được. Bản vá này khắc phục điều đó.
 Profiles, photos and posts won't open	Trang cá nhân, ảnh và bài viết không mở được
 Patch again with %1$s selected. A patched Facebook needs it to open profiles, photos, posts and some of Facebook's Settings pages.	Hãy vá lại với %1$s được chọn. Facebook đã vá cần bản vá này để mở trang cá nhân, ảnh, bài viết và một số trang Cài đặt của Facebook.
@@ -256,17 +251,9 @@ That settings file holds a value Hushfacebook can't read. Nothing was changed.	T
 The word lists in that file are longer than the two lists have room for. Nothing was changed.	Danh sách từ trong tệp đó dài hơn dung lượng của hai danh sách. Không có gì thay đổi.
 That settings file is damaged or only partly downloaded. Nothing was changed.	Tệp cài đặt đó bị hỏng hoặc chỉ tải xuống được một phần. Không có gì thay đổi.
 That settings file was written by a newer Hushfacebook than this one. Nothing was changed.	Tệp cài đặt đó được ghi bởi một bản Hushfacebook mới hơn bản này. Không có gì thay đổi.
-the Audience Network block	việc chặn Audience Network
-the black background in dark mode	nền đen trong chế độ tối
-the block on downloading ads in the background	việc chặn tải quảng cáo ở chế độ nền
-the block on reports of ad screenshots and app installs	việc chặn báo cáo ảnh chụp màn hình quảng cáo và ứng dụng đã cài
 The diagnostic report couldn't be saved yet. Try again in a moment.	Chưa thể lưu báo cáo chẩn đoán. Hãy thử lại sau giây lát.
 The diagnostic report couldn't be saved. Try again.	Không thể lưu báo cáo chẩn đoán. Hãy thử lại.
 The file %1$s couldn't be removed. Delete it from %2$s to turn Hushfacebook back on.	Không thể xóa tệp %1$s. Hãy xóa tệp khỏi %2$s để bật lại Hushfacebook.
-the part of the Reels ad blocking built in when you patched	phần chặn quảng cáo Reels được tích hợp khi vá
-the re-signed build fix	bản sửa cho bản dựng được ký lại
-the start-up fix for x86 devices	bản sửa lỗi khởi động cho thiết bị x86
-the recolored dark mode	chế độ tối đổi màu
 Hides friend suggestions between posts and on your own profile.	Ẩn gợi ý kết bạn giữa các bài viết và trên trang cá nhân của bạn.
 Hides the row of stories at the top of the feed, including Create story.	Ẩn hàng tin ở đầu bảng tin, kể cả Tạo tin.
 Hides rows of reels between posts, and the reels Facebook adds where your feed ends.	Ẩn các hàng reel giữa các bài viết và các reel Facebook thêm vào cuối bảng tin.
@@ -304,7 +291,7 @@ The Follow button next to the reel's author. You can still follow them from thei
 Hide comment and reaction previews	Ẩn bản xem trước bình luận và cảm xúc
 The comment Facebook previews under a reel and the bubbles of friends who reacted. Open the comments to see them all.	Bình luận Facebook xem trước dưới reel và bong bóng của bạn bè đã bày tỏ cảm xúc. Mở phần bình luận để xem tất cả.
 Hide Threads cards between reels	Ẩn thẻ Threads giữa các reel
-Hides the "Threads you might like" card between reels. Untested on a real account, so it starts off.	Ẩn thẻ "Threads bạn có thể thích" giữa các reel. Chưa được thử trên tài khoản thật nên mặc định tắt.
+Hides the "Threads you might like" card between reels. Off by default, since it hasn't been tried on a real account yet.	Ẩn thẻ "Threads bạn có thể thích" giữa các reel. Mặc định tắt vì chưa được thử trên tài khoản thật.
 Download quality	Chất lượng tải xuống
 Best	Tốt nhất
 Smallest	Nhỏ nhất
@@ -332,7 +319,7 @@ Pause, backup and diagnostics	Tạm dừng, sao lưu và chẩn đoán
 Updates	Cập nhật
 Stop update prompts	Dừng lời nhắc cập nhật
 Stops update nagging through Meta App Manager and hides chat promotions for older versions. A patched Facebook can't use Meta's updates anyway.	Ngừng nhắc cập nhật liên tục qua Meta App Manager và ẩn quảng bá trong chat dành cho phiên bản cũ. Dù sao Facebook đã vá cũng không dùng được bản cập nhật của Meta.
-Hides reels and Watch videos that Facebook marks as made with AI. Ones only their creator labeled stay. Untested on a real account, so it starts off.	Ẩn reel và video Watch mà Facebook đánh dấu là tạo bằng AI. Những video chỉ được người tạo gắn nhãn vẫn giữ lại. Chưa được thử trên tài khoản thật nên mặc định tắt.
+Hides reels and Watch videos that Facebook marks as made with AI. Ones only their creator labeled stay. Off by default, since it hasn't been tried on a real account yet.	Ẩn reel và video Watch mà Facebook đánh dấu là tạo bằng AI. Những video chỉ được người tạo gắn nhãn vẫn giữ lại. Mặc định tắt vì chưa được thử trên tài khoản thật.
 Don't send reel watch history	Không gửi lịch sử xem reel
 Hold back analytics uploads	Chặn tải lên dữ liệu phân tích
 Stops Facebook sending usage statistics in the background and running its on-phone learning tasks. Restart Facebook to see the change.	Ngăn Facebook gửi thống kê sử dụng ở chế độ nền và chạy các tác vụ học máy trên điện thoại. Khởi động lại Facebook để thấy thay đổi.
@@ -355,9 +342,7 @@ Hide read receipts	Ẩn trạng thái đã xem
 People you chat with in Facebook's own chats can't see that you've read their messages. The chat can stay unread on this phone.	Người bạn chat cùng trong phần chat của Facebook không thấy bạn đã đọc tin nhắn của họ. Đoạn chat có thể vẫn hiện là chưa đọc trên điện thoại này.
 Facebook can't tell when you take a screenshot or record your screen, so it can't react.	Facebook không biết khi bạn chụp hoặc quay màn hình nên không thể phản ứng.
 Stops sending Facebook your list of watched reels. It uses the list to rank your feed, so reels you've watched may come back.	Ngừng gửi cho Facebook danh sách reel bạn đã xem. Facebook dùng danh sách này để sắp xếp bảng tin, nên reel bạn đã xem có thể xuất hiện lại.
-the new names for shared permissions	tên mới cho các quyền dùng chung
 # context: what stays in while Hushfacebook is paused, shown before the patch's name in brackets; the patch raises the app's version number so Google Play never offers an update
-the version number Google Play sees	số phiên bản mà Google Play thấy
 Meta's apps can install beside this one	Ứng dụng của Meta có thể cài cùng ứng dụng này
 Messenger, Facebook Lite, Business Suite and Workplace can install next to this Facebook. Their shared permissions no longer clash.	Messenger, Facebook Lite, Business Suite và Workplace có thể cài cạnh Facebook này. Các quyền dùng chung không còn xung đột.
 # context: settings section heading for the Open on a chosen tab rows
@@ -511,7 +496,6 @@ Hide sponsored profile posts	Ẩn bài viết được tài trợ trên trang c�
 # context: summary of that switch; Page is Facebook's name for a business or public figure's page
 Hides ads between posts on someone's profile or a Page. Their own posts stay.	Ẩn quảng cáo giữa các bài viết trên trang cá nhân của ai đó hoặc trên Trang. Bài viết của chính họ vẫn giữ nguyên.
 # context: what stays in while Hushfacebook is paused, followed by the patch name in brackets; the row in Facebook's own Menu that opens Hushfacebook settings
-the settings row in Facebook's Menu	dòng cài đặt trong Menu của Facebook
 # context: a short message when the Hushfacebook row in Facebook's Menu couldn't open the settings
 Hushfacebook settings can't open here. Long-press the Facebook logo instead.	Không thể mở cài đặt Hushfacebook ở đây. Hãy nhấn giữ logo Facebook.
 # context: switch title under News feed; the row of groups Facebook suggests joining, shown between posts
@@ -674,9 +658,9 @@ Also hide posts labeled as AI	Ẩn cả bài viết được gắn nhãn AI
 Hide Meta AI in the feed	Ẩn Meta AI trên bảng tin
 Hides Meta AI cards between posts and cards promoting the Vibes app. People's posts stay, whatever they say about AI.	Ẩn thẻ Meta AI giữa các bài viết và thẻ quảng bá ứng dụng Vibes. Bài viết của mọi người vẫn giữ nguyên, dù họ nói gì về AI.
 Hide AI character posts	Ẩn bài viết của nhân vật AI
-Hides posts featuring Meta's AI characters, the chatbots people make with Meta AI Studio. Untested on a real feed, so it starts off.	Ẩn bài viết có nhân vật AI của Meta, tức các chatbot mọi người tạo bằng Meta AI Studio. Chưa được thử trên bảng tin thật nên mặc định tắt.
+Hides posts featuring Meta's AI characters, the chatbots people make with Meta AI Studio. Off by default, since it hasn't been tried on a real feed yet.	Ẩn bài viết có nhân vật AI của Meta, tức các chatbot mọi người tạo bằng Meta AI Studio. Mặc định tắt vì chưa được thử trên bảng tin thật.
 # context: summary of that switch; the AI label is the one Facebook shows next to the poster's name on such posts
-Also hides posts their creator labeled as made with AI, not just the ones Facebook detects itself. Untested on a real feed, so it starts off.	Ẩn cả bài viết được người tạo gắn nhãn là tạo bằng AI, không chỉ những bài Facebook tự nhận diện. Chưa được thử trên bảng tin thật nên mặc định tắt.
+Also hides posts their creator labeled as made with AI, not just the ones Facebook detects itself. Off by default, since it hasn't been tried on a real feed yet.	Ẩn cả bài viết được người tạo gắn nhãn là tạo bằng AI, không chỉ những bài Facebook tự nhận diện. Mặc định tắt vì chưa được thử trên bảng tin thật.
 Return to regular Facebook	Quay lại Facebook thông thường
 Restore the normal tabs at the next restart. Your other settings stay saved.	Khôi phục các tab bình thường ở lần khởi động lại tiếp theo. Các cài đặt khác của bạn vẫn được lưu.
 Marketplace only and Events only are off. Restart Facebook to restore its normal tabs.	Chỉ Marketplace và Chỉ Sự kiện đang tắt. Khởi động lại Facebook để khôi phục các tab bình thường.
@@ -1062,15 +1046,15 @@ Hides the "What's on your mind?" row at the top of Home. The create button in th
 # context: switch title under Reels and Watch; Clean mode is Facebook's own three-dot menu item on a reel or video that hides the buttons down the side, so use Facebook's name for it in this language (#75)
 Always use Clean mode	Luôn dùng Chế độ gọn gàng
 # context: summary of that switch; "the usual way" means Facebook's own way out of Clean mode
-Opens reels and videos in Facebook's Clean mode, which hides the buttons down the side. You can still leave Clean mode as usual. Untested on a real account, so it starts off.	Mở reel và video ở Chế độ gọn gàng của Facebook, chế độ ẩn các nút dọc bên cạnh. Bạn vẫn thoát Chế độ gọn gàng như bình thường. Chưa được thử trên tài khoản thật nên mặc định tắt.
+Opens reels and videos in Facebook's Clean mode, which hides the buttons down the side. You can still leave Clean mode as usual. Off by default, since it hasn't been tried on a real account yet.	Mở reel và video ở Chế độ gọn gàng của Facebook, chế độ ẩn các nút dọc bên cạnh. Bạn vẫn thoát Chế độ gọn gàng như bình thường. Mặc định tắt vì chưa được thử trên tài khoản thật.
 # context: switch title under Reels and Watch, part of Clean up Reels; each reel plays to its end one time and stops there instead of starting over
 Play reels once	Chỉ phát reel một lần
 # context: summary of that switch; "last frame" is the final picture of the video, which stays on screen
-A reel stops on its last frame instead of starting over. Tap it to watch again, or swipe to the next one. Feed videos and stories aren't changed. Untested on a real account, so it starts off.	Reel dừng ở khung hình cuối thay vì phát lại từ đầu. Nhấn để xem lại, hoặc vuốt sang reel tiếp theo. Video trên bảng tin và tin không thay đổi. Chưa được thử trên tài khoản thật nên mặc định tắt.
+A reel stops on its last frame instead of starting over. Tap it to watch again, or swipe to the next one. Feed videos and stories aren't changed. Off by default, since it hasn't been tried on a real account yet.	Reel dừng ở khung hình cuối thay vì phát lại từ đầu. Nhấn để xem lại, hoặc vuốt sang reel tiếp theo. Video trên bảng tin và tin không thay đổi. Mặc định tắt vì chưa được thử trên tài khoản thật.
 # context: switch title under Reels and Watch, part of Clean up Reels; reels and videos play in the language they were recorded in instead of an audio track Facebook translated
 Keep the original audio	Giữ âm thanh gốc
 # context: summary of that switch; "dubbed" means the spoken audio was replaced by a translated voice; Meta AI is the company's AI assistant, keep the name
-Reels and videos play with the sound they were made with, not a version Facebook dubbed into your language with Meta AI. Untested on a real account, so it starts off.	Reel và video phát với âm thanh gốc, không phải bản Facebook lồng tiếng sang ngôn ngữ của bạn bằng Meta AI. Chưa được thử trên tài khoản thật nên mặc định tắt.
+Reels and videos play with the sound they were made with, not a version Facebook dubbed into your language with Meta AI. Off by default, since it hasn't been tried on a real account yet.	Reel và video phát với âm thanh gốc, không phải bản Facebook lồng tiếng sang ngôn ngữ của bạn bằng Meta AI. Mặc định tắt vì chưa được thử trên tài khoản thật.
 # context: settings section title on the App page, above the switches of Hide Meta upsells; Meta is the company
 Meta's other products	Sản phẩm khác của Meta
 # context: switch title; Edits is Meta's video editing app, keep its name
@@ -1180,7 +1164,7 @@ Posts and reel captions stay in the language they were written in. Facebook's Se
 # context: switch title under Reels and Watch, below Keep the reel speed; it keeps a playback speed picked on a feed or Watch video for the next videos
 Keep the video speed	Giữ tốc độ video
 # context: description of that switch; the gear menu is the settings button on a video's player, where Playback speed is picked
-The speed you pick in a feed or Watch video's menu carries over to the next videos. Reels keep their own speed. Untested on a real account, so it starts off.	Tốc độ bạn chọn trong menu của video trên bảng tin hoặc Watch được giữ cho các video tiếp theo. Reel giữ tốc độ riêng. Chưa được thử trên tài khoản thật nên mặc định tắt.
+The speed you pick in a feed or Watch video's menu carries over to the next videos. Reels keep their own speed. Off by default, since it hasn't been tried on a real account yet.	Tốc độ bạn chọn trong menu của video trên bảng tin hoặc Watch được giữ cho các video tiếp theo. Reel giữ tốc độ riêng. Mặc định tắt vì chưa được thử trên tài khoản thật.
 # context: switch title under Downloads, below Download feed and Watch videos; it offers to download a reel or video whose link the user copied
 Offer to download copied links	Đề nghị tải xuống liên kết đã sao chép
 # context: description of that switch; Download feed and Watch videos is the name of the switch above it
@@ -1228,7 +1212,7 @@ Hides short posts shown as big text on a colored background.	Ẩn bài viết ng
 # context: switch title under News feed: hides posts that share someone else's post, the ones Facebook heads "shared a post"; use Facebook's own word for a shared post in this language
 Hide reposts	Ẩn bài viết được chia sẻ lại
 # context: summary of the Hide reposts switch; a caption is what the sharer wrote above the shared post
-Hides posts that share another post, with or without a caption. Original posts stay. Untested on a real feed, so it starts off.	Ẩn bài viết chia sẻ lại bài viết khác, dù có lời bình hay không. Bài viết gốc vẫn giữ nguyên. Chưa được thử trên bảng tin thật nên mặc định tắt.
+Hides posts that share another post, with or without a caption. Original posts stay. Off by default, since it hasn't been tried on a real feed yet.	Ẩn bài viết chia sẻ lại bài viết khác, dù có lời bình hay không. Bài viết gốc vẫn giữ nguyên. Mặc định tắt vì chưa được thử trên bảng tin thật.
 # context: switch title in Privacy: asks for the phone's own screen lock before Facebook shows
 Lock Facebook	Khóa Facebook
 Save crashes to Downloads	Lưu sự cố vào thư mục Download
@@ -1447,7 +1431,6 @@ Ads downloaded in advance	Quảng cáo tải trước
 # context: a line of that list: Facebook's reports used to target ads
 Ad tracking	Theo dõi quảng cáo
 # context: a line of that list: ads Facebook serves inside other apps on the phone (Audience Network)
-Facebook's ads in other apps	Quảng cáo của Facebook trong ứng dụng khác
 # context: added to that line's summary: what blocking it does to those other apps; rewarded ads give a reward for watching
 Those apps show their own ads or none, and their rewarded ads may fail.	Các ứng dụng đó sẽ hiện quảng cáo riêng hoặc không có quảng cáo, và quảng cáo có thưởng của chúng có thể lỗi.
 # context: a line of that list: the usage statistics Facebook uploads in the background
@@ -1574,3 +1557,14 @@ Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's Mor
 Upload Stories in HD	Tải tin lên ở chất lượng HD
 # context: summary of that switch; standard is the normal upload quality, high the better one
 Videos you post to your Story ask Facebook for its high upload quality instead of standard. Applies to the next Story you post.	Video bạn đăng lên tin sẽ yêu cầu Facebook dùng chất lượng tải lên cao thay vì tiêu chuẩn. Áp dụng từ tin tiếp theo bạn đăng.
+No ads downloaded in advance	Không có quảng cáo tải trước
+No ad tracking	Không theo dõi quảng cáo
+No Facebook ads in other apps	Không có quảng cáo của Facebook trong ứng dụng khác
+Facebook ads in other apps	Quảng cáo của Facebook trong ứng dụng khác
+Part of the Reels ad blocking	Một phần chặn quảng cáo trong Reels
+Start-up fix for x86 phones	Bản sửa khởi động cho điện thoại x86
+Version number Google Play sees	Số phiên bản mà Google Play thấy
+Hushfacebook in the Menu	Hushfacebook trong Menu
+Set when you patched, so Pause can't turn it off:\n%1$s\nTo rule it out, patch again and leave out its patch.	Được đặt khi bạn vá, nên Tạm dừng không tắt được:\n%1$s\nĐể loại trừ mục này, hãy vá lại và bỏ bản vá của nó.
+Set when you patched, so Pause can't turn these off:\n%1$s\nTo rule one out, patch again and leave out its patch.	Các mục này được đặt khi bạn vá, nên Tạm dừng không tắt được:\n%1$s\nĐể loại trừ một mục, hãy vá lại và bỏ bản vá của nó.
+For when Marketplace only or Events only is on. Neither is on now.	Dùng khi Chỉ Marketplace hoặc Chỉ Sự kiện đang bật. Hiện cả hai đều tắt.

@@ -225,16 +225,16 @@ final class FeedPages {
             if (build.contains(PatchFamily.AI_DETECTED_POSTS)) {
                 feed.addPreference(toggle(context, Settings.HIDE_AI_DETECTED_POSTS,
                         L10n.t("Hides posts that Facebook's own detection marks as made with AI. Posts only their creator labeled "
-                                + "stay. Untested on a real feed, so it starts off.")));
+                                + "stay. Off by default, since it hasn't been tried on a real feed yet.")));
                 feed.addPreference(toggle(context, Settings.HIDE_AI_LABELLED_POSTS,
                         L10n.t("Also hides posts their creator labeled as made with AI, not just the ones Facebook detects itself. "
-                                + "Untested on a real feed, so it starts off.")));
+                                + "Off by default, since it hasn't been tried on a real feed yet.")));
                 feed.addPreference(toggle(context, Settings.HIDE_META_AI_FEED_UNITS,
                         L10n.t("Hides Meta AI cards between posts and cards promoting the Vibes app. People's posts stay, whatever "
                                 + "they say about AI.")));
                 feed.addPreference(toggle(context, Settings.HIDE_AI_CHARACTER_POSTS,
-                        L10n.t("Hides posts featuring Meta's AI characters, the chatbots people make with Meta AI Studio. Untested "
-                                + "on a real feed, so it starts off.")));
+                        L10n.t("Hides posts featuring Meta's AI characters, the chatbots people make with Meta AI "
+                                + "Studio. Off by default, since it hasn't been tried on a real feed yet.")));
             }
             if (build.contains(PatchFamily.POST_WORDS)) {
                 feed.addPreference(toggle(context, Settings.HIDE_POSTS_WITH_WORDS,
@@ -257,8 +257,8 @@ final class FeedPages {
                 feed.addPreference(toggle(context, Settings.HIDE_BACKGROUND_POSTS,
                         L10n.t("Hides short posts shown as big text on a colored background.")));
                 feed.addPreference(toggle(context, Settings.HIDE_REPOSTS,
-                        L10n.t("Hides posts that share another post, with or without a caption. Original posts stay. Untested "
-                                + "on a real feed, so it starts off.")));
+                        L10n.t("Hides posts that share another post, with or without a caption. Original posts stay. Off "
+                                + "by default, since it hasn't been tried on a real feed yet.")));
                 feed.addPreference(reactionCeilingRow(context));
             }
         }
@@ -347,7 +347,7 @@ final class FeedPages {
                 stories.addPreference(toggle(context, Settings.SAVE_STORY_PHOTOS,
                         L10n.t("Adds Save photo to any story that carries a picture beside its video, like a photo "
                                 + "story with music that Facebook didn't mark as one. On a video story it saves the "
-                                + "cover picture. Untested on a real account, so it starts off.")));
+                                + "cover picture. Off by default, since it hasn't been tried on a real account yet.")));
             }
             if (build.contains(PatchFamily.STORY_UPLOAD_HD)) {
                 // Read as each Story's upload is set up, so a change applies to the next one you post.

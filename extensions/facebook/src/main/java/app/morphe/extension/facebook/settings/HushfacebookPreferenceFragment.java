@@ -862,7 +862,13 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         }
         if (events != null) events.setSummary(eventsSummary());
         Preference regular = findPreference("action_regular_facebook");
-        if (regular != null) regular.setEnabled(selected);
+        if (regular != null) {
+            regular.setEnabled(selected);
+            // Greyed out, it says what it's for rather than promising tabs that are already back.
+            regular.setSummary(selected
+                    ? L10n.t("Restore the normal tabs at the next restart. Your other settings stay saved.")
+                    : L10n.t("For when Marketplace only or Events only is on. Neither is on now."));
+        }
         String chooses = marketplaceSelected
                 ? L10n.t("Marketplace only chooses the opening tab. Your previous choice stays saved.")
                 : L10n.t("Events only chooses the opening tab. Your previous choice stays saved.");

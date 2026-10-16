@@ -10,25 +10,20 @@ Hides "Pages you may like" cards, cards promoting Facebook's own features, and s
 %1$s so far	Şimdiye kadar %1$s
 %1$s a second	saniyede %1$s
 %1$s elapsed	%1$s geçti
-%1$s. It was set when you patched, so Pause can't turn it off. To rule it out, patch again and leave out that patch.	%1$s. Yamaladığında ayarlandığı için Duraklatma bunu kapatamaz. Bunu elemek için yeniden yamala ve o yamayı dışarıda bırak.
-%1$s. They were set when you patched, so Pause can't turn them off. To rule one out, patch again and leave out the patch in brackets after it.	%1$s. Yamaladığında ayarlandıkları için Duraklatma bunları kapatamaz. Birini elemek için yeniden yamala ve onun ardından parantez içinde yazan yamayı dışarıda bırak.
 Add a Download button to reels, using your download quality. Off or paused, Facebook's own buttons return.	Reels'e indirme kalitenizle İndir düğmesi ekler. Kapalı veya duraklatılmışken Facebook'un kendi düğmeleri geri gelir.
 A file named %1$s in %2$s paused Hushfacebook.	%2$s içindeki %1$s adlı bir dosya Hushfacebook'u duraklattı.
 About	Hakkında
 Hides ad cards between people's stories.	İnsanların hikayeleri arasındaki reklam kartlarını gizler.
-Ad tracking blocked	Reklam takibi engellendi
 Add Download to phone to feed and Watch video menus. Uses the quality below. Off or paused, Facebook's menu returns.	Akış ve Watch video menülerine Telefona indir ekler. Aşağıdaki kaliteyi kullanır. Kapalı veya duraklatılmışken Facebook menüsü geri gelir.
 Add Save to every story menu, using your download quality. Off or paused, Facebook only saves your own stories.	Her hikaye menüsüne indirme kalitenizle Kaydet ekler. Kapalı veya duraklatılmışken Facebook yalnızca kendi hikayelerinizi kaydeder.
 # context: switch title on the Stories page, under Save any story; offers the Save photo menu item on more stories than before
 Save photo on more stories	Daha fazla hikayede fotoğrafı kaydet
 # context: summary of that switch; "Save photo" is the menu item's name, keep it as translated for that item; the cover picture is the still image shown before a video plays
-Adds Save photo to any story that carries a picture beside its video, like a photo story with music that Facebook didn't mark as one. On a video story it saves the cover picture. Untested on a real account, so it starts off.	Videosunun yanında bir resim taşıyan her hikayeye Fotoğrafı kaydet seçeneğini ekler; örneğin Facebook'un fotoğraf olarak işaretlemediği müzikli bir fotoğraf hikayesi. Video hikayesinde kapak resmini kaydeder. Gerçek bir hesapta henüz denenmedi, bu yüzden kapalı başlar.
+Adds Save photo to any story that carries a picture beside its video, like a photo story with music that Facebook didn't mark as one. On a video story it saves the cover picture. Off by default, since it hasn't been tried on a real account yet.	Videosunun yanında bir resim taşıyan her hikayeye Fotoğrafı kaydet seçeneğini ekler; örneğin Facebook'un fotoğraf olarak işaretlemediği müzikli bir fotoğraf hikayesi. Video hikayesinde kapak resmini kaydeder. Varsayılan olarak kapalı, çünkü gerçek bir hesapta henüz denenmedi.
 Hides ads in Reels, starting with the next batch Facebook loads. Banner ads, mid-video ads and other ads added by the app stay blocked even while paused.	Facebook'un yükleyeceği bir sonraki gruptan başlayarak Reels içindeki reklamları gizler. Banner reklamlar, video ortası reklamlar ve uygulamanın eklediği diğer reklamlar duraklatılmışken bile engelli kalır.
 AMOLED black theme	AMOLED siyah tema
 Appearance	Görünüm
-Audience Network off	Audience Network kapalı
 Back	Geri
-Ads aren't downloaded in advance	Reklamlar önceden indirilmez
 Cancel	İptal
 Cancel saving this photo	Bu fotoğrafın kaydedilmesini iptal et
 Cancel saving this video	Bu videonun kaydedilmesini iptal et
@@ -115,7 +110,7 @@ The top bar with search and Messenger stays put while you scroll down, instead o
 # context: switch title under Appearance, after Keep the top bar on screen; a big screen is a tablet or the inner screen of a folding phone, and the phone layout is the one Facebook shows on a normal phone
 Phone layout on big screens	Büyük ekranlarda telefon düzeni
 # context: description of that switch; on a big screen Facebook keeps the tab bar at the top in a wider layout, so the tab bar switches above it do nothing there
-A tablet or an unfolded phone gets the layout Facebook uses on a phone, so the tab bar switches above work on the big screen too. Facebook's wider big screen layout goes away. Untested on a big screen, so it starts off. Restart Facebook to see the change.	Tablet ya da açılmış katlanabilir telefon, Facebook'un telefonda kullandığı düzeni alır. Böylece yukarıdaki sekme çubuğu ayarları büyük ekranda da çalışır. Facebook'un büyük ekranlar için daha geniş düzeni kalkar. Büyük bir ekranda henüz denenmedi, bu yüzden kapalı başlar. Değişikliği görmek için Facebook'u yeniden başlatın.
+A tablet or an unfolded phone gets the layout Facebook uses on a phone, so the tab bar switches above work on the big screen too. Facebook's wider big screen layout goes away. Off by default, since it hasn't been tried on a big screen yet. Restart Facebook to see the change.	Tablet ya da açılmış katlanabilir telefon, Facebook'un telefonda kullandığı düzeni alır. Böylece yukarıdaki sekme çubuğu ayarları büyük ekranda da çalışır. Facebook'un büyük ekranlar için daha geniş düzeni kalkar. Varsayılan olarak kapalı, çünkü büyük bir ekranda henüz denenmedi. Değişikliği görmek için Facebook'u yeniden başlatın.
 # context: switch title under Appearance, after Phone layout on big screens; it makes Facebook's top bar (search and Messenger) and its tab bar partly transparent
 See-through bars	Saydam çubuklar
 # context: description of that switch; the feed is the list of posts on Home, and blurred means frosted like glass
@@ -175,7 +170,7 @@ Hides paid ads in the feed. They're removed before they appear, so no gap is lef
 Pause Hushfacebook	Hushfacebook'u duraklat
 Hides posts Facebook labels as promotions rather than ads.	Facebook'un reklam yerine tanıtım olarak sınıflandırdığı gönderileri gizler.
 Hides posts Facebook adds from people and Pages you don't follow and groups you haven't joined.	Facebook'un takip etmediğiniz kişilerden ve Sayfalardan, katılmadığınız gruplardan eklediği gönderileri gizler.
-Hides posts that Facebook's own detection marks as made with AI. Posts only their creator labeled stay. Untested on a real feed, so it starts off.	Facebook'un kendi tespitinin yapay zekayla üretildi olarak işaretlediği gönderileri gizler. Yalnızca yaratıcısının işaretlediği gönderiler kalır. Gerçek bir akışta henüz denenmedi, bu yüzden kapalı başlar.
+Hides posts that Facebook's own detection marks as made with AI. Posts only their creator labeled stay. Off by default, since it hasn't been tried on a real feed yet.	Facebook'un kendi tespitinin yapay zekayla üretildi olarak işaretlediği gönderileri gizler. Yalnızca yaratıcısının işaretlediği gönderiler kalır. Varsayılan olarak kapalı, çünkü gerçek bir akışta henüz denenmedi.
 On a patched Facebook, profiles, photos, posts and some Settings pages wouldn't open. This fixes that.	Yamalı bir Facebook'ta profiller, fotoğraflar, gönderiler ve bazı Ayarlar sayfaları açılmazdı. Bu, sorunu giderir.
 Profiles, photos and posts won't open	Profiller, fotoğraflar ve gönderiler açılmayacak
 Patch again with %1$s selected. A patched Facebook needs it to open profiles, photos, posts and some of Facebook's Settings pages.	%1$s seçiliyken yeniden yamalayın. Yamalı bir Facebook'un profilleri, fotoğrafları, gönderileri ve bazı Facebook Ayarları sayfalarını açabilmesi için buna ihtiyacı var.
@@ -256,17 +251,9 @@ That settings file holds a value Hushfacebook can't read. Nothing was changed.	B
 The word lists in that file are longer than the two lists have room for. Nothing was changed.	Bu dosyadaki kelime listeleri iki listenin alanına sığmıyor. Hiçbir şey değiştirilmedi.
 That settings file is damaged or only partly downloaded. Nothing was changed.	Bu ayar dosyası hasarlı ya da yalnızca bir kısmı indirilmiş. Hiçbir şey değiştirilmedi.
 That settings file was written by a newer Hushfacebook than this one. Nothing was changed.	Bu ayar dosyası, Hushfacebook'un bu sürümünden daha yeni bir sürümüyle oluşturulmuş. Hiçbir şey değiştirilmedi.
-the Audience Network block	Audience Network engeli
-the black background in dark mode	karanlık moddaki siyah arka plan
-the block on downloading ads in the background	arka planda reklam indirme engeli
-the block on reports of ad screenshots and app installs	reklam ekran görüntüleri ve uygulama yüklemeleriyle ilgili raporların engellenmesi
 The diagnostic report couldn't be saved yet. Try again in a moment.	Tanılama raporu henüz kaydedilemedi. Birazdan tekrar dene.
 The diagnostic report couldn't be saved. Try again.	Tanılama raporu kaydedilemedi. Tekrar dene.
 The file %1$s couldn't be removed. Delete it from %2$s to turn Hushfacebook back on.	%1$s dosyası kaldırılamadı. Hushfacebook'u yeniden açmak için onu %2$s içinden sil.
-the part of the Reels ad blocking built in when you patched	Reels reklam engellemenin yama sırasında eklenen kısmı
-the re-signed build fix	yeniden imzalanmış sürüm düzeltmesi
-the start-up fix for x86 devices	x86 cihazlar için açılış düzeltmesi
-the recolored dark mode	yeniden renklendirilmiş karanlık mod
 Hides friend suggestions between posts and on your own profile.	Gönderilerin arasındaki ve kendi profilinizdeki arkadaş önerilerini gizler.
 Hides the row of stories at the top of the feed, including Create story.	Akışın üstündeki hikaye satırını, Hikaye oluştur dahil, gizler.
 Hides rows of reels between posts, and the reels Facebook adds where your feed ends.	Gönderilerin arasındaki reel satırlarını ve Facebook'un akışınızın sonuna eklediği reelleri gizler.
@@ -304,7 +291,7 @@ The Follow button next to the reel's author. You can still follow them from thei
 Hide comment and reaction previews	Yorum ve tepki önizlemelerini gizle
 The comment Facebook previews under a reel and the bubbles of friends who reacted. Open the comments to see them all.	Facebook'un bir Reels videosunun altında önizleme olarak gösterdiği yorum ve tepki veren arkadaşlarının baloncukları. Hepsini görmek için yorumları aç.
 Hide Threads cards between reels	Reels arasındaki Threads kartlarını gizle
-Hides the "Threads you might like" card between reels. Untested on a real account, so it starts off.	Reeller arasındaki “Beğenebileceğin Threads” kartını gizler. Gerçek bir hesapta henüz denenmedi, bu yüzden kapalı başlar.
+Hides the "Threads you might like" card between reels. Off by default, since it hasn't been tried on a real account yet.	Reeller arasındaki “Beğenebileceğin Threads” kartını gizler. Varsayılan olarak kapalı, çünkü gerçek bir hesapta henüz denenmedi.
 Download quality	İndirme kalitesi
 Best	En iyi
 Smallest	En küçük
@@ -332,7 +319,7 @@ Pause, backup and diagnostics	Duraklatma, yedekleme ve tanılama
 Updates	Güncellemeler
 Stop update prompts	Güncelleme uyarılarını durdur
 Stops update nagging through Meta App Manager and hides chat promotions for older versions. A patched Facebook can't use Meta's updates anyway.	Meta App Manager üzerinden gelen güncelleme uyarılarını durdurur ve eski sürümlere yönelik sohbet tanıtımlarını gizler. Yamalı Facebook, Meta'nın güncellemelerini zaten kullanamaz.
-Hides reels and Watch videos that Facebook marks as made with AI. Ones only their creator labeled stay. Untested on a real account, so it starts off.	Facebook'un yapay zekayla üretildi olarak işaretlediği reelleri ve Watch videolarını gizler. Yalnızca yaratıcısının işaretlediği içerikler kalır. Gerçek bir hesapta henüz denenmedi, bu yüzden kapalı başlar.
+Hides reels and Watch videos that Facebook marks as made with AI. Ones only their creator labeled stay. Off by default, since it hasn't been tried on a real account yet.	Facebook'un yapay zekayla üretildi olarak işaretlediği reelleri ve Watch videolarını gizler. Yalnızca yaratıcısının işaretlediği içerikler kalır. Varsayılan olarak kapalı, çünkü gerçek bir hesapta henüz denenmedi.
 Don't send reel watch history	Reels izleme geçmişini gönderme
 Hold back analytics uploads	Analiz yüklemelerini beklet
 Stops Facebook sending usage statistics in the background and running its on-phone learning tasks. Restart Facebook to see the change.	Facebook arka planda kullanım istatistiklerini göndermeyi ve telefonda öğrenme görevlerini çalıştırmayı bırakır. Değişikliği görmek için Facebook'u yeniden başlatın.
@@ -355,9 +342,7 @@ Hide read receipts	Okundu bilgisini gizle
 People you chat with in Facebook's own chats can't see that you've read their messages. The chat can stay unread on this phone.	Facebook'un kendi sohbetlerinde konuştuğunuz kişiler mesajlarını okuduğunuzu göremez. Sohbet bu telefonda okunmamış kalabilir.
 Facebook can't tell when you take a screenshot or record your screen, so it can't react.	Facebook ekran görüntüsü aldığınızı veya ekranı kaydettiğinizi fark etmez, bu yüzden tepki veremez.
 Stops sending Facebook your list of watched reels. It uses the list to rank your feed, so reels you've watched may come back.	Facebook'a izlediğiniz reellerin listesini göndermeyi bırakır. Facebook bu listeyi akışınızı sıralamak için kullanır, bu yüzden izlediğiniz reeller geri gelebilir.
-the new names for shared permissions	ortak izinlerin yeni adları
 # context: what stays in while Hushfacebook is paused, shown before the patch's name in brackets; the patch raises the app's version number so Google Play never offers an update
-the version number Google Play sees	Google Play'in gördüğü sürüm numarası
 Meta's apps can install beside this one	Meta uygulamaları bunun yanına kurulabilir
 Messenger, Facebook Lite, Business Suite and Workplace can install next to this Facebook. Their shared permissions no longer clash.	Messenger, Facebook Lite, Business Suite ve Workplace bu Facebook'un yanına kurulabilir. Ortak izinleri artık çakışmaz.
 # context: settings section heading for the Open on a chosen tab rows
@@ -511,7 +496,6 @@ Hide sponsored profile posts	Profillerdeki sponsorlu gönderileri gizle
 # context: summary of that switch; Page is Facebook's name for a business or public figure's page
 Hides ads between posts on someone's profile or a Page. Their own posts stay.	Birinin profilindeki veya bir Sayfadaki gönderilerin arasındaki reklamları gizler. Kendi gönderileri kalır.
 # context: what stays in while Hushfacebook is paused, followed by the patch name in brackets; the row in Facebook's own Menu that opens Hushfacebook settings
-the settings row in Facebook's Menu	Facebook menüsündeki ayarlar satırı
 # context: a short message when the Hushfacebook row in Facebook's Menu couldn't open the settings
 Hushfacebook settings can't open here. Long-press the Facebook logo instead.	Hushfacebook ayarları burada açılamıyor. Bunun yerine Facebook logosuna basılı tut.
 # context: switch title under News feed; the row of groups Facebook suggests joining, shown between posts
@@ -674,9 +658,9 @@ Also hide posts labeled as AI	Yapay zekâ olarak etiketlenen gönderileri de giz
 Hide Meta AI in the feed	Akışta Meta AI'ı gizle
 Hides Meta AI cards between posts and cards promoting the Vibes app. People's posts stay, whatever they say about AI.	Gönderilerin arasındaki Meta AI kartlarını ve Vibes uygulamasını tanıtan kartları gizler. İnsanların gönderileri, yapay zeka hakkında ne derse desin kalır.
 Hide AI character posts	Yapay zekâ karakteri gönderilerini gizle
-Hides posts featuring Meta's AI characters, the chatbots people make with Meta AI Studio. Untested on a real feed, so it starts off.	Meta'nın yapay zeka karakterlerini, yani insanların Meta AI Studio ile yaptığı sohbet botlarını içeren gönderileri gizler. Gerçek bir akışta henüz denenmedi, bu yüzden kapalı başlar.
+Hides posts featuring Meta's AI characters, the chatbots people make with Meta AI Studio. Off by default, since it hasn't been tried on a real feed yet.	Meta'nın yapay zeka karakterlerini, yani insanların Meta AI Studio ile yaptığı sohbet botlarını içeren gönderileri gizler. Varsayılan olarak kapalı, çünkü gerçek bir akışta henüz denenmedi.
 # context: summary of that switch; the AI label is the one Facebook shows next to the poster's name on such posts
-Also hides posts their creator labeled as made with AI, not just the ones Facebook detects itself. Untested on a real feed, so it starts off.	Yalnızca Facebook'un kendi tespit ettiklerini değil, yaratıcısının yapay zekayla üretildi olarak işaretlediği gönderileri de gizler. Gerçek bir akışta henüz denenmedi, bu yüzden kapalı başlar.
+Also hides posts their creator labeled as made with AI, not just the ones Facebook detects itself. Off by default, since it hasn't been tried on a real feed yet.	Yalnızca Facebook'un kendi tespit ettiklerini değil, yaratıcısının yapay zekayla üretildi olarak işaretlediği gönderileri de gizler. Varsayılan olarak kapalı, çünkü gerçek bir akışta henüz denenmedi.
 Return to regular Facebook	Normal Facebook'a dön
 Restore the normal tabs at the next restart. Your other settings stay saved.	Bir sonraki yeniden başlatmada normal sekmeleri geri getirir. Diğer ayarlarınız kayıtlı kalır.
 Marketplace only and Events only are off. Restart Facebook to restore its normal tabs.	Marketplace ve Etkinlikler modları kapalı. Normal sekmeleri geri getirmek için Facebook'u yeniden başlatın.
@@ -1062,15 +1046,15 @@ Hides the "What's on your mind?" row at the top of Home. The create button in th
 # context: switch title under Reels and Watch; Clean mode is Facebook's own three-dot menu item on a reel or video that hides the buttons down the side, so use Facebook's name for it in this language (#75)
 Always use Clean mode	Her zaman temiz modu kullan
 # context: summary of that switch; "the usual way" means Facebook's own way out of Clean mode
-Opens reels and videos in Facebook's Clean mode, which hides the buttons down the side. You can still leave Clean mode as usual. Untested on a real account, so it starts off.	Reelleri ve videoları Facebook'un Temiz modunda açar; bu mod yandaki düğmeleri gizler. Temiz moddan yine her zamanki gibi çıkabilirsiniz. Gerçek bir hesapta henüz denenmedi, bu yüzden kapalı başlar.
+Opens reels and videos in Facebook's Clean mode, which hides the buttons down the side. You can still leave Clean mode as usual. Off by default, since it hasn't been tried on a real account yet.	Reelleri ve videoları Facebook'un Temiz modunda açar; bu mod yandaki düğmeleri gizler. Temiz moddan yine her zamanki gibi çıkabilirsiniz. Varsayılan olarak kapalı, çünkü gerçek bir hesapta henüz denenmedi.
 # context: switch title under Reels and Watch, part of Clean up Reels; each reel plays to its end one time and stops there instead of starting over
 Play reels once	Reelleri bir kez oynat
 # context: summary of that switch; "last frame" is the final picture of the video, which stays on screen
-A reel stops on its last frame instead of starting over. Tap it to watch again, or swipe to the next one. Feed videos and stories aren't changed. Untested on a real account, so it starts off.	Bir reel baştan başlamak yerine son karesinde durur. Yeniden izlemek için dokunun ya da sonrakine kaydırın. Akıştaki videolar ve hikayeler değişmez. Gerçek bir hesapta henüz denenmedi, bu yüzden kapalı başlar.
+A reel stops on its last frame instead of starting over. Tap it to watch again, or swipe to the next one. Feed videos and stories aren't changed. Off by default, since it hasn't been tried on a real account yet.	Bir reel baştan başlamak yerine son karesinde durur. Yeniden izlemek için dokunun ya da sonrakine kaydırın. Akıştaki videolar ve hikayeler değişmez. Varsayılan olarak kapalı, çünkü gerçek bir hesapta henüz denenmedi.
 # context: switch title under Reels and Watch, part of Clean up Reels; reels and videos play in the language they were recorded in instead of an audio track Facebook translated
 Keep the original audio	Orijinal sesi koru
 # context: summary of that switch; "dubbed" means the spoken audio was replaced by a translated voice; Meta AI is the company's AI assistant, keep the name
-Reels and videos play with the sound they were made with, not a version Facebook dubbed into your language with Meta AI. Untested on a real account, so it starts off.	Reeller ve videolar, Facebook'un Meta AI ile dilinize seslendirdiği bir sürümle değil, yapıldıkları sesle oynatılır. Gerçek bir hesapta henüz denenmedi, bu yüzden kapalı başlar.
+Reels and videos play with the sound they were made with, not a version Facebook dubbed into your language with Meta AI. Off by default, since it hasn't been tried on a real account yet.	Reeller ve videolar, Facebook'un Meta AI ile dilinize seslendirdiği bir sürümle değil, yapıldıkları sesle oynatılır. Varsayılan olarak kapalı, çünkü gerçek bir hesapta henüz denenmedi.
 # context: settings section title on the App page, above the switches of Hide Meta upsells; Meta is the company
 Meta's other products	Meta'nın diğer ürünleri
 # context: switch title; Edits is Meta's video editing app, keep its name
@@ -1180,7 +1164,7 @@ Posts and reel captions stay in the language they were written in. Facebook's Se
 # context: switch title under Reels and Watch, below Keep the reel speed; it keeps a playback speed picked on a feed or Watch video for the next videos
 Keep the video speed	Video hızını koru
 # context: description of that switch; the gear menu is the settings button on a video's player, where Playback speed is picked
-The speed you pick in a feed or Watch video's menu carries over to the next videos. Reels keep their own speed. Untested on a real account, so it starts off.	Akıştaki veya Watch'taki bir videonun menüsünden seçtiğiniz hız sonraki videolara da geçer. Reeller kendi hızını korur. Gerçek bir hesapta henüz denenmedi, bu yüzden kapalı başlar.
+The speed you pick in a feed or Watch video's menu carries over to the next videos. Reels keep their own speed. Off by default, since it hasn't been tried on a real account yet.	Akıştaki veya Watch'taki bir videonun menüsünden seçtiğiniz hız sonraki videolara da geçer. Reeller kendi hızını korur. Varsayılan olarak kapalı, çünkü gerçek bir hesapta henüz denenmedi.
 # context: switch title under Downloads, below Download feed and Watch videos; it offers to download a reel or video whose link the user copied
 Offer to download copied links	Kopyalanan bağlantılar için indirme öner
 # context: description of that switch; Download feed and Watch videos is the name of the switch above it
@@ -1228,7 +1212,7 @@ Hides short posts shown as big text on a colored background.	Renkli bir arka pla
 # context: switch title under News feed: hides posts that share someone else's post, the ones Facebook heads "shared a post"; use Facebook's own word for a shared post in this language
 Hide reposts	Yeniden paylaşılan gönderileri gizle
 # context: summary of the Hide reposts switch; a caption is what the sharer wrote above the shared post
-Hides posts that share another post, with or without a caption. Original posts stay. Untested on a real feed, so it starts off.	Başka bir gönderiyi paylaşan gönderileri, açıklamalı ya da açıklamasız, gizler. Özgün gönderiler kalır. Gerçek bir akışta henüz denenmedi, bu yüzden kapalı başlar.
+Hides posts that share another post, with or without a caption. Original posts stay. Off by default, since it hasn't been tried on a real feed yet.	Başka bir gönderiyi paylaşan gönderileri, açıklamalı ya da açıklamasız, gizler. Özgün gönderiler kalır. Varsayılan olarak kapalı, çünkü gerçek bir akışta henüz denenmedi.
 # context: switch title in Privacy: asks for the phone's own screen lock before Facebook shows
 Lock Facebook	Facebook'u kilitle
 Save crashes to Downloads	Çökmeleri İndirilenler'e kaydet
@@ -1447,7 +1431,6 @@ Ads downloaded in advance	Önceden indirilen reklamlar
 # context: a line of that list: Facebook's reports used to target ads
 Ad tracking	Reklam takibi
 # context: a line of that list: ads Facebook serves inside other apps on the phone (Audience Network)
-Facebook's ads in other apps	Diğer uygulamalardaki Facebook reklamları
 # context: added to that line's summary: what blocking it does to those other apps; rewarded ads give a reward for watching
 Those apps show their own ads or none, and their rewarded ads may fail.	Bu uygulamalar kendi reklamlarını gösterir ya da hiç göstermez, ödüllü reklamları da çalışmayabilir.
 # context: a line of that list: the usage statistics Facebook uploads in the background
@@ -1574,3 +1557,14 @@ Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's Mor
 Upload Stories in HD	Hikayeleri HD yükle
 # context: summary of that switch; standard is the normal upload quality, high the better one
 Videos you post to your Story ask Facebook for its high upload quality instead of standard. Applies to the next Story you post.	Hikayenizde paylaştığınız videolar Facebook'tan standart yerine yüksek yükleme kalitesi ister. Paylaşacağınız bir sonraki hikayeden itibaren geçerlidir.
+No ads downloaded in advance	Önceden indirilen reklam yok
+No ad tracking	Reklam takibi yok
+No Facebook ads in other apps	Diğer uygulamalarda Facebook reklamı yok
+Facebook ads in other apps	Diğer uygulamalardaki Facebook reklamları
+Part of the Reels ad blocking	Reels reklam engellemesinin bir kısmı
+Start-up fix for x86 phones	x86 telefonlar için açılış düzeltmesi
+Version number Google Play sees	Google Play'in gördüğü sürüm numarası
+Hushfacebook in the Menu	Menüde Hushfacebook
+Set when you patched, so Pause can't turn it off:\n%1$s\nTo rule it out, patch again and leave out its patch.	Yamaladığında ayarlandığı için Duraklatma bunu kapatamaz:\n%1$s\nBunu elemek için yeniden yamala ve onun yamasını dışarıda bırak.
+Set when you patched, so Pause can't turn these off:\n%1$s\nTo rule one out, patch again and leave out its patch.	Yamaladığında ayarlandıkları için Duraklatma bunları kapatamaz:\n%1$s\nBirini elemek için yeniden yamala ve onun yamasını dışarıda bırak.
+For when Marketplace only or Events only is on. Neither is on now.	Yalnızca Marketplace veya Yalnızca Etkinlikler açıkken kullanılır. Şu anda ikisi de kapalı.

@@ -289,7 +289,7 @@ public class HushfacebookPreferenceFragmentTest {
 
     /**
      * The AI character switch sits right below the Meta AI cards' row, in the same family, and says
-     * it starts off.
+     * it is off by default.
      */
     @Test
     public void theAiCharacterRowSitsRightBelowTheMetaAiCardsRow() {
@@ -302,7 +302,7 @@ public class HushfacebookPreferenceFragmentTest {
             assertEquals("the AI character row isn't right below the Meta AI cards row", cards + 1, characters);
             assertEquals("Hide AI character posts", String.valueOf(rows.get(characters).getTitle()));
             assertTrue(String.valueOf(rows.get(characters).getSummary()), String.valueOf(rows.get(characters)
-                    .getSummary()).contains("so it starts off"));
+                    .getSummary()).contains("Off by default"));
         }
     }
 

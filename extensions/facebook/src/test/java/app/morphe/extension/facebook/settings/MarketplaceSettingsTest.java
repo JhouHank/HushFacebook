@@ -146,6 +146,9 @@ public class MarketplaceSettingsTest {
             assertTrue(Settings.OPEN_ON_CHOSEN_TAB.savedValue());
             assertEquals(StartTab.FRIENDS, Settings.START_TAB.savedValue());
             assertFalse(back.isEnabled());
+            // Greyed out, it says what it's for instead of offering the tabs back again.
+            assertEquals("For when Marketplace only or Events only is on. Neither is on now.",
+                    String.valueOf(back.getSummary()));
             assertNotNull(ShadowToast.getTextOfLatestToast());
         }
     }

@@ -130,8 +130,9 @@ final class HushfacebookPages {
             // Facebook decides on its big screen layout as its main screen starts, so a change waits for a restart.
             appearance.addPreference(toggle(context, Settings.PHONE_LAYOUT_ON_BIG_SCREENS,
                     L10n.t("A tablet or an unfolded phone gets the layout Facebook uses on a phone, so the tab bar switches "
-                            + "above work on the big screen too. Facebook's wider big screen layout goes away. Untested on a "
-                            + "big screen, so it starts off. Restart Facebook to see the change.")));
+                            + "above work on the big screen too. Facebook's wider big screen layout goes away. Off by "
+                            + "default, since it hasn't been tried on a big screen yet. Restart Facebook to see the "
+                            + "change.")));
             // Asked as each frame of the main screen draws, so a change shows right away.
             appearance.addPreference(toggle(context, Settings.TRANSLUCENT_BARS,
                     L10n.t("The top bar and the tab bar turn see-through, so the feed shows through them as you scroll. "
@@ -202,34 +203,34 @@ final class HushfacebookPages {
                 || build.contains(PatchFamily.INSTALL_BESIDE_META_APPS)) {
             PreferenceCategory patched = category(screen, L10n.t("Set when you patched"));
             if (build.contains(PatchFamily.AD_PREFETCH)) {
-                patched.addPreference(mark(info(context, L10n.t("Ads aren't downloaded in advance"),
+                patched.addPreference(mark(info(context, L10n.t(PatchFamily.AD_PREFETCH.staysWhilePaused),
                         L10n.t("Facebook no longer downloads ads, or the data it uses to pick them, in the background.")), SettingsIcons.BLOCK));
             }
             if (build.contains(PatchFamily.AD_TELEMETRY)) {
-                patched.addPreference(mark(info(context, L10n.t("Ad tracking blocked"),
+                patched.addPreference(mark(info(context, L10n.t(PatchFamily.AD_TELEMETRY.staysWhilePaused),
                         L10n.t("Facebook doesn't watch for screenshots to target ads, and doesn't report which apps you install.")), SettingsIcons.TELEMETRY));
             }
             if (build.contains(PatchFamily.AUDIENCE_NETWORK)) {
-                patched.addPreference(mark(info(context, L10n.t("Audience Network off"),
+                patched.addPreference(mark(info(context, L10n.t(PatchFamily.AUDIENCE_NETWORK.staysWhilePaused),
                         L10n.t("Facebook doesn't show its ads inside other apps on this phone.")), SettingsIcons.NETWORK));
             }
             if (build.contains(PatchFamily.AMOLED_THEME)) {
-                patched.addPreference(mark(info(context, L10n.t("AMOLED black theme"),
+                patched.addPreference(mark(info(context, L10n.t(PatchFamily.AMOLED_THEME.staysWhilePaused),
                         amoledSummary(AmoledTheme.backgroundColour())), SettingsIcons.MOON));
             }
             if (build.contains(PatchFamily.MATERIAL_YOU_THEME)) {
-                patched.addPreference(mark(info(context, L10n.t("Material You theme"),
+                patched.addPreference(mark(info(context, L10n.t(PatchFamily.MATERIAL_YOU_THEME.staysWhilePaused),
                         L10n.t("Dark mode and this screen use colors from your wallpaper (blue on Android 11). Turn on dark mode in "
                                 + "Facebook to see it.")), SettingsIcons.APPEARANCE));
             }
             if (build.contains(PatchFamily.RESTORE_TRUST)) {
-                patched.addPreference(mark(info(context, L10n.t("Profiles and posts work again"),
+                patched.addPreference(mark(info(context, L10n.t(PatchFamily.RESTORE_TRUST.staysWhilePaused),
                         L10n.t("On a patched Facebook, profiles, photos, posts and some Settings pages wouldn't open. This fixes "
                                 + "that.")),
                         SettingsIcons.BUILD));
             }
             if (build.contains(PatchFamily.INSTALL_BESIDE_META_APPS)) {
-                patched.addPreference(mark(info(context, L10n.t("Meta's apps can install beside this one"),
+                patched.addPreference(mark(info(context, L10n.t(PatchFamily.INSTALL_BESIDE_META_APPS.staysWhilePaused),
                         L10n.t("Messenger, Facebook Lite, Business Suite and Workplace can install next to this Facebook. Their "
                                 + "shared permissions no longer clash.")), SettingsIcons.PHONE));
             }
