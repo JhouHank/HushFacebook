@@ -1568,3 +1568,5 @@ Hushfacebook in the Menu	Hushfacebook trong Menu
 Set when you patched, so Pause can't turn it off:\n%1$s\nTo rule it out, patch again and leave out its patch.	Được đặt khi bạn vá, nên Tạm dừng không tắt được:\n%1$s\nĐể loại trừ mục này, hãy vá lại và bỏ bản vá của nó.
 Set when you patched, so Pause can't turn these off:\n%1$s\nTo rule one out, patch again and leave out its patch.	Các mục này được đặt khi bạn vá, nên Tạm dừng không tắt được:\n%1$s\nĐể loại trừ một mục, hãy vá lại và bỏ bản vá của nó.
 For when Marketplace only or Events only is on. Neither is on now.	Dùng khi Chỉ Marketplace hoặc Chỉ Sự kiện đang bật. Hiện cả hai đều tắt.
+Hide the Meta AI shortcut	Ẩn lối tắt Meta AI
+The Meta AI shortcut leaves the Menu's list with Feeds, Marketplace, Reels and Groups, and the next shortcut moves up into its place.	Lối tắt Meta AI biến mất khỏi danh sách trong Menu cùng Bảng feed, Marketplace, Reels và Nhóm, và lối tắt tiếp theo sẽ lên thay chỗ của nó.

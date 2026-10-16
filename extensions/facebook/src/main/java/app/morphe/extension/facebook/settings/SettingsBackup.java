@@ -282,6 +282,7 @@ public final class SettingsBackup {
             Settings.HIDE_MENU_UPGRADES,
             Settings.HIDE_MENU_ALSO_FROM_META,
             Settings.HIDE_MENU_MUSE,
+            Settings.HIDE_MENU_META_AI,
             Settings.HIDE_EDITS_UPSELLS,
             Settings.HIDE_THREADS_CROSS_POSTING,
             Settings.HIDE_THREADS_SHARE_BUTTON,

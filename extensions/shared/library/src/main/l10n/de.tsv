@@ -1568,3 +1568,5 @@ Hushfacebook in the Menu	Hushfacebook im Menü
 Set when you patched, so Pause can't turn it off:\n%1$s\nTo rule it out, patch again and leave out its patch.	Beim Patchen festgelegt, deshalb kann die Pause es nicht ausschalten:\n%1$s\nUm es auszuschließen, patche erneut und lass seinen Patch weg.
 Set when you patched, so Pause can't turn these off:\n%1$s\nTo rule one out, patch again and leave out its patch.	Beim Patchen festgelegt, deshalb kann die Pause diese nicht ausschalten:\n%1$s\nUm eines davon auszuschließen, patche erneut und lass seinen Patch weg.
 For when Marketplace only or Events only is on. Neither is on now.	Für den Fall, dass Nur Marketplace oder Nur Veranstaltungen an ist. Gerade ist keins davon an.
+Hide the Meta AI shortcut	Meta-AI-Verknüpfung ausblenden
+The Meta AI shortcut leaves the Menu's list with Feeds, Marketplace, Reels and Groups, and the next shortcut moves up into its place.	Die Meta-AI-Verknüpfung verschwindet aus der Liste im Menü mit Feeds, Marketplace, Reels und Gruppen, und die nächste Verknüpfung rückt an ihre Stelle.

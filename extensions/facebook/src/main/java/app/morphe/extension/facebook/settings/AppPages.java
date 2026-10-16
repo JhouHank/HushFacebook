@@ -133,6 +133,9 @@ final class AppPages {
                             + "and its ads for Meta's devices. Your own shortcuts stay.")));
             menu.addPreference(toggle(context, Settings.HIDE_MENU_MUSE,
                     L10n.t("The Muse card, Meta's ad for its AI agent app, leaves the top of Facebook's Menu.")));
+            menu.addPreference(toggle(context, Settings.HIDE_MENU_META_AI,
+                    L10n.t("The Meta AI shortcut leaves the Menu's list with Feeds, Marketplace, Reels and Groups, "
+                            + "and the next shortcut moves up into its place.")));
         }
         if (build.contains(PatchFamily.GAME_ADS)) {
             menu.addPreference(toggle(context, Settings.BLOCK_GAME_ADS,

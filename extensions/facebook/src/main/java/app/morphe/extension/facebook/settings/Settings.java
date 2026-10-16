@@ -912,6 +912,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_menu_muse", TRUE);
 
     /**
+     * The Meta AI shortcut in Facebook's Menu, beside Feeds, Marketplace, Reels and Groups, taken
+     * out of the bookmarks list it's drawn from ({@link app.morphe.extension.facebook.menu.MenuShortcuts}).
+     * Off until it's turned on, like the other ways into Meta AI that some people use.
+     */
+    public static final BooleanSetting HIDE_MENU_META_AI =
+            new BooleanSetting("hushfacebook_hide_menu_meta_ai", FALSE);
+
+    /**
      * Edits outside the Menu: the button and badge in the Reels composer's header, and the Edits
      * pill under feed videos, which the feed's requests stop asking the server for
      * ({@link app.morphe.extension.facebook.misc.MetaUpsells}). Off until it's turned on.
