@@ -77,6 +77,8 @@ Most runtime features need the patch selected and their setting on. The Pause co
 
 Patch success has two separate checks. A successful apply shows that the patch found its targets and produced an APK. It doesn't show that Facebook served the screen or content the hook expects. Runtime hooks report missing, ambiguous, or thrown states through `HookStatus`, and `scripts/phone-smoke.ps1` checks those reports while opening common screens.
 
+`scripts/device-audit.ps1` goes further and needs no taps from you. It turns on nearly every switch, walks Facebook, compares the hook report with `scripts/device-audit-expectations.json`, and screenshots every settings page in dark and light (`-Locales de` adds a language). When it's done it puts your switches back. It drives Hushfacebook through a folder only adb can create (`Android/data/com.facebook.katana/files/hushfacebook-audit`), so the extras it sends do nothing on a phone that hasn't been set up for an audit. After a move to a new Facebook version, run it on a build you trust and add `-WriteBaseline` to record which hooks the walk reaches. Open `index.html` in its output folder to look through the screens.
+
 ## Adding or changing a patch
 
 Start from the stock Facebook build that the patch should support. Facebook renames much of its code between releases, so an obfuscated class name from one APK is not a reliable anchor for the next one.
