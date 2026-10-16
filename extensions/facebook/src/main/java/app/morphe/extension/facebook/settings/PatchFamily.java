@@ -166,7 +166,8 @@ public enum PatchFamily {
     FOLLOWING_HOME(FamilyNames.FOLLOWING_HOME, "followingHome", null,
             Settings.FOLLOWING_FEED_HOME),
     MARKETPLACE_ONLY(FamilyNames.MARKETPLACE_ONLY, "marketplaceOnly", null,
-            Settings.MARKETPLACE_ONLY, Settings.MARKETPLACE_QUIET_NOTIFICATIONS, Settings.MARKETPLACE_SKIP_FEED_PREFETCH),
+            Settings.MARKETPLACE_ONLY, Settings.EVENTS_ONLY, Settings.MARKETPLACE_QUIET_NOTIFICATIONS,
+            Settings.MARKETPLACE_SKIP_FEED_PREFETCH),
     SELLER_VIEW_PROFILE(FamilyNames.SELLER_VIEW_PROFILE, "sellerViewProfile", null,
             Settings.SHOW_SELLER_VIEW_PROFILE),
     REELS_TAB(FamilyNames.REELS_TAB, "reelsTab", null,
@@ -456,7 +457,7 @@ public enum PatchFamily {
         boolean anyOn = false;
         for (BooleanSetting setting : switches) anyOn |= setting.savedValue();
         // Options cannot enable these families without their main switch.
-        if (this == MARKETPLACE_ONLY) anyOn = Settings.MARKETPLACE_ONLY.savedValue();
+        if (this == MARKETPLACE_ONLY) anyOn = Settings.MARKETPLACE_ONLY.savedValue() || Settings.EVENTS_ONLY.savedValue();
         if (this == VIDEO_DOWNLOAD) anyOn = Settings.DOWNLOAD_VIDEOS.savedValue();
         if (this == TAP_TO_PLAY) anyOn = Settings.TAP_TO_PLAY.savedValue();
         // The time switch starts on, and does nothing without the bar kept; Tap the bar to seek works alone.

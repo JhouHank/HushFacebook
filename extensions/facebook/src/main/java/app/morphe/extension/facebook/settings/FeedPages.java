@@ -51,6 +51,7 @@ final class FeedPages {
             if (build.contains(PatchFamily.MARKETPLACE_ONLY)) {
                 // Facebook builds the tab bar once, and the hook is asked then and not again.
                 opening.addPreference(toggle(context, Settings.MARKETPLACE_ONLY, ""));
+                opening.addPreference(toggle(context, Settings.EVENTS_ONLY, ""));
                 opening.addPreference(toggle(context, Settings.MARKETPLACE_QUIET_NOTIFICATIONS,
                         L10n.t("While Marketplace only is on, silences video suggestions, memories, birthdays and friend "
                                 + "suggestions. Messages and trading updates still arrive.")));
@@ -60,11 +61,11 @@ final class FeedPages {
                 regular.setTitle(L10n.t("Return to regular Facebook"));
                 regular.setSummary(L10n.t("Restore the normal tabs at the next restart. Your other settings stay saved."));
                 regular.setOnPreferenceClickListener(ignored -> {
-                    if (Settings.MARKETPLACE_ONLY.save(false)) {
+                    if (Settings.MARKETPLACE_ONLY.save(false) && Settings.EVENTS_ONLY.save(false)) {
                         page.refreshSwitches();
                         Utils.showToastLong(MarketplaceOnly.state() == MarketplaceOnly.State.RESTART_NEEDED
-                                ? L10n.t("Marketplace only is off. Restart Facebook to restore its normal tabs.")
-                                : L10n.t("Marketplace only is off."));
+                                ? L10n.t("Marketplace only and Events only are off. Restart Facebook to restore its normal tabs.")
+                                : L10n.t("Marketplace only and Events only are off."));
                     } else {
                         Utils.showToastLong(L10n.t("Couldn't save the change. Try again."));
                     }

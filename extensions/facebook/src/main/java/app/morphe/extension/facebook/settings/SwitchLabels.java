@@ -14,6 +14,7 @@ final class SwitchLabels {
 
     static String title(BooleanSetting setting) {
         if (setting == Settings.MARKETPLACE_ONLY) return L10n.t("Marketplace only");
+        if (setting == Settings.EVENTS_ONLY) return L10n.t("Events only");
         if (setting == Settings.MARKETPLACE_QUIET_NOTIFICATIONS) return L10n.t("Quiet social notifications");
         if (setting == Settings.MARKETPLACE_SKIP_FEED_PREFETCH) return L10n.t("Skip feed preloading");
         if (setting == Settings.OPEN_ON_CHOSEN_TAB) return L10n.t("Open on a chosen tab");

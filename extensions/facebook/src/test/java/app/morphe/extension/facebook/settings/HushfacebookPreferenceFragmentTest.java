@@ -1030,7 +1030,7 @@ public class HushfacebookPreferenceFragmentTest {
             List<String> values = new ArrayList<>();
             for (CharSequence value : start.getEntryValues()) values.add(String.valueOf(value));
             List<String> names = new ArrayList<>();
-            for (StartTab each : StartTab.values()) names.add(each.name());
+            for (StartTab each : StartTab.choices()) names.add(each.name());
             assertEquals(names, values);
 
             assertEquals("MARKETPLACE", start.getValue());

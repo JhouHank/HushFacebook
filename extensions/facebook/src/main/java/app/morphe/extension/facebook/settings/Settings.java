@@ -1194,6 +1194,15 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting MARKETPLACE_ONLY =
             new BooleanSetting("hushfacebook_marketplace_only", FALSE, true);
 
+    /**
+     * Like {@link #MARKETPLACE_ONLY}, with Events in Marketplace's place (#164): the tab bar keeps
+     * Events, Notifications and the profile or Menu tab, and a start from the launcher icon opens
+     * Events. Marketplace only wins when both are on, and this greys out under it. Facebook builds
+     * the bar once, so a change shows when it restarts.
+     */
+    public static final BooleanSetting EVENTS_ONLY =
+            new BooleanSetting("hushfacebook_events_only", FALSE, true, Setting.parentNot(MARKETPLACE_ONLY));
+
     /** Silences only recognized social promotions while Marketplace only is selected. */
     public static final BooleanSetting MARKETPLACE_QUIET_NOTIFICATIONS =
             new BooleanSetting("hushfacebook_marketplace_quiet_notifications", FALSE);

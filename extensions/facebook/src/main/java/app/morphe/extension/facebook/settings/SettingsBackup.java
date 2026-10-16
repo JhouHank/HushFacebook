@@ -238,6 +238,7 @@ public final class SettingsBackup {
             Settings.APP_LOCK,
             Settings.SAVE_CRASH_FILE,
             Settings.MARKETPLACE_ONLY,
+            Settings.EVENTS_ONLY,
             Settings.MARKETPLACE_QUIET_NOTIFICATIONS,
             Settings.MARKETPLACE_SKIP_FEED_PREFETCH,
             Settings.HIDE_REELS_TAB,

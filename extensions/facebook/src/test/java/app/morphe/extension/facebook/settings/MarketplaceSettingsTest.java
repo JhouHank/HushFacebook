@@ -58,6 +58,7 @@ public class MarketplaceSettingsTest {
         MarketplaceOnlyForTests.resetState();
         HookStatus.clear();
         Settings.MARKETPLACE_ONLY.resetToDefault();
+        Settings.EVENTS_ONLY.resetToDefault();
         Settings.OPEN_ON_CHOSEN_TAB.save(true);
         Settings.START_TAB.save(StartTab.FRIENDS);
     }
@@ -69,6 +70,7 @@ public class MarketplaceSettingsTest {
         MarketplaceOnlyForTests.resetState();
         HookStatus.clear();
         Settings.MARKETPLACE_ONLY.resetToDefault();
+        Settings.EVENTS_ONLY.resetToDefault();
         Settings.OPEN_ON_CHOSEN_TAB.resetToDefault();
         Settings.START_TAB.resetToDefault();
         ScreenColors.shown = null;
@@ -143,6 +145,39 @@ public class MarketplaceSettingsTest {
             assertEquals(StartTab.FRIENDS, Settings.START_TAB.savedValue());
             assertFalse(back.isEnabled());
             assertNotNull(ShadowToast.getTextOfLatestToast());
+        }
+    }
+
+    @Test
+    public void eventsOnlyHasItsOwnRowAndSummaryAndReturnToRegularTurnsBothOff() {
+        assertFalse(Settings.EVENTS_ONLY.defaultValue);
+        Settings.EVENTS_ONLY.save(true);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            HushfacebookPreferenceFragment page = open(controller.get());
+            SwitchPreference row = (SwitchPreference) page.findPreference(Settings.EVENTS_ONLY.key);
+            assertNotNull(row);
+            assertTrue(row.isChecked());
+            assertEquals("Events only", String.valueOf(row.getTitle()));
+            assertEquals(HushfacebookPreferenceFragment.eventsSummary(), String.valueOf(row.getSummary()));
+            Preference tab = page.findPreference(Settings.START_TAB.key);
+            assertFalse(tab.isEnabled());
+            assertEquals("Events only chooses the opening tab. Your previous choice stays saved.",
+                    String.valueOf(tab.getSummary()));
+            assertFalse(page.findPreference(Settings.MARKETPLACE_SKIP_FEED_PREFETCH.key).isEnabled());
+            // Events isn't one of the opening tab choices.
+            for (CharSequence value : ((android.preference.ListPreference) tab).getEntryValues()) {
+                assertFalse(String.valueOf(value), "EVENTS".contentEquals(value));
+            }
+
+            Preference back = titled(page.getPreferenceScreen(), "Return to regular Facebook");
+            assertTrue(back.isEnabled());
+            assertTrue(back.getOnPreferenceClickListener().onPreferenceClick(back));
+            ShadowLooper.idleMainLooper();
+            assertFalse(Settings.EVENTS_ONLY.savedValue());
+            assertFalse(Settings.MARKETPLACE_ONLY.savedValue());
+            assertFalse(row.isChecked());
+            assertFalse(back.isEnabled());
+            assertTrue(tab.isEnabled());
         }
     }
 

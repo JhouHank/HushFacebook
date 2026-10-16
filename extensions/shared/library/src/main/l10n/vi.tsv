@@ -373,6 +373,8 @@ Feeds	Bảng feed
 Video	Video
 Friends	Bạn bè
 Marketplace	Marketplace
+# context: a tab's name, as Facebook's tab bar shows it; the list of tabs Facebook can open on
+Events	Sự kiện
 Notifications	Thông báo
 Menu	Menu
 # context: summary of the tab list; %1$s is one of the tab names above
@@ -429,6 +431,8 @@ Tap to play	Nhấn để phát
 Videos, reels, stories and music wait for your tap instead of playing by themselves. Facebook's own Autoplay setting shows Off while this is on.	Video, reel, tin và nhạc chờ bạn nhấn thay vì tự phát. Cài đặt Tự động phát của Facebook sẽ hiện Tắt khi mục này bật.
 # context: switch title under Opening Facebook; Marketplace is Facebook's tab and keeps its name
 Marketplace only	Chỉ Marketplace
+# context: switch title under Opening Facebook, next to Marketplace only; Events is Facebook's tab and keeps its name
+Events only	Chỉ Sự kiện
 # context: summary of that switch; the tab names are Facebook's own, as its tab bar shows them
 # context: switch title under Menu; Upgrades is the name of a section in Facebook's own Menu
 Hide Upgrades	Ẩn Nâng cấp
@@ -675,26 +679,42 @@ Hides posts featuring Meta's AI characters, the chatbots people make with Meta A
 Also hides posts their creator labeled as made with AI, not just the ones Facebook detects itself. Untested on a real feed, so it starts off.	Ẩn cả bài viết được người tạo gắn nhãn là tạo bằng AI, không chỉ những bài Facebook tự nhận diện. Chưa được thử trên bảng tin thật nên mặc định tắt.
 Return to regular Facebook	Quay lại Facebook thông thường
 Restore the normal tabs at the next restart. Your other settings stay saved.	Khôi phục các tab bình thường ở lần khởi động lại tiếp theo. Các cài đặt khác của bạn vẫn được lưu.
-Marketplace only is off. Restart Facebook to restore its normal tabs.	Chỉ Marketplace đang tắt. Khởi động lại Facebook để khôi phục các tab bình thường.
+Marketplace only and Events only are off. Restart Facebook to restore its normal tabs.	Chỉ Marketplace và Chỉ Sự kiện đang tắt. Khởi động lại Facebook để khôi phục các tab bình thường.
 Couldn't save the change. Try again.	Không thể lưu thay đổi. Hãy thử lại.
 Marketplace only chooses the opening tab. Your previous choice stays saved.	Chỉ Marketplace quyết định tab mở đầu tiên. Lựa chọn trước đó của bạn vẫn được lưu.
+# context: summary of the tab rows under Opening Facebook while Events only is on
+Events only chooses the opening tab. Your previous choice stays saved.	Chỉ Sự kiện quyết định tab mở đầu tiên. Lựa chọn trước đó của bạn vẫn được lưu.
 Restart needed. Marketplace only will turn on the next time Facebook starts.	Cần khởi động lại. Chỉ Marketplace sẽ bật vào lần tới Facebook khởi động.
+# context: status line under the Events only switch
+Restart needed. Events only will turn on the next time Facebook starts.	Cần khởi động lại. Chỉ Sự kiện sẽ bật vào lần tới Facebook khởi động.
 Restart needed. The normal tabs will return the next time Facebook starts.	Cần khởi động lại. Các tab bình thường sẽ trở lại vào lần tới Facebook khởi động.
 Marketplace is hidden in Facebook's tab settings. Show it under Settings, Tab bar, Customize the bar. Your normal tabs stay available.	Marketplace đang bị ẩn trong cài đặt tab của Facebook. Hãy hiện lại ở Cài đặt, Thanh tab, Tùy chỉnh thanh. Các tab bình thường vẫn dùng được.
+# context: status line under the Events only switch; Settings, Tab bar and Customize the bar are Facebook's own names
+Events is hidden in Facebook's tab settings. Pin it under Settings, Tab bar, Customize the bar. Your normal tabs stay available.	Sự kiện đang bị ẩn trong cài đặt tab của Facebook. Hãy ghim ở Cài đặt, Thanh tab, Tùy chỉnh thanh. Các tab bình thường vẫn dùng được.
 Marketplace unavailable. Facebook hasn't supplied a Marketplace tab for this account. Your normal tabs stay available.	Marketplace không khả dụng. Facebook chưa cung cấp tab Marketplace cho tài khoản này. Các tab bình thường vẫn dùng được.
+# context: status line under the Events only switch
+Events isn't on your tab bar. Pin it under Settings, Tab bar, Customize the bar, then restart Facebook. Your normal tabs stay available.	Sự kiện không có trên thanh tab của bạn. Hãy ghim ở Cài đặt, Thanh tab, Tùy chỉnh thanh rồi khởi động lại Facebook. Các tab bình thường vẫn dùng được.
 Couldn't check the tab bar. Your normal tabs stay available. Restart Facebook to try again.	Không thể kiểm tra thanh tab. Các tab bình thường vẫn dùng được. Khởi động lại Facebook để thử lại.
 Waiting for Facebook's tab bar. Marketplace only will apply when Facebook builds it.	Đang chờ thanh tab của Facebook. Chỉ Marketplace sẽ áp dụng khi Facebook dựng xong thanh tab.
+# context: status line under the Events only switch
+Waiting for Facebook's tab bar. Events only will apply when Facebook builds it.	Đang chờ thanh tab của Facebook. Chỉ Sự kiện sẽ áp dụng khi Facebook dựng xong thanh tab.
 Off. Turn on to open Marketplace and hide the feed and other social tabs after restarting Facebook.	Đang tắt. Bật để mở Marketplace và ẩn bảng tin cùng các tab mạng xã hội khác sau khi khởi động lại Facebook.
+# context: status line under the Events only switch
+Off. Turn on to open Events and hide the feed and other social tabs after restarting Facebook.	Đang tắt. Bật để mở Sự kiện và ẩn bảng tin cùng các tab mạng xã hội khác sau khi khởi động lại Facebook.
 Quiet social notifications	Tắt tiếng thông báo mạng xã hội
 Skip feed preloading	Bỏ qua tải trước bảng tin
-Marketplace only is off.	Chỉ Marketplace đang tắt.
+Marketplace only and Events only are off.	Chỉ Marketplace và Chỉ Sự kiện đang tắt.
 Paused with Hushfacebook. Your Marketplace choice stays saved. Tabs already hidden return after a restart while paused.	Đang tạm dừng cùng Hushfacebook. Lựa chọn Marketplace của bạn vẫn được lưu. Các tab đã ẩn sẽ trở lại sau khi khởi động lại trong lúc tạm dừng.
+# context: status line under the Events only switch
+Paused with Hushfacebook. Your Events choice stays saved. Tabs already hidden return after a restart while paused.	Đang tạm dừng cùng Hushfacebook. Lựa chọn Sự kiện của bạn vẫn được lưu. Các tab đã ẩn sẽ trở lại sau khi khởi động lại trong lúc tạm dừng.
 While Marketplace only is on, silences video suggestions, memories, birthdays and friend suggestions. Messages and trading updates still arrive.	Khi Chỉ Marketplace bật, tắt tiếng gợi ý video, kỷ niệm, sinh nhật và gợi ý kết bạn. Tin nhắn và cập nhật mua bán vẫn đến.
 While Marketplace only is on, loads less of the feed in the background. Some loading still happens at startup.	Khi Chỉ Marketplace bật, tải ít bảng tin hơn ở chế độ nền. Lúc khởi động vẫn có một phần được tải.
 Active. Marketplace, Notifications and Profile/Menu stay. Find Hushfacebook settings in Menu, under Settings and privacy.	Đang hoạt động. Marketplace, Thông báo và Trang cá nhân/Menu vẫn giữ lại. Cài đặt Hushfacebook nằm trong Menu, mục Cài đặt & quyền riêng tư.
+# context: status line under the Events only switch; Menu is Facebook's tab
+Active. Events, Notifications and Profile/Menu stay. Find Hushfacebook settings in Menu, under Settings and privacy.	Đang hoạt động. Sự kiện, Thông báo và Trang cá nhân/Menu vẫn giữ lại. Cài đặt Hushfacebook nằm trong Menu, mục Cài đặt & quyền riêng tư.
 
 # context: Settings overview, category navigation and search.
-Marketplace only and your start tab	Chỉ Marketplace và tab mở đầu
+Marketplace only, Events only and your start tab	Chỉ Marketplace, Chỉ Sự kiện và tab mở đầu
 Ads, suggestions and word filters	Quảng cáo, gợi ý và bộ lọc từ
 Suggestions, saving, auto-advance and viewing anonymously	Gợi ý, lưu, tự chuyển và xem ẩn danh
 Cleaner reels and video controls	Reel gọn hơn và điều khiển video

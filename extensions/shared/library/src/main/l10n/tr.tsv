@@ -373,6 +373,8 @@ Feeds	Akışlar
 Video	Video
 Friends	Arkadaşlar
 Marketplace	Marketplace
+# context: a tab's name, as Facebook's tab bar shows it; the list of tabs Facebook can open on
+Events	Etkinlikler
 Notifications	Bildirimler
 Menu	Menü
 # context: summary of the tab list; %1$s is one of the tab names above
@@ -429,6 +431,8 @@ Tap to play	Oynatmak için dokun
 Videos, reels, stories and music wait for your tap instead of playing by themselves. Facebook's own Autoplay setting shows Off while this is on.	Videolar, reeller, hikayeler ve müzik kendiliğinden oynamak yerine dokunuşunuzu bekler. Bu açıkken Facebook'un kendi Otomatik oynat ayarı Kapalı görünür.
 # context: switch title under Opening Facebook; Marketplace is Facebook's tab and keeps its name
 Marketplace only	Yalnızca Marketplace
+# context: switch title under Opening Facebook, next to Marketplace only; Events is Facebook's tab and keeps its name
+Events only	Yalnızca Etkinlikler
 # context: summary of that switch; the tab names are Facebook's own, as its tab bar shows them
 # context: switch title under Menu; Upgrades is the name of a section in Facebook's own Menu
 Hide Upgrades	“Yükseltmeler” bölümünü gizle
@@ -675,26 +679,42 @@ Hides posts featuring Meta's AI characters, the chatbots people make with Meta A
 Also hides posts their creator labeled as made with AI, not just the ones Facebook detects itself. Untested on a real feed, so it starts off.	Yalnızca Facebook'un kendi tespit ettiklerini değil, yaratıcısının yapay zekayla üretildi olarak işaretlediği gönderileri de gizler. Gerçek bir akışta henüz denenmedi, bu yüzden kapalı başlar.
 Return to regular Facebook	Normal Facebook'a dön
 Restore the normal tabs at the next restart. Your other settings stay saved.	Bir sonraki yeniden başlatmada normal sekmeleri geri getirir. Diğer ayarlarınız kayıtlı kalır.
-Marketplace only is off. Restart Facebook to restore its normal tabs.	Marketplace modu kapalı. Normal sekmeleri geri getirmek için Facebook'u yeniden başlatın.
+Marketplace only and Events only are off. Restart Facebook to restore its normal tabs.	Marketplace ve Etkinlikler modları kapalı. Normal sekmeleri geri getirmek için Facebook'u yeniden başlatın.
 Couldn't save the change. Try again.	Değişiklik kaydedilemedi. Tekrar deneyin.
 Marketplace only chooses the opening tab. Your previous choice stays saved.	Açılış sekmesini Marketplace modu belirler. Önceki seçiminiz kayıtlı kalır.
+# context: summary of the tab rows under Opening Facebook while Events only is on
+Events only chooses the opening tab. Your previous choice stays saved.	Açılış sekmesini Etkinlikler modu belirler. Önceki seçiminiz kayıtlı kalır.
 Restart needed. Marketplace only will turn on the next time Facebook starts.	Yeniden başlatma gerekiyor. Marketplace modu, Facebook bir sonraki açılışında etkinleşecek.
+# context: status line under the Events only switch
+Restart needed. Events only will turn on the next time Facebook starts.	Yeniden başlatma gerekiyor. Etkinlikler modu, Facebook bir sonraki açılışında etkinleşecek.
 Restart needed. The normal tabs will return the next time Facebook starts.	Yeniden başlatma gerekiyor. Normal sekmeler, Facebook bir sonraki açılışında geri gelecek.
 Marketplace is hidden in Facebook's tab settings. Show it under Settings, Tab bar, Customize the bar. Your normal tabs stay available.	Marketplace, Facebook'un sekme ayarlarında gizli. Ayarlar, Sekme çubuğu, Çubuğu özelleştir bölümünden gösterin. Normal sekmeleriniz kullanılabilir.
+# context: status line under the Events only switch; Settings, Tab bar and Customize the bar are Facebook's own names
+Events is hidden in Facebook's tab settings. Pin it under Settings, Tab bar, Customize the bar. Your normal tabs stay available.	Etkinlikler, Facebook'un sekme ayarlarında gizli. Ayarlar, Sekme çubuğu, Çubuğu özelleştir bölümünden sabitleyin. Normal sekmeleriniz kullanılabilir.
 Marketplace unavailable. Facebook hasn't supplied a Marketplace tab for this account. Your normal tabs stay available.	Marketplace kullanılamıyor. Facebook bu hesap için bir Marketplace sekmesi sağlamadı. Normal sekmeleriniz kullanılabilir.
+# context: status line under the Events only switch
+Events isn't on your tab bar. Pin it under Settings, Tab bar, Customize the bar, then restart Facebook. Your normal tabs stay available.	Etkinlikler sekme çubuğunuzda yok. Ayarlar, Sekme çubuğu, Çubuğu özelleştir bölümünden sabitleyin ve Facebook'u yeniden başlatın. Normal sekmeleriniz kullanılabilir.
 Couldn't check the tab bar. Your normal tabs stay available. Restart Facebook to try again.	Sekme çubuğu kontrol edilemedi. Normal sekmeleriniz kullanılabilir. Tekrar denemek için Facebook'u yeniden başlatın.
 Waiting for Facebook's tab bar. Marketplace only will apply when Facebook builds it.	Facebook'un sekme çubuğu bekleniyor. Facebook çubuğu oluşturduğunda Marketplace modu uygulanacak.
+# context: status line under the Events only switch
+Waiting for Facebook's tab bar. Events only will apply when Facebook builds it.	Facebook'un sekme çubuğu bekleniyor. Facebook çubuğu oluşturduğunda Etkinlikler modu uygulanacak.
 Off. Turn on to open Marketplace and hide the feed and other social tabs after restarting Facebook.	Kapalı. Facebook'u yeniden başlattıktan sonra Marketplace'i açmak ve akışı ve diğer sosyal sekmeleri gizlemek için etkinleştirin.
+# context: status line under the Events only switch
+Off. Turn on to open Events and hide the feed and other social tabs after restarting Facebook.	Kapalı. Facebook'u yeniden başlattıktan sonra Etkinlikler'i açmak ve akışı ve diğer sosyal sekmeleri gizlemek için etkinleştirin.
 Quiet social notifications	Sosyal bildirimleri sustur
 Skip feed preloading	Akış ön yüklemesini atla
-Marketplace only is off.	Marketplace modu kapalı.
+Marketplace only and Events only are off.	Marketplace ve Etkinlikler modları kapalı.
 Paused with Hushfacebook. Your Marketplace choice stays saved. Tabs already hidden return after a restart while paused.	Hushfacebook ile duraklatıldı. Marketplace seçiminiz kayıtlı kalır. Gizlenen sekmeler, duraklatma sürerken yeniden başlattığınızda geri gelir.
+# context: status line under the Events only switch
+Paused with Hushfacebook. Your Events choice stays saved. Tabs already hidden return after a restart while paused.	Hushfacebook ile duraklatıldı. Etkinlikler seçiminiz kayıtlı kalır. Gizlenen sekmeler, duraklatma sürerken yeniden başlattığınızda geri gelir.
 While Marketplace only is on, silences video suggestions, memories, birthdays and friend suggestions. Messages and trading updates still arrive.	Marketplace modu açıkken video önerilerini, anıları, doğum günlerini ve arkadaş önerilerini sessize alır. Mesajlar ve alım satım bildirimleri yine gelir.
 While Marketplace only is on, loads less of the feed in the background. Some loading still happens at startup.	Marketplace modu açıkken akışın arka planda daha az yüklenmesini sağlar. Açılışta yine de biraz yükleme olur.
 Active. Marketplace, Notifications and Profile/Menu stay. Find Hushfacebook settings in Menu, under Settings and privacy.	Etkin. Marketplace, Bildirimler ve Profil/Menü kalır. Hushfacebook ayarları Menü içindeki Ayarlar ve gizlilik bölümündedir.
+# context: status line under the Events only switch; Menu is Facebook's tab
+Active. Events, Notifications and Profile/Menu stay. Find Hushfacebook settings in Menu, under Settings and privacy.	Etkin. Etkinlikler, Bildirimler ve Profil/Menü kalır. Hushfacebook ayarları Menü içindeki Ayarlar ve gizlilik bölümündedir.
 
 # context: Settings overview, category navigation and search.
-Marketplace only and your start tab	Marketplace modu ve başlangıç sekmesi
+Marketplace only, Events only and your start tab	Marketplace modu, Etkinlikler modu ve başlangıç sekmesi
 Ads, suggestions and word filters	Reklamlar, öneriler ve kelime filtreleri
 Suggestions, saving, auto-advance and viewing anonymously	Öneriler, kaydetme, otomatik ilerleme ve anonim izleme
 Cleaner reels and video controls	Daha sade Reels ve video kontrolleri

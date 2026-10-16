@@ -2370,7 +2370,7 @@
     },
     {
       "name": "Marketplace only",
-      "description": "Turns Facebook into a Marketplace app for buying and selling without the feed. The tab bar keeps only Marketplace, Notifications and your profile or Menu, and Facebook opens on Marketplace. Starts off. Turn it on in Hushfacebook settings > Opening Facebook, then restart Facebook.",
+      "description": "Turns Facebook into a Marketplace app for buying and selling without the feed. The tab bar keeps only Marketplace, Notifications and your profile or Menu, and Facebook opens on Marketplace. The Events only switch does the same for Events once you pin Events in Facebook's Customize the bar. Both start off. Turn one on in Hushfacebook settings > Opening Facebook, then restart Facebook.",
       "category": "Navigation",
       "use": true,
       "dependencies": [

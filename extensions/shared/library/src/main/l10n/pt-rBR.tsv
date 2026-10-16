@@ -362,6 +362,8 @@ Feeds	Feeds
 Video	Vídeo
 Friends	Amigos
 Marketplace	Marketplace
+# context: a tab's name, as Facebook's tab bar shows it; the list of tabs Facebook can open on
+Events	Eventos
 Notifications	Notificações
 Menu	Menu
 Facebook opens on %1$s. If your tab bar doesn't have it, Facebook opens on Home.	O Facebook abre em %1$s. Se essa aba não estiver na sua barra de abas, o Facebook abrirá na Página inicial.
@@ -405,6 +407,8 @@ Playback	Reprodução
 Tap to play	Tocar para reproduzir
 Videos, reels, stories and music wait for your tap instead of playing by themselves. Facebook's own Autoplay setting shows Off while this is on.	Vídeos, reels, stories e músicas esperam o seu toque, em vez de tocar sozinhos. A configuração Reprodução automática do próprio Facebook mostra Desativada enquanto isto estiver ligado.
 Marketplace only	Só Marketplace
+# context: switch title under Opening Facebook, next to Marketplace only; Events is Facebook's tab and keeps its name
+Events only	Só Eventos
 Hide Upgrades	Ocultar “Upgrades”
 The Upgrades section and its offers leave Facebook's Menu. Settings, Help and support and the rest of the Menu stay.	A seção “Upgrades” e suas ofertas são removidas do Menu do Facebook. Configurações, Ajuda e suporte e o restante do Menu permanecem.
 Hide Also from Meta	Ocultar “Também da Meta”
@@ -573,24 +577,40 @@ Hides posts featuring Meta's AI characters, the chatbots people make with Meta A
 Also hides posts their creator labeled as made with AI, not just the ones Facebook detects itself. Untested on a real feed, so it starts off.	Oculta também as publicações que o criador marcou como feitas com IA, e não só as que o Facebook detecta. Ainda não testado em um feed real, por isso começa desligado.
 Return to regular Facebook	Voltar ao Facebook normal
 Restore the normal tabs at the next restart. Your other settings stay saved.	Restaura as abas normais ao reiniciar. Suas outras configurações são mantidas.
-Marketplace only is off. Restart Facebook to restore its normal tabs.	O modo Marketplace está desativado. Reinicie o Facebook para restaurar as abas normais.
+Marketplace only and Events only are off. Restart Facebook to restore its normal tabs.	Os modos Marketplace e Eventos estão desativados. Reinicie o Facebook para restaurar as abas normais.
 Couldn't save the change. Try again.	Não foi possível salvar a alteração. Tente novamente.
 Marketplace only chooses the opening tab. Your previous choice stays saved.	O modo Marketplace define a aba inicial. Sua escolha anterior é mantida.
+# context: summary of the tab rows under Opening Facebook while Events only is on
+Events only chooses the opening tab. Your previous choice stays saved.	O modo Eventos define a aba inicial. Sua escolha anterior é mantida.
 Restart needed. Marketplace only will turn on the next time Facebook starts.	É preciso reiniciar. O modo Marketplace será ativado na próxima vez que o Facebook for iniciado.
+# context: status line under the Events only switch
+Restart needed. Events only will turn on the next time Facebook starts.	É preciso reiniciar. O modo Eventos será ativado na próxima vez que o Facebook for iniciado.
 Restart needed. The normal tabs will return the next time Facebook starts.	É preciso reiniciar. As abas normais voltarão na próxima vez que o Facebook for iniciado.
 Marketplace is hidden in Facebook's tab settings. Show it under Settings, Tab bar, Customize the bar. Your normal tabs stay available.	O Marketplace está oculto nas configurações de abas do Facebook. Exiba em Configurações, Barra de abas, Personalizar a barra. Suas abas normais continuam disponíveis.
+# context: status line under the Events only switch; Settings, Tab bar and Customize the bar are Facebook's own names
+Events is hidden in Facebook's tab settings. Pin it under Settings, Tab bar, Customize the bar. Your normal tabs stay available.	Eventos está oculto nas configurações de abas do Facebook. Fixe em Configurações, Barra de abas, Personalizar a barra. Suas abas normais continuam disponíveis.
 Marketplace unavailable. Facebook hasn't supplied a Marketplace tab for this account. Your normal tabs stay available.	Marketplace indisponível. O Facebook não forneceu uma aba do Marketplace para esta conta. Suas abas normais continuam disponíveis.
+# context: status line under the Events only switch
+Events isn't on your tab bar. Pin it under Settings, Tab bar, Customize the bar, then restart Facebook. Your normal tabs stay available.	Eventos não está na sua barra de abas. Fixe em Configurações, Barra de abas, Personalizar a barra e reinicie o Facebook. Suas abas normais continuam disponíveis.
 Couldn't check the tab bar. Your normal tabs stay available. Restart Facebook to try again.	Não foi possível verificar a barra de abas. Suas abas normais continuam disponíveis. Reinicie o Facebook para tentar novamente.
 Waiting for Facebook's tab bar. Marketplace only will apply when Facebook builds it.	Aguardando a barra de abas do Facebook. O modo Marketplace será aplicado quando o Facebook a criar.
+# context: status line under the Events only switch
+Waiting for Facebook's tab bar. Events only will apply when Facebook builds it.	Aguardando a barra de abas do Facebook. O modo Eventos será aplicado quando o Facebook a criar.
 Off. Turn on to open Marketplace and hide the feed and other social tabs after restarting Facebook.	Desativado. Ative para abrir o Marketplace e ocultar o feed e outras abas sociais após reiniciar o Facebook.
+# context: status line under the Events only switch
+Off. Turn on to open Events and hide the feed and other social tabs after restarting Facebook.	Desativado. Ative para abrir Eventos e ocultar o feed e outras abas sociais após reiniciar o Facebook.
 Quiet social notifications	Silenciar notificações sociais
 Skip feed preloading	Ignorar o pré-carregamento do feed
-Marketplace only is off.	O modo Marketplace está desativado.
+Marketplace only and Events only are off.	Os modos Marketplace e Eventos estão desativados.
 Paused with Hushfacebook. Your Marketplace choice stays saved. Tabs already hidden return after a restart while paused.	Pausado com o Hushfacebook. Sua escolha do Marketplace é mantida. As abas ocultas voltam após reiniciar enquanto o Hushfacebook estiver pausado.
+# context: status line under the Events only switch
+Paused with Hushfacebook. Your Events choice stays saved. Tabs already hidden return after a restart while paused.	Pausado com o Hushfacebook. Sua escolha de Eventos é mantida. As abas ocultas voltam após reiniciar enquanto o Hushfacebook estiver pausado.
 While Marketplace only is on, silences video suggestions, memories, birthdays and friend suggestions. Messages and trading updates still arrive.	Enquanto o modo Marketplace está ligado, silencia sugestões de vídeos, lembranças, aniversários e sugestões de amizade. Mensagens e novidades de compra e venda continuam chegando.
 While Marketplace only is on, loads less of the feed in the background. Some loading still happens at startup.	Enquanto o modo Marketplace está ligado, carrega menos do feed em segundo plano. Ainda há algum carregamento ao abrir.
 Active. Marketplace, Notifications and Profile/Menu stay. Find Hushfacebook settings in Menu, under Settings and privacy.	Ativo. Marketplace, Notificações e Perfil/Menu são mantidos. As configurações do Hushfacebook ficam no Menu, em Configurações e privacidade.
-Marketplace only and your start tab	Modo Marketplace e aba inicial
+# context: status line under the Events only switch; Menu is Facebook's tab
+Active. Events, Notifications and Profile/Menu stay. Find Hushfacebook settings in Menu, under Settings and privacy.	Ativo. Eventos, Notificações e Perfil/Menu são mantidos. As configurações do Hushfacebook ficam no Menu, em Configurações e privacidade.
+Marketplace only, Events only and your start tab	Modo Marketplace, modo Eventos e aba inicial
 Ads, suggestions and word filters	Anúncios, sugestões e filtros de palavras
 Suggestions, saving, auto-advance and viewing anonymously	Sugestões, salvamento, avanço automático e visualização anônima
 Cleaner reels and video controls	Reels mais limpos e controles de vídeo

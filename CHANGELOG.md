@@ -22,6 +22,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** The settings now come in Vietnamese when Facebook runs in Vietnamese (issue #152). Every row, switch name and description is translated. Some of Facebook's own feature names may read a little differently from the app's, and a better wording is welcome on the issue.
 * **Facebook:** **Hide more posts under notification posts**, a new switch under News feed, opens a post from a notification without the "More from your friends" list Facebook adds under it, which can carry ads (issue #163). It starts off and takes effect from the next post you open.
 * **Facebook:** **Tab bar at the top**, a new switch under Appearance, puts Facebook's tab bar back at the top, under the search row, as older Facebook had it (issue #166). It starts off and needs a restart. With **Tab bar at the bottom** on too, the bottom one wins and this one greys out.
+* **Facebook:** **Events only**, a new switch under Opening Facebook, does for Events what Marketplace only does for Marketplace (issue #164). After a restart the tab bar keeps Events, Notifications and Profile/Menu, and Facebook opens on Events. Pin Events under Settings, Tab bar, Customize the bar first if your bar doesn't show it. It starts off. If Marketplace only is on too, that one wins and this one greys out. Return to regular Facebook turns both off.
 
 ### Changed
 
