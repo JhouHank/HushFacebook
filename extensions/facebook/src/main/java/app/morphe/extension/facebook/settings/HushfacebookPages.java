@@ -112,6 +112,10 @@ final class HushfacebookPages {
             appearance.addPreference(toggle(context, Settings.BOTTOM_TAB_BAR,
                     L10n.t("Moves Facebook's tab bar to the bottom, within thumb reach, on accounts that show it at the top. "
                             + "Restart Facebook to see the change.")));
+            // Same override answered the other way; the bottom switch wins, so this one greys out under it.
+            appearance.addPreference(toggle(context, Settings.TOP_TAB_BAR,
+                    L10n.t("Moves Facebook's tab bar to the top, under the search row, as older Facebook had it. Restart "
+                            + "Facebook to see the change.")));
             // Facebook adds the bar to the views that scroll away as its main screen starts.
             appearance.addPreference(toggle(context, Settings.TAB_BAR_SCROLL_AWAY,
                     L10n.t("The bottom tab bar hides as you scroll down and returns when you scroll up, for more room. Restart "

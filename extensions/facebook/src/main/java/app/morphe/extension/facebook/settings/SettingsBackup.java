@@ -264,6 +264,7 @@ public final class SettingsBackup {
             Settings.HIDE_EXPLORE_TAB,
             Settings.HIDE_JOBS_TAB,
             Settings.BOTTOM_TAB_BAR,
+            Settings.TOP_TAB_BAR,
             Settings.TAB_BAR_SCROLL_AWAY,
             Settings.KEEP_TAB_BAR,
             Settings.KEEP_TOP_BAR,

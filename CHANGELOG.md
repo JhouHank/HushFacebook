@@ -21,6 +21,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** A **Restart Facebook** row now sits at the end of the settings home page, just above Support Hushfacebook, so you can restart Facebook from settings whenever you like (issue #155). It steps aside while a changed switch is waiting for its own restart row.
 * **Facebook:** The settings now come in Vietnamese when Facebook runs in Vietnamese (issue #152). Every row, switch name and description is translated. Some of Facebook's own feature names may read a little differently from the app's, and a better wording is welcome on the issue.
 * **Facebook:** **Hide more posts under notification posts**, a new switch under News feed, opens a post from a notification without the "More from your friends" list Facebook adds under it, which can carry ads (issue #163). It starts off and takes effect from the next post you open.
+* **Facebook:** **Tab bar at the top**, a new switch under Appearance, puts Facebook's tab bar back at the top, under the search row, as older Facebook had it (issue #166). It starts off and needs a restart. With **Tab bar at the bottom** on too, the bottom one wins and this one greys out.
 
 ### Changed
 

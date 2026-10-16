@@ -1304,6 +1304,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_bottom_tab_bar", FALSE, true);
 
     /**
+     * The tab bar goes to the top of the screen, under the search row, as older Facebook had it
+     * (#166, {@link app.morphe.extension.facebook.navigation.BottomTabBar}). Facebook places the bar
+     * as its main screen starts, so a change waits for a restart. Greyed out while
+     * {@link #BOTTOM_TAB_BAR} is on, which wins.
+     */
+    public static final BooleanSetting TOP_TAB_BAR =
+            new BooleanSetting("hushfacebook_top_tab_bar", FALSE, true, Setting.parentNot(BOTTOM_TAB_BAR));
+
+    /**
      * The tab bar at the bottom slides away while the feed scrolls down and comes back scrolling
      * up, through Facebook's own scroll-away
      * ({@link app.morphe.extension.facebook.navigation.TabBarScrollAway}). Facebook adds the bar to

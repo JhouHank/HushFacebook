@@ -94,8 +94,12 @@ Until you resume, every switch but Debug logging and Lock Facebook acts as if it
 Shows your phone's own emoji instead of Facebook's. Reactions and stickers don't change. Restart Facebook to see the change.	Facebook'unkiler yerine telefonunuzun kendi emojilerini gösterir. Tepkiler ve çıkartmalar değişmez. Değişikliği görmek için Facebook'u yeniden başlatın.
 # context: switch title under Appearance; the tab bar is Facebook's row of tabs, Home, Video, Marketplace and the rest
 Tab bar at the bottom	Sekme çubuğu altta
+# context: switch title under Appearance, next to Tab bar at the bottom; puts Facebook's row of tabs at the top of the screen
+Tab bar at the top	Sekme çubuğu üstte
 # context: description of that switch; Facebook shows the tab bar at the top of the screen on some accounts and at the bottom on others
 Moves Facebook's tab bar to the bottom, within thumb reach, on accounts that show it at the top. Restart Facebook to see the change.	Sekme çubuğunu üstte gösteren hesaplarda Facebook'un sekme çubuğunu başparmağınızın erişeceği alt kısma taşır. Değişikliği görmek için Facebook'u yeniden başlatın.
+# context: summary of that switch; the search row is the top bar with the Facebook logo, search and Messenger
+Moves Facebook's tab bar to the top, under the search row, as older Facebook had it. Restart Facebook to see the change.	Facebook'un sekme çubuğunu, eski Facebook'taki gibi arama satırının altına, üste taşır. Değişikliği görmek için Facebook'u yeniden başlatın.
 # context: switch title under Appearance, right after Tab bar at the bottom; the bar slides off the screen while you scroll the feed down
 Hide the tab bar while scrolling	Kaydırırken sekme çubuğunu gizle
 # context: description of that switch; it does nothing while the tab bar is at the top of the screen
