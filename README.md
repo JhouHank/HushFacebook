@@ -22,7 +22,7 @@ Each row in the [patch table](#patches) says how its switch starts. The ad filte
 
 This project has no connection to Meta or to the Morphe project. Neither endorses it, and neither wrote it.
 
-The latest release is [v0.13.0](https://github.com/SysAdminDoc/Hushfacebook/releases/tag/v0.13.0), with 88 patches. It includes all changes since v0.12.0, among them switches that hide reposts, keep saves quiet and take the Meta AI button out of Chats, Save photo for a photo Story with music, picture-in-picture that comes back full screen when a link opens, and fixes for link posts, the kept top bar and the reel progress bar, as the [changelog](CHANGELOG.md) describes.
+The latest release is [v0.14.0](https://github.com/SysAdminDoc/Hushfacebook/releases/tag/v0.14.0), with 91 patches. It includes all changes since v0.13.0, among them support for Facebook 583, new patches that skip silent parts and post Stories in HD, switches for a tab bar at the top, a reel's original audio and the phone layout on big screens, settings in Vietnamese and fixes for picture-in-picture and the reel progress bar, as the [changelog](CHANGELOG.md) describes.
 
 [Add to Morphe](https://morphe.software/add-source?github=SysAdminDoc%2FHushfacebook) | [Download a release](https://github.com/SysAdminDoc/Hushfacebook/releases/latest) | [Browse the patches](#patches)
 
