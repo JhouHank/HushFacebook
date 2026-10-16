@@ -67,6 +67,37 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** With `Material You theme`, the box under a link post (the site and title) takes your wallpaper's colors when Facebook doesn't send that box a color of its own (issue #37). Light mode stays as it was.
 * **Tooling:** A fixture test holds every declared build to the chime that `Save Facebook's notification sound` copies, so a Facebook build that renames or drops it stops the release (issue #83).
 
+### Reported issues
+
+* **Facebook:** #146 Settings showing up from a long press on the app icon: the new **Settings shortcut on the app icon** switch under Menu takes them out of that menu.
+* **Facebook:** #70 The Data mode header and its buy mobile data button: the new `Hide carrier data banners` patch hides it, and the purple Free mode bar too. My carrier doesn't use Facebook Flex, so please say on the issue whether it works on yours.
+* **Facebook:** #44 Picture in Picture: a reel's More menu has a **Picture-in-picture** row now.
+* **Facebook:** #141 and #65 Material You in light mode: `Material You theme` colors light mode as well.
+* **Facebook:** #144 Skip silence: there's a new patch for it, `Skip silent parts`, under Playback.
+* **Facebook:** #140 Comment expansion: **Load whole reply threads** under Comment sheet options keeps an open reply thread loading as you scroll.
+* **Facebook:** #123 Stories in original quality: new patch, `Upload Stories in HD`, under Stories. I haven't been able to try posting one yet.
+* **Facebook:** #148 Original audio language: **Keep the original audio** under Reels and Watch.
+* **Facebook:** #149 Moving the tab bar on a folding phone: **Phone layout on big screens** under Appearance.
+* **Facebook:** #66 Turning off HDR playback: **Play SDR versions of HDR videos** under Playback. HDR videos don't show up for me, so please say on the issue how it goes.
+* **Facebook:** #93 HDR still bright with Turn off HDR brightness on: HLG reels get the same treatment as HDR10 ones now. Same story here, I can't get one served to test with.
+* **Facebook:** #124 Frosted or see-through bars: **See-through bars** under Appearance.
+* **Facebook:** #155 A restart button: a **Restart Facebook** row sits at the end of the settings home page.
+* **Facebook:** #152 Vietnamese: the settings are translated.
+* **Facebook:** #163 Ads under a post opened from a notification: **Hide more posts under notification posts** under News feed. Facebook hasn't shown me that list, so please say on the issue if it still turns up.
+* **Facebook:** #166 Tab bar at the top: **Tab bar at the top** under Appearance.
+* **Facebook:** #164 Events only: **Events only** under Opening Facebook. Pin Events in Facebook's Customize the bar first.
+* **Facebook:** #61 Local read state for anonymous story views: a story you watch to the end shows as watched on your phone, and Facebook still isn't told.
+* **Facebook:** #154 Frequent crashes: dark mode with `Material You theme` no longer crashes as the feed loads on Android 12 and newer. I couldn't make it crash here, so please say on the issue if it still does.
+* **Facebook:** #113 Chat crash in the Facebook app: tapping the chat icon in a Clone app copy no longer closes it.
+* **Facebook:** #126 Picture-in-Picture display issue: the window now stays on the reel you were watching and opens in that reel's shape. The purple block after going back full screen is fixed too.
+* **Facebook:** #90 and #120 The progress bar resetting: with `Keep the progress bar` on, the bar and time follow each reel instead of freezing on the last one.
+* **Facebook:** #73 Keeping the progress bar visible: turning it on or off while Reels is open changes the reel you're watching right away.
+* **Facebook:** #150 Story eye button bugs: the eye shows with the story's header right away and hides with it while you hold the story.
+* **Facebook:** #147 White background behind reaction icons: the ring between them shows the page through it with AMOLED black or Material You.
+* **Facebook:** #138 Dark comment dates not showing: the time on the older comment row stays readable on a dark page.
+* **Facebook:** #96 Fonts for Facebook: with `Use the system font` on, letter tails and Bengali vowel signs aren't cut off in Reels captions anymore.
+* **Facebook:** #48 The Ask Meta AI bar: `Hide Meta AI questions under posts` also hides the question chips under some photos and captions.
+
 ## 0.13.0 (2026-10-14)
 
 * **Facebook:** This release gathers everything since v0.12.0 and still brings 88 patches for Facebook 582.0.0.50.54. New switches hide reposts, save the picture behind a photo Story with music, take the Meta AI button out of Chats and keep saves quiet. With Picture-in-picture on, a link that opens while a reel floats brings Facebook back full screen. Link posts leave Home on 582 again, the kept top bar stops fading, and a reel waiting to play starts its bar at the beginning. A failed save says why, Morphe Manager shows this release's whole list of changes, and the Reported issues list below maps each report this release touches.
