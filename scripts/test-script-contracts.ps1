@@ -3085,14 +3085,21 @@ try {
     Assert-True ($indexCounts -ge 2) "The copied description names its patch count once, so the stale-count case would prove nothing."
     $factsTarget = (Get-PatchTarget -PatchList (Get-Content -LiteralPath (Join-Path $factsRoot 'patches-list.json') -Raw |
         ConvertFrom-Json)).PackageVersion
-    Assert-True ([regex]::Matches((Get-Content -LiteralPath (Join-Path $factsRoot 'patches-bundle.json') -Raw),
+    # The facts end at the description's first ### group, whose CHANGELOG bullets may name any
+    # build (0.14.0's retarget bullet names its own), so the other-build edit is made before it.
+    # Read here from the raw JSON, where the group's line breaks are written \n.
+    $factsPart = {
+        param($text) $end = $text.IndexOf('\n\n###')
+        if ($end -lt 0) { $text } else { $text.Substring(0, $end) }
+    }
+    Assert-True ([regex]::Matches((& $factsPart (Get-Content -LiteralPath (Join-Path $factsRoot 'patches-bundle.json') -Raw)),
             "Facebook $([regex]::Escape($factsTarget))(?!\d)").Count -ge 2) `
-        "The copied description names Facebook $factsTarget once, so the other-build case would prove nothing."
+        "The copied description's facts name Facebook $factsTarget once, so the other-build case would prove nothing."
     foreach ($case in @(
             @{ Name = 'a stale count beside the catalog''s'; Pattern = "*names 3 and $indexCount patches, and it has to name one count*"
                 Edit = { param($text) ([regex]'(?<!\d)\d+ patches\b').Replace($text, '3 patches', 1) } },
             @{ Name = 'another build beside the target'; Pattern = "*names Facebook $factsTarget and Facebook 9.9.9.9.9, and it has to name one build*"
-                Edit = { param($text) $at = $text.LastIndexOf("Facebook $factsTarget")
+                Edit = { param($text) $at = (& $factsPart $text).LastIndexOf("Facebook $factsTarget")
                     $text.Substring(0, $at) + 'Facebook 9.9.9.9.9' + $text.Substring($at + "Facebook $factsTarget".Length) } })) {
         Set-FactsFile 'patches-bundle.json' $case.Edit
         try {
