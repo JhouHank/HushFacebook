@@ -996,7 +996,7 @@ Adds Watch history, the videos and reels you've watched, to the menu you get by 
 Adds Watch history, the videos and reels you've watched, to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	Menambahkan Riwayat tontonan, yaitu video dan reel yang sudah Anda tonton, ke menu yang muncul saat ikon Facebook ditekan lama, jika ada ruang. Pintasan yang ada tetap tersedia.
 # context: The optional matching mode for both post word lists.
 Match whole words	Cocokkan kata utuh
-Matches whole words only, in both lists. For example, hat matches hat! but not what or hats.	Hanya mencocokkan kata utuh, di kedua daftar. Contohnya, hat cocok dengan hat! tetapi tidak dengan what atau hats.
+Matches whole words only, in both lists. For example, "hat" matches "hat!" but not "what" or "hats".	Hanya mencocokkan kata utuh, di kedua daftar. Contohnya, "hat" cocok dengan "hat!" tetapi tidak dengan "what" atau "hats".
 Off	Nonaktif
 On	Aktif
 Saved now %1$s. After import %2$s.	Tersimpan sekarang %1$s. Setelah impor %2$s.
@@ -1362,6 +1362,8 @@ Posts you've scrolled past stay out of the feed when it loads again. The list st
 # context: title of the row under that switch that picks how many days a seen post stays hidden
 Keep seen posts hidden for	Sembunyikan kiriman yang dilihat selama
 Turn on %1$s to use this.	Nyalakan %1$s untuk menggunakannya.
+# context: added to a greyed-out switch's summary; %1$s is the title of another switch that overrides it while on
+Turn off %1$s to use this.	Matikan %1$s untuk menggunakannya.
 # context: choice in that row
 1 day	1 hari
 # context: choice in that row
@@ -1399,7 +1401,7 @@ Share to a group	Bagikan ke grup
 Share to a Page	Bagikan ke Halaman
 Copy link	Salin tautan
 Share sheet items to hide	Item yang disembunyikan saat berbagi
-None. The share sheet shows everything Facebook offers.	Tidak ada. Menu berbagi menampilkan semua yang ditawarkan Facebook.
+None picked yet.	Belum ada yang dipilih.
 Hidden: %s	Disembunyikan: %s
 Hide from the share sheet	Sembunyikan dari menu berbagi
 # context: last item of the opened list of default patches a build lacks, after eight names; the count of patches not named, always 2 or more

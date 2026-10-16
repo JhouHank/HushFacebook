@@ -307,7 +307,7 @@ public class Settings extends BaseSettings {
      * through Facebook's own restart, instead of holding its last frame. Off until you turn it on.
      */
     public static final BooleanSetting LOOP_STORIES =
-            new BooleanSetting("hushfacebook_loop_stories", FALSE);
+            new BooleanSetting("hushfacebook_loop_stories", FALSE, Setting.parent(BLOCK_STORY_AUTO_ADVANCE));
 
     /**
      * The batches of viewed story cards the story viewer sends as DirectSeenMutation, which put you
@@ -1602,7 +1602,7 @@ public class Settings extends BaseSettings {
      * is on. It isn't a switch.
      */
     public static final EnumSetting<AppLock.After> APP_LOCK_AFTER =
-            new EnumSetting<>("hushfacebook_app_lock_after", AppLock.After.ONE_MINUTE);
+            new EnumSetting<>("hushfacebook_app_lock_after", AppLock.After.ONE_MINUTE, Setting.parent(APP_LOCK));
 
     static {
         // The lock guards the phone's owner rather than changing Facebook, so no pause opens it: not

@@ -895,6 +895,10 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
     }
 
     static String marketplaceSummary() {
+        // The state is the single-tab mode's, so it's Marketplace's only while Marketplace is the kept tab.
+        if (!MarketplaceOnly.stateIsFor(StartTab.MARKETPLACE)) {
+            return L10n.t("Off. Turn on to open Marketplace and hide the feed and other social tabs after restarting Facebook.");
+        }
         switch (MarketplaceOnly.state()) {
             case ACTIVE:
                 return L10n.t("Active. Marketplace, Notifications and Profile/Menu stay. Find Hushfacebook settings in Menu, under Settings and privacy.");
@@ -919,6 +923,12 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
 
     /** Events only's row, the same states as {@link #marketplaceSummary} for the Events tab. */
     static String eventsSummary() {
+        String off = L10n.t("Off. Turn on to open Events and hide the feed and other social tabs after restarting Facebook.");
+        // Marketplace only wins while both are on, and the row is greyed out until it's off.
+        if (Settings.MARKETPLACE_ONLY.savedValue()) {
+            return off + " " + L10n.f("Turn off %1$s to use this.", L10n.isolate(SwitchLabels.title(Settings.MARKETPLACE_ONLY)));
+        }
+        if (!MarketplaceOnly.stateIsFor(StartTab.EVENTS)) return off;
         switch (MarketplaceOnly.state()) {
             case ACTIVE:
                 return L10n.t("Active. Events, Notifications and Profile/Menu stay. Find Hushfacebook settings in Menu, under Settings and privacy.");
@@ -937,7 +947,7 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
             case WAITING:
                 return L10n.t("Waiting for Facebook's tab bar. Events only will apply when Facebook builds it.");
             default:
-                return L10n.t("Off. Turn on to open Events and hide the feed and other social tabs after restarting Facebook.");
+                return off;
         }
     }
 

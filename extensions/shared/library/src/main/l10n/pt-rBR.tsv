@@ -888,7 +888,7 @@ Adds Watch history, the videos and reels you've watched, to the menu you get by 
 Adds Watch history, the videos and reels you've watched, to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	Adiciona Histórico de vídeos, os vídeos e Reels que você assistiu, ao menu que aparece ao segurar o ícone do Facebook, se houver espaço. Os atalhos existentes ficam.
 # context: The optional matching mode for both post word lists.
 Match whole words	Corresponder palavras inteiras
-Matches whole words only, in both lists. For example, hat matches hat! but not what or hats.	Combina apenas palavras inteiras, nas duas listas. Por exemplo, hat combina com hat! mas não com what nem hats.
+Matches whole words only, in both lists. For example, "hat" matches "hat!" but not "what" or "hats".	Combina apenas palavras inteiras, nas duas listas. Por exemplo, "hat" combina com "hat!" mas não com "what" nem "hats".
 Off	Desativado
 On	Ativado
 Saved now %1$s. After import %2$s.	Salvo agora %1$s. Após importar %2$s.
@@ -1254,6 +1254,8 @@ Posts you've scrolled past stay out of the feed when it loads again. The list st
 # context: title of the row under that switch that picks how many days a seen post stays hidden
 Keep seen posts hidden for	Manter publicações vistas ocultas por
 Turn on %1$s to use this.	Ligue %1$s para usar isto.
+# context: added to a greyed-out switch's summary; %1$s is the title of another switch that overrides it while on
+Turn off %1$s to use this.	Desligue %1$s para usar isto.
 # context: choice in that row
 1 day	1 dia
 # context: choice in that row
@@ -1291,7 +1293,7 @@ Share to a group	Compartilhar em um grupo
 Share to a Page	Compartilhar em uma Página
 Copy link	Copiar link
 Share sheet items to hide	Itens ocultos ao compartilhar
-None. The share sheet shows everything Facebook offers.	Nenhum. Ao compartilhar, aparece tudo o que o Facebook oferece.
+None picked yet.	Nada escolhido ainda.
 Hidden: %s	Ocultos: %s
 Hide from the share sheet	Ocultar ao compartilhar
 # context: last item of the opened list of default patches a build lacks, after eight names; the count of patches not named, always 2 or more

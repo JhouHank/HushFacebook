@@ -46,7 +46,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildDe() {
-        Map<String, String> table = new HashMap<>(2078);
+        Map<String, String> table = new HashMap<>(2080);
         fillDe0(table);
         fillDe1(table);
         fillDe2(table);
@@ -1194,8 +1194,8 @@ public final class L10nTranslations {
                 "Marketplace nicht verf\u00fcgbar. Facebook hat f\u00fcr dieses Konto keinen Marketplace-Tab bereitgestellt. Deine normalen Tabs bleiben verf\u00fcgbar.");
         table.put("Match whole words",
                 "Ganze W\u00f6rter abgleichen");
-        table.put("Matches whole words only, in both lists. For example, hat matches hat! but not what or hats.",
-                "Gleicht nur ganze W\u00f6rter ab, in beiden Listen. Zum Beispiel passt hat zu hat!, aber nicht zu what oder hats.");
+        table.put("Matches whole words only, in both lists. For example, \"hat\" matches \"hat!\" but not \"what\" or \"hats\".",
+                "Gleicht nur ganze W\u00f6rter ab, in beiden Listen. Zum Beispiel passt \u201ehat\u201c zu \u201ehat!\u201c, aber nicht zu \u201ewhat\u201c oder \u201ehats\u201c.");
         table.put("Material You theme",
                 "Material-You-Design");
         table.put("Material You theme is in this build and picks Facebook's colors, so this has no effect.",
@@ -1272,8 +1272,8 @@ public final class L10nTranslations {
                 "Noch niemand eingetragen, daher wird kein Beitrag ausgeblendet.");
         table.put("None of Facebook's web addresses are selected for this app, so their links open elsewhere. Tap to select them in Android's settings.",
                 "Keine Webadresse von Facebook ist f\u00fcr diese App ausgew\u00e4hlt, deshalb \u00f6ffnen sich ihre Links woanders. Tippe, um sie in den Android-Einstellungen auszuw\u00e4hlen.");
-        table.put("None. The share sheet shows everything Facebook offers.",
-                "Keine. Beim Teilen zeigt Facebook alles, was es anbietet.");
+        table.put("None picked yet.",
+                "Noch nichts ausgew\u00e4hlt.");
         table.put("Not enough free space to save this. Free some up and try again.",
                 "Zu wenig freier Speicher zum Speichern. Gib etwas Platz frei und versuche es erneut.");
         table.put("Not in this build. To block this, choose the %1$s patch in Morphe Manager and patch again.",
@@ -1952,6 +1952,8 @@ public final class L10nTranslations {
                 "Versuch ein anderes Wort oder l\u00f6sche die Suche.");
         table.put("Try again, or go back to Facebook.",
                 "Versuche es noch einmal oder kehre zu Facebook zur\u00fcck.");
+        table.put("Turn off %1$s to use this.",
+                "Schalte %1$s aus, um das zu nutzen.");
         table.put("Turn off HDR brightness",
                 "HDR-Helligkeit ausschalten");
         table.put("Turn off auto-translation",
@@ -2032,11 +2034,11 @@ public final class L10nTranslations {
                 "Videos landen in %1$s und Fotos in %2$s.");
         table.put("Videos go to %1$s.",
                 "Videos landen in %1$s.");
-        table.put("Videos over two minutes pick up where you left off. Drag the bar to start elsewhere. Short reels, live videos and ads start as usual.",
-                "Videos \u00fcber zwei Minuten machen dort weiter, wo du aufgeh\u00f6rt hast. Ziehe die Leiste, um woanders zu beginnen. Kurze Reels, Live-Videos und Werbung starten wie gewohnt.");
     }
 
     private static void fillDe16(Map<String, String> table) {
+        table.put("Videos over two minutes pick up where you left off. Drag the bar to start elsewhere. Short reels, live videos and ads start as usual.",
+                "Videos \u00fcber zwei Minuten machen dort weiter, wo du aufgeh\u00f6rt hast. Ziehe die Leiste, um woanders zu beginnen. Kurze Reels, Live-Videos und Werbung starten wie gewohnt.");
         table.put("Videos play at the best quality up to %1$s that Facebook offers for each, or the closest above.",
                 "Videos laufen in der besten Qualit\u00e4t bis %1$s, die Facebook f\u00fcr sie anbietet, oder der n\u00e4chsth\u00f6heren.");
         table.put("Videos play at the highest quality Facebook offers for each.",
@@ -2155,11 +2157,11 @@ public final class L10nTranslations {
                 "Deine Liste der W\u00f6rter zum Ausblenden ist dann leer.");
         table.put("Your list of words to hide will hold %1$d word or phrase.",
                 "Deine Liste der W\u00f6rter zum Ausblenden enth\u00e4lt dann %1$d Wort oder Wortfolge.");
-        table.put("Your list of words to hide will hold %1$d words or phrases.",
-                "Deine Liste der W\u00f6rter zum Ausblenden enth\u00e4lt dann %1$d W\u00f6rter oder Wortfolgen.");
     }
 
     private static void fillDe17(Map<String, String> table) {
+        table.put("Your list of words to hide will hold %1$d words or phrases.",
+                "Deine Liste der W\u00f6rter zum Ausblenden enth\u00e4lt dann %1$d W\u00f6rter oder Wortfolgen.");
         table.put("Your phone couldn't put this video together. Try another Download quality.",
                 "Dein Handy konnte das Video nicht zusammensetzen. Probiere eine andere Download-Qualit\u00e4t.");
         table.put("Your phone couldn't write the file. Check your free space and try again.",
@@ -2201,7 +2203,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildEs() {
-        Map<String, String> table = new HashMap<>(2078);
+        Map<String, String> table = new HashMap<>(2080);
         fillEs0(table);
         fillEs1(table);
         fillEs2(table);
@@ -3349,8 +3351,8 @@ public final class L10nTranslations {
                 "Marketplace no est\u00e1 disponible. Facebook no ha proporcionado una pesta\u00f1a de Marketplace para esta cuenta. Tus pesta\u00f1as normales siguen disponibles.");
         table.put("Match whole words",
                 "Coincidir con palabras completas");
-        table.put("Matches whole words only, in both lists. For example, hat matches hat! but not what or hats.",
-                "Solo coincide con palabras completas, en ambas listas. Por ejemplo, hat coincide con hat! pero no con what ni hats.");
+        table.put("Matches whole words only, in both lists. For example, \"hat\" matches \"hat!\" but not \"what\" or \"hats\".",
+                "Solo coincide con palabras completas, en ambas listas. Por ejemplo, \u00abhat\u00bb coincide con \u00abhat!\u00bb pero no con \u00abwhat\u00bb ni \u00abhats\u00bb.");
         table.put("Material You theme",
                 "Tema Material You");
         table.put("Material You theme is in this build and picks Facebook's colors, so this has no effect.",
@@ -3427,8 +3429,8 @@ public final class L10nTranslations {
                 "Todav\u00eda no hay nadie en la lista, as\u00ed que no se oculta ninguna publicaci\u00f3n.");
         table.put("None of Facebook's web addresses are selected for this app, so their links open elsewhere. Tap to select them in Android's settings.",
                 "Ninguna direcci\u00f3n web de Facebook est\u00e1 seleccionada para esta app, as\u00ed que sus enlaces se abren en otro sitio. Toca para seleccionarlas en los ajustes de Android.");
-        table.put("None. The share sheet shows everything Facebook offers.",
-                "Ninguna. Al compartir se muestra todo lo que ofrece Facebook.");
+        table.put("None picked yet.",
+                "A\u00fan no has elegido nada.");
         table.put("Not enough free space to save this. Free some up and try again.",
                 "No hay espacio libre suficiente para guardar esto. Libera un poco e int\u00e9ntalo de nuevo.");
         table.put("Not in this build. To block this, choose the %1$s patch in Morphe Manager and patch again.",
@@ -4107,6 +4109,8 @@ public final class L10nTranslations {
                 "Prueba otra palabra o borra la b\u00fasqueda.");
         table.put("Try again, or go back to Facebook.",
                 "Int\u00e9ntalo de nuevo o vuelve a Facebook.");
+        table.put("Turn off %1$s to use this.",
+                "Desactiva %1$s para usar esto.");
         table.put("Turn off HDR brightness",
                 "Desactivar el brillo HDR");
         table.put("Turn off auto-translation",
@@ -4187,11 +4191,11 @@ public final class L10nTranslations {
                 "Los videos van a %1$s y las fotos a %2$s.");
         table.put("Videos go to %1$s.",
                 "Los videos van a %1$s.");
-        table.put("Videos over two minutes pick up where you left off. Drag the bar to start elsewhere. Short reels, live videos and ads start as usual.",
-                "Los v\u00eddeos de m\u00e1s de dos minutos contin\u00faan donde los dejaste. Arrastra la barra para empezar en otro punto. Los reels cortos, los v\u00eddeos en directo y los anuncios empiezan como siempre.");
     }
 
     private static void fillEs16(Map<String, String> table) {
+        table.put("Videos over two minutes pick up where you left off. Drag the bar to start elsewhere. Short reels, live videos and ads start as usual.",
+                "Los v\u00eddeos de m\u00e1s de dos minutos contin\u00faan donde los dejaste. Arrastra la barra para empezar en otro punto. Los reels cortos, los v\u00eddeos en directo y los anuncios empiezan como siempre.");
         table.put("Videos play at the best quality up to %1$s that Facebook offers for each, or the closest above.",
                 "Los v\u00eddeos se reproducen en la mejor calidad hasta %1$s que Facebook ofrece para cada uno, o en la m\u00e1s cercana por encima.");
         table.put("Videos play at the highest quality Facebook offers for each.",
@@ -4310,11 +4314,11 @@ public final class L10nTranslations {
                 "Tu lista de palabras para ocultar quedar\u00e1 vac\u00eda.");
         table.put("Your list of words to hide will hold %1$d word or phrase.",
                 "Tu lista de palabras para ocultar tendr\u00e1 %1$d palabra o frase.");
-        table.put("Your list of words to hide will hold %1$d words or phrases.",
-                "Tu lista de palabras para ocultar tendr\u00e1 %1$d palabras o frases.");
     }
 
     private static void fillEs17(Map<String, String> table) {
+        table.put("Your list of words to hide will hold %1$d words or phrases.",
+                "Tu lista de palabras para ocultar tendr\u00e1 %1$d palabras o frases.");
         table.put("Your phone couldn't put this video together. Try another Download quality.",
                 "Tu tel\u00e9fono no pudo armar este video. Prueba otra Calidad de descarga.");
         table.put("Your phone couldn't write the file. Check your free space and try again.",
@@ -4356,7 +4360,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildIn() {
-        Map<String, String> table = new HashMap<>(2078);
+        Map<String, String> table = new HashMap<>(2080);
         fillIn0(table);
         fillIn1(table);
         fillIn2(table);
@@ -5504,8 +5508,8 @@ public final class L10nTranslations {
                 "Marketplace tidak tersedia. Facebook belum menyediakan tab Marketplace untuk akun ini. Tab biasa tetap tersedia.");
         table.put("Match whole words",
                 "Cocokkan kata utuh");
-        table.put("Matches whole words only, in both lists. For example, hat matches hat! but not what or hats.",
-                "Hanya mencocokkan kata utuh, di kedua daftar. Contohnya, hat cocok dengan hat! tetapi tidak dengan what atau hats.");
+        table.put("Matches whole words only, in both lists. For example, \"hat\" matches \"hat!\" but not \"what\" or \"hats\".",
+                "Hanya mencocokkan kata utuh, di kedua daftar. Contohnya, \"hat\" cocok dengan \"hat!\" tetapi tidak dengan \"what\" atau \"hats\".");
         table.put("Material You theme",
                 "Tema Material You");
         table.put("Material You theme is in this build and picks Facebook's colors, so this has no effect.",
@@ -5582,8 +5586,8 @@ public final class L10nTranslations {
                 "Belum ada yang didaftarkan, jadi tidak ada postingan yang disembunyikan.");
         table.put("None of Facebook's web addresses are selected for this app, so their links open elsewhere. Tap to select them in Android's settings.",
                 "Tidak ada alamat web Facebook yang dipilih untuk aplikasi ini, jadi tautannya terbuka di tempat lain. Ketuk untuk memilihnya di pengaturan Android.");
-        table.put("None. The share sheet shows everything Facebook offers.",
-                "Tidak ada. Menu berbagi menampilkan semua yang ditawarkan Facebook.");
+        table.put("None picked yet.",
+                "Belum ada yang dipilih.");
         table.put("Not enough free space to save this. Free some up and try again.",
                 "Ruang kosong tidak cukup untuk menyimpan ini. Kosongkan sedikit lalu coba lagi.");
         table.put("Not in this build. To block this, choose the %1$s patch in Morphe Manager and patch again.",
@@ -6262,6 +6266,8 @@ public final class L10nTranslations {
                 "Coba kata lain atau hapus pencarian.");
         table.put("Try again, or go back to Facebook.",
                 "Coba lagi, atau kembali ke Facebook.");
+        table.put("Turn off %1$s to use this.",
+                "Matikan %1$s untuk menggunakannya.");
         table.put("Turn off HDR brightness",
                 "Matikan kecerahan HDR");
         table.put("Turn off auto-translation",
@@ -6342,11 +6348,11 @@ public final class L10nTranslations {
                 "Video disimpan ke %1$s dan foto ke %2$s.");
         table.put("Videos go to %1$s.",
                 "Video disimpan ke %1$s.");
-        table.put("Videos over two minutes pick up where you left off. Drag the bar to start elsewhere. Short reels, live videos and ads start as usual.",
-                "Video yang lebih dari dua menit dilanjutkan dari tempat kamu berhenti. Geser bilahnya untuk mulai dari tempat lain. Reel pendek, video langsung, dan iklan dimulai seperti biasa.");
     }
 
     private static void fillIn16(Map<String, String> table) {
+        table.put("Videos over two minutes pick up where you left off. Drag the bar to start elsewhere. Short reels, live videos and ads start as usual.",
+                "Video yang lebih dari dua menit dilanjutkan dari tempat kamu berhenti. Geser bilahnya untuk mulai dari tempat lain. Reel pendek, video langsung, dan iklan dimulai seperti biasa.");
         table.put("Videos play at the best quality up to %1$s that Facebook offers for each, or the closest above.",
                 "Video diputar dengan kualitas terbaik hingga %1$s yang ditawarkan Facebook untuk masing-masing, atau yang terdekat di atasnya.");
         table.put("Videos play at the highest quality Facebook offers for each.",
@@ -6465,11 +6471,11 @@ public final class L10nTranslations {
                 "Daftar kata untuk disembunyikan akan kosong.");
         table.put("Your list of words to hide will hold %1$d word or phrase.",
                 "Daftar kata untuk disembunyikan akan berisi %1$d kata atau frasa.");
-        table.put("Your list of words to hide will hold %1$d words or phrases.",
-                "Daftar kata untuk disembunyikan akan berisi %1$d kata atau frasa.");
     }
 
     private static void fillIn17(Map<String, String> table) {
+        table.put("Your list of words to hide will hold %1$d words or phrases.",
+                "Daftar kata untuk disembunyikan akan berisi %1$d kata atau frasa.");
         table.put("Your phone couldn't put this video together. Try another Download quality.",
                 "Ponselmu tidak bisa menyusun video ini. Coba Kualitas unduhan yang lain.");
         table.put("Your phone couldn't write the file. Check your free space and try again.",
@@ -6511,7 +6517,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildPt_rBR() {
-        Map<String, String> table = new HashMap<>(2078);
+        Map<String, String> table = new HashMap<>(2080);
         fillPt_rBR0(table);
         fillPt_rBR1(table);
         fillPt_rBR2(table);
@@ -7659,8 +7665,8 @@ public final class L10nTranslations {
                 "Marketplace indispon\u00edvel. O Facebook n\u00e3o forneceu uma aba do Marketplace para esta conta. Suas abas normais continuam dispon\u00edveis.");
         table.put("Match whole words",
                 "Corresponder palavras inteiras");
-        table.put("Matches whole words only, in both lists. For example, hat matches hat! but not what or hats.",
-                "Combina apenas palavras inteiras, nas duas listas. Por exemplo, hat combina com hat! mas n\u00e3o com what nem hats.");
+        table.put("Matches whole words only, in both lists. For example, \"hat\" matches \"hat!\" but not \"what\" or \"hats\".",
+                "Combina apenas palavras inteiras, nas duas listas. Por exemplo, \"hat\" combina com \"hat!\" mas n\u00e3o com \"what\" nem \"hats\".");
         table.put("Material You theme",
                 "Tema Material You");
         table.put("Material You theme is in this build and picks Facebook's colors, so this has no effect.",
@@ -7737,8 +7743,8 @@ public final class L10nTranslations {
                 "Ningu\u00e9m na lista ainda, ent\u00e3o nenhuma publica\u00e7\u00e3o \u00e9 ocultada.");
         table.put("None of Facebook's web addresses are selected for this app, so their links open elsewhere. Tap to select them in Android's settings.",
                 "Nenhum endere\u00e7o web do Facebook est\u00e1 selecionado para este app, ent\u00e3o os links deles abrem em outro lugar. Toque para selecion\u00e1-los nas configura\u00e7\u00f5es do Android.");
-        table.put("None. The share sheet shows everything Facebook offers.",
-                "Nenhum. Ao compartilhar, aparece tudo o que o Facebook oferece.");
+        table.put("None picked yet.",
+                "Nada escolhido ainda.");
         table.put("Not enough free space to save this. Free some up and try again.",
                 "N\u00e3o h\u00e1 espa\u00e7o livre suficiente para salvar isto. Libere um pouco e tente de novo.");
         table.put("Not in this build. To block this, choose the %1$s patch in Morphe Manager and patch again.",
@@ -8417,6 +8423,8 @@ public final class L10nTranslations {
                 "Tente outra palavra ou limpe a busca.");
         table.put("Try again, or go back to Facebook.",
                 "Tente novamente ou volte para o Facebook.");
+        table.put("Turn off %1$s to use this.",
+                "Desligue %1$s para usar isto.");
         table.put("Turn off HDR brightness",
                 "Desativar o brilho HDR");
         table.put("Turn off auto-translation",
@@ -8497,11 +8505,11 @@ public final class L10nTranslations {
                 "Os v\u00eddeos v\u00e3o para %1$s e as fotos para %2$s.");
         table.put("Videos go to %1$s.",
                 "Os v\u00eddeos v\u00e3o para %1$s.");
-        table.put("Videos over two minutes pick up where you left off. Drag the bar to start elsewhere. Short reels, live videos and ads start as usual.",
-                "V\u00eddeos com mais de dois minutos continuam de onde voc\u00ea parou. Arraste a barra para come\u00e7ar em outro ponto. Reels curtos, v\u00eddeos ao vivo e an\u00fancios come\u00e7am como de costume.");
     }
 
     private static void fillPt_rBR16(Map<String, String> table) {
+        table.put("Videos over two minutes pick up where you left off. Drag the bar to start elsewhere. Short reels, live videos and ads start as usual.",
+                "V\u00eddeos com mais de dois minutos continuam de onde voc\u00ea parou. Arraste a barra para come\u00e7ar em outro ponto. Reels curtos, v\u00eddeos ao vivo e an\u00fancios come\u00e7am como de costume.");
         table.put("Videos play at the best quality up to %1$s that Facebook offers for each, or the closest above.",
                 "Os v\u00eddeos s\u00e3o reproduzidos na melhor qualidade at\u00e9 %1$s que o Facebook oferece para cada um, ou na mais pr\u00f3xima acima.");
         table.put("Videos play at the highest quality Facebook offers for each.",
@@ -8620,11 +8628,11 @@ public final class L10nTranslations {
                 "Sua lista de palavras a ocultar ficar\u00e1 vazia.");
         table.put("Your list of words to hide will hold %1$d word or phrase.",
                 "Sua lista de palavras a ocultar ter\u00e1 %1$d palavra ou frase.");
-        table.put("Your list of words to hide will hold %1$d words or phrases.",
-                "Sua lista de palavras a ocultar ter\u00e1 %1$d palavras ou frases.");
     }
 
     private static void fillPt_rBR17(Map<String, String> table) {
+        table.put("Your list of words to hide will hold %1$d words or phrases.",
+                "Sua lista de palavras a ocultar ter\u00e1 %1$d palavras ou frases.");
         table.put("Your phone couldn't put this video together. Try another Download quality.",
                 "Seu celular n\u00e3o conseguiu montar este v\u00eddeo. Tente outra Qualidade do download.");
         table.put("Your phone couldn't write the file. Check your free space and try again.",
@@ -8666,7 +8674,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildTr() {
-        Map<String, String> table = new HashMap<>(2078);
+        Map<String, String> table = new HashMap<>(2080);
         fillTr0(table);
         fillTr1(table);
         fillTr2(table);
@@ -9814,8 +9822,8 @@ public final class L10nTranslations {
                 "Marketplace kullan\u0131lam\u0131yor. Facebook bu hesap i\u00e7in bir Marketplace sekmesi sa\u011flamad\u0131. Normal sekmeleriniz kullan\u0131labilir.");
         table.put("Match whole words",
                 "Tam s\u00f6zc\u00fckleri e\u015fle\u015ftir");
-        table.put("Matches whole words only, in both lists. For example, hat matches hat! but not what or hats.",
-                "Her iki listede de yaln\u0131zca tam s\u00f6zc\u00fckleri e\u015fle\u015ftirir. \u00d6rne\u011fin hat, hat! ile e\u015fle\u015fir ama what veya hats ile e\u015fle\u015fmez.");
+        table.put("Matches whole words only, in both lists. For example, \"hat\" matches \"hat!\" but not \"what\" or \"hats\".",
+                "Her iki listede de yaln\u0131zca tam s\u00f6zc\u00fckleri e\u015fle\u015ftirir. \u00d6rne\u011fin \"hat\", \"hat!\" ile e\u015fle\u015fir ama \"what\" veya \"hats\" ile e\u015fle\u015fmez.");
         table.put("Material You theme",
                 "Material You temas\u0131");
         table.put("Material You theme is in this build and picks Facebook's colors, so this has no effect.",
@@ -9892,8 +9900,8 @@ public final class L10nTranslations {
                 "Hen\u00fcz kimse eklenmedi, bu y\u00fczden hi\u00e7bir g\u00f6nderi gizlenmiyor.");
         table.put("None of Facebook's web addresses are selected for this app, so their links open elsewhere. Tap to select them in Android's settings.",
                 "Facebook'un web adreslerinden hi\u00e7biri bu uygulama i\u00e7in se\u00e7ili de\u011fil, bu y\u00fczden ba\u011flant\u0131lar\u0131 ba\u015fka yerde a\u00e7\u0131l\u0131r. Android ayarlar\u0131nda se\u00e7mek i\u00e7in dokunun.");
-        table.put("None. The share sheet shows everything Facebook offers.",
-                "Hi\u00e7biri. Payla\u015f\u0131m men\u00fcs\u00fc Facebook'un sundu\u011fu her \u015feyi g\u00f6sterir.");
+        table.put("None picked yet.",
+                "Hen\u00fcz hi\u00e7biri se\u00e7ilmedi.");
         table.put("Not enough free space to save this. Free some up and try again.",
                 "Bunu kaydetmek i\u00e7in yeterli bo\u015f alan yok. Biraz yer a\u00e7\u0131p tekrar dene.");
         table.put("Not in this build. To block this, choose the %1$s patch in Morphe Manager and patch again.",
@@ -10572,6 +10580,8 @@ public final class L10nTranslations {
                 "Ba\u015fka bir kelime deneyin veya aramay\u0131 temizleyin.");
         table.put("Try again, or go back to Facebook.",
                 "Tekrar dene veya Facebook'a geri d\u00f6n.");
+        table.put("Turn off %1$s to use this.",
+                "Bunu kullanmak i\u00e7in %1$s se\u00e7ene\u011fini kapat\u0131n.");
         table.put("Turn off HDR brightness",
                 "HDR parlakl\u0131\u011f\u0131n\u0131 kapat");
         table.put("Turn off auto-translation",
@@ -10652,11 +10662,11 @@ public final class L10nTranslations {
                 "Videolar %1$s klas\u00f6r\u00fcne, foto\u011fraflar %2$s klas\u00f6r\u00fcne kaydedilir.");
         table.put("Videos go to %1$s.",
                 "Videolar %1$s klas\u00f6r\u00fcne kaydedilir.");
-        table.put("Videos over two minutes pick up where you left off. Drag the bar to start elsewhere. Short reels, live videos and ads start as usual.",
-                "\u0130ki dakikadan uzun videolar kald\u0131\u011f\u0131n\u0131z yerden devam eder. Ba\u015fka bir yerden ba\u015flamak i\u00e7in \u00e7ubu\u011fu s\u00fcr\u00fckleyin. K\u0131sa reeller, canl\u0131 videolar ve reklamlar her zamanki gibi ba\u015flar.");
     }
 
     private static void fillTr16(Map<String, String> table) {
+        table.put("Videos over two minutes pick up where you left off. Drag the bar to start elsewhere. Short reels, live videos and ads start as usual.",
+                "\u0130ki dakikadan uzun videolar kald\u0131\u011f\u0131n\u0131z yerden devam eder. Ba\u015fka bir yerden ba\u015flamak i\u00e7in \u00e7ubu\u011fu s\u00fcr\u00fckleyin. K\u0131sa reeller, canl\u0131 videolar ve reklamlar her zamanki gibi ba\u015flar.");
         table.put("Videos play at the best quality up to %1$s that Facebook offers for each, or the closest above.",
                 "Videolar, Facebook'un her biri i\u00e7in sundu\u011fu en fazla %1$s olan en iyi kalitede ya da hemen \u00fcst\u00fcndekinde oynat\u0131l\u0131r.");
         table.put("Videos play at the highest quality Facebook offers for each.",
@@ -10775,11 +10785,11 @@ public final class L10nTranslations {
                 "Gizlenecek kelimeler listen bo\u015f olacak.");
         table.put("Your list of words to hide will hold %1$d word or phrase.",
                 "Gizlenecek kelimeler listende %1$d kelime veya ifade olacak.");
-        table.put("Your list of words to hide will hold %1$d words or phrases.",
-                "Gizlenecek kelimeler listende %1$d kelime veya ifade olacak.");
     }
 
     private static void fillTr17(Map<String, String> table) {
+        table.put("Your list of words to hide will hold %1$d words or phrases.",
+                "Gizlenecek kelimeler listende %1$d kelime veya ifade olacak.");
         table.put("Your phone couldn't put this video together. Try another Download quality.",
                 "Telefonun bu videoyu birle\u015ftiremedi. Ba\u015fka bir \u0130ndirme kalitesi dene.");
         table.put("Your phone couldn't write the file. Check your free space and try again.",
@@ -10821,7 +10831,7 @@ public final class L10nTranslations {
     }
 
     private static Map<String, String> buildVi() {
-        Map<String, String> table = new HashMap<>(2078);
+        Map<String, String> table = new HashMap<>(2080);
         fillVi0(table);
         fillVi1(table);
         fillVi2(table);
@@ -11969,8 +11979,8 @@ public final class L10nTranslations {
                 "Marketplace kh\u00f4ng kh\u1ea3 d\u1ee5ng. Facebook ch\u01b0a cung c\u1ea5p tab Marketplace cho t\u00e0i kho\u1ea3n n\u00e0y. C\u00e1c tab b\u00ecnh th\u01b0\u1eddng v\u1eabn d\u00f9ng \u0111\u01b0\u1ee3c.");
         table.put("Match whole words",
                 "Kh\u1edbp nguy\u00ean t\u1eeb");
-        table.put("Matches whole words only, in both lists. For example, hat matches hat! but not what or hats.",
-                "Ch\u1ec9 kh\u1edbp nguy\u00ean t\u1eeb, trong c\u1ea3 hai danh s\u00e1ch. V\u00ed d\u1ee5, an kh\u1edbp v\u1edbi an! nh\u01b0ng kh\u00f4ng kh\u1edbp v\u1edbi ban hay anh.");
+        table.put("Matches whole words only, in both lists. For example, \"hat\" matches \"hat!\" but not \"what\" or \"hats\".",
+                "Ch\u1ec9 kh\u1edbp nguy\u00ean t\u1eeb, trong c\u1ea3 hai danh s\u00e1ch. V\u00ed d\u1ee5, \"an\" kh\u1edbp v\u1edbi \"an!\" nh\u01b0ng kh\u00f4ng kh\u1edbp v\u1edbi \"ban\" hay \"anh\".");
         table.put("Material You theme",
                 "Giao di\u1ec7n Material You");
         table.put("Material You theme is in this build and picks Facebook's colors, so this has no effect.",
@@ -12047,8 +12057,8 @@ public final class L10nTranslations {
                 "Ch\u01b0a c\u00f3 ai trong danh s\u00e1ch n\u00ean kh\u00f4ng b\u00e0i vi\u1ebft n\u00e0o b\u1ecb \u1ea9n.");
         table.put("None of Facebook's web addresses are selected for this app, so their links open elsewhere. Tap to select them in Android's settings.",
                 "Ch\u01b0a c\u00f3 \u0111\u1ecba ch\u1ec9 web n\u00e0o c\u1ee7a Facebook \u0111\u01b0\u1ee3c ch\u1ecdn cho \u1ee9ng d\u1ee5ng n\u00e0y, n\u00ean c\u00e1c li\u00ean k\u1ebft \u0111\u00f3 m\u1edf \u1edf n\u01a1i kh\u00e1c. Nh\u1ea5n \u0111\u1ec3 ch\u1ecdn ch\u00fang trong c\u00e0i \u0111\u1eb7t Android.");
-        table.put("None. The share sheet shows everything Facebook offers.",
-                "Kh\u00f4ng c\u00f3. B\u1ea3ng chia s\u1ebb hi\u1ec7n m\u1ecdi th\u1ee9 Facebook cung c\u1ea5p.");
+        table.put("None picked yet.",
+                "Ch\u01b0a ch\u1ecdn m\u1ee5c n\u00e0o.");
         table.put("Not enough free space to save this. Free some up and try again.",
                 "Kh\u00f4ng \u0111\u1ee7 dung l\u01b0\u1ee3ng tr\u1ed1ng \u0111\u1ec3 l\u01b0u. H\u00e3y gi\u1ea3i ph\u00f3ng b\u1edbt r\u1ed3i th\u1eed l\u1ea1i.");
         table.put("Not in this build. To block this, choose the %1$s patch in Morphe Manager and patch again.",
@@ -12727,6 +12737,8 @@ public final class L10nTranslations {
                 "H\u00e3y th\u1eed t\u1eeb kh\u00e1c ho\u1eb7c x\u00f3a n\u1ed9i dung t\u00ecm ki\u1ebfm.");
         table.put("Try again, or go back to Facebook.",
                 "H\u00e3y th\u1eed l\u1ea1i ho\u1eb7c quay v\u1ec1 Facebook.");
+        table.put("Turn off %1$s to use this.",
+                "T\u1eaft %1$s \u0111\u1ec3 d\u00f9ng m\u1ee5c n\u00e0y.");
         table.put("Turn off HDR brightness",
                 "T\u1eaft \u0111\u1ed9 s\u00e1ng HDR");
         table.put("Turn off auto-translation",
@@ -12807,11 +12819,11 @@ public final class L10nTranslations {
                 "Video \u0111\u01b0\u1ee3c l\u01b0u v\u00e0o %1$s v\u00e0 \u1ea3nh v\u00e0o %2$s.");
         table.put("Videos go to %1$s.",
                 "Video \u0111\u01b0\u1ee3c l\u01b0u v\u00e0o %1$s.");
-        table.put("Videos over two minutes pick up where you left off. Drag the bar to start elsewhere. Short reels, live videos and ads start as usual.",
-                "Video d\u00e0i h\u01a1n hai ph\u00fat s\u1ebd ph\u00e1t ti\u1ebfp t\u1eeb ch\u1ed7 b\u1ea1n d\u1eebng. K\u00e9o thanh \u0111\u1ec3 b\u1eaft \u0111\u1ea7u \u1edf ch\u1ed7 kh\u00e1c. Reel ng\u1eafn, video tr\u1ef1c ti\u1ebfp v\u00e0 qu\u1ea3ng c\u00e1o b\u1eaft \u0111\u1ea7u nh\u01b0 b\u00ecnh th\u01b0\u1eddng.");
     }
 
     private static void fillVi16(Map<String, String> table) {
+        table.put("Videos over two minutes pick up where you left off. Drag the bar to start elsewhere. Short reels, live videos and ads start as usual.",
+                "Video d\u00e0i h\u01a1n hai ph\u00fat s\u1ebd ph\u00e1t ti\u1ebfp t\u1eeb ch\u1ed7 b\u1ea1n d\u1eebng. K\u00e9o thanh \u0111\u1ec3 b\u1eaft \u0111\u1ea7u \u1edf ch\u1ed7 kh\u00e1c. Reel ng\u1eafn, video tr\u1ef1c ti\u1ebfp v\u00e0 qu\u1ea3ng c\u00e1o b\u1eaft \u0111\u1ea7u nh\u01b0 b\u00ecnh th\u01b0\u1eddng.");
         table.put("Videos play at the best quality up to %1$s that Facebook offers for each, or the closest above.",
                 "Video ph\u00e1t \u1edf ch\u1ea5t l\u01b0\u1ee3ng t\u1ed1t nh\u1ea5t \u0111\u1ebfn %1$s m\u00e0 Facebook cung c\u1ea5p cho t\u1eebng video, ho\u1eb7c m\u1ee9c g\u1ea7n nh\u1ea5t cao h\u01a1n.");
         table.put("Videos play at the highest quality Facebook offers for each.",
@@ -12930,11 +12942,11 @@ public final class L10nTranslations {
                 "Danh s\u00e1ch t\u1eeb c\u1ea7n \u1ea9n s\u1ebd tr\u1ed1ng.");
         table.put("Your list of words to hide will hold %1$d word or phrase.",
                 "Danh s\u00e1ch t\u1eeb c\u1ea7n \u1ea9n s\u1ebd c\u00f3 %1$d t\u1eeb ho\u1eb7c c\u1ee5m t\u1eeb.");
-        table.put("Your list of words to hide will hold %1$d words or phrases.",
-                "Danh s\u00e1ch t\u1eeb c\u1ea7n \u1ea9n s\u1ebd c\u00f3 %1$d t\u1eeb ho\u1eb7c c\u1ee5m t\u1eeb.");
     }
 
     private static void fillVi17(Map<String, String> table) {
+        table.put("Your list of words to hide will hold %1$d words or phrases.",
+                "Danh s\u00e1ch t\u1eeb c\u1ea7n \u1ea9n s\u1ebd c\u00f3 %1$d t\u1eeb ho\u1eb7c c\u1ee5m t\u1eeb.");
         table.put("Your phone couldn't put this video together. Try another Download quality.",
                 "\u0110i\u1ec7n tho\u1ea1i kh\u00f4ng gh\u00e9p \u0111\u01b0\u1ee3c video n\u00e0y. H\u00e3y th\u1eed Ch\u1ea5t l\u01b0\u1ee3ng t\u1ea3i xu\u1ed1ng kh\u00e1c.");
         table.put("Your phone couldn't write the file. Check your free space and try again.",

@@ -20,8 +20,10 @@ import android.widget.ListView;
 import java.io.File;
 import java.io.FileOutputStream;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import app.morphe.extension.facebook.navigation.MarketplaceOnly;
@@ -148,6 +150,58 @@ public class MarketplaceSettingsTest {
         }
     }
 
+    /** A row's summary without the marks that keep a switch's name in its own direction. */
+    private static String plain(Preference row) {
+        return String.valueOf(row.getSummary()).replace("⁨", "").replace("⁩", "");
+    }
+
+    @Test
+    public void aSwitchAnotherOverridesNamesTheSwitchToTurnOff() throws Exception {
+        PatchFamily.inBuildForTests = EnumSet.of(PatchFamily.START_TAB, PatchFamily.MARKETPLACE_ONLY, PatchFamily.BOTTOM_TAB_BAR);
+        Settings.MARKETPLACE_ONLY.save(true);
+        Settings.BOTTOM_TAB_BAR.save(true);
+        Settings.TAB_BAR_SCROLL_AWAY.save(true);
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            HushfacebookPreferenceFragment page = open(controller.get());
+            Preference events = page.findPreference(Settings.EVENTS_ONLY.key);
+            assertFalse(events.isEnabled());
+            assertTrue(plain(events),
+                    plain(events).endsWith("Turn off Marketplace only to use this."));
+            Preference top = page.findPreference(Settings.TOP_TAB_BAR.key);
+            assertFalse(top.isEnabled());
+            assertTrue(plain(top),
+                    plain(top).endsWith("Turn off Tab bar at the bottom to use this."));
+            Preference keep = page.findPreference(Settings.KEEP_TAB_BAR.key);
+            assertFalse(keep.isEnabled());
+            assertTrue(plain(keep), plain(keep)
+                    .endsWith("Turn off " + SwitchLabels.title(Settings.TAB_BAR_SCROLL_AWAY) + " to use this."));
+
+            Setting.saveAll(Map.of(Settings.BOTTOM_TAB_BAR, false));
+            page.refreshSwitches();
+            ShadowLooper.idleMainLooper();
+            assertTrue(top.isEnabled());
+            assertFalse(plain(top), plain(top).contains("Turn off"));
+        } finally {
+            Settings.BOTTOM_TAB_BAR.resetToDefault();
+            Settings.TAB_BAR_SCROLL_AWAY.resetToDefault();
+        }
+    }
+
+    @Test
+    public void marketplaceOnlysOwnRowsSitUnderItBeforeEventsOnly() {
+        try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {
+            HushfacebookPreferenceFragment page = open(controller.get());
+            PreferenceGroup opening = page.findPreference(Settings.MARKETPLACE_ONLY.key).getParent();
+            List<String> keys = new ArrayList<>();
+            for (int i = 0; i < opening.getPreferenceCount(); i++) keys.add(opening.getPreference(i).getKey());
+            int marketplace = keys.indexOf(Settings.MARKETPLACE_ONLY.key);
+            assertEquals(keys.toString(), Settings.MARKETPLACE_QUIET_NOTIFICATIONS.key, keys.get(marketplace + 1));
+            assertEquals(keys.toString(), Settings.MARKETPLACE_SKIP_FEED_PREFETCH.key, keys.get(marketplace + 2));
+            assertEquals(keys.toString(), Settings.EVENTS_ONLY.key, keys.get(marketplace + 3));
+            assertEquals(keys.toString(), "action_regular_facebook", keys.get(marketplace + 4));
+        }
+    }
+
     @Test
     public void eventsOnlyHasItsOwnRowAndSummaryAndReturnToRegularTurnsBothOff() {
         assertFalse(Settings.EVENTS_ONLY.defaultValue);
@@ -159,6 +213,10 @@ public class MarketplaceSettingsTest {
             assertTrue(row.isChecked());
             assertEquals("Events only", String.valueOf(row.getTitle()));
             assertEquals(HushfacebookPreferenceFragment.eventsSummary(), String.valueOf(row.getSummary()));
+            // The single-tab state is Events' now, so Marketplace only's row doesn't take it as its own.
+            assertFalse(HushfacebookPreferenceFragment.eventsSummary().startsWith("Off."));
+            CharSequence marketplace = page.findPreference(Settings.MARKETPLACE_ONLY.key).getSummary();
+            assertTrue(String.valueOf(marketplace), String.valueOf(marketplace).startsWith("Off."));
             Preference tab = page.findPreference(Settings.START_TAB.key);
             assertFalse(tab.isEnabled());
             assertEquals("Events only chooses the opening tab. Your previous choice stays saved.",

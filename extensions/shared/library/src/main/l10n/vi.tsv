@@ -996,7 +996,7 @@ Adds Watch history, the videos and reels you've watched, to the menu you get by 
 Adds Watch history, the videos and reels you've watched, to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	Thêm Lịch sử xem (các video và reel bạn đã xem) vào menu hiện ra khi nhấn giữ biểu tượng Facebook, nếu còn chỗ. Các lối tắt hiện có vẫn giữ nguyên.
 # context: The optional matching mode for both post word lists.
 Match whole words	Khớp nguyên từ
-Matches whole words only, in both lists. For example, hat matches hat! but not what or hats.	Chỉ khớp nguyên từ, trong cả hai danh sách. Ví dụ, an khớp với an! nhưng không khớp với ban hay anh.
+Matches whole words only, in both lists. For example, "hat" matches "hat!" but not "what" or "hats".	Chỉ khớp nguyên từ, trong cả hai danh sách. Ví dụ, "an" khớp với "an!" nhưng không khớp với "ban" hay "anh".
 Off	Tắt
 On	Bật
 Saved now %1$s. After import %2$s.	Hiện đã lưu %1$s. Sau khi nhập %2$s.
@@ -1362,6 +1362,8 @@ Posts you've scrolled past stay out of the feed when it loads again. The list st
 # context: title of the row under that switch that picks how many days a seen post stays hidden
 Keep seen posts hidden for	Ẩn bài viết đã xem trong
 Turn on %1$s to use this.	Bật %1$s để dùng mục này.
+# context: added to a greyed-out switch's summary; %1$s is the title of another switch that overrides it while on
+Turn off %1$s to use this.	Tắt %1$s để dùng mục này.
 # context: choice in that row
 1 day	1 ngày
 # context: choice in that row
@@ -1399,7 +1401,7 @@ Share to a group	Chia sẻ lên nhóm
 Share to a Page	Chia sẻ lên Trang
 Copy link	Sao chép liên kết
 Share sheet items to hide	Mục cần ẩn trong bảng chia sẻ
-None. The share sheet shows everything Facebook offers.	Không có. Bảng chia sẻ hiện mọi thứ Facebook cung cấp.
+None picked yet.	Chưa chọn mục nào.
 Hidden: %s	Đã ẩn: %s
 Hide from the share sheet	Ẩn khỏi bảng chia sẻ
 # context: last item of the opened list of default patches a build lacks, after eight names; the count of patches not named, always 2 or more

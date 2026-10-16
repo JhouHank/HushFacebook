@@ -996,7 +996,7 @@ Adds Watch history, the videos and reels you've watched, to the menu you get by 
 Adds Watch history, the videos and reels you've watched, to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	Facebook simgesine basılı tutunca açılan menüye, yer varsa İzleme geçmişi seçeneğini (izlediğin videolar ve reels) ekler. Mevcut kısayollar kalır.
 # context: The optional matching mode for both post word lists.
 Match whole words	Tam sözcükleri eşleştir
-Matches whole words only, in both lists. For example, hat matches hat! but not what or hats.	Her iki listede de yalnızca tam sözcükleri eşleştirir. Örneğin hat, hat! ile eşleşir ama what veya hats ile eşleşmez.
+Matches whole words only, in both lists. For example, "hat" matches "hat!" but not "what" or "hats".	Her iki listede de yalnızca tam sözcükleri eşleştirir. Örneğin "hat", "hat!" ile eşleşir ama "what" veya "hats" ile eşleşmez.
 Off	Kapalı
 On	Açık
 Saved now %1$s. After import %2$s.	Şu an kayıtlı %1$s. İçe aktarma sonrası %2$s.
@@ -1362,6 +1362,8 @@ Posts you've scrolled past stay out of the feed when it loads again. The list st
 # context: title of the row under that switch that picks how many days a seen post stays hidden
 Keep seen posts hidden for	Görülen gönderilerin gizli kalma süresi
 Turn on %1$s to use this.	Bunu kullanmak için %1$s seçeneğini açın.
+# context: added to a greyed-out switch's summary; %1$s is the title of another switch that overrides it while on
+Turn off %1$s to use this.	Bunu kullanmak için %1$s seçeneğini kapatın.
 # context: choice in that row
 1 day	1 gün
 # context: choice in that row
@@ -1399,7 +1401,7 @@ Share to a group	Bir grupta paylaş
 Share to a Page	Bir Sayfada paylaş
 Copy link	Bağlantıyı kopyala
 Share sheet items to hide	Paylaşırken gizlenecek öğeler
-None. The share sheet shows everything Facebook offers.	Hiçbiri. Paylaşım menüsü Facebook'un sunduğu her şeyi gösterir.
+None picked yet.	Henüz hiçbiri seçilmedi.
 Hidden: %s	Gizlenenler: %s
 Hide from the share sheet	Paylaşım menüsünden gizle
 # context: last item of the opened list of default patches a build lacks, after eight names; the count of patches not named, always 2 or more

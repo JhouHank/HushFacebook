@@ -996,7 +996,7 @@ Adds Watch history, the videos and reels you've watched, to the menu you get by 
 Adds Watch history, the videos and reels you've watched, to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	Añade Historial de reproducciones, los videos y reels que has visto, al menú que aparece al mantener pulsado el icono de Facebook, si hay espacio. Los accesos directos existentes se conservan.
 # context: The optional matching mode for both post word lists.
 Match whole words	Coincidir con palabras completas
-Matches whole words only, in both lists. For example, hat matches hat! but not what or hats.	Solo coincide con palabras completas, en ambas listas. Por ejemplo, hat coincide con hat! pero no con what ni hats.
+Matches whole words only, in both lists. For example, "hat" matches "hat!" but not "what" or "hats".	Solo coincide con palabras completas, en ambas listas. Por ejemplo, «hat» coincide con «hat!» pero no con «what» ni «hats».
 Off	Desactivado
 On	Activado
 Saved now %1$s. After import %2$s.	Guardado ahora %1$s. Después de importar %2$s.
@@ -1362,6 +1362,8 @@ Posts you've scrolled past stay out of the feed when it loads again. The list st
 # context: title of the row under that switch that picks how many days a seen post stays hidden
 Keep seen posts hidden for	Mantener ocultas las publicaciones vistas durante
 Turn on %1$s to use this.	Activa %1$s para usar esto.
+# context: added to a greyed-out switch's summary; %1$s is the title of another switch that overrides it while on
+Turn off %1$s to use this.	Desactiva %1$s para usar esto.
 # context: choice in that row
 1 day	1 día
 # context: choice in that row
@@ -1399,7 +1401,7 @@ Share to a group	Compartir en un grupo
 Share to a Page	Compartir en una página
 Copy link	Copiar enlace
 Share sheet items to hide	Opciones que ocultar al compartir
-None. The share sheet shows everything Facebook offers.	Ninguna. Al compartir se muestra todo lo que ofrece Facebook.
+None picked yet.	Aún no has elegido nada.
 Hidden: %s	Ocultas: %s
 Hide from the share sheet	Ocultar al compartir
 # context: last item of the opened list of default patches a build lacks, after eight names; the count of patches not named, always 2 or more

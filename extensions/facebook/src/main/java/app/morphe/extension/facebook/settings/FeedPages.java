@@ -51,10 +51,14 @@ final class FeedPages {
             if (build.contains(PatchFamily.MARKETPLACE_ONLY)) {
                 // Facebook builds the tab bar once, and the hook is asked then and not again.
                 opening.addPreference(toggle(context, Settings.MARKETPLACE_ONLY, ""));
-                opening.addPreference(toggle(context, Settings.EVENTS_ONLY, ""));
                 opening.addPreference(toggle(context, Settings.MARKETPLACE_QUIET_NOTIFICATIONS,
                         L10n.t("While Marketplace only is on, silences video suggestions, memories, birthdays and friend "
                                 + "suggestions. Messages and trading updates still arrive.")));
+                opening.addPreference(toggle(context, Settings.MARKETPLACE_SKIP_FEED_PREFETCH,
+                        L10n.t("While Marketplace only is on, loads less of the feed in the background. Some loading still happens "
+                                + "at startup.")));
+                // After Marketplace only's own two rows, so they sit under the switch they follow.
+                opening.addPreference(toggle(context, Settings.EVENTS_ONLY, ""));
                 Row regular = new Row(context);
                 regular.actsAtOnce = true;
                 regular.setKey("action_regular_facebook");
@@ -72,9 +76,6 @@ final class FeedPages {
                     return true;
                 });
                 opening.addPreference(regular);
-                opening.addPreference(toggle(context, Settings.MARKETPLACE_SKIP_FEED_PREFETCH,
-                        L10n.t("While Marketplace only is on, loads less of the feed in the background. Some loading still happens "
-                                + "at startup.")));
             }
             if (build.contains(PatchFamily.START_TAB)) {
                 opening.addPreference(toggle(context, Settings.OPEN_ON_CHOSEN_TAB,
@@ -243,7 +244,7 @@ final class FeedPages {
                 feed.addPreference(page.wordsRow(context, Settings.HIDDEN_WORDS, true));
                 feed.addPreference(page.wordsRow(context, Settings.KEPT_WORDS, false));
                 feed.addPreference(toggle(context, Settings.POST_WORDS_WHOLE_WORDS,
-                        L10n.t("Matches whole words only, in both lists. For example, hat matches hat! but not what or hats.")));
+                        L10n.t("Matches whole words only, in both lists. For example, \"hat\" matches \"hat!\" but not \"what\" or \"hats\".")));
                 feed.addPreference(toggle(context, Settings.HIDE_POSTS_FROM_SOURCES,
                         L10n.t("Hides posts by people or Pages on your list below, or linking to sites on it, including shares. "
                                 + "Your list stays on this phone unless you export it.")));
@@ -329,7 +330,8 @@ final class FeedPages {
                         L10n.t("A finished story stays on screen until you tap or swipe. Turn this off for Facebook's timing.")));
                 stories.addPreference(toggle(context, Settings.LOOP_STORIES,
                         L10n.t("With Stop Story auto-advance on, a finished story plays again from the start "
-                                + "instead of waiting on its last frame. Tap or swipe to move on.")));
+                                + "instead of waiting on its last frame. Tap or swipe to move on."))
+                        .needs(Settings.BLOCK_STORY_AUTO_ADVANCE));
             }
             if (build.contains(PatchFamily.STORY_SEEN)) {
                 stories.addPreference(toggle(context, Settings.VIEW_STORIES_ANONYMOUSLY,

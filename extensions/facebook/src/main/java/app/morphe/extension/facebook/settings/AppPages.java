@@ -349,7 +349,7 @@ final class AppPages {
 
     /** The row's summary: the items kept out, by the names the list gives them, or none. */
     static String shareItemsSummary(Set<String> hidden) {
-        if (hidden.isEmpty()) return L10n.t("None. The share sheet shows everything Facebook offers.");
+        if (hidden.isEmpty()) return L10n.t("None picked yet.");
         List<String> names = new ArrayList<>();
         for (String type : hidden) names.add(ShareSheetItems.label(type));
         return L10n.f("Hidden: %s", L10n.join(names));

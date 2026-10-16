@@ -121,6 +121,14 @@ public final class MarketplaceOnly {
         return Settings.EVENTS_ONLY.savedValue() ? StartTab.EVENTS : null;
     }
 
+    /**
+     * Whether {@link #state} speaks for [tab]'s switch: that tab is the one kept, or the bar Facebook
+     * built still keeps only it. The other mode's row shows its plain summary instead.
+     */
+    public static boolean stateIsFor(StartTab tab) {
+        return savedTab() == tab || (Boolean.TRUE.equals(appliedChoice) && appliedTab == tab);
+    }
+
     private static State availabilityOf(StartTab tab) {
         return tab == StartTab.EVENTS ? eventsAvailability : marketplaceAvailability;
     }

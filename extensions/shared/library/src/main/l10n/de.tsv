@@ -996,7 +996,7 @@ Adds Watch history, the videos and reels you've watched, to the menu you get by 
 Adds Watch history, the videos and reels you've watched, to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	Fügt Wiedergabeverlauf, also die Videos und Reels, die du angesehen hast, zum Menü hinzu, das beim langen Drücken des Facebook-Symbols erscheint, wenn Platz ist. Vorhandene Verknüpfungen bleiben.
 # context: The optional matching mode for both post word lists.
 Match whole words	Ganze Wörter abgleichen
-Matches whole words only, in both lists. For example, hat matches hat! but not what or hats.	Gleicht nur ganze Wörter ab, in beiden Listen. Zum Beispiel passt hat zu hat!, aber nicht zu what oder hats.
+Matches whole words only, in both lists. For example, "hat" matches "hat!" but not "what" or "hats".	Gleicht nur ganze Wörter ab, in beiden Listen. Zum Beispiel passt „hat“ zu „hat!“, aber nicht zu „what“ oder „hats“.
 Off	Aus
 On	Ein
 Saved now %1$s. After import %2$s.	Aktuell gespeichert %1$s. Nach dem Import %2$s.
@@ -1362,6 +1362,8 @@ Posts you've scrolled past stay out of the feed when it loads again. The list st
 # context: title of the row under that switch that picks how many days a seen post stays hidden
 Keep seen posts hidden for	Gesehene Beiträge ausgeblendet lassen für
 Turn on %1$s to use this.	Schalte %1$s ein, um das zu nutzen.
+# context: added to a greyed-out switch's summary; %1$s is the title of another switch that overrides it while on
+Turn off %1$s to use this.	Schalte %1$s aus, um das zu nutzen.
 # context: choice in that row
 1 day	1 Tag
 # context: choice in that row
@@ -1399,7 +1401,7 @@ Share to a group	In einer Gruppe teilen
 Share to a Page	Auf einer Seite teilen
 Copy link	Link kopieren
 Share sheet items to hide	Beim Teilen ausgeblendete Einträge
-None. The share sheet shows everything Facebook offers.	Keine. Beim Teilen zeigt Facebook alles, was es anbietet.
+None picked yet.	Noch nichts ausgewählt.
 Hidden: %s	Ausgeblendet: %s
 Hide from the share sheet	Beim Teilen ausblenden
 # context: last item of the opened list of default patches a build lacks, after eight names; the count of patches not named, always 2 or more
