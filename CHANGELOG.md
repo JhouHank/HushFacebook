@@ -27,6 +27,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Changed
 
+* **Facebook:** Hushfacebook now targets Facebook 583.0.0.39.55 only, the newest stable release. That's build 475614366 for 64-bit phones (the arm64-v8a 480-640dpi Android 11+ bundle) and 475614365 for 32-bit ones. If you're on 582.0.0.50.54, update Facebook to 583 before you patch.
 * **Build:** Source attribution now records the Material You styleable-token tracer as original Hushfacebook work, so the provenance check no longer assigns it to the older theme port.
 * **Testing:** The captured Report a problem link opened in an authenticated isolated browser with its version, device, five problem-template line breaks and all 42 enabled switch names intact. The draft was canceled, and no GitHub issue was created.
 * **Testing:** A signed-in Facebook 582 clone now passes the native Dark mode and Active status checks. Each changed value survived reopening, then Dark mode was restored to Off and Active status to On without losing the clone login.
