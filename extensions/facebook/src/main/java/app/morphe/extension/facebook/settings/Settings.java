@@ -483,6 +483,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_unlock_app_icons", FALSE);
 
     /**
+     * The picked app icon stands in for the Facebook wordmark at the top of Home
+     * ({@link app.morphe.extension.facebook.misc.AppIcons#dressLogo}, #172). Starts off, so Facebook's
+     * wordmark stays. Needs {@link #UNLOCK_APP_ICONS}. Facebook builds the header once, so a change
+     * waits for a restart. It never changes which launcher alias is on.
+     */
+    public static final BooleanSetting USE_APP_ICON_IN_HEADER =
+            new BooleanSetting("hushfacebook_use_app_icon_in_header", FALSE, true, Setting.parent(UNLOCK_APP_ICONS));
+
+    /**
      * Facebook's haptics on its own taps and gestures ({@link app.morphe.extension.facebook.misc.Haptics}).
      * Starts off.
      */

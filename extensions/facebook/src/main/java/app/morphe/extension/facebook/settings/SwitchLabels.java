@@ -121,6 +121,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_FREE_MODE_BANNER) return L10n.t("Hide the Free mode banner");
         if (setting == Settings.TURN_OFF_SCREEN_TRANSITIONS) return L10n.t("Turn off screen transitions");
         if (setting == Settings.UNLOCK_APP_ICONS) return L10n.t("Unlock app icons");
+        if (setting == Settings.USE_APP_ICON_IN_HEADER) return L10n.t("Use the icon at the top of Home");
         if (setting == Settings.BLOCK_SCREENSHOT_DETECTION) return L10n.t("Block screenshot detection");
         if (setting == Settings.HIDE_CHAT_TYPING) return L10n.t("Hide typing in chats");
         if (setting == Settings.HIDE_COMMENT_TYPING) return L10n.t("Hide typing in comments");

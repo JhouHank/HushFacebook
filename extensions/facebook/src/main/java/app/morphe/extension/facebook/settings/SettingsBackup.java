@@ -179,6 +179,7 @@ public final class SettingsBackup {
             Settings.HIDE_FREE_MODE_BANNER,
             Settings.TURN_OFF_SCREEN_TRANSITIONS,
             Settings.UNLOCK_APP_ICONS,
+            Settings.USE_APP_ICON_IN_HEADER,
             Settings.BLOCK_SCREENSHOT_DETECTION,
             Settings.HIDE_CHAT_TYPING,
             Settings.HIDE_COMMENT_TYPING,
