@@ -16,6 +16,8 @@ Changes in each Hushfacebook version, newest first.
 
 * **Facebook:** **See-through bars** work with the tab bar at the top now (issue #171). Facebook stacks the top bar and the tab bar in one holder there, and neither bar's color was big enough to count. The blur behind a bar also stays inside the bar on phones whose tab bar holder reaches above the tabs, where it showed as a blurred strip of the feed. Pages that play video on their own surface skip the blur and keep just the see-through color, since drawing that video a second time could turn the Reels tab black.
 
+* **Facebook:** The diagnostics report keeps every Picture-in-picture count again. It had room for 16 named counts per feature, and Picture-in-picture has more than that, so whichever came last in a session were left out. It keeps 24 now.
+
 * **Facebook:** Picking an app icon no longer replaces the Facebook wordmark at the top of Home (issue #172). **Use the icon at the top of Home**, a new switch under Appearance, puts your picked icon there instead. It starts off and needs a restart.
 
 * **Tooling:** The device audit now checks its device lease and input window before sending input. Failed imports, missing pages and unproved destinations fail the run. Settings, language and theme restore independently, with recovery files kept if anything fails. A baseline is replaced only after the full run and recovery pass.
