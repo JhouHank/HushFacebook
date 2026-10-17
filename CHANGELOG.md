@@ -10,6 +10,8 @@ Changes in each Hushfacebook version, newest first.
 
 * **Facebook:** **Hide who is typing in comments**, a new switch under Comment sheet options, takes away the line that says someone is typing a comment (issue #170). Your own typing stays a separate switch under Privacy. It starts off.
 
+* **Facebook:** **Hide the search pill on reels**, a new switch under Reels and Watch, takes the search suggestion out from under a reel's caption (issue #173). It starts off and shows from the next reel. Part of `Clean up Reels`.
+
 ### Fixed
 
 * **Facebook:** **See-through bars** work with the tab bar at the top now (issue #171). Facebook stacks the top bar and the tab bar in one holder there, and neither bar's color was big enough to count. The blur behind a bar also stays inside the bar on phones whose tab bar holder reaches above the tabs, where it showed as a blurred strip of the feed. Pages that play video on their own surface skip the blur and keep just the see-through color, since drawing that video a second time could turn the Reels tab black.

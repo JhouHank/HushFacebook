@@ -1468,3 +1468,5 @@ Hide people to send to in the share sheet	Ocultar as pessoas sugeridas ao compar
 Takes the row of profile pictures off the share sheet, the people Facebook suggests sending a post to. The search box and the other ways to share stay.	Remove a fileira de fotos de perfil da tela de compartilhamento, as pessoas para quem o Facebook sugere enviar uma publicação. A caixa de busca e as outras formas de compartilhar continuam.
 Hide who is typing in comments	Ocultar quem está digitando nos comentários
 Takes away the line that says someone is typing a comment. Your own typing is a separate switch under Privacy.	Remove a linha que mostra que alguém está digitando um comentário. A sua própria digitação tem uma chave separada em Privacidade.
+Hide the search pill on reels	Ocultar a sugestão de pesquisa nos reels
+Hides the search suggestion under a reel's caption, the magnifier with a question to look up. Off by default, since it hasn't been tried on a real account yet.	Oculta a sugestão de pesquisa abaixo da legenda de um reel, a lupa com uma pergunta para consultar. Desativado por padrão, porque ainda não foi testado em uma conta real.

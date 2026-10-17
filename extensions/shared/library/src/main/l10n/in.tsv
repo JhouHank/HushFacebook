@@ -1576,3 +1576,5 @@ Hide people to send to in the share sheet	Sembunyikan orang yang disarankan saat
 Takes the row of profile pictures off the share sheet, the people Facebook suggests sending a post to. The search box and the other ways to share stay.	Menghapus deretan foto profil dari lembar berbagi, yaitu orang-orang yang disarankan Facebook untuk dikirimi kiriman. Kotak pencarian dan cara berbagi lainnya tetap ada.
 Hide who is typing in comments	Sembunyikan siapa yang sedang mengetik di komentar
 Takes away the line that says someone is typing a comment. Your own typing is a separate switch under Privacy.	Menghapus baris yang menunjukkan seseorang sedang mengetik komentar. Saat Anda sendiri mengetik punya sakelar terpisah di Privasi.
+Hide the search pill on reels	Sembunyikan saran pencarian di reel
+Hides the search suggestion under a reel's caption, the magnifier with a question to look up. Off by default, since it hasn't been tried on a real account yet.	Menyembunyikan saran pencarian di bawah keterangan reel, ikon kaca pembesar dengan pertanyaan untuk dicari. Nonaktif secara default, karena belum dicoba pada akun sungguhan.

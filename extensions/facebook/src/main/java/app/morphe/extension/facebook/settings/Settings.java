@@ -442,6 +442,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_original_audio", FALSE);
 
     /**
+     * The search pill under a reel's caption, Facebook's "search this" prompt with a suggested
+     * query ({@link app.morphe.extension.facebook.reels.ReelDeclutter#hideSearchPill}, #173). The
+     * component that draws it isn't built. Off until it's turned on, since the pill depends on a
+     * server setting and nobody has seen it go on a signed-in Reels feed yet.
+     */
+    public static final BooleanSetting HIDE_REEL_SEARCH_PILL =
+            new BooleanSetting("hushfacebook_hide_reel_search_pill", FALSE);
+
+    /**
      * The batches of watched reels the Reels viewer sends as FbShortsSeenStateMutation: only their
      * ids, the record Facebook ranks the Reels feed with, which nobody else sees. Held back, reels
      * already watched may come back in the feed.

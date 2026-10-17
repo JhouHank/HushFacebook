@@ -1576,3 +1576,5 @@ Hide people to send to in the share sheet	Paylaşırken önerilen kişileri gizl
 Takes the row of profile pictures off the share sheet, the people Facebook suggests sending a post to. The search box and the other ways to share stay.	Paylaşım ekranındaki profil fotoğrafı sırasını, yani Facebook'un bir gönderiyi göndermeyi önerdiği kişileri kaldırır. Arama kutusu ve paylaşmanın diğer yolları kalır.
 Hide who is typing in comments	Yorumlarda kimin yazdığını gizle
 Takes away the line that says someone is typing a comment. Your own typing is a separate switch under Privacy.	Birinin yorum yazdığını gösteren satırı kaldırır. Senin yazman için Gizlilik altında ayrı bir anahtar var.
+Hide the search pill on reels	Reels'te arama önerisini gizle
+Hides the search suggestion under a reel's caption, the magnifier with a question to look up. Off by default, since it hasn't been tried on a real account yet.	Bir reel'in açıklamasının altındaki arama önerisini, yani aranacak bir soru içeren büyüteci gizler. Henüz gerçek bir hesapta denenmediği için varsayılan olarak kapalıdır.

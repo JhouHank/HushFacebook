@@ -1576,3 +1576,5 @@ Hide people to send to in the share sheet	Vorgeschlagene Personen beim Teilen au
 Takes the row of profile pictures off the share sheet, the people Facebook suggests sending a post to. The search box and the other ways to share stay.	Entfernt die Reihe mit Profilbildern aus dem Teilen-Menü, also die Leute, denen Facebook vorschlägt, einen Beitrag zu schicken. Das Suchfeld und die anderen Wege zum Teilen bleiben.
 Hide who is typing in comments	Wer gerade kommentiert, ausblenden
 Takes away the line that says someone is typing a comment. Your own typing is a separate switch under Privacy.	Entfernt die Zeile, die anzeigt, dass jemand gerade einen Kommentar schreibt. Dein eigenes Tippen hat einen eigenen Schalter unter Datenschutz.
+Hide the search pill on reels	Suchvorschlag bei Reels ausblenden
+Hides the search suggestion under a reel's caption, the magnifier with a question to look up. Off by default, since it hasn't been tried on a real account yet.	Blendet den Suchvorschlag unter der Beschreibung eines Reels aus, die Lupe mit einer Frage zum Nachschlagen. Standardmäßig aus, da es noch nicht mit einem echten Konto getestet wurde.

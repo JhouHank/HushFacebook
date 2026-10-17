@@ -490,7 +490,9 @@ public class PausedHooksTest {
                 () -> ReelCleanMode.startClean(false),
                 ReelLoopForTests::stopsAReel,
                 // A video whose audio Facebook would pick in Spanish is asked for no language.
-                () -> !"es".equals(OriginalAudio.language("es"))));
+                () -> !"es".equals(OriginalAudio.language("es")),
+                // The search pill is answered as empty only while the patch runs.
+                ReelDeclutter::hideSearchPill));
         // A reel that would get the interest prompt is answered as one that doesn't.
         probes.put(PatchFamily.REEL_PROMPTS, Collections.singletonList(() -> !ReelPrompts.keep(true)));
         // The Reels batcher's send of the reels you watched never reaches its executor.
