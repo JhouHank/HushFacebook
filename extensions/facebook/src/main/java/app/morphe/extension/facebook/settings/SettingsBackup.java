@@ -199,6 +199,7 @@ public final class SettingsBackup {
             Settings.HIDE_RELATED_GROUPS_UNDER_COMMENTS,
             Settings.HIDE_SHOP_LINK_COMMENTS,
             Settings.HIDE_COMMENTS_WITH_WORDS,
+            Settings.HIDE_INCOMING_COMMENT_TYPING,
             Settings.TAG_SUGGESTIONS_ONLY_AFTER_AT,
             Settings.TAP_TO_PLAY,
             Settings.TAP_TO_PLAY_REELS_AFTER_FIRST,

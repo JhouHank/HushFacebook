@@ -1572,3 +1572,5 @@ Hide the Meta AI shortcut	Meta AI kısayolunu gizle
 The Meta AI shortcut leaves the Menu's list with Feeds, Marketplace, Reels and Groups, and the next shortcut moves up into its place.	Meta AI kısayolu, Menü'deki Akışlar, Marketplace, Reels ve Gruplar listesinden kalkar ve sıradaki kısayol onun yerine geçer.
 Hide people to send to in the share sheet	Paylaşırken önerilen kişileri gizle
 Takes the row of profile pictures off the share sheet, the people Facebook suggests sending a post to. The search box and the other ways to share stay.	Paylaşım ekranındaki profil fotoğrafı sırasını, yani Facebook'un bir gönderiyi göndermeyi önerdiği kişileri kaldırır. Arama kutusu ve paylaşmanın diğer yolları kalır.
+Hide who is typing in comments	Yorumlarda kimin yazdığını gizle
+Takes away the line that says someone is typing a comment. Your own typing is a separate switch under Privacy.	Birinin yorum yazdığını gösteren satırı kaldırır. Senin yazman için Gizlilik altında ayrı bir anahtar var.

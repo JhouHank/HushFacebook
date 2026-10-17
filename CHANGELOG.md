@@ -8,6 +8,8 @@ Changes in each Hushfacebook version, newest first.
 
 * **Facebook:** **Hide people to send to in the share sheet**, a new switch under Share sheet items, takes the row of profile pictures off the share sheet, so it doesn't keep showing people you've lost touch with (issue #169). The search box and the other ways to share stay. It starts off.
 
+* **Facebook:** **Hide who is typing in comments**, a new switch under Comment sheet options, takes away the line that says someone is typing a comment (issue #170). Your own typing stays a separate switch under Privacy. It starts off.
+
 ### Fixed
 
 * **Tooling:** The device audit now checks its device lease and input window before sending input. Failed imports, missing pages and unproved destinations fail the run. Settings, language and theme restore independently, with recovery files kept if anything fails. A baseline is replaced only after the full run and recovery pass.

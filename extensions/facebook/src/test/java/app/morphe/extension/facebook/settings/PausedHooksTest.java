@@ -652,7 +652,8 @@ public class PausedHooksTest {
                 () -> CommentSheetOptions.loadWholeReplyThreads(false),
                 () -> CommentSheetOptions.holdsBottomContent(CommentSheetOptions.RELATED_GROUPS),
                 () -> CommentSheetOptions.hidesComment(new GraphQLComment("https://s.shopee.vn/9zKs")),
-                () -> CommentSheetOptions.hidesComment(new GraphQLComment("Big SPOILER inside"))));
+                () -> CommentSheetOptions.hidesComment(new GraphQLComment("Big SPOILER inside")),
+                () -> CommentSheetOptions.incomingTypers(3) == 0));
         // A word without @ in a post or comment box looks nobody up, and a list of people left open
         // by an earlier @ is closed.
         probes.put(PatchFamily.TAG_SUGGESTIONS, Arrays.asList(

@@ -1572,3 +1572,5 @@ Hide the Meta AI shortcut	Meta-AI-Verknüpfung ausblenden
 The Meta AI shortcut leaves the Menu's list with Feeds, Marketplace, Reels and Groups, and the next shortcut moves up into its place.	Die Meta-AI-Verknüpfung verschwindet aus der Liste im Menü mit Feeds, Marketplace, Reels und Gruppen, und die nächste Verknüpfung rückt an ihre Stelle.
 Hide people to send to in the share sheet	Vorgeschlagene Personen beim Teilen ausblenden
 Takes the row of profile pictures off the share sheet, the people Facebook suggests sending a post to. The search box and the other ways to share stay.	Entfernt die Reihe mit Profilbildern aus dem Teilen-Menü, also die Leute, denen Facebook vorschlägt, einen Beitrag zu schicken. Das Suchfeld und die anderen Wege zum Teilen bleiben.
+Hide who is typing in comments	Wer gerade kommentiert, ausblenden
+Takes away the line that says someone is typing a comment. Your own typing is a separate switch under Privacy.	Entfernt die Zeile, die anzeigt, dass jemand gerade einen Kommentar schreibt. Dein eigenes Tippen hat einen eigenen Schalter unter Datenschutz.
