@@ -16,7 +16,7 @@ Changes in each Hushfacebook version, newest first.
 
 * **Facebook:** **See-through bars** work with the tab bar at the top now (issue #171). Facebook stacks the top bar and the tab bar in one holder there, and neither bar's color was big enough to count. The blur behind a bar also stays inside the bar on phones whose tab bar holder reaches above the tabs, where it showed as a blurred strip of the feed. Pages that play video on their own surface skip the blur and keep just the see-through color, since drawing that video a second time could turn the Reels tab black.
 
-* **Facebook:** Coming back from the **Picture-in-picture** window no longer puts a purple button over the top right of the reel (issue #126). That was Facebook Flex's switch button. Facebook builds its switcher bar in the last spot it was handed, and the full-screen viewer handed it its own on the way back. With the switch on, the viewer keeps that spot to itself, and the bar still shows wherever else Facebook puts it.
+* **Facebook:** Coming back from the **Picture-in-picture** window no longer puts a purple button over the top right of the reel (issue #126). That was Facebook Flex's switch button. Facebook hides everything on the screen while the window is open, then shows all of it again on the way back, even parts that were never meant to show, and that built the switcher bar and a few other pieces in the reel viewer. Now everything comes back the way it was before the window opened.
 
 * **Facebook:** The diagnostics report keeps every Picture-in-picture count again. It had room for 16 named counts per feature, and Picture-in-picture has more than that, so whichever came last in a session were left out. It keeps 24 now.
 

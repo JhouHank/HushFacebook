@@ -9,6 +9,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
+import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
@@ -17,6 +18,7 @@ import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patches.facebook.downloads.reel.moreSheet
 import app.morphe.patches.facebook.feed.aidetected.EXTENSION_CLASSES
 import app.morphe.patches.facebook.feed.holdsString
+import app.morphe.patches.facebook.media.framestep.VIEW
 import app.morphe.patches.facebook.media.framestep.VIEW_GROUP
 import app.morphe.patches.facebook.media.framestep.grootAttaches
 import app.morphe.patches.facebook.media.framestep.playerViewFields
@@ -39,6 +41,7 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.builder.MutableMethodImplementation
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
@@ -115,17 +118,9 @@ internal const val HOME_GATE_ALLOWED = "$PICTURE_IN_PICTURE->homeGateAllowed(Z)Z
 
 internal const val HOME_FLAG_ALLOWED = "$PICTURE_IN_PICTURE->homeFlagAllowed(Z)Z"
 
-/**
- * Facebook's full-screen viewer (ImmersiveActivity) logs this when it has no Facebook Flex switcher
- * bar to hand over. Only the method that hands the bar over holds it.
- */
-internal const val SWITCHER_STUB_MISSING = "Dialtone switcher bar stub not found with intent: "
+internal const val HIDING = "$PICTURE_IN_PICTURE->hiding($VIEW)V"
 
-private const val CONTEXT = "Landroid/content/Context;"
-
-private const val STUB = "Landroid/view/ViewStub;"
-
-internal const val SWITCHER_BAR_KEPT_OUT = "$PICTURE_IN_PICTURE->switcherBarKeptOut()Z"
+internal const val SHOWN_AGAIN = "$PICTURE_IN_PICTURE->shownAgain(${VIEW}I)V"
 
 /**
  * A playing reel keeps going in a small window when you leave Facebook. Facebook ships
@@ -183,11 +178,13 @@ internal const val SWITCHER_BAR_KEPT_OUT = "$PICTURE_IN_PICTURE->switcherBarKept
  * Facebook's own code then arms the window for the video on screen, and the rest here treats that
  * arming like any other: a paused video is held by the pause hook.
  *
- * The full-screen viewer hands the empty spot for its Facebook Flex switcher bar (a ViewStub) to
- * Facebook's one switcher for the whole app as it opens (583 `LX/2KH;->A0P`). That switcher builds
- * its bar in the spot it was handed last, and coming back from the window it built it in the reel
- * viewer, where only the bar's purple switch button showed, over the top right of the reel (#126).
- * The extension answers first in that hand-off, and its yes returns before it.
+ * The window's viewer hides every view of the screen but its own container as it opens, and back
+ * from the window Facebook's picture-in-picture handler (583 `LX/kNn;->A09`) shows every one of
+ * them again, whatever it was before. Among them are the spots for views Facebook builds only once
+ * shown (ViewStubs), and showing one builds it: the reel viewer got Facebook Flex's switcher bar,
+ * a purple button over the top right of the reel, and four more views it never shows (#126). The
+ * extension hears each view hidden and keeps how it showed, and the handler's call that shows it
+ * again goes through the extension, which puts that back.
  *
  * A reel's More sheet gets a Picture-in-picture row while the window is armed on its screen, and
  * its tap opens the window at once (#44). A second switch, Only from a reel's More menu, keeps
@@ -235,9 +232,9 @@ val pictureInPicturePatch = bytecodePatch(
         applyViewerId(opening)
         applyTopicFlag(topic)
         applyHome(home)
-        // Leaving the switcher bar out of the viewer (#126); the window works without it.
+        // Showing the screen back from the window as it was (#126); the window works without it.
         try {
-            applySwitcherHandOff(findSwitcherHandOff())
+            applyScreenRestore(findScreenRestore(opening))
         } catch (exception: PatchException) {
             patchLog.warning("${exception.message}, so a reel back from the window may show Facebook's switcher button.")
         }
@@ -895,32 +892,81 @@ internal fun BytecodePatchContext.applyHome(home: Home) {
     }
 }
 
-/** Whether [method] hands the switcher bar over: it logs [SWITCHER_STUB_MISSING] and calls one (Context, ViewStub) -> void. */
-internal fun isSwitcherHandOff(method: Method): Boolean =
-    method.returnType == "V" && holdsString(method, SWITCHER_STUB_MISSING) &&
-        method.calls().count { it.returnType == "V" && it.parameterList() == listOf(CONTEXT, STUB) } == 1
+private const val GET_CHILD_AT = "Landroid/view/ViewGroup;->getChildAt(I)$VIEW"
+private const val SET_VISIBILITY = "$VIEW->setVisibility(I)V"
 
-/** The full-screen viewer's one hand-off of its switcher bar (583 `ImmersiveActivityDelegate->A09`). Changes nothing. */
-internal fun BytecodePatchContext.findSwitcherHandOff(): Method {
-    val handOffs = classDefByStrings(SWITCHER_STUB_MISSING, StringComparisonType.EQUALS)
-        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
-        .flatMap { holder -> holder.methods.filter(::isSwitcherHandOff) }
-    return handOffs.singleOrNull()
-        ?: refuse("expected one method handing the switcher bar over and logging \"$SWITCHER_STUB_MISSING\", found ${handOffs.size}")
+/** The method [instruction] calls, or null when it calls none. */
+private fun called(instruction: Instruction): MethodReference? =
+    if (instruction.opcode.name.startsWith("invoke")) (instruction as? ReferenceInstruction)?.reference as? MethodReference else null
+
+/**
+ * Whether [register] holds a child of a view group at [at] in [code]: the last write to it before
+ * there is the move-result-object of a getChildAt call.
+ */
+internal fun holdsChild(code: List<Instruction>, at: Int, register: Int): Boolean {
+    val write = (at - 1 downTo 0).firstOrNull {
+        code[it].opcode.setsRegister() && (code[it] as? OneRegisterInstruction)?.registerA == register
+    } ?: return false
+    return code[write].opcode == Opcode.MOVE_RESULT_OBJECT && code.getOrNull(write - 1)?.let(::called)?.toString() == GET_CHILD_AT
 }
 
-/** The hand-off asks the extension first. Its yes returns before Facebook hands anything over. */
-internal fun BytecodePatchContext.applySwitcherHandOff(handOff: Method) {
-    val method = mutableClassDefBy(handOff.definingClass).findMutableMethodOf(handOff)
-    method.requireLocals(PATCH, 1)
-    method.addInstructionsWithLabels(
-        0,
-        """
-            invoke-static { }, $SWITCHER_BAR_KEPT_OUT
-            move-result v0
-            if-eqz v0, :facebook
-            return-void
-        """,
-        ExternalLabel("facebook", method.getInstruction(0)),
-    )
+/**
+ * Where the window's viewer opening [code] hides a view of the screen: its first call that takes a
+ * child of a view group alone and returns nothing (583 `LX/4Ap;->A19`, which sets it gone), or a
+ * setVisibility of one. -1 without one.
+ */
+internal fun hideAt(code: List<Instruction>): Int = code.indices.firstOrNull { at ->
+    val call = called(code[at])
+    val registers = code[at] as? FiveRegisterInstruction
+    val hides = call != null && registers != null && when {
+        call.toString() == SET_VISIBILITY -> registers.registerCount == 2
+        code[at].opcode == Opcode.INVOKE_STATIC -> registers.registerCount == 1 && call.parameterList() == listOf(VIEW) && call.returnType == "V"
+        else -> false
+    }
+    hides && holdsChild(code, at, registers!!.registerC)
+} ?: -1
+
+/** Where [code] shows a view of the screen again: its one setVisibility of a child of a view group. -1 unless there's exactly one. */
+internal fun showAt(code: List<Instruction>): Int = code.indices.filter { at ->
+    val registers = code[at] as? FiveRegisterInstruction
+    called(code[at])?.toString() == SET_VISIBILITY && registers != null && holdsChild(code, at, registers.registerC)
+}.singleOrNull() ?: -1
+
+/** The window's viewer opening, which hides the screen, and the method that shows it again. */
+internal class ScreenRestore(val opening: Method, val shower: Method)
+
+/**
+ * The viewer [opening]'s hide, and the one method in a class loading [VIEWER_CONTAINER] that shows
+ * the screen again (583 `LX/kNn;->A09`, Facebook's picture-in-picture handler). Changes nothing.
+ */
+internal fun BytecodePatchContext.findScreenRestore(opening: Method): ScreenRestore {
+    if (hideAt(opening.implementation?.instructions?.toList().orEmpty()) < 0) {
+        refuse("${opening.definingClass}->${opening.name} hides no view of the screen")
+    }
+    val showers = classDefByStrings(VIEWER_CONTAINER, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        .flatMap { holder -> holder.methods.filter { !isViewerOpening(it) && showAt(it.implementation?.instructions?.toList().orEmpty()) >= 0 } }
+    val shower = showers.singleOrNull()
+        ?: refuse("expected one method loading \"$VIEWER_CONTAINER\" that shows the screen again, found ${showers.size}")
+    return ScreenRestore(opening, shower)
+}
+
+/**
+ * The extension hears each view the viewer hides before it's hidden, and the call that shows it
+ * again goes to the extension with the same view and visibility. The opening already took its
+ * view id hook, so its hide is found again in the code as it is now.
+ */
+internal fun BytecodePatchContext.applyScreenRestore(restore: ScreenRestore) {
+    val opening = mutableClassDefBy(restore.opening.definingClass).findMutableMethodOf(restore.opening)
+    val hide = hideAt(opening.implementation!!.instructions.toList())
+    val child = (opening.getInstruction(hide) as FiveRegisterInstruction).registerC
+    opening.addInstructions(hide, "invoke-static/range { v$child .. v$child }, $HIDING")
+
+    val shower = mutableClassDefBy(restore.shower.definingClass).findMutableMethodOf(restore.shower)
+    val show = showAt(shower.implementation!!.instructions.toList())
+    val registers = shower.getInstruction(show) as FiveRegisterInstruction
+    if (registers.registerC > 15 || registers.registerD > 15) {
+        refuse("${shower.definingClass}->${shower.name} shows a view from past v15")
+    }
+    shower.replaceInstruction(show, "invoke-static { v${registers.registerC}, v${registers.registerD} }, $SHOWN_AGAIN")
 }
