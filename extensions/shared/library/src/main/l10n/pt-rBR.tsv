@@ -1462,3 +1462,5 @@ Set when you patched, so Pause can't turn these off:\n%1$s\nTo rule one out, pat
 For when Marketplace only or Events only is on. Neither is on now.	Para quando Só Marketplace ou Só Eventos estiver ativado. Nenhum dos dois está ativado agora.
 Hide the Meta AI shortcut	Ocultar o atalho para a Meta AI
 The Meta AI shortcut leaves the Menu's list with Feeds, Marketplace, Reels and Groups, and the next shortcut moves up into its place.	O atalho para a Meta AI sai da lista do Menu com Feeds, Marketplace, Reels e Grupos, e o próximo atalho sobe para o lugar dele.
+Hide people to send to in the share sheet	Ocultar as pessoas sugeridas ao compartilhar
+Takes the row of profile pictures off the share sheet, the people Facebook suggests sending a post to. The search box and the other ways to share stay.	Remove a fileira de fotos de perfil da tela de compartilhamento, as pessoas para quem o Facebook sugere enviar uma publicação. A caixa de busca e as outras formas de compartilhar continuam.

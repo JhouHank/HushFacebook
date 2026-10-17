@@ -965,6 +965,13 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_share_group_buttons", FALSE);
 
     /**
+     * The share sheet's row of round profile pictures of people to send the post to, and its
+     * loading placeholder. The search box and the other ways to share stay. Off until it's turned on.
+     */
+    public static final BooleanSetting HIDE_SHARE_PEOPLE_ROW =
+            new BooleanSetting("hushfacebook_hide_share_people_row", FALSE);
+
+    /**
      * The Meta Verified offer sheet after you post, and the Meta Verified label under some posts'
      * headers. Off until it's turned on.
      */

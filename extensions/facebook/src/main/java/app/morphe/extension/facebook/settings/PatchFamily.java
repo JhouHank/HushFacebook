@@ -202,7 +202,7 @@ public enum PatchFamily {
             Settings.HIDE_MUSE_SHARE_BUTTON, Settings.HIDE_META_VERIFIED_UPSELLS, Settings.HIDE_AVATAR_UPSELLS, Settings.HIDE_META_AI_IMAGINE,
             Settings.HIDE_META_AI_POST_BUTTONS),
     SHARE_SHEET_ITEMS(FamilyNames.SHARE_SHEET_ITEMS, "shareSheetItems", Settings.HIDDEN_SHARE_ITEMS,
-            new BooleanSetting[]{Settings.HIDE_SHARE_GROUP_BUTTONS}),
+            new BooleanSetting[]{Settings.HIDE_SHARE_GROUP_BUTTONS, Settings.HIDE_SHARE_PEOPLE_ROW}),
     META_AI_SEARCH(FamilyNames.META_AI_SEARCH, "metaAiSearch", null,
             Settings.HIDE_META_AI_IN_SEARCH),
     ANALYTICS_UPLOADS(FamilyNames.ANALYTICS_UPLOADS, "analyticsUploads", null,

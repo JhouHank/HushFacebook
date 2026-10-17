@@ -220,6 +220,7 @@ public final class SettingsBackup {
             Settings.SANITIZE_SHARING_LINKS,
             Settings.SHARE_POST_OWN_LINK,
             Settings.HIDE_SHARE_GROUP_BUTTONS,
+            Settings.HIDE_SHARE_PEOPLE_ROW,
             Settings.STOP_UPDATE_PROMPTS,
             Settings.DOWNLOAD_STORIES,
             Settings.SAVE_STORY_PHOTOS,

@@ -1570,3 +1570,5 @@ Set when you patched, so Pause can't turn these off:\n%1$s\nTo rule one out, pat
 For when Marketplace only or Events only is on. Neither is on now.	Yalnızca Marketplace veya Yalnızca Etkinlikler açıkken kullanılır. Şu anda ikisi de kapalı.
 Hide the Meta AI shortcut	Meta AI kısayolunu gizle
 The Meta AI shortcut leaves the Menu's list with Feeds, Marketplace, Reels and Groups, and the next shortcut moves up into its place.	Meta AI kısayolu, Menü'deki Akışlar, Marketplace, Reels ve Gruplar listesinden kalkar ve sıradaki kısayol onun yerine geçer.
+Hide people to send to in the share sheet	Paylaşırken önerilen kişileri gizle
+Takes the row of profile pictures off the share sheet, the people Facebook suggests sending a post to. The search box and the other ways to share stay.	Paylaşım ekranındaki profil fotoğrafı sırasını, yani Facebook'un bir gönderiyi göndermeyi önerdiği kişileri kaldırır. Arama kutusu ve paylaşmanın diğer yolları kalır.
