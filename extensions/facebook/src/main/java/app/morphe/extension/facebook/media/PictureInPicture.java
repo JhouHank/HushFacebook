@@ -142,6 +142,9 @@ public final class PictureInPicture {
     /** Counted each time the More sheet's Picture-in-picture row opened the window. */
     static final String FROM_MENU = "opened from the More menu";
 
+    /** Counted each time a full-screen viewer kept its Facebook Flex switcher bar to itself. */
+    static final String SWITCHER_BAR = "switcher bar kept out of the viewer";
+
     /** How many new view ids the viewer may go through for one nothing on screen holds. */
     private static final int VIEWER_ID_TRIES = 64;
 
@@ -451,8 +454,8 @@ public final class PictureInPicture {
 
     /**
      * Facebook mostly arms the window again once it's opened full screen, but not every time, and
-     * then its last arming stays on: leaving Facebook opened the window on its whole screen, with a
-     * purple block where the reel should be (#126). Unless Facebook armed or disarmed since [seen],
+     * then its last arming stays on, for a reel that may not be the one on screen anymore (#126).
+     * Unless Facebook armed or disarmed since [seen],
      * the window is armed again for the reel on screen, as a swipe arms it, or kept closed for a
      * reel it doesn't take. A pause holding auto-enter still holds it.
      */
@@ -569,8 +572,7 @@ public final class PictureInPicture {
      * the reel on screen from now on: a held auto-enter goes back on, switch or no switch, since it
      * was the extension that turned it off, and a reel other than the armed one gets the window
      * armed again for it. Unless that other player's video is off screen: Facebook getting the next
-     * reel ready plays it for a moment, and the window then opened on that reel, or on a purple
-     * block where its video wasn't drawn (#126).
+     * reel ready plays it for a moment, and the window then opened on that reel (#126).
      */
     public static void playerPlaying(Object player) {
         try {
@@ -791,6 +793,26 @@ public final class PictureInPicture {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, hook, failure);
             return answer;
+        }
+    }
+
+    /**
+     * The hook, first thing where Facebook's full-screen viewer hands the empty spot for its
+     * Facebook Flex switcher bar to Facebook's one switcher for the whole app. True returns before
+     * it does. That switcher builds its bar in the spot it was handed last, and coming back from the
+     * window it built it in the reel viewer: just its purple switch button, over the top right of
+     * the reel (#126). While the switch is on, the viewer keeps that spot to itself, and the bar
+     * stays wherever else Facebook shows it.
+     */
+    public static boolean switcherBarKeptOut() {
+        try {
+            if (!on()) return false;
+            HookStatus.bound(FAMILY, "switcher bar");
+            HookStatus.counted(FAMILY, SWITCHER_BAR);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "switcher bar", failure);
+            return false;
         }
     }
 

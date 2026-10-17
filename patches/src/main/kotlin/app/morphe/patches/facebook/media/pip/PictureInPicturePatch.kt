@@ -116,6 +116,18 @@ internal const val HOME_GATE_ALLOWED = "$PICTURE_IN_PICTURE->homeGateAllowed(Z)Z
 internal const val HOME_FLAG_ALLOWED = "$PICTURE_IN_PICTURE->homeFlagAllowed(Z)Z"
 
 /**
+ * Facebook's full-screen viewer (ImmersiveActivity) logs this when it has no Facebook Flex switcher
+ * bar to hand over. Only the method that hands the bar over holds it.
+ */
+internal const val SWITCHER_STUB_MISSING = "Dialtone switcher bar stub not found with intent: "
+
+private const val CONTEXT = "Landroid/content/Context;"
+
+private const val STUB = "Landroid/view/ViewStub;"
+
+internal const val SWITCHER_BAR_KEPT_OUT = "$PICTURE_IN_PICTURE->switcherBarKeptOut()Z"
+
+/**
  * A playing reel keeps going in a small window when you leave Facebook. Facebook ships
  * picture-in-picture for its Reels viewer (ReelsPipUtil: 581 `LX/BB6;`) behind server flags, at two
  * gates. The Reels viewer of the video tab first asks a gate of its own whether its surface has
@@ -171,6 +183,12 @@ internal const val HOME_FLAG_ALLOWED = "$PICTURE_IN_PICTURE->homeFlagAllowed(Z)Z
  * Facebook's own code then arms the window for the video on screen, and the rest here treats that
  * arming like any other: a paused video is held by the pause hook.
  *
+ * The full-screen viewer hands the empty spot for its Facebook Flex switcher bar (a ViewStub) to
+ * Facebook's one switcher for the whole app as it opens (583 `LX/2KH;->A0P`). That switcher builds
+ * its bar in the spot it was handed last, and coming back from the window it built it in the reel
+ * viewer, where only the bar's purple switch button showed, over the top right of the reel (#126).
+ * The extension answers first in that hand-off, and its yes returns before it.
+ *
  * A reel's More sheet gets a Picture-in-picture row while the window is armed on its screen, and
  * its tap opens the window at once (#44). A second switch, Only from a reel's More menu, keeps
  * auto-enter off so that row is the only way in; the extension does that part.
@@ -217,6 +235,12 @@ val pictureInPicturePatch = bytecodePatch(
         applyViewerId(opening)
         applyTopicFlag(topic)
         applyHome(home)
+        // Leaving the switcher bar out of the viewer (#126); the window works without it.
+        try {
+            applySwitcherHandOff(findSwitcherHandOff())
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so a reel back from the window may show Facebook's switcher button.")
+        }
         // The More sheet row (#44). The fixture tests hold it on every declared build; on another
         // one, leaving Facebook still opens the window, so a miss here is a warning.
         try {
@@ -869,4 +893,34 @@ internal fun BytecodePatchContext.applyHome(home: Home) {
             """,
         )
     }
+}
+
+/** Whether [method] hands the switcher bar over: it logs [SWITCHER_STUB_MISSING] and calls one (Context, ViewStub) -> void. */
+internal fun isSwitcherHandOff(method: Method): Boolean =
+    method.returnType == "V" && holdsString(method, SWITCHER_STUB_MISSING) &&
+        method.calls().count { it.returnType == "V" && it.parameterList() == listOf(CONTEXT, STUB) } == 1
+
+/** The full-screen viewer's one hand-off of its switcher bar (583 `ImmersiveActivityDelegate->A09`). Changes nothing. */
+internal fun BytecodePatchContext.findSwitcherHandOff(): Method {
+    val handOffs = classDefByStrings(SWITCHER_STUB_MISSING, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+        .flatMap { holder -> holder.methods.filter(::isSwitcherHandOff) }
+    return handOffs.singleOrNull()
+        ?: refuse("expected one method handing the switcher bar over and logging \"$SWITCHER_STUB_MISSING\", found ${handOffs.size}")
+}
+
+/** The hand-off asks the extension first. Its yes returns before Facebook hands anything over. */
+internal fun BytecodePatchContext.applySwitcherHandOff(handOff: Method) {
+    val method = mutableClassDefBy(handOff.definingClass).findMutableMethodOf(handOff)
+    method.requireLocals(PATCH, 1)
+    method.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static { }, $SWITCHER_BAR_KEPT_OUT
+            move-result v0
+            if-eqz v0, :facebook
+            return-void
+        """,
+        ExternalLabel("facebook", method.getInstruction(0)),
+    )
 }

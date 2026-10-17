@@ -154,4 +154,30 @@ public class PictureInPictureTest {
         assertFalse("an answer left alone was counted", line != null
                 && (line.contains(PictureInPicture.HOME_GATE) || line.contains(PictureInPicture.HOME_FLAG)));
     }
+
+    /** #126: coming back from the window, Facebook built its switcher bar in the reel viewer. */
+    @Test
+    public void onTheViewerKeepsTheSwitcherBarOut() {
+        assertTrue(PictureInPictureForTests.switcherBarKeptOut(Build.VERSION_CODES.S));
+        assertTrue(PictureInPictureForTests.switcherBarKeptOut(Build.VERSION_CODES.UPSIDE_DOWN_CAKE));
+        assertEquals(FamilyNames.PICTURE_IN_PICTURE + ": invoked 2, 1 found, 0 missing. Counted: "
+                + PictureInPicture.SWITCHER_BAR + " 2", statusLine());
+    }
+
+    @Test
+    public void offPausedOrBeforeAndroid12FacebookHandsTheSwitcherBarOver() {
+        assertFalse("Android 11 kept the bar out", PictureInPictureForTests.switcherBarKeptOut(Build.VERSION_CODES.R));
+        Settings.PICTURE_IN_PICTURE.save(false);
+        assertFalse("the switch off kept the bar out", PictureInPictureForTests.switcherBarKeptOut(Build.VERSION_CODES.S));
+        Settings.PICTURE_IN_PICTURE.save(true);
+        for (HushfacebookPause.Reason reason : new HushfacebookPause.Reason[] {
+                HushfacebookPause.Reason.SWITCH, HushfacebookPause.Reason.CRASH_LOOP}) {
+            PauseForTests.pause(reason);
+            assertFalse("a Hushfacebook paused by " + reason + " kept the bar out",
+                    PictureInPictureForTests.switcherBarKeptOut(Build.VERSION_CODES.S));
+            PauseForTests.resume();
+        }
+        String line = statusLine();
+        assertFalse("a hand-off left alone was counted", line != null && line.contains(PictureInPicture.SWITCHER_BAR));
+    }
 }

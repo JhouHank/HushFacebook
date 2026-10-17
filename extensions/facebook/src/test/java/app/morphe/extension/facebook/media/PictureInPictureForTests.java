@@ -105,6 +105,17 @@ public final class PictureInPictureForTests {
         }
     }
 
+    /** Whether the full-screen viewer keeps its switcher bar to itself on [apiLevel]. */
+    static boolean switcherBarKeptOut(int apiLevel) {
+        int was = PictureInPicture.apiLevel;
+        PictureInPicture.apiLevel = apiLevel;
+        try {
+            return PictureInPicture.switcherBarKeptOut();
+        } finally {
+            PictureInPicture.apiLevel = was;
+        }
+    }
+
     static boolean surfaceAllows(int apiLevel) {
         int was = PictureInPicture.apiLevel;
         PictureInPicture.apiLevel = apiLevel;

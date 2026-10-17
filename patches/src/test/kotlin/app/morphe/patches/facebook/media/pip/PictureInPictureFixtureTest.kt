@@ -49,7 +49,8 @@ import java.io.File
  * extension in the read's own register. And the Video tab's arming: the one method loading its
  * deep-dive surface's name that calls the check, its inlined copy of the gate (the gate's own
  * settings fetch and lambda cases) before the check, and the flag after the name whose no falls
- * into a disarm, both answered through the extension in their own registers.
+ * into a disarm, both answered through the extension in their own registers. And the full-screen
+ * viewer's one hand-off of its switcher bar's spot, asking the extension first (#126).
  */
 class PictureInPictureFixtureTest {
     private fun Method.code(): List<Instruction> = implementation!!.instructions.toList()
@@ -175,12 +176,21 @@ class PictureInPictureFixtureTest {
                 assertTrue("$name: a no from the flag doesn't fall into a disarm",
                     disarms.any { it.definingClass == fallsInto?.definingClass && it.name == fallsInto.name })
 
+                // #126: the full-screen viewer hands its switcher bar's spot over in one method.
+                val switcherHolders = FixtureDex.classesHolding(bundle, SWITCHER_STUB_MISSING).filterNot { it.type.startsWith(EXTENSION_CLASSES) }
+                val handOffs = switcherHolders.flatMap { switcherHolder -> switcherHolder.methods.filter(::isSwitcherHandOff) }
+                assertEquals("$name: methods handing the switcher bar over", 1, handOffs.size)
+                val handOff = handOffs.single()
+                assertTrue("$name: ${handOff.definingClass}->${handOff.name} has no local for the answer", handOff.localRegisterCount() >= 1)
+                val originalHandOff = handOff.code()
+
                 val originalCheck = check.code()
                 val originalGate = gate.code()
                 val originalPlay = play.code()
                 val originalRun = run.code()
                 val originalOpening = opening.code()
-                val context = PatchContexts.of((listOf(util, holder, owner, runnable, topic, homeClass, paramsClass) + viewers + listOf(
+                val switcherHolder = switcherHolders.single { it.type == handOff.definingClass }
+                val context = PatchContexts.of((listOf(util, holder, owner, runnable, topic, homeClass, paramsClass, switcherHolder) + viewers + listOf(
                     ExtensionDex.classDef(PICTURE_IN_PICTURE), ExtensionDex.classDef(SETTINGS_STATUS))).distinctBy { it.type })
                 pictureInPicturePatch.execute(context)
 
@@ -283,6 +293,15 @@ class PictureInPictureFixtureTest {
                 assertEquals("$name: a yes sets nothing", Opcode.RETURN_VOID, ran[3].opcode)
                 assertEquals("$name: the rest of Facebook's runnable", originalRun.size + 4, ran.size)
 
+                val handedOff = patchedOf(handOff).code()
+                assertEquals("$name: the hand-off's first call", SWITCHER_BAR_KEPT_OUT, handedOff[0].call.toString())
+                assertEquals("$name: the hand-off takes the answer in v0", 0, (handedOff[1] as OneRegisterInstruction).registerA)
+                assertEquals("$name: the hand-off's yes branch", Opcode.IF_EQZ, handedOff[2].opcode)
+                assertEquals("$name: a no runs Facebook's hand-off", 4, handedOff.target(2))
+                assertEquals("$name: a yes hands nothing over", Opcode.RETURN_VOID, handedOff[3].opcode)
+                assertEquals("$name: Facebook's first instruction of the hand-off moved", originalHandOff[0].opcode, handedOff[4].opcode)
+                assertEquals("$name: the rest of Facebook's hand-off", originalHandOff.size + 4, handedOff.size)
+
                 val opened = patchedOf(opening).code()
                 val newId = originalOpening.indexOfFirst { it.call?.name == "generateViewId" }
                 val idRegister = (originalOpening[newId + 1] as OneRegisterInstruction).registerA
@@ -332,7 +351,8 @@ class PictureInPictureFixtureTest {
                     "set aside in ${runnable.type}, viewer ${opening.definingClass}->${opening.name}, " +
                     "watch viewer ${topic.type}->onResume flag at $resumeAt in v$flagRegister of ${resume.localRegisterCount()} locals, " +
                     "video tab ${home.definingClass}->${home.name} gate copy (cases $gateCases) at $copyAt in v$homeGateRegister " +
-                    "and flag at $homeFlag in v$homeFlagRegister of ${home.localRegisterCount()} locals")
+                    "and flag at $homeFlag in v$homeFlagRegister of ${home.localRegisterCount()} locals, " +
+                    "switcher bar handed off in ${handOff.definingClass}->${handOff.name}")
                 checked += version
             }
         }
