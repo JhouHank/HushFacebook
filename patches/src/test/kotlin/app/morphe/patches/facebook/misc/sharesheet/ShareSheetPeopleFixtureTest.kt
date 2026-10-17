@@ -23,8 +23,9 @@ import org.junit.Test
 
 /**
  * Share sheet items' people row on every Facebook build the bundle declares (#169): the body render
- * adds the row of people and its loading placeholder to its children, and each of those two adds
- * becomes a call to the extension, in place, with the same registers. Reads the fixture bundles from
+ * adds the row of people to its children three ways (built from its list when the sheet opens, from
+ * a cache, and as the loading placeholder), and each of those adds becomes a call to the extension,
+ * in place, with the same registers. Reads the fixture bundles from
  * HUSHFACEBOOK_FIXTURE_DIR and skips without it. Redex names differ between the arm64 and armv7
  * bundles (LX/Zya on one, LX/ZkL on the other), so nothing here names a class.
  */
@@ -52,15 +53,35 @@ class ShareSheetPeopleFixtureTest {
                 // the framework's own AbstractCollection.add is what the two rows go through.
                 assertTrue("$name: the body never loads the placeholder's test id", holdsString(body, GLIMMER_ANCHOR))
 
+                val helperAdds = helperRowAdds(body)
+                val listAdds = listRowAdds(body)
+                assertEquals("$name: helper-built people rows in the share sheet body", 2, helperAdds.size)
+                assertEquals("$name: people rows built from their list", 1, listAdds.size)
                 val adds = peopleRowAdds(body)
-                assertEquals("$name: people rows in the share sheet body", 2, adds.size)
+                assertEquals("$name: every people row add", (helperAdds + listAdds).map { it.index }.sorted(), adds.map { it.index })
                 val code = body.code()
                 adds.forEach { add ->
                     assertEquals("$name: the add at ${add.index} is AbstractCollection.add",
                         "Ljava/util/AbstractCollection;->add(Ljava/lang/Object;)Z", code[add.index].called())
+                }
+                helperAdds.forEach { add ->
                     assertEquals("$name: its helper is the render class's own", bodyClass.type,
                         (code[add.index - 2].called())!!.substringBefore("->"))
                 }
+                // The list-built row is the one a share sheet opens with: its model is constructed
+                // with the people list just before the builder call, and the placeholder anchor is
+                // nowhere near it.
+                val built = listAdds.single()
+                val builder = (code[built.index - 2] as ReferenceInstruction).reference as MethodReference
+                val model = builder.parameterTypes.single().toString()
+                val init = code.subList(built.index - 6, built.index - 2).mapNotNull { instruction ->
+                    ((instruction as? ReferenceInstruction)?.reference as? MethodReference)
+                        ?.takeIf { it.definingClass == model && it.name == "<init>" }
+                }.single()
+                assertTrue("$name: the row model takes the people list",
+                    init.parameterTypes.any { it.toString() == "Ljava/util/List;" })
+                assertTrue("$name: the list-built row comes before the placeholder",
+                    built.index < helperAdds.maxOf { it.index })
 
                 val context = PatchContexts.of(listOf(bodyClass))
                 shareSheetPeoplePatch.execute(context)
