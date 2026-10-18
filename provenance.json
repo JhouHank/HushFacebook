@@ -621,6 +621,15 @@
     },
     {
       "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/postprompts/CommentReactionPreview.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: the reaction preview on comments. Comments draw the same facepile drawable as posts, so the patch marks the FDSInlineReactions component a comment builds (found by the kept strings FDSComment and inline_reaction_transition_key) and copies that mark onto the drawable the one paired method makes from it, letting the drawable's draw ask the comment switch instead of the post switch."
+    },
+    {
+      "paths": [
         "patches/src/main/kotlin/app/morphe/patches/facebook/ads/sponsoredreels/ReelItemStory.kt"
       ],
       "origin": "original",
