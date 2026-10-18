@@ -33,6 +33,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 
 private const val PATCH = "Open comments at full height"
 
@@ -67,11 +68,17 @@ internal const val SET_COMMENT_VIEWS = "ComponentsCommentsHelper.setCommentViews
 
 internal const val FIND_VIEW = "Landroid/view/View;->findViewById(I)Landroid/view/View;"
 
+/** The comment sheet's arguments, a kept class, which the comments helper's view setup is handed. */
+internal const val FEEDBACK_PARAMS = "Lcom/facebook/ufiservices/flyout/params/FeedbackParams;"
+
+/** What [FEEDBACK_PARAMS]'s toString prints before whether the sheet is a watch-and-comment one. */
+internal const val WATCH_AND_COMMENT = ", isWatchAndCommentSurface="
+
 internal const val FULL_HEIGHT_COMMENTS = "$EXTENSION_PACKAGE/comments/FullHeightComments;"
 internal const val SHEET_HEIGHT = "$FULL_HEIGHT_COMMENTS->sheetHeight(F)F"
 internal const val SKIP_SPLIT_SCREEN = "$FULL_HEIGHT_COMMENTS->skipSplitScreen()Z"
 internal const val FILLS_SCREEN = "$FULL_HEIGHT_COMMENTS->fillsScreen(F)Z"
-internal const val WATCH_HEADER = "$FULL_HEIGHT_COMMENTS->watchHeader(Landroid/view/View;I)V"
+internal const val WATCH_HEADER = "$FULL_HEIGHT_COMMENTS->watchHeader(Landroid/view/View;IZ)V"
 
 /**
  * Open comments at full height (#179).
@@ -101,12 +108,17 @@ internal const val WATCH_HEADER = "$FULL_HEIGHT_COMMENTS->watchHeader(Landroid/v
  * the share from its one float field. First thing in that override, the extension is handed the
  * share, and a yes answers that the sheet fills the screen, the way Facebook draws a post's comments.
  *
- * A full-screen reel sheet still draws the reel in the sheet's header, a LithoView above the
- * comment list, so the list starts a third of the way down. The method holding [SET_COMMENT_VIEWS]
- * (583 arm64 `LX/A7c;->A0A(View, View, FeedbackParams)`) finds that header by an id in its first
- * [FIND_VIEW] call on the sheet's views, its first parameter. First thing in it, the extension is
- * handed those views and that id, and hides the header while it holds a video. A post's header,
- * its reactions, has none and stays.
+ * A full-screen reel sheet still shows the reel in the sheet's header, a LithoView above the
+ * comment list, so the list starts a third of the way down. The header either holds the video or,
+ * on the Reels tab, where the sheet is a watch-and-comment one, is a see-through tap area over the
+ * reel still playing behind the sheet (the S25 on 583, 2026-10-18: no TextureView in the sheet's
+ * window, `isWatchAndCommentSurface=true` in its [FEEDBACK_PARAMS]). The method holding
+ * [SET_COMMENT_VIEWS] (583 arm64 `LX/A7c;->A0A(View, View, FeedbackParams)`) finds that header by
+ * an id in its first [FIND_VIEW] call on the sheet's views, its first parameter, and is handed the
+ * sheet's [FEEDBACK_PARAMS], whose watch-and-comment boolean is the one its toString prints after
+ * [WATCH_AND_COMMENT] (583 arm64 `A0l`). First thing in it, the extension is handed those views,
+ * that id and that boolean, and hides the header of a watch-and-comment sheet, or one holding a
+ * video. A post's header, its reactions, is neither and stays.
  *
  * In the default selection with its switch off, so nothing changes until it's turned on.
  */
@@ -138,6 +150,8 @@ val fullHeightCommentsPatch = bytecodePatch(
         val share = shareField(fills)
         val views = commentViewsSetup(holders(SET_COMMENT_VIEWS))
         val header = headerId(views)
+        val feedbackParams = classDefByOrNull(FEEDBACK_PARAMS) ?: refuse("$FEEDBACK_PARAMS isn't in this build")
+        val watchAndComment = watchAndCommentField(feedbackParams)
 
         mutableClassDefBy(POPOVER_PARAMS).methods.single { it.descriptor() == sheet.descriptor() }
             .raiseSheet(height)
@@ -147,7 +161,7 @@ val fullHeightCommentsPatch = bytecodePatch(
         }
         mutableClassDefBy(UFI_POPOVER).methods.single { it.descriptor() == fills.descriptor() }.fillScreen(share)
         mutableClassDefBy(views.definingClass).methods.single { it.descriptor() == views.descriptor() }
-            .watchHeader(header)
+            .watchHeader(header, feedbackParamsRegister(views), watchAndComment)
         enableStatus("fullHeightComments")
     }
 }
@@ -285,8 +299,8 @@ internal fun MutableMethod.fillScreen(share: FieldReference) {
 
 /**
  * The method setting up a comment sheet's views: the one method among [holders] holding
- * [SET_COMMENT_VIEWS], an instance method taking the sheet's views first, with two local registers
- * for the hook.
+ * [SET_COMMENT_VIEWS], an instance method taking the sheet's views first and its [FEEDBACK_PARAMS]
+ * once, with four local registers for the hook.
  */
 internal fun commentViewsSetup(holders: List<ClassDef>): Method {
     val found = holders.flatMap { methodsHolding(it, SET_COMMENT_VIEWS) }.distinctBy { it.descriptor() }
@@ -295,9 +309,44 @@ internal fun commentViewsSetup(holders: List<ClassDef>): Method {
     if (AccessFlags.STATIC.isSet(setup.accessFlags) || setup.parameterTypes.firstOrNull()?.toString() != VIEW) {
         refuse("${setup.descriptor()} doesn't take the sheet's views first")
     }
-    if (setup.localRegisterCount() < 2) refuse("${setup.descriptor()} has no two local registers for the hook")
+    if (setup.parameterTypes.count { it.toString() == FEEDBACK_PARAMS } != 1) {
+        refuse("${setup.descriptor()} doesn't take the sheet's $FEEDBACK_PARAMS once")
+    }
+    if (setup.localRegisterCount() < 4) refuse("${setup.descriptor()} has no four local registers for the hook")
     return setup
 }
+
+/**
+ * The p register holding [setup]'s [FEEDBACK_PARAMS], counted the way smali counts them: p0 is the
+ * instance, and a long or a double takes two.
+ */
+internal fun feedbackParamsRegister(setup: Method): Int {
+    val types = setup.parameterTypes.map { it.toString() }
+    return 1 + types.take(types.indexOf(FEEDBACK_PARAMS)).sumOf { width(it) }
+}
+
+/**
+ * The boolean [params] prints right after [WATCH_AND_COMMENT] in its toString: whether the sheet is
+ * a watch-and-comment one, the reel playing on behind it and seen through the sheet's header.
+ */
+internal fun watchAndCommentField(params: ClassDef): FieldReference {
+    val toString = params.methods.singleOrNull { it.name == "toString" && it.parameterTypes.isEmpty() }
+        ?: refuse("$FEEDBACK_PARAMS has no toString")
+    val instructions = toString.implementation!!.instructions.toList()
+    val label = instructions.indexOfFirst {
+        it.opcode in STRINGS && ((it as ReferenceInstruction).reference as StringReference).string == WATCH_AND_COMMENT
+    }
+    if (label < 0) refuse("$FEEDBACK_PARAMS's toString doesn't print \"$WATCH_AND_COMMENT\"")
+    // Only what the toString reads before printing its next label is this one's value.
+    val value = instructions.drop(label + 1).takeWhile { it.opcode !in STRINGS }
+        .filter { it.opcode == Opcode.IGET_BOOLEAN }
+    val field = (value.singleOrNull() as? ReferenceInstruction)?.reference as? FieldReference
+        ?: refuse("$FEEDBACK_PARAMS's toString reads ${value.size} booleans after \"$WATCH_AND_COMMENT\", expected one")
+    if (field.definingClass != FEEDBACK_PARAMS) refuse("$FEEDBACK_PARAMS's toString prints $field after \"$WATCH_AND_COMMENT\"")
+    return field
+}
+
+private val STRINGS = setOf(Opcode.CONST_STRING, Opcode.CONST_STRING_JUMBO)
 
 /**
  * The id of the sheet's header: the literal [setup] loads right before its first [FIND_VIEW] call,
@@ -325,15 +374,21 @@ private val CONSTS = setOf(Opcode.CONST, Opcode.CONST_4, Opcode.CONST_16, Opcode
 
 /**
  * First thing in the setup of a comment sheet's views: hand the extension the sheet's views, the
- * first parameter, and the header's [id], through two locals, which hold nothing yet.
+ * first parameter, the header's [id] and the [watchAndComment] flag of the sheet's parameters in p
+ * register [params], false when there are none, through four locals, which hold nothing yet.
  */
-internal fun MutableMethod.watchHeader(id: Int) {
-    addInstructions(
+internal fun MutableMethod.watchHeader(id: Int, params: Int, watchAndComment: FieldReference) {
+    addInstructionsWithLabels(
         0,
         """
             move-object/from16 v1, p1
             const v0, $id
-            invoke-static { v1, v0 }, $WATCH_HEADER
+            move-object/from16 v2, p$params
+            const/4 v3, 0x0
+            if-eqz v2, :watch
+            iget-boolean v3, v2, $watchAndComment
+            :watch
+            invoke-static { v1, v0, v3 }, $WATCH_HEADER
         """,
     )
 }

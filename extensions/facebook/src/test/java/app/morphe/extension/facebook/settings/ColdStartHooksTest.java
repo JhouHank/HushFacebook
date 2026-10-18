@@ -342,7 +342,7 @@ public class ColdStartHooksTest {
         earlyHeader.addView(new android.view.TextureView(RuntimeEnvironment.getApplication()));
         android.widget.FrameLayout earlySheet = new android.widget.FrameLayout(RuntimeEnvironment.getApplication());
         earlySheet.addView(earlyHeader);
-        FullHeightComments.watchHeader(earlySheet, 0x7f0a0612);
+        FullHeightComments.watchHeader(earlySheet, 0x7f0a0612, true);
         assertFalse("a comment sheet set up before the context lost the video above its comments",
                 earlyHeader.getVisibility() == android.view.View.GONE);
         assertFalse("a word typed before the context lost its tag suggestions", TagSuggestionsForTests.skipsAPlainWord());

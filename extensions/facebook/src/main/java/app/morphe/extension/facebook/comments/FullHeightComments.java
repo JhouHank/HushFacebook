@@ -44,11 +44,13 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * tall. The patch hands {@link #fillsScreen} the share first thing in that check, and while the
  * switch is on a share of one fills the screen.
  *
- * <p>A full-screen sheet on a reel still draws the reel above the comments, in the sheet's header,
- * so the list starts a third of the way down. The patch hands {@link #watchHeader} the sheet's
- * views and the header's id first thing where Facebook sets them up, and while the switch is on a
- * header holding a video is hidden, at once or at the first layout after the video lands in it. A
- * post's header, its reactions, holds no video and stays.
+ * <p>A full-screen sheet on a reel still shows the reel above the comments, in the sheet's header,
+ * so the list starts a third of the way down. Either the header holds the video, or, on the Reels
+ * tab's watch-and-comment sheet, it's a see-through strip over the reel still playing behind the
+ * sheet. The patch hands {@link #watchHeader} the sheet's views, the header's id and whether the
+ * sheet is a watch-and-comment one first thing where Facebook sets them up, and while the switch is
+ * on such a header is hidden, at once or at the first layout after the video lands in it. A post's
+ * header, its reactions, holds no video and stays.
  */
 public final class FullHeightComments {
     /** The member the report names once a comment sheet's height has been asked about. */
@@ -143,29 +145,34 @@ public final class FullHeightComments {
     }
 
     /**
-     * The hook, first thing where Facebook sets up a comment sheet's views, handed those views and
-     * the id of the sheet's header. While Open comments at full height is on, the header is hidden
-     * once it holds a video, now or after a later layout; a header without one is left as it is.
+     * The hook, first thing where Facebook sets up a comment sheet's views, handed those views, the
+     * id of the sheet's header and whether the sheet is a watch-and-comment one, the reel playing on
+     * behind it. While Open comments at full height is on, the header of a watch-and-comment sheet
+     * is hidden, and any other header once it holds a video, now or after a later layout; a header
+     * without one is left as it is.
      */
-    public static void watchHeader(@Nullable View content, int headerId) {
+    public static void watchHeader(@Nullable View content, int headerId, boolean overVideo) {
         try {
             HookStatus.invoked(FAMILY);
             HookStatus.bound(FAMILY, HEADER);
             if (content == null || !Utils.settingsReady() || !Settings.OPEN_COMMENTS_FULL_HEIGHT.get()) return;
             View header = content.findViewById(headerId);
             if (header == null || WATCHED.put(header, Boolean.TRUE) != null) return;
-            hideVideo(header);
+            hideVideo(header, overVideo);
             // Watched for as long as the sheet's window lives, since Facebook can show it again.
-            header.getViewTreeObserver().addOnGlobalLayoutListener(new Header(header));
+            header.getViewTreeObserver().addOnGlobalLayoutListener(new Header(header, overVideo));
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "comment sheet header", failure);
         }
     }
 
-    /** Hides [header] while the switch is on and it shows a video; true when it did. */
-    static boolean hideVideo(View header) {
+    /**
+     * Hides [header] while the switch is on and it shows a video, its own or, on a watch-and-comment
+     * sheet ([overVideo]), the reel behind it; true when it did.
+     */
+    static boolean hideVideo(View header, boolean overVideo) {
         if (header.getVisibility() == View.GONE || !Utils.settingsReady() || !Settings.OPEN_COMMENTS_FULL_HEIGHT.get()
-                || !holdsVideo(header, VIDEO_DEPTH)) {
+                || !(overVideo || holdsVideo(header, VIDEO_DEPTH))) {
             return false;
         }
         header.setVisibility(View.GONE);
@@ -188,15 +195,17 @@ public final class FullHeightComments {
     /** One sheet's header, looked at after each layout. */
     private static final class Header implements ViewTreeObserver.OnGlobalLayoutListener {
         private final View header;
+        private final boolean overVideo;
 
-        Header(View header) {
+        Header(View header, boolean overVideo) {
             this.header = header;
+            this.overVideo = overVideo;
         }
 
         @Override
         public void onGlobalLayout() {
             try {
-                hideVideo(header);
+                hideVideo(header, overVideo);
             } catch (Throwable failure) {
                 HookStatus.threw(FAMILY, "comment sheet header", failure);
             }

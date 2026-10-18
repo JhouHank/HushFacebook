@@ -37,7 +37,9 @@ import java.io.File
  * sheet's "fill the screen?" override reads one float of its own, and the hook hands it to the
  * extension first, returning a yes and landing a no on Facebook's first instruction. The comments
  * helper's view setup is found by its trace, its first findViewById on the sheet's views loads the
- * header's id, and the hook hands the views and that id to the extension first through two locals.
+ * header's id, the sheet's parameters print one boolean after their watch-and-comment label, and the
+ * hook hands the views, that id and that boolean (false without parameters) to the extension first
+ * through four locals.
  * Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class FullHeightCommentsFixtureTest {
@@ -161,33 +163,58 @@ class FullHeightCommentsFixtureTest {
         val id = headerId(setup)
         assertEquals("$where: the header's id is one of the app's", 0x7f, id ushr 24)
 
+        val params = FixtureDex.classes(bundle, setOf(FEEDBACK_PARAMS)).values.single()
+        val flag = watchAndCommentField(params)
+        assertEquals("$where: the watch-and-comment flag is a boolean", "Z", flag.type)
+        assertTrue("$where: the flag is one of the parameters' own fields", params.fields.any { it.name == flag.name && it.type == "Z" })
+
         val owner = FixtureDex.classes(bundle, setOf(setup.definingClass)).values.single()
         val context = PatchContexts.of(listOf(owner))
         val method = context.mutableClassDefBy(owner.type).methods.single { it.descriptor() == setup.descriptor() }
         val original = method.implementation!!.instructions.toList()
-        method.watchHeader(id)
+        val paramsRegister = feedbackParamsRegister(setup)
+        method.watchHeader(id, paramsRegister, flag)
         val patched = method.implementation!!.instructions.toList()
-        assertEquals("$where gains three instructions", original.size + 3, patched.size)
-        val views = method.implementation!!.registerCount -
-            setup.parameterTypes.sumOf { if (it.toString() == "J" || it.toString() == "D") 2 else 1 }
+        assertEquals("$where gains seven instructions", original.size + 7, patched.size)
+        val first = method.implementation!!.registerCount -
+            setup.parameterTypes.sumOf { if (it.toString() == "J" || it.toString() == "D") 2 else 1 } - 1
+        val locals = method.localRegisterCount()
         assertEquals("$where: the sheet's views are moved first", Opcode.MOVE_OBJECT_FROM16, patched[0].opcode)
         val move = patched[0] as TwoRegisterInstruction
-        assertEquals("$where: from the first parameter", views, move.registerB)
-        assertTrue("$where: the hook writes v${move.registerA}, which isn't a local", move.registerA < method.localRegisterCount())
+        assertEquals("$where: from the first parameter", first + 1, move.registerB)
+        assertTrue("$where: the hook writes v${move.registerA}, which isn't a local", move.registerA < locals)
         assertEquals("$where: then the header's id", Opcode.CONST, patched[1].opcode)
         assertEquals("$where: the id Facebook finds the header by", id, (patched[1] as NarrowLiteralInstruction).narrowLiteral)
         val load = (patched[1] as OneRegisterInstruction).registerA
-        assertTrue("$where: the hook writes v$load, which isn't a local", load < method.localRegisterCount())
-        assertEquals("$where: then the extension is handed both", Opcode.INVOKE_STATIC, patched[2].opcode)
-        assertEquals("$where: then the extension is handed both", WATCH_HEADER, patched[2].reference())
-        val call = patched[2] as FiveRegisterInstruction
-        assertEquals("$where: the views and the id", listOf(2, move.registerA, load),
-            listOf(call.registerCount, call.registerC, call.registerD))
-        assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(3).map { it.opcode })
+        assertTrue("$where: the hook writes v$load, which isn't a local", load < locals)
+        val paramsMove = patched[2] as TwoRegisterInstruction
+        assertEquals("$where: then the sheet's parameters", Opcode.MOVE_OBJECT_FROM16, patched[2].opcode)
+        assertEquals("$where: the parameter typed ${FEEDBACK_PARAMS}", FEEDBACK_PARAMS,
+            setup.parameterTypes[paramsMove.registerB - first - 1].toString())
+        assertTrue("$where: the hook writes v${paramsMove.registerA}, which isn't a local", paramsMove.registerA < locals)
+        assertEquals("$where: the flag starts false", Opcode.CONST_4, patched[3].opcode)
+        val flagRegister = (patched[3] as OneRegisterInstruction).registerA
+        assertTrue("$where: the hook writes v$flagRegister, which isn't a local", flagRegister < locals)
+        assertEquals("$where: the flag starts false", 0, (patched[3] as NarrowLiteralInstruction).narrowLiteral)
+        assertEquals("$where: no parameters, no read", Opcode.IF_EQZ, patched[4].opcode)
+        assertEquals("$where: no parameters, no read", paramsMove.registerA, (patched[4] as OneRegisterInstruction).registerA)
+        assertEquals("$where: then the flag is read", Opcode.IGET_BOOLEAN, patched[5].opcode)
+        assertEquals("$where: then the flag is read", flag.toString(), patched[5].reference())
+        val read = patched[5] as TwoRegisterInstruction
+        assertEquals("$where: into the flag's register, from the parameters", listOf(flagRegister, paramsMove.registerA),
+            listOf(read.registerA, read.registerB))
+        assertEquals("$where: no parameters skip the read", setOf(5, 6), ControlFlow.of(method).normal[4].toSet())
+        assertEquals("$where: then the extension is handed all three", Opcode.INVOKE_STATIC, patched[6].opcode)
+        assertEquals("$where: then the extension is handed all three", WATCH_HEADER, patched[6].reference())
+        val call = patched[6] as FiveRegisterInstruction
+        assertEquals("$where: the views, the id and the flag", listOf(3, move.registerA, load, flagRegister),
+            listOf(call.registerCount, call.registerC, call.registerD, call.registerE))
+        assertEquals("$where: four separate locals", 4, setOf(move.registerA, load, paramsMove.registerA, flagRegister).size)
+        assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(7).map { it.opcode })
     }
 
     @Test
-    fun `each declared build hands the comment sheet's views and its header's id to the extension as they're set up`() = bundles { bundle ->
+    fun `each declared build hands the comment sheet's views, its header's id and its watch-and-comment flag to the extension as they're set up`() = bundles { bundle ->
         commentViews(bundle)
     }
 

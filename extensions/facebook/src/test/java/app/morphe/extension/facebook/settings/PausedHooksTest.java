@@ -895,7 +895,7 @@ public class PausedHooksTest {
         header.addView(new android.view.TextureView(app));
         FrameLayout sheet = new FrameLayout(app);
         sheet.addView(header);
-        FullHeightComments.watchHeader(sheet, 0x7f0a0612);
+        FullHeightComments.watchHeader(sheet, 0x7f0a0612, true);
         return header.getVisibility() == View.GONE;
     }
 
