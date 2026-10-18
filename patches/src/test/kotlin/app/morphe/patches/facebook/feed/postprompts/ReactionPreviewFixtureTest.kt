@@ -93,7 +93,25 @@ class ReactionPreviewFixtureTest {
                 val callerType = pairedCallers.single().definingClass
                 val callerClass = FixtureDex.classes(bundle, setOf(callerType)).getValue(callerType)
 
-                val context = PatchContexts.of(listOf(component, facepile, bar, comment, callerClass))
+                // The newer comment row's button: of every class building FDSInlineReactions (a negative
+                // control: there are several), the one a method taking a GraphQLComment returns.
+                val buildsComponent = { dex: DexBackedDexFile ->
+                    dex.methodSection.any { it.definingClass == component.type && it.name == "<init>" }
+                }
+                val builderTypes = FixtureDex.methodsWhere(bundle, buildsComponent) {
+                    it.definingClass != component.type && it.definingClass != comment.type &&
+                        componentConstructions(it, component.type).isNotEmpty()
+                }.map { it.definingClass }.toSet()
+                val rowMakers = FixtureDex.methodsWhere(bundle, { dex -> dex.typeSection.any { it == GRAPHQL_COMMENT } }) {
+                    takesComment(it) && it.returnType in builderTypes
+                }
+                val rowTypes = rowMakers.map { it.returnType }.toSet()
+                assertEquals("$name: FDSInlineReactions builders a method taking a GraphQLComment returns ($rowTypes)", 1, rowTypes.size)
+                assertTrue("$name: no other builder was rejected, so the GraphQLComment check proves nothing", builderTypes.size > 1)
+                val rowType = rowTypes.single()
+                val rowClasses = FixtureDex.classes(bundle, setOf(rowType) + rowMakers.map { it.definingClass }).values
+
+                val context = PatchContexts.of(listOf(component, facepile, bar, comment, callerClass) + rowClasses)
                 context.hideReactionPreview()
 
                 // The bling bar asks the post question; the facepile asks with its own flag.
@@ -133,23 +151,26 @@ class ReactionPreviewFixtureTest {
                         patchedClass.methods.count { it.name == helper && AccessFlags.STATIC.isSet(it.accessFlags) })
                 }
 
-                // The component's flag is set right after each FDSInlineReactions the comment component builds.
-                var marks = 0
-                var constructions = 0
-                for (method in context.mutableClassDefBy(comment.type).methods) {
-                    val code = method.implementation?.instructions?.toList() ?: continue
-                    code.forEachIndexed { index, instruction ->
-                        val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return@forEachIndexed
-                        if ((instruction.opcode == Opcode.INVOKE_DIRECT || instruction.opcode == Opcode.INVOKE_DIRECT_RANGE) &&
-                            ref.name == "<init>" && ref.definingClass == component.type) {
-                            constructions++
-                            val nextRef = (code[index + 1] as? ReferenceInstruction)?.reference as? MethodReference
-                            if (nextRef?.name == COMMENT_MARK) marks++
+                // The component's flag is set right after each FDSInlineReactions the comment component
+                // and the comment row's button build.
+                for (marked in listOf(comment.type, rowType)) {
+                    var marks = 0
+                    var constructions = 0
+                    for (method in context.mutableClassDefBy(marked).methods) {
+                        val code = method.implementation?.instructions?.toList() ?: continue
+                        code.forEachIndexed { index, instruction ->
+                            val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return@forEachIndexed
+                            if ((instruction.opcode == Opcode.INVOKE_DIRECT || instruction.opcode == Opcode.INVOKE_DIRECT_RANGE) &&
+                                ref.name == "<init>" && ref.definingClass == component.type) {
+                                constructions++
+                                val nextRef = (code[index + 1] as? ReferenceInstruction)?.reference as? MethodReference
+                                if (nextRef?.name == COMMENT_MARK) marks++
+                            }
                         }
                     }
+                    assertTrue("$name: $marked builds no FDSInlineReactions", constructions > 0)
+                    assertEquals("$name: $marked's constructions followed by the mark", constructions, marks)
                 }
-                assertTrue("$name: the comment component builds no FDSInlineReactions", constructions > 0)
-                assertEquals("$name: constructions followed by the mark", constructions, marks)
 
                 // The lambda copies it onto the Drawable right after getting it.
                 val lambda = context.mutableClassDefBy(callerClass.type).methods.single {

@@ -47,6 +47,11 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
  * - The Drawable's draw asks the extension with its flag, so each surface answers to its own switch.
  * The other caller of the factory (arm64 LX/cP4;->A0Q) reads no FDSInlineReactions, so it never gets
  * the flag and stays a post's.
+ *
+ * Facebook's newer flat comment row ("Reply, faces and count, thumbs up, thumbs down") isn't an
+ * FDSComment. Its reactions count button (arm64 LX/4w0;, armv7 LX/4wP;) builds its own
+ * FDSInlineReactions and is the one builder of it that a method taking a GraphQLComment returns
+ * (arm64 LX/XlN;->A00, armv7 LX/XRt;->A00), so its constructions are marked the same way.
  */
 
 internal const val COMMENT_COMPONENT_NAME = "FDSComment"
@@ -55,6 +60,11 @@ internal const val COMMENT_FLAG = "hushCommentFaces"
 internal const val COMMENT_MARK = "hushMarkCommentFaces"
 internal const val COMMENT_COPY = "hushCopyCommentFaces"
 internal const val HIDE_FACEPILE = "$POST_PROMPTS->hideReactionPreview(Z)Z"
+internal const val GRAPHQL_COMMENT = "Lcom/facebook/graphql/model/GraphQLComment;"
+
+/** Whether [method] takes a GraphQLComment, which is how the comment row's builder is told apart. */
+internal fun takesComment(method: Method): Boolean =
+    method.parameterTypes.any { it.toString() == GRAPHQL_COMMENT }
 
 /** The smali that asks the extension about the facepile Drawable's own surface, answering in v0. */
 internal fun facepileAsk(facepile: String): String =
@@ -131,8 +141,8 @@ internal fun faceCaller(method: Method, factory: MethodReference, component: Str
 private fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $detail")
 
 /**
- * Adds the two flags and their two helpers, and calls them where the comment component builds its
- * FDSInlineReactions and where the lambda turns it into the Drawable. [component] is
+ * Adds the two flags and their two helpers, and calls them where the comment component and the comment
+ * row's button build their FDSInlineReactions and where the lambda turns it into the Drawable. [component] is
  * FDSInlineReactions, [facepile] the Drawable its factory builds, [factory] that factory.
  */
 internal fun BytecodePatchContext.tagCommentFaces(component: ClassDef, facepile: ClassDef, factory: MethodReference) {
@@ -143,14 +153,28 @@ internal fun BytecodePatchContext.tagCommentFaces(component: ClassDef, facepile:
     if (constructions.isEmpty()) refuse("${comment.type} doesn't construct ${component.type}")
 
     val callers = mutableListOf<FaceCaller>()
+    val builders = mutableMapOf<String, List<Pair<Method, List<Pair<Int, Int>>>>>()
+    val commentReturns = mutableSetOf<String>()
     classDefForEach { classDef ->
         if (classDef.type.startsWith(EXTENSION_PACKAGE) || classDef.type == component.type) return@classDefForEach
-        for (method in classDef.methods) faceCaller(method, factory, component.type)?.let { callers += it }
+        for (method in classDef.methods) {
+            faceCaller(method, factory, component.type)?.let { callers += it }
+            if (takesComment(method)) commentReturns += method.returnType
+        }
+        if (classDef.type == comment.type) return@classDefForEach
+        val sites = classDef.methods.mapNotNull { method ->
+            componentConstructions(method, component.type).takeIf { it.isNotEmpty() }?.let { method to it }
+        }
+        if (sites.isNotEmpty()) builders[classDef.type] = sites
     }
     val caller = callers.singleOrNull() ?: refuse(
         "expected one method that takes ${factory.name}'s Drawable beside a ${component.type}, found ${callers.size}",
     )
     if (caller.drawable > 15 || caller.component > 15) refuse("${caller.method.name}'s registers are past v15")
+    val rows = builders.keys.filter { it in commentReturns }
+    val row = rows.singleOrNull() ?: refuse(
+        "expected one ${component.type} builder that a method taking a GraphQLComment returns, found $rows",
+    )
 
     val componentClass = mutableClassDefBy(component.type)
     val facepileClass = mutableClassDefBy(facepile.type)
@@ -196,15 +220,17 @@ internal fun BytecodePatchContext.tagCommentFaces(component: ClassDef, facepile:
         },
     )
 
-    val commentClass = mutableClassDefBy(comment.type)
-    for ((method, sites) in constructions) {
-        val mutable = commentClass.methods.first { it.name == method.name && it.parameterTypes == method.parameterTypes }
-        // Later sites first, so the earlier ones stay where they were found.
-        for ((index, register) in sites.sortedByDescending { it.first }) {
-            mutable.addInstructions(
-                index,
-                "invoke-static/range { v$register .. v$register }, ${component.type}->$COMMENT_MARK(${component.type})V",
-            )
+    for ((type, marked) in listOf(comment.type to constructions, row to builders.getValue(row))) {
+        val markedClass = mutableClassDefBy(type)
+        for ((method, sites) in marked) {
+            val mutable = markedClass.methods.first { it.name == method.name && it.parameterTypes == method.parameterTypes }
+            // Later sites first, so the earlier ones stay where they were found.
+            for ((index, register) in sites.sortedByDescending { it.first }) {
+                mutable.addInstructions(
+                    index,
+                    "invoke-static/range { v$register .. v$register }, ${component.type}->$COMMENT_MARK(${component.type})V",
+                )
+            }
         }
     }
     mutableClassDefBy(caller.method.definingClass).methods
