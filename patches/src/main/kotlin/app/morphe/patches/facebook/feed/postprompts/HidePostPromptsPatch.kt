@@ -76,14 +76,19 @@ val hidePostPromptsPatch = bytecodePatch(
     compatibleWith(*AppCompatibilities.facebook())
 
     execute {
-        val check = findBumperCheck()
-        mutableClassDefBy(check.definingClass).findMutableMethodOf(check).filterBooleanReturns(PATCH, KEEP)
-        val follow = findFollowLinkCheck()
-        mutableClassDefBy(follow.definingClass).findMutableMethodOf(follow).filterBooleanReturns(PATCH, SHOW_FOLLOW_LINK)
+        hidePromptChecks()
         hidePostCounts()
         hideReactionPreview()
         enableStatus("postPrompts")
     }
+}
+
+/** Sends every answer of the bumper check and the follow text check through the extension. */
+internal fun BytecodePatchContext.hidePromptChecks() {
+    val check = findBumperCheck()
+    mutableClassDefBy(check.definingClass).findMutableMethodOf(check).filterBooleanReturns(PATCH, KEEP)
+    val follow = findFollowLinkCheck()
+    mutableClassDefBy(follow.definingClass).findMutableMethodOf(follow).filterBooleanReturns(PATCH, SHOW_FOLLOW_LINK)
 }
 
 private fun refuse(detail: String): Nothing = throw PatchException("$PATCH: $detail")
