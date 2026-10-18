@@ -160,9 +160,13 @@ public class FullHeightCommentsTest {
         FrameLayout host = new FrameLayout(context());
         ViewGroup sheet = sheet(host);
         FullHeightComments.watchHeader(sheet, HEADER);
-        FullHeightComments.watchHeader(sheet, HEADER);
         host.addView(new TextureView(context()));
+        // The second set-up stops at the header already watched, so the video it now holds waits
+        // for the first watch's next layout instead of being hidden by a second one.
+        FullHeightComments.watchHeader(sheet, HEADER);
+        assertEquals(View.VISIBLE, header(sheet).getVisibility());
         layOut(sheet);
+        assertEquals(View.GONE, header(sheet).getVisibility());
         assertEquals(FamilyNames.FULL_HEIGHT_COMMENTS + ": invoked 2, 1 found, 0 missing. Counted: "
                 + FullHeightComments.VIDEO_HIDDEN + " 1", statusLine());
     }
