@@ -36,7 +36,9 @@ import org.junit.Test
  * controller's and the client-side ranking loader's fetch mores, one instance method
  * each holding its line, answer false before fetching when the extension says so. The Warion
  * fragment tells it what its arguments say as it's created and when it's destroyed, and the one
- * data source answering the loader's seed check answers yes when it says so. Reads the fixture
+ * data source answering the loader's seed check answers yes when it says so. The reels list builder
+ * hands it both reads that put a loading page last, the more-coming field and the pagination flag,
+ * and takes its answers. Reads the fixture
  * bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class FeedVideoAloneFixtureTest {
@@ -118,6 +120,33 @@ class FeedVideoAloneFixtureTest {
                             ((listCode[at] as ReferenceInstruction).reference as MethodReference).definingClass == listOwner.type
                     })
 
+                // The pagination page, the loading circle the S25 showed: a static method among its name's
+                // holders answers it as an object, and the builder calls it only when the flag read right
+                // before the branch says yes.
+                val pageOwners = FixtureDex.classesHolding(bundle, PAGINATION_PAGE)
+                    .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+                fun buildsPage(call: MethodReference) = call.returnType.startsWith("L") && pageOwners.any { owner ->
+                    owner.type == call.definingClass && owner.methods.any {
+                        it.name == call.name &&
+                            it.parameterTypes.map(CharSequence::toString) == call.parameterTypes.map(CharSequence::toString) &&
+                            holdsString(it, PAGINATION_PAGE)
+                    }
+                }
+                val paging = paginationRead(list, paramsType, ::buildsPage)
+                    ?: throw AssertionError("$name: the list builder doesn't read whether to add its pagination page")
+                assertTrue("$name: the pagination read comes after the loading page's", paging.index > gate.index)
+                assertEquals("$name: both reads hand over the same params", gate.params, paging.params)
+                val pageBranch = listCode[paging.index]
+                assertTrue("$name: the flag decides a branch", pageBranch.opcode in setOf(Opcode.IF_NE, Opcode.IF_EQZ))
+                // Positive control: past the branch, before where it skips to, the builder calls the page's builder.
+                val pageSkipTo = listAddresses.indexOf(listAddresses[paging.index] + (pageBranch as OffsetInstruction).codeOffset)
+                val pageCall = (paging.index + 1 until listCode.size).first { at ->
+                    listCode[at].opcode in setOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE) &&
+                        buildsPage((listCode[at] as ReferenceInstruction).reference as MethodReference)
+                }
+                assertTrue("$name: the branch doesn't skip the page's builder", paging.index < pageCall && pageCall < pageSkipTo)
+                assertEquals("$name: a read with no page builder", null, paginationRead(list, paramsType) { false })
+
                 // Positive control: the check turns down the trace's other holders of the same class, and
                 // a static or void copy of the fetch more wouldn't pass it.
                 assertTrue("$name: the fetch more is static", !AccessFlags.STATIC.isSet(fetch.accessFlags))
@@ -151,23 +180,27 @@ class FeedVideoAloneFixtureTest {
                 val (sourceOwner, source) = sources.single()
 
                 val context = PatchContexts.of(
-                    listOf(warionOwner, entryOwner, fetchOwner, loaderOwner, fragment, sourceOwner, listOwner, params,
-                        ExtensionDex.classDef(FEED_VIDEO_ALONE)).distinctBy { it.type },
+                    (listOf(warionOwner, entryOwner, fetchOwner, loaderOwner, fragment, sourceOwner, listOwner, params,
+                        ExtensionDex.classDef(FEED_VIDEO_ALONE)) + pageOwners).distinctBy { it.type },
                 )
                 context.keepFeedVideosAlone()
 
                 val listed = context.mutableClassDefBy(listOwner.type).methods.single { it.sameAs(list) }.code()
-                assertEquals("$name: two instructions added to the list builder", listCode.size + 2, listed.size)
-                val ask = listed[gate.index]
-                assertEquals("$name: the builder asks the extension whether more are coming", MORE_REELS_COMING, called(ask))
-                ask as FiveRegisterInstruction
-                assertEquals("$name: handed the answer, then the params",
-                    listOf(2, gate.more, gate.params), listOf(ask.registerCount, ask.registerC, ask.registerD))
-                assertEquals("$name: its answer back where Facebook's was",
-                    listOf(Opcode.MOVE_RESULT, gate.more),
-                    listOf(listed[gate.index + 1].opcode, (listed[gate.index + 1] as OneRegisterInstruction).registerA))
+                assertEquals("$name: four instructions added to the list builder", listCode.size + 4, listed.size)
+                // The loading page's two instructions push the pagination read's down by two.
+                for ((read, at) in listOf(gate to gate.index, paging to paging.index + 2)) {
+                    val ask = listed[at]
+                    assertEquals("$name: the builder asks the extension at ${read.index}", MORE_REELS_COMING, called(ask))
+                    ask as FiveRegisterInstruction
+                    assertEquals("$name: handed the answer, then the params at ${read.index}",
+                        listOf(2, read.more, read.params), listOf(ask.registerCount, ask.registerC, ask.registerD))
+                    assertEquals("$name: its answer back where Facebook's was at ${read.index}",
+                        listOf(Opcode.MOVE_RESULT, read.more),
+                        listOf(listed[at + 1].opcode, (listed[at + 1] as OneRegisterInstruction).registerA))
+                }
+                val added = setOf(gate.index, gate.index + 1, paging.index + 2, paging.index + 3)
                 assertEquals("$name: the rest of the list builder is Facebook's",
-                    listCode.map { it.opcode }, listed.filterIndexed { at, _ -> at != gate.index && at != gate.index + 1 }.map { it.opcode })
+                    listCode.map { it.opcode }, listed.filterIndexed { at, _ -> at !in added }.map { it.opcode })
                 val stub = context.mutableClassDefBy(FEED_VIDEO_ALONE).methods.single { it.name == VIEWER_ORIGIN }.code()
                 assertEquals("$name: the origin stub's shape",
                     listOf(Opcode.CHECK_CAST, Opcode.IGET_OBJECT, Opcode.RETURN_OBJECT), stub.take(3).map { it.opcode })

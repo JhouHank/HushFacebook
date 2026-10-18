@@ -303,11 +303,11 @@ public final class FeedVideoAlone {
     }
 
     /**
-     * Injection point, in the reels viewer's list as it reads whether more reels are coming, which
-     * puts a loading page after the last one. A viewer opened from a feed gets no more reels with the
-     * switch on, so that page would spin for good after its video (S25 2026-10-18): the list is told
-     * none are coming. Every other viewer, the Reels tab's among them, keeps Facebook's answer.
-     * Never throws.
+     * Injection point, in the reels viewer's list as it reads whether more reels are coming, and
+     * again as it reads whether to add its pagination page. Either puts a loading page after the last
+     * reel. A viewer opened from a feed gets no more reels with the switch on, so that page would spin
+     * for good after its video (S25 2026-10-18): the list is told no. Every other viewer, the Reels
+     * tab's among them, keeps Facebook's answer. Never throws.
      *
      * @param more   Facebook's answer.
      * @param params the viewer's params, or null.
