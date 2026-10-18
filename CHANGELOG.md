@@ -67,6 +67,31 @@ Changes in each Hushfacebook version, newest first.
 
 * **Tooling:** The script contract tests pass on a published index again. Their check that the release facts refuse a second Facebook build swapped one into the CHANGELOG part of the index, which the facts check skips on purpose, so it failed as soon as a changelog bullet named the target build. It now swaps it into the facts.
 
+### Reported issues
+
+* **Facebook:** #185 The new comments notification: **Hide the new comments pop-up** under Comment sheet options.
+* **Facebook:** #161 Feed videos opening the reels scroller: **Open feed videos on their own** under Reels and Watch keeps a video you tap in the feed to itself.
+* **Facebook:** #124 The status bar over the feed: **Hide the status bar** under Appearance gives the feed the whole screen, and a swipe down from the top brings the bar back for a moment.
+* **Facebook:** #179 Comments at full height, and from a double tap or a long press: `Open comments at full height` under Comments, plus two switches under Reels and Watch for the gestures.
+* **Facebook:** #183 Finding a reel again after the feed refreshes: **Remember what you watch** under Playback, with the list right under it.
+* **Facebook:** #182 A cast button on videos: **Open videos in another app** under Downloads hands the video to a casting app or player.
+* **Facebook:** #153 Filtering the Menu: **Menu tiles to hide** under Menu.
+* **Facebook:** #151 A download button on posts: **Download first in post menus** under Downloads puts it at the top of the post's menu.
+* **Facebook:** #181 Hiding the Messenger icon, its count and the Facebook logo: three switches under Appearance, one for each.
+* **Facebook:** #169 People in the share sheet: **Hide people to send to in the share sheet** under Share sheet items.
+* **Facebook:** #170 Someone is typing in comments: **Hide who is typing in comments** under Comment sheet options. I haven't seen this one live yet, so please say on the issue whether it works for you.
+* **Facebook:** #173 Questions under reels: **Hide the search pill on reels** under Reels and Watch.
+* **Facebook:** #180 Like, comment and share counts: **Hide counts on posts** under News feed and **Hide counts on reels** under Reels and Watch.
+* **Facebook:** #158 Reaction previews on posts and comments: a switch for each, under News feed and Comments.
+* **Facebook:** #44 Picture in picture: **Picture-in-picture button** under Playback opens the window with one tap.
+* **Facebook:** #184 Hide Upgrades and Hide Also from Meta doing nothing: both bring up the restart button now.
+* **Facebook:** #120 Tap to seek: `Tap the bar to seek` jumps where you tap on Facebook 583 again.
+* **Facebook:** #61 and #165 Watched stories with `View stories anonymously`: a story you finished stays grey after Facebook restarts.
+* **Facebook:** #171 See-through bars with the tab bar at the top: they work there now, and the blur stays inside the bar.
+* **Facebook:** #172 The Facebook wordmark disappearing: a picked app icon leaves it alone, and **Use the icon at the top of Home** under Appearance puts your icon there if you want it.
+* **Facebook:** #126 The purple button after Picture-in-picture: coming back from the window leaves the reel as it was.
+* **Facebook:** #16 Spotting new settings: a small dot marks the switches added since you last looked.
+
 ## 0.14.0 (2026-10-16)
 
 * **Facebook:** This release moves Hushfacebook to Facebook 583.0.0.39.55. There are new patches to skip the quiet stretches in videos and to post Stories in HD, plus switches that put the tab bar back at the top, keep a reel's original sound instead of a Meta AI dub, give tablets the phone layout and hide the Meta AI shortcut in the Menu. Picture-in-picture got a round of fixes, and dark mode with Material You shouldn't crash Facebook on Android 12 and newer anymore.
