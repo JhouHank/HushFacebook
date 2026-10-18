@@ -25,9 +25,9 @@ import app.morphe.extension.shared.settings.PauseForTests;
 
 /**
  * Open comments at full height (#179): with its switch on, a sheet asked to open part way up opens
- * at one, the full height, and each split-screen launcher is told to answer no, each counted.
- * Facebook's own full height, and any share that isn't a fraction, come back as they were. Off,
- * paused, or before the settings are ready, nothing changes.
+ * at one, the full height, each split-screen launcher is told to answer no, and a full-height sheet
+ * is told it fills the screen, each counted. Facebook's own full height, and any share that isn't a
+ * fraction, come back as they were. Off, paused, or before the settings are ready, nothing changes.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
@@ -65,9 +65,18 @@ public class FullHeightCommentsTest {
         assertEquals("a zero share was raised", 0f, FullHeightComments.sheetHeight(0f), 0f);
         assertEquals("a share over one was lowered", 1.5f, FullHeightComments.sheetHeight(1.5f), 0f);
         assertTrue("the split screen opened", FullHeightComments.skipSplitScreen());
-        assertEquals(FamilyNames.FULL_HEIGHT_COMMENTS + ": invoked 6, 2 found, 0 missing. Counted: "
-                + FullHeightComments.SHEET_RAISED + " 2, " + FullHeightComments.SPLIT_SCREEN_SKIPPED + " 1",
+        assertTrue("a full-height sheet was drawn as a box", FullHeightComments.fillsScreen(1f));
+        assertFalse("a part sheet was made full screen", FullHeightComments.fillsScreen(REEL_SHEET));
+        assertEquals(FamilyNames.FULL_HEIGHT_COMMENTS + ": invoked 8, 3 found, 0 missing. Counted: "
+                + FullHeightComments.SHEET_RAISED + " 2, " + FullHeightComments.SPLIT_SCREEN_SKIPPED + " 1, "
+                + FullHeightComments.SCREEN_FILLED + " 1",
                 statusLine());
+    }
+
+    @Test
+    public void notANumberIsNotFullScreen() {
+        Settings.OPEN_COMMENTS_FULL_HEIGHT.save(true);
+        assertFalse("NaN was made full screen", FullHeightComments.fillsScreen(Float.NaN));
     }
 
     @Test
@@ -80,6 +89,7 @@ public class FullHeightCommentsTest {
     public void offTheSheetKeepsFacebooksHeightAndTheSplitScreenRuns() {
         assertEquals(REEL_SHEET, FullHeightComments.sheetHeight(REEL_SHEET), 0f);
         assertFalse(FullHeightComments.skipSplitScreen());
+        assertFalse(FullHeightComments.fillsScreen(1f));
     }
 
     @Test
@@ -88,6 +98,7 @@ public class FullHeightCommentsTest {
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         assertEquals(REEL_SHEET, FullHeightComments.sheetHeight(REEL_SHEET), 0f);
         assertFalse(FullHeightComments.skipSplitScreen());
+        assertFalse(FullHeightComments.fillsScreen(1f));
     }
 
     @Test
@@ -96,6 +107,7 @@ public class FullHeightCommentsTest {
         SettingsContextRule.withoutContext(() -> {
             assertEquals(REEL_SHEET, FullHeightComments.sheetHeight(REEL_SHEET), 0f);
             assertFalse(FullHeightComments.skipSplitScreen());
+            assertFalse(FullHeightComments.fillsScreen(1f));
         });
     }
 }

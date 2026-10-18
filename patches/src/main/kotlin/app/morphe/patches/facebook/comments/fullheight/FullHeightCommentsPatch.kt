@@ -23,9 +23,11 @@ import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 private const val PATCH = "Open comments at full height"
@@ -50,9 +52,16 @@ internal const val NOT_ENTERED = "split_screen_not_entered"
 
 private const val INTENT = "Landroid/content/Intent;"
 
+/** Facebook's popover fragment, a kept class: its configuration change asks whether it fills the screen. */
+internal const val SIMPLE_POPOVER = "Lcom/facebook/widget/popover/SimplePopoverFragment;"
+
+/** The comment sheet's popover fragment, a kept class, holding the share of the screen's height it opens to. */
+internal const val UFI_POPOVER = "Lcom/facebook/ufiservices/flyout/fragment/SimpleUFIPopoverFragment;"
+
 internal const val FULL_HEIGHT_COMMENTS = "$EXTENSION_PACKAGE/comments/FullHeightComments;"
 internal const val SHEET_HEIGHT = "$FULL_HEIGHT_COMMENTS->sheetHeight(F)F"
 internal const val SKIP_SPLIT_SCREEN = "$FULL_HEIGHT_COMMENTS->skipSplitScreen()Z"
+internal const val FILLS_SCREEN = "$FULL_HEIGHT_COMMENTS->fillsScreen(F)Z"
 
 /**
  * Open comments at full height (#179).
@@ -73,6 +82,14 @@ internal const val SKIP_SPLIT_SCREEN = "$FULL_HEIGHT_COMMENTS->skipSplitScreen()
  * holding [REEL_FOOTER] or [UNIT_NOT_MEASURED] (583 `LX/Xv5;->A00`, `LX/XRV;->A00`,
  * `LX/4Uk;->A08`), and two as the boolean methods holding [NOT_ENTERED] (583 `LX/Xv4;->A00`,
  * `LX/Xys;->A01`). First thing in each, the extension is asked, and a yes answers false.
+ *
+ * A share of one doesn't always fill the screen: [UFI_POPOVER]'s answer to [SIMPLE_POPOVER]'s
+ * "fill the screen?" question (583 `A0F`) can still say no from a screen size against a server
+ * value, and the window then opens as a centered box 80% of the screen tall, which on the S22 kept
+ * a reel's comments at about two thirds. The question is found as the one no-argument boolean call
+ * to [SIMPLE_POPOVER] in its `onConfigurationChanged`, and [UFI_POPOVER]'s override of it reads
+ * the share from its one float field. First thing in that override, the extension is handed the
+ * share, and a yes answers that the sheet fills the screen, the way Facebook draws a post's comments.
  *
  * In the default selection with its switch off, so nothing changes until it's turned on.
  */
@@ -98,6 +115,10 @@ val fullHeightCommentsPatch = bytecodePatch(
             (holders(REEL_FOOTER) + holders(UNIT_NOT_MEASURED)).distinctBy { it.type },
             holders(NOT_ENTERED),
         )
+        val popover = classDefByOrNull(SIMPLE_POPOVER) ?: refuse("$SIMPLE_POPOVER isn't in this build")
+        val ufiPopover = classDefByOrNull(UFI_POPOVER) ?: refuse("$UFI_POPOVER isn't in this build")
+        val fills = fillsScreenOverride(popover, ufiPopover)
+        val share = shareField(fills)
 
         mutableClassDefBy(POPOVER_PARAMS).methods.single { it.descriptor() == sheet.descriptor() }
             .raiseSheet(height)
@@ -105,6 +126,7 @@ val fullHeightCommentsPatch = bytecodePatch(
             mutableClassDefBy(launcher.definingClass).methods.single { it.descriptor() == launcher.descriptor() }
                 .skipSplitScreen()
         }
+        mutableClassDefBy(UFI_POPOVER).methods.single { it.descriptor() == fills.descriptor() }.fillScreen(share)
         enableStatus("fullHeightComments")
     }
 }
@@ -189,6 +211,54 @@ internal fun MutableMethod.raiseSheet(register: Int) {
             invoke-static/range { v$register .. v$register }, $SHEET_HEIGHT
             move-result v$register
         """,
+    )
+}
+
+/**
+ * [ufiPopover]'s override of [popover]'s "fill the screen?" question: the one no-argument boolean
+ * method of [popover] that its `onConfigurationChanged` calls, overridden in [ufiPopover] with a
+ * local register for the hook.
+ */
+internal fun fillsScreenOverride(popover: ClassDef, ufiPopover: ClassDef): Method {
+    val changed = popover.methods.singleOrNull {
+        it.name == "onConfigurationChanged" && it.parameterTypes.map(CharSequence::toString) == listOf("Landroid/content/res/Configuration;")
+    } ?: refuse("$SIMPLE_POPOVER has no onConfigurationChanged(Configuration)")
+    val asked = changed.implementation!!.instructions.mapNotNull { (it as? ReferenceInstruction)?.reference as? MethodReference }
+        .filter { it.definingClass == SIMPLE_POPOVER && it.parameterTypes.isEmpty() && it.returnType == "Z" }
+        .distinctBy { it.name }
+    val question = asked.singleOrNull()
+        ?: refuse("expected one no-argument boolean call in $SIMPLE_POPOVER's onConfigurationChanged, found ${asked.size}")
+    val override = ufiPopover.methods.singleOrNull {
+        it.name == question.name && it.parameterTypes.isEmpty() && it.returnType == "Z" && it.implementation != null
+    } ?: refuse("$UFI_POPOVER doesn't override ${question.name}()Z")
+    if (override.localRegisterCount() < 1) refuse("${override.descriptor()} has no local register for the hook")
+    return override
+}
+
+/** The one float field of [UFI_POPOVER] that [fills] reads: the share of the screen's height. */
+internal fun shareField(fills: Method): FieldReference {
+    val read = fills.implementation!!.instructions.filter { it.opcode == Opcode.IGET }
+        .mapNotNull { (it as ReferenceInstruction).reference as? FieldReference }
+        .filter { it.definingClass == UFI_POPOVER && it.type == "F" }
+        .distinctBy { it.name }
+    return read.singleOrNull() ?: refuse("expected ${fills.descriptor()} to read one float of its own, found ${read.size}")
+}
+
+/**
+ * First thing in the sheet's "fill the screen?" answer: hand the extension the share from [share]
+ * and answer yes when it says so.
+ */
+internal fun MutableMethod.fillScreen(share: FieldReference) {
+    addInstructionsWithLabels(
+        0,
+        """
+            iget v0, p0, $share
+            invoke-static { v0 }, $FILLS_SCREEN
+            move-result v0
+            if-eqz v0, :facebook
+            return v0
+        """,
+        ExternalLabel("facebook", getInstruction(0)),
     )
 }
 

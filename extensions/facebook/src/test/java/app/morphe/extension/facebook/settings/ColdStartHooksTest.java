@@ -335,6 +335,8 @@ public class ColdStartHooksTest {
                 FullHeightComments.sheetHeight(0.66f) == 1f);
         assertFalse("a split-screen launcher asked before the context was passed over",
                 FullHeightComments.skipSplitScreen());
+        assertFalse("a comment sheet sized before the context was made full screen",
+                FullHeightComments.fillsScreen(1f));
         assertFalse("a word typed before the context lost its tag suggestions", TagSuggestionsForTests.skipsAPlainWord());
         assertFalse("a list of people open before the context was closed", TagSuggestionsForTests.closesAListLeftOpen());
         assertFalse("a Chats list built before the context lost the Get Messenger card",

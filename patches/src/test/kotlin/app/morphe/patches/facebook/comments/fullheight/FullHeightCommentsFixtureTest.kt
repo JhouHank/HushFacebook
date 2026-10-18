@@ -33,7 +33,9 @@ import java.io.File
  * the extension as a range call first thing and keeps the answer in it, and nothing of Facebook's
  * code moves. Five split-screen launchers are found, three by the factory Intent they build and
  * two by the reason they log, each a boolean method with a local register; each asks the
- * extension first, a yes answers false, and a no lands on Facebook's first instruction. Reads the
+ * extension first, a yes answers false, and a no lands on Facebook's first instruction. The comment
+ * sheet's "fill the screen?" override reads one float of its own, and the hook hands it to the
+ * extension first, returning a yes and landing a no on Facebook's first instruction. Reads the
  * fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class FullHeightCommentsFixtureTest {
@@ -120,6 +122,37 @@ class FullHeightCommentsFixtureTest {
         }
     }
 
+    private fun fillsScreen(bundle: File) {
+        val classes = FixtureDex.classes(bundle, setOf(SIMPLE_POPOVER, UFI_POPOVER))
+        val fills = fillsScreenOverride(classes.getValue(SIMPLE_POPOVER), classes.getValue(UFI_POPOVER))
+        val where = "${bundle.name}: ${fills.descriptor()}"
+        val share = shareField(fills)
+        assertEquals("$where reads the share of its own", UFI_POPOVER, share.definingClass)
+        assertEquals("$where: the share is a float", "F", share.type)
+
+        val context = PatchContexts.of(listOf(classes.getValue(UFI_POPOVER)))
+        val method = context.mutableClassDefBy(UFI_POPOVER).methods.single { it.descriptor() == fills.descriptor() }
+        val original = method.implementation!!.instructions.toList()
+        method.fillScreen(share)
+        val patched = method.implementation!!.instructions.toList()
+        assertEquals("$where gains five instructions", original.size + 5, patched.size)
+        assertEquals("$where: the share is read first", Opcode.IGET, patched[0].opcode)
+        assertEquals("$where: the share is read first", share.toString(), patched[0].reference())
+        val register = (patched[0] as TwoRegisterInstruction).registerA
+        assertTrue("$where: the hook writes v$register, which isn't a local", register < method.localRegisterCount())
+        assertEquals("$where: from this fragment", method.implementation!!.registerCount - 1, (patched[0] as TwoRegisterInstruction).registerB)
+        assertEquals("$where: the extension is asked", Opcode.INVOKE_STATIC, patched[1].opcode)
+        assertEquals("$where: the extension is asked", FILLS_SCREEN, patched[1].reference())
+        val call = patched[1] as FiveRegisterInstruction
+        assertEquals("$where: with the share", listOf(1, register), listOf(call.registerCount, call.registerC))
+        assertEquals("$where: its answer is kept", register, (patched[2] as OneRegisterInstruction).registerA)
+        assertEquals("$where: a no goes on to Facebook", Opcode.IF_EQZ, patched[3].opcode)
+        assertEquals("$where: a yes is the answer", Opcode.RETURN, patched[4].opcode)
+        assertEquals("$where: a yes is the answer", register, (patched[4] as OneRegisterInstruction).registerA)
+        assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(5).map { it.opcode })
+        assertEquals("$where: a no lands on Facebook's first instruction", setOf(4, 5), ControlFlow.of(method).normal[3].toSet())
+    }
+
     @Test
     fun `each declared build hands the comment sheet's height to the extension where its parameters are built`() = bundles { bundle ->
         sheet(bundle)
@@ -128,5 +161,10 @@ class FullHeightCommentsFixtureTest {
     @Test
     fun `each declared build asks before each split-screen launcher opens the video above the comments`() = bundles { bundle ->
         launchers(bundle)
+    }
+
+    @Test
+    fun `each declared build asks before the comment sheet decides whether it fills the screen`() = bundles { bundle ->
+        fillsScreen(bundle)
     }
 }

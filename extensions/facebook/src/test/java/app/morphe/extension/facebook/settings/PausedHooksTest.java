@@ -696,11 +696,12 @@ public class PausedHooksTest {
                 () -> CommentSheetOptions.hidesComment(new GraphQLComment("https://s.shopee.vn/9zKs")),
                 () -> CommentSheetOptions.hidesComment(new GraphQLComment("Big SPOILER inside")),
                 () -> CommentSheetOptions.incomingTypers(3) == 0));
-        // A reel's comment sheet asking for two thirds of the screen gets all of it, and a split-screen
-        // launcher answers that it didn't open.
+        // A reel's comment sheet asking for two thirds of the screen gets all of it, a split-screen
+        // launcher answers that it didn't open, and a full-height sheet fills the screen.
         probes.put(PatchFamily.FULL_HEIGHT_COMMENTS, Arrays.asList(
                 () -> FullHeightComments.sheetHeight(0.66f) == 1f,
-                FullHeightComments::skipSplitScreen));
+                FullHeightComments::skipSplitScreen,
+                () -> FullHeightComments.fillsScreen(1f)));
         // A word without @ in a post or comment box looks nobody up, and a list of people left open
         // by an earlier @ is closed.
         probes.put(PatchFamily.TAG_SUGGESTIONS, Arrays.asList(

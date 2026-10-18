@@ -25,6 +25,11 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * Each already answers no when its server gate is off, and the button then opens the regular
  * sheet. The patch asks {@link #skipSplitScreen} first in each, so with the switch on they answer
  * no and the regular sheet, at full height, opens instead.
+ *
+ * <p>A share of one still has to pass the sheet fragment's "fill the screen?" check, which can say
+ * no from the screen's size against a server value and then draws a centered box 80% of the screen
+ * tall. The patch hands {@link #fillsScreen} the share first thing in that check, and while the
+ * switch is on a share of one fills the screen.
  */
 public final class FullHeightComments {
     /** The member the report names once a comment sheet's height has been asked about. */
@@ -38,6 +43,12 @@ public final class FullHeightComments {
 
     /** What the report counts each time the split screen is passed over for the regular sheet. */
     static final String SPLIT_SCREEN_SKIPPED = "Split screen passed over";
+
+    /** The member the report names once the sheet's "fill the screen?" check has been asked about. */
+    static final String FILLS = "comment sheet fills the screen";
+
+    /** What the report counts each time that check is answered yes instead of Facebook's own way. */
+    static final String SCREEN_FILLED = "Comment sheet kept full screen";
 
     private static final String FAMILY = FamilyNames.FULL_HEIGHT_COMMENTS;
 
@@ -77,6 +88,25 @@ public final class FullHeightComments {
             return true;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "split screen", failure);
+            return false;
+        }
+    }
+
+    /**
+     * The hook, first thing in the comment sheet's "fill the screen?" check, handed the share of the
+     * screen's height the sheet opens to. True, while Open comments at full height is on and the
+     * share is one or more, answers that the sheet fills the screen; false lets Facebook's check
+     * decide.
+     */
+    public static boolean fillsScreen(float height) {
+        try {
+            HookStatus.invoked(FAMILY);
+            HookStatus.bound(FAMILY, FILLS);
+            if (!(height >= 1f) || !Utils.settingsReady() || !Settings.OPEN_COMMENTS_FULL_HEIGHT.get()) return false;
+            HookStatus.counted(FAMILY, SCREEN_FILLED);
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "fills screen", failure);
             return false;
         }
     }
