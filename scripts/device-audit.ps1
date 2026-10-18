@@ -77,7 +77,10 @@ $smokeReader = $smokeAst.Find({ param($node)
 . (Join-Path $PSScriptRoot 'device-install.ps1')
 
 $Package = 'com.facebook.katana'
-$Entry = "$Package/.LoginActivity"
+# The launcher entry that's on, resolved from the phone by Get-AuditLauncher before any change.
+# Picking an alternate app icon turns .LoginActivity off, and Android starts nothing for it then.
+$LauncherClass = 'com.facebook.katana.LoginActivity'
+$Entry = $null
 $Extra = 'app.morphe.extension.facebook'
 $AuditDir = "/sdcard/Android/data/$Package/files/hushfacebook-audit"
 $translationTables = Join-Path $PSScriptRoot '..\extensions\shared\library\src\main\l10n'
@@ -281,7 +284,28 @@ function Save-Screenshot([string]$Path) {
     Invoke-Adb shell rm -f /sdcard/hushfacebook-audit.png | Out-Null
 }
 
+# The one MAIN/LAUNCHER entry the phone lists for Facebook: the default LoginActivity, or the
+# alias an alternate icon turned on (Android lists only enabled components). Zero or several
+# fail the run before anything changes. Component states are read, never set.
+function Get-AuditLauncher {
+    $lines = @(Invoke-Adb shell cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.LAUNCHER $Package)
+    $found = New-Object System.Collections.Generic.List[string]
+    foreach ($line in $lines) {
+        $match = [regex]::Match(([string]$line).Trim(), '\A' + [regex]::Escape($Package) + '/([A-Za-z0-9_.$]+)\z')
+        if (-not $match.Success) { continue }
+        $class = $match.Groups[1].Value
+        if ($class.StartsWith('.', [StringComparison]::Ordinal)) { $class = $Package + $class }
+        if ($class -ceq $LauncherClass -or $class.StartsWith("$LauncherClass.", [StringComparison]::Ordinal)) {
+            if (-not $found.Contains($class)) { $found.Add($class) }
+        }
+    }
+    if ($found.Count -eq 0) { throw "$Package lists no enabled launcher entry. No device changes were made." }
+    if ($found.Count -gt 1) { throw "$Package lists several launcher entries ($($found -join ', ')). No device changes were made." }
+    return $found[0]
+}
+
 function Start-Facebook {
+    if (-not $Entry) { throw 'The launcher entry was not resolved. No app start was sent.' }
     Invoke-Adb shell am force-stop $Package | Out-Null
     Invoke-Adb shell am start -W -n $Entry | Out-Null
     Start-Sleep -Seconds ($SettleSeconds * 2)
@@ -437,6 +461,7 @@ function Restore-AuditState {
 }
 
 function Get-Report([string]$Path) {
+    if (-not $Entry) { throw 'The launcher entry was not resolved. No report request was sent.' }
     Invoke-Adb shell rm -f "$AuditDir/report.txt" | Out-Null
     Invoke-Adb shell am start -W -n $Entry --ez "$Extra.AUDIT_REPORT" true | Out-Null
     for ($wait = 0; $wait -lt 20; $wait++) {
@@ -474,6 +499,7 @@ function Close-Settings {
 function Save-SettingsPages([string]$Pass, [string]$RequestedLocale = '') {
     $dir = Join-Path $OutDir "pages-$Pass"
     New-Item -ItemType Directory -Force $dir | Out-Null
+    if (-not $Entry) { throw 'The launcher entry was not resolved. No settings page was opened.' }
     $results = New-Object System.Collections.Generic.List[object]
     $translations = @{}
     if ($RequestedLocale) {
@@ -602,7 +628,8 @@ if ($basePath.Count -ne 1) { throw 'Could not identify one installed base APK.' 
 $apkHash = ((Invoke-Adb shell "sha256sum $(Format-Shell $basePath[0].Substring(8))") -join '').Trim()
 if ($apkHash -cnotmatch '\A([a-f0-9]{64})\s') { throw 'Could not hash the installed APK.' }
 $installedHash = $Matches[1]
-Write-Step "Facebook $version on $Serial, results in $OutDir"
+$Entry = "$Package/$(Get-AuditLauncher)"
+Write-Step "Facebook $version on $Serial, launching $Entry, results in $OutDir"
 
 $problems = New-Object System.Collections.Generic.List[string]
 $summary = New-Object System.Collections.Generic.List[string]

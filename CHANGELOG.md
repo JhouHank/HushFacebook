@@ -45,6 +45,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** Picking an app icon no longer replaces the Facebook wordmark at the top of Home (issue #172). **Use the icon at the top of Home**, a new switch under Appearance, puts your picked icon there instead. It starts off and needs a restart.
 
 * **Tooling:** The device audit now checks its device lease and input window before sending input. Failed imports, missing pages and unproved destinations fail the run. Settings, language and theme restore independently, with recovery files kept if anything fails. A baseline is replaced only after the full run and recovery pass.
+* **Tooling:** The device audit starts Facebook through the launcher entry the phone has turned on, so a run still works after you pick another app icon. It reads the entry from the phone, never changes a component, and stops before touching any setting if it finds none or more than one.
 
 * **Tooling:** The script contract tests pass on a published index again. Their check that the release facts refuse a second Facebook build swapped one into the CHANGELOG part of the index, which the facts check skips on purpose, so it failed as soon as a changelog bullet named the target build. It now swaps it into the facts.
 

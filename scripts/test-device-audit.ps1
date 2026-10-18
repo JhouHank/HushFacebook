@@ -6,7 +6,7 @@ $auditAst = [System.Management.Automation.Language.Parser]::ParseFile($auditPath
 if ($parseErrors.Count) { throw ($parseErrors -join "`n") }
 $testFunctions = @('Assert-AuditLease', 'Assert-AuditSteps', 'Assert-AuditForeground', 'Invoke-Adb',
     'Get-AuditLocales', 'Get-AuditNightMode', 'Restore-AuditState', 'Format-Shell',
-    'New-AuditBaseline', 'Test-AuditBaseline', 'Publish-AuditBaseline', 'Save-SettingsPages', 'Write-Step', 'Test-AuditDestination', 'Get-UiNodes', 'Send-Profile', 'Test-AuditLocaleList')
+    'New-AuditBaseline', 'Test-AuditBaseline', 'Publish-AuditBaseline', 'Save-SettingsPages', 'Write-Step', 'Test-AuditDestination', 'Get-UiNodes', 'Send-Profile', 'Test-AuditLocaleList', 'Get-AuditLauncher', 'Get-Report')
 foreach ($functionName in $testFunctions) {
     $definition = $auditAst.Find({ param($node)
         $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $functionName
@@ -65,8 +65,10 @@ function Invoke-FakeAdb {
         if ($script:changeOwnWindowAfterDump) { $script:postDumpFocusReads = 0 }
         return $script:uiDump
     }
+    if ($command -like '*query-activities*') { return $script:launcherQuery }
     if ($command -match "cmd locale set-app-locales .* --locales '([^']*)'$") { $script:actualLocale = $Matches[1] }
     if ($command -like '*cmd locale get-app-locales*') { return "Locales for $Package for user 0 are [$script:actualLocale]" }
+    if ($script:refuseLocale -and $command -like '*cmd locale set-app-locales*') { throw 'Mock locale refusal' }
     if ($command -match 'cmd uimode night (yes|no|auto|custom)$') {
         if ($script:refuseNight) { throw 'Mock night-mode refusal' }
         $script:actualNight = $Matches[1]
@@ -237,6 +239,17 @@ try {
     $script:disconnected = $true
     Assert-That (-not (Restore-AuditState)) 'A disconnected restore passed.'
     $script:disconnected = $false
+    $script:refuseLocale = $true
+    $script:actualLocale = 'vi-VN'
+    $script:actualNight = 'yes'
+    $script:adbCalls.Clear()
+    $problems.Clear()
+    Assert-That (-not (Restore-AuditState)) 'A failed locale restore passed.'
+    Assert-That ($script:actualNight -eq 'auto') 'A locale restore failure prevented the theme restore.'
+    Assert-That (-not @($script:adbCalls | Where-Object { $_ -like '* rm -rf *' }).Count) 'A failed locale restore deleted device recovery data.'
+    Assert-That (Test-Path (Join-Path $OutDir 'before.json')) 'A failed locale restore lost its local backup.'
+    Assert-That (@($problems | Where-Object { $_ -like 'Could not restore locale*' }).Count -ge 1) 'A failed locale restore was not reported.'
+    $script:refuseLocale = $false
     $stateBefore.locales = ''
     $script:actualLocale = 'vi-VN'
     $KeepSettings = $true
@@ -341,6 +354,49 @@ try {
     $Entry = "$Package/.LoginActivity"
     $Extra = 'app.morphe.extension.facebook'
     $swipeX = 10; $swipeFrom = 20; $swipeTo = 5
+    # The launcher entry: default, alternate icon, none and several.
+    $realStart = ($auditAst.Find({ param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Start-Facebook' }, $true)).Extent.Text.Replace('function Start-Facebook', 'function Start-FacebookReal')
+    . ([scriptblock]::Create($realStart))
+    $LauncherClass = 'com.facebook.katana.LoginActivity'
+    $alias = 'com.facebook.katana.LoginActivity.fab_ic'
+    $script:launcherQuery = @('1 activities found:', "  $Package/.LoginActivity")
+    Assert-That ((Get-AuditLauncher) -ceq $LauncherClass) 'The default launcher was not resolved.'
+    $script:launcherQuery = @('1 activities found:', "  $Package/$alias")
+    Assert-That ((Get-AuditLauncher) -ceq $alias) 'The enabled alternate launcher alias was not resolved.'
+    $script:launcherQuery = @('1 activities found:', "  $Package/.LoginActivity.fab_ic")
+    Assert-That ((Get-AuditLauncher) -ceq $alias) 'A short alias name was not expanded.'
+    $script:launcherQuery = @('1 activities found:', "  $Package/com.facebook.katana.OtherActivity", "  com.other.app/.Main")
+    Assert-Throws { Get-AuditLauncher } 'Only unrelated activities passed as a launcher.'
+    $script:launcherQuery = @('No activities found')
+    Assert-Throws { Get-AuditLauncher } 'A missing launcher passed.'
+    $script:launcherQuery = @('0 activities found:', '')
+    Assert-Throws { Get-AuditLauncher } 'An empty launcher query passed.'
+    $script:launcherQuery = @('2 activities found:', "  $Package/.LoginActivity", "  $Package/$alias")
+    Assert-Throws { Get-AuditLauncher } 'Two enabled launchers passed as one.'
+    $script:launcherQuery = @("  $Package/.LoginActivity", "  $Package/.LoginActivity")
+    Assert-That ((Get-AuditLauncher) -ceq $LauncherClass) 'One launcher listed twice was treated as ambiguous.'
+    foreach ($launcher in @($LauncherClass, $alias)) {
+        $Entry = "$Package/$launcher"
+        $script:adbCalls.Clear()
+        Start-FacebookReal
+        try { Get-Report (Join-Path $OutDir 'report-launcher.txt') | Out-Null } catch { }
+        $script:pageAck = '{"schema":2,"route":"News feed","title":"Newsfeed","locale":"de-DE"}'
+        $script:screenText = @('Newsfeed')
+        Save-SettingsPages 'dark' | Out-Null
+        $starts = @($script:adbCalls | Where-Object { $_ -like '*am start*' -and $_ -notlike '*android.intent.action.VIEW*' })
+        Assert-That ($starts.Count -ge 3) "Launch commands were not issued for $launcher."
+        Assert-That (@($starts | Where-Object { $_ -notlike "* -n $Package/$launcher*" }).Count -eq 0) "A launch or extra missed the active launcher $launcher."
+        Assert-That (@($starts | Where-Object { $_ -like '*OPEN_SETTINGS true*' -and $_ -like "* -n $Package/$launcher *" }).Count -ge 1) "OPEN_SETTINGS did not go to $launcher."
+        Assert-That (@($starts | Where-Object { $_ -like '*AUDIT_REPORT true*' -and $_ -like "* -n $Package/$launcher *" }).Count -ge 1) "AUDIT_REPORT did not go to $launcher."
+        Assert-That (-not @($script:adbCalls | Where-Object { $_ -match 'pm (enable|disable)|setEnabledSetting|cmd package (enable|disable)' }).Count) 'The audit changed a component state.'
+    }
+    $Entry = $null
+    $script:adbCalls.Clear()
+    Assert-Throws { Start-FacebookReal } 'An unresolved launcher still started Facebook.'
+    Assert-Throws { Get-Report (Join-Path $OutDir 'report-none.txt') } 'An unresolved launcher still requested a report.'
+    Assert-Throws { Save-SettingsPages 'dark' } 'An unresolved launcher still opened settings.'
+    Assert-That (-not @($script:adbCalls | Where-Object { $_ -like '*am *' }).Count) 'An unresolved launcher reached ADB.'
+    $Entry = "$Package/.LoginActivity"
     $script:foreground = "topResumedActivity=ActivityRecord{1 u0 $Package/.Main t1}"
     $script:screenText = @('Newsfeed')
     $script:pageAck = '{"schema":2,"route":"News feed","title":"Newsfeed","locale":"de-DE"}'
