@@ -15,6 +15,7 @@ foreach ($functionName in $testFunctions) {
     . ([scriptblock]::Create($definition.Extent.Text))
 }
 
+. (Join-Path $PSScriptRoot 'device-install.ps1')
 $failures = [Collections.Generic.List[string]]::new()
 $checks = 0
 function Assert-That([bool]$Condition, [string]$Message) {

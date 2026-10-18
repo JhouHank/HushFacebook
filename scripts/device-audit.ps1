@@ -289,21 +289,8 @@ function Save-Screenshot([string]$Path) {
 # fail the run before anything changes. Component states are read, never set.
 function Get-AuditLauncher {
     $lines = @(Invoke-Adb shell cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.LAUNCHER $Package)
-    $found = New-Object System.Collections.Generic.List[string]
-    foreach ($line in $lines) {
-        $match = [regex]::Match(([string]$line).Trim(), '\A' + [regex]::Escape($Package) + '/([A-Za-z0-9_.$]+)\z')
-        if (-not $match.Success) { continue }
-        $class = $match.Groups[1].Value
-        if ($class.StartsWith('.', [StringComparison]::Ordinal)) { $class = $Package + $class }
-        if ($class -ceq $LauncherClass -or $class.StartsWith("$LauncherClass.", [StringComparison]::Ordinal)) {
-            if (-not $found.Contains($class)) { $found.Add($class) }
-        }
-    }
-    if ($found.Count -eq 0) { throw "$Package lists no enabled launcher entry. No device changes were made." }
-    if ($found.Count -gt 1) { throw "$Package lists several launcher entries ($($found -join ', ')). No device changes were made." }
-    return $found[0]
+    return Select-AndroidLauncher -Lines $lines -PackageName $Package -LauncherClass $LauncherClass
 }
-
 function Start-Facebook {
     if (-not $Entry) { throw 'The launcher entry was not resolved. No app start was sent.' }
     Invoke-Adb shell am force-stop $Package | Out-Null
