@@ -6,7 +6,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Added
 
-* **Facebook:** Settings added since you last looked now carry a small dot, on the switch and on its section's row on the home page. The dot stays for the visit that shows it and is gone the next time you open the settings. Nothing shows on a fresh install or in search results.
+* **Facebook:** Settings added since you last looked now carry a small dot, on the switch and on its section's row on the home page. A switch's dot goes once you've left its page, and a section's dot once you've opened that section. Nothing shows on a fresh install or in search results.
 
 * **Facebook:** **Open videos in another app**, a new switch under Downloads, adds Open in another app to the menu of a feed or Watch video, beside Download to phone. It hands the video's file to whatever player or casting app you pick, like VLC or Web Video Caster, so you can watch it elsewhere or send it to a TV. A video with no single file to hand over says so, and it starts off (issue #182).
 
