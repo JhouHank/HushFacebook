@@ -21,8 +21,10 @@ import java.util.List;
 import app.morphe.extension.facebook.media.RecentlyWatched.Entry;
 
 /**
- * The Recently watched list: at most {@link #MAX_ENTRIES} entries, one per reel, video or story,
- * the one watched last at the end. A second watch moves an entry to the end with its new time.
+ * The Recently watched list: at most {@link #MAX_ENTRIES} entries, one per video or story, the one
+ * watched last at the end. A second watch moves an entry to the end with its new time. A reel is a
+ * video: Facebook plays one id in its Reels viewer one time and its video viewer the next, so the
+ * two watches share an entry, listed as the kind it was watched as last.
  *
  * <p>The list lives in a preferences file of its own as one JSON array, so it never reaches the
  * settings export or the diagnostic report. It's read once, the first time it's needed, and every
@@ -48,7 +50,7 @@ final class WatchedList {
     private static final String DURATION = "d";
 
     private final SharedPreferences store;
-    /** By kind and id, the one watched longest ago first. */
+    /** By {@link #key}, the one watched longest ago first. */
     private final LinkedHashMap<String, Entry> entries = new LinkedHashMap<>();
     private boolean loaded;
 
@@ -104,8 +106,8 @@ final class WatchedList {
         for (int index = skip; index < read.size(); index++) {
             Entry entry = read.get(index);
             String key = key(entry.kind, entry.id);
-            entries.remove(key);
-            entries.put(key, entry);
+            Entry earlier = entries.remove(key);
+            entries.put(key, earlier == null ? entry : entry.over(earlier));
         }
     }
 
@@ -113,8 +115,9 @@ final class WatchedList {
         store.edit().putString(KEY, encode(entries.values())).apply();
     }
 
+    /** Where an entry sits: a reel's and a video's with one id are the same place. A story's is its card's. */
     static String key(String kind, String id) {
-        return kind + ":" + id;
+        return (RecentlyWatched.STORY.equals(kind) ? RecentlyWatched.STORY : RecentlyWatched.VIDEO) + ":" + id;
     }
 
     /** [entries] as the file keeps them, in their order. */

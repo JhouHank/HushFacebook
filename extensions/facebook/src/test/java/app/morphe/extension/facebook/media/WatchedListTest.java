@@ -78,11 +78,34 @@ public class WatchedListTest {
     }
 
     @Test
-    public void aReelAndAVideoWithOneIdAreTwoEntries() {
+    public void aReelAndAVideoWithOneIdAreOneEntryUnderTheLastKind() {
         WatchedList list = new WatchedList(store);
         list.add(reel("1", 1));
-        list.add(new Entry(RecentlyWatched.VIDEO, "1", null, null, null, 2, 0));
-        assertEquals("[video:1, reel:1]", ids(list.newestFirst()).toString());
+        assertFalse("the same video counted as new",
+                list.add(new Entry(RecentlyWatched.VIDEO, "1", null, null, null, 2, 0)));
+        List<Entry> entries = list.newestFirst();
+        assertEquals("[video:1]", ids(entries).toString());
+        assertEquals("the reel's length went", 30_000, entries.get(0).durationMs);
+        list.add(reel("1", 3));
+        assertEquals("[reel:1]", ids(list.newestFirst()).toString());
+    }
+
+    @Test
+    public void aStoryAndAReelWithOneIdStayTwo() {
+        WatchedList list = new WatchedList(store);
+        list.add(new Entry(RecentlyWatched.STORY, "1", null, null, "b", 1, 0));
+        assertTrue(list.add(reel("1", 2)));
+        assertEquals("[reel:1, story:1]", ids(list.newestFirst()).toString());
+    }
+
+    @Test
+    public void aFileListingOneVideoTwiceReadsAsOne() {
+        store.edit().putString(WatchedList.KEY, "[{\"k\":\"reel\",\"i\":\"1\",\"t\":1,\"d\":30000},"
+                + "{\"k\":\"video\",\"i\":\"2\",\"t\":2},{\"k\":\"video\",\"i\":\"1\",\"t\":3}]").commit();
+        List<Entry> read = new WatchedList(store).newestFirst();
+        assertEquals("[video:1, video:2]", ids(read).toString());
+        assertEquals(30_000, read.get(0).durationMs);
+        assertEquals(3, read.get(0).watchedAt);
     }
 
     @Test
