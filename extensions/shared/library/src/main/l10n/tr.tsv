@@ -1690,3 +1690,7 @@ Comments open on a sheet that fills the screen instead of stopping part way up. 
 Hide the status bar	Durum çubuğunu gizle
 # context: summary of that switch; a swipe down from the top edge shows the bar briefly
 Takes the phone's status bar, with the time and battery, off Facebook's main screen, so the app gets the whole screen. Swipe down from the top edge to see it for a moment.	Telefonun saat ve pil gösteren durum çubuğunu Facebook'un ana ekranından kaldırır, böylece uygulama tüm ekranı kullanır. Kısa bir süre görmek için üst kenardan aşağı kaydırın.
+# context: switch title under Reels and Watch; on, a video tapped in the news feed opens alone in the full-screen player instead of leading into endless reels
+Open feed videos on their own	Akıştaki videoları tek başına aç
+# context: summary of that switch; the Reels tab itself still scrolls normally
+A video you tap in the feed opens full screen by itself, with no reels to swipe to after it. The Reels tab keeps scrolling. Off by default, since it hasn't been tried on a real account yet.	Akışta dokunduğun bir video, ardından kaydırılacak reels olmadan tam ekranda tek başına açılır. Reels sekmesi kaymaya devam eder. Henüz gerçek bir hesapta denenmediği için varsayılan olarak kapalıdır.

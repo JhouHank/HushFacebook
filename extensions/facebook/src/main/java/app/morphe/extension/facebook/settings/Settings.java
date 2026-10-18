@@ -459,6 +459,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_reel_counts", FALSE);
 
     /**
+     * A video tapped in the feed opens in the full-screen player on its own, with no reels to swipe
+     * to after it ({@link app.morphe.extension.facebook.reels.FeedVideoAlone}, #161). The player's
+     * reels feed is told nothing more came. The Reels tab keeps scrolling. Off until it's turned on,
+     * since nobody has seen it on a phone yet.
+     */
+    public static final BooleanSetting FEED_VIDEOS_ALONE =
+            new BooleanSetting("hushfacebook_feed_videos_alone", FALSE);
+
+    /**
      * The batches of watched reels the Reels viewer sends as FbShortsSeenStateMutation: only their
      * ids, the record Facebook ranks the Reels feed with, which nobody else sees. Held back, reels
      * already watched may come back in the feed.

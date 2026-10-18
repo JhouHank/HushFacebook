@@ -131,6 +131,11 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.HIDE_REEL_COUNTS,
                     L10n.t("Takes the numbers away from under a reel's Like, Comment and Share icons. "
                             + "The icons stay where they are. A change shows from the next reel.")));
+            // Asked as a feed video's player asks for more, so a change shows from the next feed video.
+            reels.addPreference(toggle(context, Settings.FEED_VIDEOS_ALONE,
+                    L10n.t("A video you tap in the feed opens full screen by itself, with no reels to swipe to after it. "
+                            + "The Reels tab keeps scrolling. Off by default, since it hasn't been tried on a real "
+                            + "account yet.")));
         }
         if (build.contains(PatchFamily.REEL_WATCH_HISTORY)) {
             reels.addPreference(toggle(context, Settings.DONT_SEND_REEL_WATCH_HISTORY,

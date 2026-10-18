@@ -1690,3 +1690,7 @@ Comments open on a sheet that fills the screen instead of stopping part way up. 
 Hide the status bar	Ocultar la barra de estado
 # context: summary of that switch; a swipe down from the top edge shows the bar briefly
 Takes the phone's status bar, with the time and battery, off Facebook's main screen, so the app gets the whole screen. Swipe down from the top edge to see it for a moment.	Quita la barra de estado del teléfono, con la hora y la batería, de la pantalla principal de Facebook, para que la app ocupe toda la pantalla. Desliza hacia abajo desde el borde superior para verla un momento.
+# context: switch title under Reels and Watch; on, a video tapped in the news feed opens alone in the full-screen player instead of leading into endless reels
+Open feed videos on their own	Abrir los videos del feed por separado
+# context: summary of that switch; the Reels tab itself still scrolls normally
+A video you tap in the feed opens full screen by itself, with no reels to swipe to after it. The Reels tab keeps scrolling. Off by default, since it hasn't been tried on a real account yet.	Un video que tocas en el feed se abre solo en pantalla completa, sin reels a los que deslizar después. La pestaña Reels sigue funcionando igual. Desactivado por defecto, ya que aún no se ha probado con una cuenta real.

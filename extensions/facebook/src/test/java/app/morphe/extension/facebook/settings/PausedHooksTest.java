@@ -133,6 +133,7 @@ import app.morphe.extension.facebook.reels.OriginalAudio;
 import app.morphe.extension.facebook.reels.ReelGesturesForTests;
 import app.morphe.extension.facebook.reels.ReelHold;
 import app.morphe.extension.facebook.reels.ReelHoldForTests;
+import app.morphe.extension.facebook.reels.FeedVideoAlone;
 import app.morphe.extension.facebook.reels.ReelCleanMode;
 import app.morphe.extension.facebook.reels.ReelDeclutter;
 import app.morphe.extension.facebook.reels.ReelLoopForTests;
@@ -504,7 +505,12 @@ public class PausedHooksTest {
                 // The search pill is answered as empty only while the patch runs.
                 ReelDeclutter::hideSearchPill,
                 // A sidebar button's count loses its number only while the patch runs.
-                () -> !"12".equals(ReelDeclutter.countText("12"))));
+                () -> !"12".equals(ReelDeclutter.countText("12")),
+                // A feed video's player asking for more right after the tap gets none.
+                () -> {
+                    FeedVideoAlone.feedVideoTapped();
+                    return FeedVideoAlone.holdsBack(new Object());
+                }));
         // A reel that would get the interest prompt is answered as one that doesn't.
         probes.put(PatchFamily.REEL_PROMPTS, Collections.singletonList(() -> !ReelPrompts.keep(true)));
         // The Reels batcher's send of the reels you watched never reaches its executor.

@@ -1690,3 +1690,7 @@ Comments open on a sheet that fills the screen instead of stopping part way up. 
 Hide the status bar	Ẩn thanh trạng thái
 # context: summary of that switch; a swipe down from the top edge shows the bar briefly
 Takes the phone's status bar, with the time and battery, off Facebook's main screen, so the app gets the whole screen. Swipe down from the top edge to see it for a moment.	Ẩn thanh trạng thái của điện thoại, có giờ và pin, khỏi màn hình chính của Facebook để ứng dụng dùng toàn bộ màn hình. Vuốt xuống từ cạnh trên để xem nó trong giây lát.
+# context: switch title under Reels and Watch; on, a video tapped in the news feed opens alone in the full-screen player instead of leading into endless reels
+Open feed videos on their own	Mở video trong bảng tin riêng lẻ
+# context: summary of that switch; the Reels tab itself still scrolls normally
+A video you tap in the feed opens full screen by itself, with no reels to swipe to after it. The Reels tab keeps scrolling. Off by default, since it hasn't been tried on a real account yet.	Video bạn chạm vào trong bảng tin sẽ mở riêng ở chế độ toàn màn hình, không có reels để vuốt tiếp sau đó. Tab Reels vẫn cuộn như bình thường. Mặc định tắt vì chưa được thử trên tài khoản thật.
