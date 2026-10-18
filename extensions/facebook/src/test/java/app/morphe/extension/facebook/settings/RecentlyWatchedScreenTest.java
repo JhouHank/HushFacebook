@@ -211,6 +211,9 @@ public class RecentlyWatchedScreenTest {
         RecentlyWatchedForTests.watched(RecentlyWatched.REEL, "r2", null, null, null, now + 5_000, 0);
         assertEquals("a clock that went back", "Just now",
                 RecentlyWatchedScreen.detail(RecentlyWatchedForTests.entries().get(0), now));
+        RecentlyWatchedForTests.watched(RecentlyWatched.REEL, "r4", null, null, null, now - 60_000, 0);
+        String minute = RecentlyWatchedScreen.detail(RecentlyWatchedForTests.entries().get(0), now);
+        assertTrue("a whole minute is Android's own words: " + minute, minute.startsWith("1 min"));
         RecentlyWatchedForTests.watched(RecentlyWatched.REEL, "r3", null, null, null, now - 3 * 60_000, 0);
         String older = RecentlyWatchedScreen.detail(RecentlyWatchedForTests.entries().get(0), now);
         assertTrue(older, older.startsWith("3 min"));
