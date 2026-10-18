@@ -16,6 +16,7 @@ import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.settings.CREATE_WORDMARK_VIEW
 import app.morphe.patches.facebook.misc.settings.WORDMARK_NAVIGATION_BAR
 import app.morphe.patches.facebook.misc.settings.settingsPatch
+import app.morphe.util.findFreeRegister
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -25,6 +26,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
@@ -47,6 +49,17 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  *   "badgableGlyphView" string. The count hooks go first in each and replace the int.
  * - The logo is dressed by the same site the Unlock app icons patch uses ([logoDressSite]): the hook
  *   goes right after the stock wordmark load, with the logo register that holds the touch listener.
+ * - Behind a MobileConfig flag the bar skips that Messenger block and shows the newer bar instead
+ *   (the S22's account, 2026-10-17): NavigationBar (a kept class) makes every button from a spec
+ *   (arm64 and armv7 LX/28u;) in its one instance method that takes a spec and calls setId, setTag
+ *   and setOnLongClickListener (A0B). It makes the button's glyph first (LX/2BK;, the one
+ *   new-instance there built with just a Context), then reads the spec's one String field, its
+ *   name: "messenger" for the Messenger button. The hook goes right after the glyph is made, with
+ *   the glyph and that name, so it runs before the glyph's first count.
+ * - That glyph class is shared by every button of the newer bar. Its count setters are the
+ *   `(I)V` and `(FbUserSession, I, Z)V` methods of the one interface it implements that declares
+ *   both (arm64 LX/DQv;, F32 and F33, the same interface the Messenger button class implements).
+ *   Their hooks go first and get the glyph too, so only the Messenger one loses its count.
  *
  * A missing anchor refuses the whole Tab bar at the bottom patch, like every other anchor in it.
  */
@@ -55,12 +68,23 @@ internal const val TOP_BAR_BUTTONS = "$EXTENSION_PACKAGE/navigation/TopBarButton
 internal const val HIDE_MESSENGER_BUTTON_HOOK = "$TOP_BAR_BUTTONS->messengerButton(Landroid/view/View;)V"
 internal const val HIDE_MESSENGER_COUNT_HOOK = "$TOP_BAR_BUTTONS->messengerCount(I)I"
 internal const val HIDE_FACEBOOK_LOGO_HOOK = "$TOP_BAR_BUTTONS->facebookLogo(Landroid/view/View;)V"
+internal const val BAR_BUTTON_HOOK = "$TOP_BAR_BUTTONS->barButton(Landroid/view/View;Ljava/lang/String;)V"
+internal const val BAR_BUTTON_COUNT_HOOK = "$TOP_BAR_BUTTONS->barButtonCount(Landroid/view/View;I)I"
 
 internal const val SETUP_MESSENGER_GLYPH_VIEW = "WordmarkNavigationBar#setupMessengerGlyphView"
 internal const val BADGABLE_GLYPH_VIEW = "badgableGlyphView"
+internal const val NAVIGATION_BAR = "Lcom/facebook/navigation/navbar/NavigationBar;"
 private const val FRAME_LAYOUT_INIT = "Landroid/widget/FrameLayout;-><init>(Landroid/content/Context;)V"
 private const val ADD_VIEW = "Landroid/view/ViewGroup;->addView(Landroid/view/View;)V"
 private const val USER_SESSION = "Lcom/facebook/auth/usersession/FbUserSession;"
+private const val CONTEXT = "Landroid/content/Context;"
+private const val STRING = "Ljava/lang/String;"
+private val SPEC_BUTTON_CALLS = setOf(
+    "Landroid/view/View;->setId(I)V",
+    "Landroid/view/View;->setTag(Ljava/lang/Object;)V",
+    "Landroid/view/View;->setOnLongClickListener(Landroid/view/View\$OnLongClickListener;)V",
+)
+private val COUNT_SHAPES = listOf(listOf("I"), listOf(USER_SESSION, "I", "Z"))
 
 private const val TOP_BAR = "Tab bar at the bottom"
 
@@ -118,13 +142,109 @@ internal class CountMethod(val name: String, val parameters: List<String>, val i
 internal fun countMethods(button: ClassDef): List<CountMethod> {
     if (button.methods.none { holdsString(it, BADGABLE_GLYPH_VIEW) }) refuse("${button.type} no longer holds \"$BADGABLE_GLYPH_VIEW\"")
     val instance = button.methods.filter { !AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == "V" }
-    val shapes = listOf(listOf("I"), listOf(USER_SESSION, "I", "Z"))
-    return shapes.map { shape ->
+    return COUNT_SHAPES.map { shape ->
         val found = instance.filter { it.parameterTypes.map(CharSequence::toString) == shape }
         val method = found.singleOrNull() ?: refuse("expected one (${shape.joinToString("")})V instance method in ${button.type}, found ${found.size}")
         // p0 is the button; the int is parameter number [shape.indexOf("I")] after it.
         CountMethod(method.name, shape, 1 + shape.indexOf("I"))
     }
+}
+
+/**
+ * Where the newer bar makes a button from its spec: the method, the glyph's class, the index of the
+ * glyph's constructor call and the register holding the glyph, and the spec's name field.
+ */
+internal class SpecButtonSite(
+    val method: Method,
+    val glyphType: String,
+    val made: Int,
+    val glyph: Int,
+    val nameField: FieldReference,
+)
+
+private fun FieldReference.smali() = "$definingClass->$name:$type"
+
+/**
+ * The newer bar's spec-to-button method in [bar]: its one instance method that takes one spec and
+ * calls setId, setTag and setOnLongClickListener. In it, the one object made with just a Context is
+ * the glyph, and the one String field read off the spec is its name. Refuses unless each is found
+ * exactly once.
+ */
+internal fun specButtonSite(bar: ClassDef): SpecButtonSite {
+    val makers = bar.methods.filter { method ->
+        !AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType != "V" && method.parameterTypes.size == 1 &&
+            method.implementation?.instructions?.mapNotNull { it.signature() }?.toSet()?.containsAll(SPEC_BUTTON_CALLS) == true
+    }
+    val method = makers.singleOrNull()
+        ?: refuse("expected one method of ${bar.type} that makes a button from a spec, found ${makers.size}")
+    val where = "${method.definingClass}->${method.name}"
+    val spec = method.parameterTypes.single().toString()
+    val code = method.implementation!!.instructions.toList()
+    val made = code.indices.filter { index ->
+        if (index == 0 || code[index].opcode != Opcode.INVOKE_DIRECT || code[index - 1].opcode != Opcode.NEW_INSTANCE) return@filter false
+        val init = code[index].reference() as? MethodReference ?: return@filter false
+        init.name == "<init>" && init.parameterTypes.map(CharSequence::toString) == listOf(CONTEXT) &&
+            init.definingClass == (code[index - 1].reference() as TypeReference).type &&
+            (code[index] as FiveRegisterInstruction).registerC == (code[index - 1] as OneRegisterInstruction).registerA
+    }
+    val at = made.singleOrNull() ?: refuse("expected one object made with just a Context in $where, found ${made.size}")
+    // The spec is the last register: p1 of an instance method with one object parameter.
+    val specRegister = method.implementation!!.registerCount - 1
+    val names = code.filter { instruction ->
+        val field = instruction.reference() as? FieldReference
+        instruction.opcode == Opcode.IGET_OBJECT && field != null && field.definingClass == spec && field.type == STRING &&
+            (instruction as TwoRegisterInstruction).registerB == specRegister
+    }.map { it.reference() as FieldReference }.distinctBy { it.smali() }
+    val name = names.singleOrNull() ?: refuse("expected one String field of $spec read in $where, found ${names.map { it.smali() }}")
+    return SpecButtonSite(method, (code[at - 1].reference() as TypeReference).type, at, (code[at] as FiveRegisterInstruction).registerC, name)
+}
+
+/**
+ * The glyph class's two count setters: the `(I)V` and `(FbUserSession, int, boolean)V` methods of
+ * the one interface among [interfaces] (the ones [glyph] implements) that declares one of each.
+ * Refuses unless that interface is found once and [glyph] implements both.
+ */
+internal fun glyphCountMethods(glyph: ClassDef, interfaces: List<ClassDef>): List<CountMethod> {
+    fun ClassDef.declared(shape: List<String>) = methods.filter {
+        AccessFlags.ABSTRACT.isSet(it.accessFlags) && it.returnType == "V" && it.parameterTypes.map(CharSequence::toString) == shape
+    }
+    val badges = interfaces.filter { face -> face.type in glyph.interfaces && COUNT_SHAPES.all { face.declared(it).size == 1 } }
+    val badge = badges.singleOrNull()
+        ?: refuse("expected one interface of ${glyph.type} declaring the two count setters, found ${badges.map { it.type }}")
+    return COUNT_SHAPES.map { shape ->
+        val name = badge.declared(shape).single().name
+        if (glyph.methods.none { it.name == name && it.parameterTypes.map(CharSequence::toString) == shape && it.implementation != null }) {
+            refuse("${glyph.type} doesn't implement ${badge.type}->$name(${shape.joinToString("")})V")
+        }
+        CountMethod(name, shape, 1 + shape.indexOf("I"))
+    }
+}
+
+/** Hands the new glyph and its spec's name over right after the glyph is made. */
+internal fun MutableMethod.markSpecButtonAfter(site: SpecButtonSite) {
+    val at = site.made + 1
+    val name = findFreeRegister(at, site.glyph)
+    if (maxOf(site.glyph, name, implementation!!.registerCount - 1) > 15) {
+        refuse("the glyph (v${site.glyph}), the free v$name or the spec is past v15 in ${site.method.definingClass}->${site.method.name}")
+    }
+    addInstructions(
+        at,
+        """
+            iget-object v$name, p1, ${site.nameField.smali()}
+            invoke-static { v${site.glyph}, v$name }, $BAR_BUTTON_HOOK
+        """,
+    )
+}
+
+/** Sends the count and the glyph through the extension first thing. */
+internal fun MutableMethod.gateGlyphCountFirst(register: Int) {
+    addInstructions(
+        0,
+        """
+            invoke-static { p0, p$register }, $BAR_BUTTON_COUNT_HOOK
+            move-result p$register
+        """,
+    )
 }
 
 /** Puts the Messenger button's hook after the addView call. */
@@ -182,6 +302,21 @@ internal fun BytecodePatchContext.hideTopBarButtons() {
         }
         val site = logoDressSite(logoMethod)
         logoMethod.hideLogoAfter(site.stockLoad, site.logo)
+    }
+    run {
+        val bar = mutableClassDefByOrNull(NAVIGATION_BAR)
+            ?: refuse("this Facebook has no $NAVIGATION_BAR, the newer top bar")
+        val spec = specButtonSite(bar)
+        val glyph = mutableClassDefByOrNull(spec.glyphType)
+            ?: refuse("this Facebook has no ${spec.glyphType}, the newer bar's button glyph")
+        val counts = glyphCountMethods(glyph, glyph.interfaces.mapNotNull { classDefByOrNull(it) })
+
+        bar.findMutableMethodOf(spec.method).markSpecButtonAfter(spec)
+        counts.forEach { count ->
+            glyph.methods.single {
+                it.name == count.name && it.parameterTypes.map(CharSequence::toString) == count.parameters
+            }.gateGlyphCountFirst(count.intRegister)
+        }
     }
 }
 

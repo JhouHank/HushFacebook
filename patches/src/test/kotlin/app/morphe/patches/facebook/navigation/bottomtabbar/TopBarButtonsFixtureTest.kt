@@ -7,7 +7,9 @@ package app.morphe.patches.facebook.navigation.bottomtabbar
 import app.morphe.ExtensionDex
 import app.morphe.Fixtures
 import app.morphe.PatchContexts
+import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patches.facebook.feed.FixtureDex
+import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.settings.CREATE_WORDMARK_VIEW
 import app.morphe.patches.facebook.misc.settings.LOGO_TOUCH_STAND_IN
 import app.morphe.patches.facebook.misc.settings.WORDMARK_NAVIGATION_BAR
@@ -17,8 +19,11 @@ import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -26,13 +31,15 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
 
 /**
  * The top bar's three hides (#181) on every Facebook build the bundle declares (arm64 and armv7,
  * whose Redex names differ): the bar's builder holding setupMessengerGlyphView, the Messenger button
- * class it makes and adds, that class's two count setters, and the logo site. Then the hooks go in
- * on the real classes, which also assembles their smali. Reads the fixture bundles from
- * HUSHFACEBOOK_FIXTURE_DIR and skips without it.
+ * class it makes and adds, that class's two count setters, and the logo site. The newer bar some
+ * accounts get instead: NavigationBar's spec-to-button method, its glyph and that glyph's count
+ * setters. Then the hooks go in on the real classes, which also assembles their smali. Reads the
+ * fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class TopBarButtonsFixtureTest {
     private fun Method.code() = implementation!!.instructions.toList()
@@ -81,7 +88,7 @@ class TopBarButtonsFixtureTest {
 
                 // Apply the whole hook set the way the patch does: settings has already sent the logo's
                 // touch listener through its stand-in when this patch runs.
-                val context = PatchContexts.of(listOf(bar, button))
+                val context = PatchContexts.of(listOf(bar, button) + newerBar(bundle).classes)
                 val mutableBar = context.mutableClassDefBy(WORDMARK_NAVIGATION_BAR)
                 val mutableLogo = mutableBar.findMutableMethodOf(logoBuilder)
                 mutableLogo.sendToStandIn(logoTouchListenerIndex(logoBuilder), LOGO_TOUCH_STAND_IN)
@@ -133,6 +140,90 @@ class TopBarButtonsFixtureTest {
         assertTrue("both ABIs should be checked, got $checked", checked.size >= 2)
     }
 
+    /** The newer bar, its button glyph class and the interfaces the glyph implements, out of [bundle]. */
+    private class NewerBar(val bar: ClassDef, val glyph: ClassDef, val faces: List<ClassDef>) {
+        val classes get() = listOf(bar, glyph) + faces
+    }
+
+    private fun newerBar(bundle: File): NewerBar {
+        val bar = FixtureDex.classes(bundle, setOf(NAVIGATION_BAR))[NAVIGATION_BAR]
+            ?: throw AssertionError("${bundle.name}: no $NAVIGATION_BAR")
+        val glyphType = specButtonSite(bar).glyphType
+        val glyph = FixtureDex.classes(bundle, setOf(glyphType)).getValue(glyphType)
+        return NewerBar(bar, glyph, FixtureDex.classes(bundle, glyph.interfaces.toSet()).values.toList())
+    }
+
+    @Test
+    fun `each declared build resolves the newer bar's Messenger glyph and its counts and takes the hooks`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        val checked = mutableListOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val newer = newerBar(bundle)
+                val site = specButtonSite(newer.bar)
+                val code = site.method.code()
+                assertEquals("$name: the glyph is a View", "Landroid/view/View;", newer.glyph.superclass)
+
+                // Positive control for the name: a spec builder loads "messenger" and returns the
+                // spec type the button method takes, and the name field is that spec's.
+                val spec = site.method.parameterTypes.single().toString()
+                assertEquals("$name: the name field is the spec's", spec, site.nameField.definingClass)
+                val builders = FixtureDex.classesHolding(bundle, MESSENGER_SPEC).flatMap { it.methods }
+                    .filter { it.returnType == spec && holdsString(it, MESSENGER_SPEC) }
+                assertTrue("$name: no method loads \"$MESSENGER_SPEC\" and returns $spec", builders.isNotEmpty())
+
+                val counts = glyphCountMethods(newer.glyph, newer.faces)
+                assertEquals("$name: the (I)V setter's int", 1, counts[0].intRegister)
+                assertEquals("$name: the session setter's int", 2, counts[1].intRegister)
+                // The glyph gets its first count in the button method after it is made, through the
+                // (I)V setter: that's why the button hook has to sit right after the constructor.
+                val firstCount = code.indexOfFirst { it.call() == "${site.glyphType}->${counts[0].name}(I)V" }
+                assertTrue("$name: the first count follows the glyph's constructor", firstCount > site.made)
+
+                val context = PatchContexts.of(newer.classes)
+                val before = context.mutableClassDefBy(NAVIGATION_BAR).findMutableMethodOf(site.method).code().size
+                val countBefore = counts.map { c -> countMethod(context, site.glyphType, c).code().size }
+                context.run {
+                    val bar = mutableClassDefBy(NAVIGATION_BAR)
+                    bar.findMutableMethodOf(site.method).markSpecButtonAfter(site)
+                    val glyph = mutableClassDefBy(site.glyphType)
+                    counts.forEach { c -> glyph.methods.single { it.name == c.name && it.parameterTypes.map(CharSequence::toString) == c.parameters }.gateGlyphCountFirst(c.intRegister) }
+                }
+
+                val after = context.mutableClassDefBy(NAVIGATION_BAR).findMutableMethodOf(site.method).code()
+                assertEquals("$name: the button method grew by the hook only", before + 2, after.size)
+                val hookAt = after.indexOfFirst { it.call() == BAR_BUTTON_HOOK }
+                assertEquals("$name: the hook sits right after the name load after the constructor", site.made + 2, hookAt)
+                val load = after[site.made + 1]
+                assertEquals("$name: the name is loaded first", Opcode.IGET_OBJECT, load.opcode)
+                assertEquals("$name: off the spec's name field", site.nameField.toString(), (load as ReferenceInstruction).reference.toString())
+                val hook = after[hookAt] as FiveRegisterInstruction
+                assertEquals("$name: the glyph goes first", site.glyph, hook.registerC)
+                assertEquals("$name: the name goes second", (load as OneRegisterInstruction).registerA, hook.registerD)
+                assertNotEquals("$name: the name doesn't overwrite the glyph", site.glyph, load.registerA)
+
+                counts.forEachIndexed { i, c ->
+                    val method = countMethod(context, site.glyphType, c)
+                    val body = method.code()
+                    assertEquals("$name: ${c.name} grew by two", countBefore[i] + 2, body.size)
+                    assertEquals("$name: ${c.name} asks first", BAR_BUTTON_COUNT_HOOK, body[0].call())
+                    val ask = body[0] as FiveRegisterInstruction
+                    assertEquals("$name: ${c.name} hands over the glyph", registerOf(method, 0), ask.registerC)
+                    assertEquals("$name: ${c.name} hands over the int", registerOf(method, c.intRegister), ask.registerD)
+                    assertEquals("$name: ${c.name} keeps the answer in the int", Opcode.MOVE_RESULT, body[1].opcode)
+                }
+                checked += name
+            }
+        }
+        assertTrue("both ABIs should be checked, got $checked", checked.size >= 2)
+    }
+
+    private fun countMethod(context: BytecodePatchContext, type: String, count: CountMethod) =
+        context.mutableClassDefBy(type).methods.single {
+            it.name == count.name && it.parameterTypes.map(CharSequence::toString) == count.parameters
+        }
+
     /** The register smali calls p[parameter]: the method's registers less its parameter registers (this included), plus parameter. */
     private fun registerOf(method: com.android.tools.smali.dexlib2.iface.Method, parameter: Int): Int =
         method.implementation!!.registerCount - (method.parameterTypes.size + 1) + parameter
@@ -142,12 +233,15 @@ class TopBarButtonsFixtureTest {
         val calls = ExtensionDex.classDef(TOP_BAR_BUTTONS).methods
             .filter { AccessFlags.PUBLIC.isSet(it.accessFlags) && AccessFlags.STATIC.isSet(it.accessFlags) }
             .map { "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" }
-        for (hook in listOf(HIDE_MESSENGER_BUTTON_HOOK, HIDE_MESSENGER_COUNT_HOOK, HIDE_FACEBOOK_LOGO_HOOK)) {
+        for (hook in listOf(HIDE_MESSENGER_BUTTON_HOOK, HIDE_MESSENGER_COUNT_HOOK, HIDE_FACEBOOK_LOGO_HOOK, BAR_BUTTON_HOOK, BAR_BUTTON_COUNT_HOOK)) {
             assertTrue("the extension declares no public static $hook: $calls", hook in calls)
         }
+        assertEquals("the extension looks for the spec name the fixtures hold",
+            MESSENGER_SPEC, ExtensionDex.stringConstant(TOP_BAR_BUTTONS, "MESSENGER_SPEC"))
     }
 
     private companion object {
         const val ADD_VIEW_CALL = "Landroid/view/ViewGroup;->addView(Landroid/view/View;)V"
+        const val MESSENGER_SPEC = "messenger"
     }
 }

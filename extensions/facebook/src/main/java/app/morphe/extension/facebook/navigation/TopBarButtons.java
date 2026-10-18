@@ -7,6 +7,10 @@ package app.morphe.extension.facebook.navigation;
 import android.view.View;
 import android.widget.ImageView;
 
+import java.util.Collections;
+import java.util.Set;
+import java.util.WeakHashMap;
+
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Logger;
@@ -28,6 +32,11 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *       spot still opens Hushfacebook settings on a long press.
  * </ul>
  *
+ * <p>Some accounts get the newer bar instead, where every button is a glyph the bar makes from a
+ * named spec. There {@link #barButton} runs as each glyph is made and keeps the one named
+ * "messenger", and {@link #barButtonCount} runs first in that glyph class's count setters, which
+ * every glyph of the bar shares, so only the kept one loses its count.
+ *
  * <p>Off, paused, before the settings are ready, or when anything here fails, Facebook's own
  * button, count and logo are left alone. The button and logo are built as the main screen starts,
  * so those two switches show after a restart. The count switch shows with the next count.
@@ -38,7 +47,13 @@ public final class TopBarButtons {
     static final String COUNT_HIDDEN = "Messenger count hidden";
     static final String LOGO_HIDDEN = "Facebook logo hidden";
 
+    /** The newer bar's spec name for the Messenger button. */
+    static final String MESSENGER_SPEC = "messenger";
+
     private static final String FAMILY = FamilyNames.BOTTOM_TAB_BAR;
+
+    /** The newer bar's Messenger glyphs. Weak, so a rebuilt bar lets the old ones go. */
+    private static final Set<View> BAR_MESSENGER_BUTTONS = Collections.newSetFromMap(new WeakHashMap<>());
 
     private TopBarButtons() {
     }
@@ -47,13 +62,52 @@ public final class TopBarButtons {
     public static void messengerButton(View button) {
         try {
             HookStatus.invoked(FAMILY);
-            if (button == null || !Utils.settingsReady() || !Settings.HIDE_MESSENGER_BUTTON.get()) return;
-            button.setVisibility(View.GONE);
-            HookStatus.bound(FAMILY, "Messenger button");
-            HookStatus.counted(FAMILY, BUTTON_HIDDEN);
-            Logger.printDebug(() -> "Top bar: hid the Messenger button");
+            hideButton(button);
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "Messenger button", failure);
+        }
+    }
+
+    /**
+     * Injection point, right after the newer bar makes a button's glyph from its spec, before the
+     * glyph gets its first count. Keeps and hides the one named {@link #MESSENGER_SPEC}. Never throws.
+     */
+    public static void barButton(View button, String name) {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (button == null || !MESSENGER_SPEC.equals(name)) return;
+            synchronized (BAR_MESSENGER_BUTTONS) {
+                BAR_MESSENGER_BUTTONS.add(button);
+            }
+            hideButton(button);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "Messenger button", failure);
+        }
+    }
+
+    private static void hideButton(View button) {
+        if (button == null || !Utils.settingsReady() || !Settings.HIDE_MESSENGER_BUTTON.get()) return;
+        button.setVisibility(View.GONE);
+        HookStatus.bound(FAMILY, "Messenger button");
+        HookStatus.counted(FAMILY, BUTTON_HIDDEN);
+        Logger.printDebug(() -> "Top bar: hid the Messenger button");
+    }
+
+    /**
+     * Injection point, first thing in each count setter of the newer bar's glyph class. The count to
+     * show: {@link #messengerCount}'s answer for a kept Messenger glyph, the given count for any
+     * other glyph. Never throws.
+     */
+    public static int barButtonCount(View button, int count) {
+        try {
+            if (count == 0) return 0;
+            synchronized (BAR_MESSENGER_BUTTONS) {
+                if (!BAR_MESSENGER_BUTTONS.contains(button)) return count;
+            }
+            return messengerCount(count);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "Messenger count", failure);
+            return count;
         }
     }
 

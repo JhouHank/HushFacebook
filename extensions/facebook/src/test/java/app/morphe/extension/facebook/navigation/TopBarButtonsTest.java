@@ -175,5 +175,46 @@ public class TopBarButtonsTest {
         Settings.HIDE_FACEBOOK_LOGO.save(true);
         TopBarButtons.messengerButton(null);
         TopBarButtons.facebookLogo(null);
+        TopBarButtons.barButton(null, TopBarButtons.MESSENGER_SPEC);
+        assertEquals(3, TopBarButtons.barButtonCount(null, 3));
+    }
+
+    @Test
+    public void theNewerBarHidesOnlyTheGlyphNamedMessenger() {
+        Settings.HIDE_MESSENGER_BUTTON.save(true);
+        View messenger = button();
+        View search = button();
+        TopBarButtons.barButton(messenger, "messenger");
+        TopBarButtons.barButton(search, "search");
+        TopBarButtons.barButton(button(), null);
+        assertEquals(View.GONE, messenger.getVisibility());
+        assertEquals("another button of the bar stays", View.VISIBLE, search.getVisibility());
+        assertTrue(reported(TopBarButtons.BUTTON_HIDDEN));
+    }
+
+    @Test
+    public void theNewerBarOffLeavesItsMessengerGlyphAndCount() {
+        View messenger = button();
+        TopBarButtons.barButton(messenger, "messenger");
+        assertEquals(View.VISIBLE, messenger.getVisibility());
+        assertEquals(9, TopBarButtons.barButtonCount(messenger, 9));
+    }
+
+    @Test
+    public void theNewerBarDropsOnlyTheMessengerGlyphsCount() {
+        Settings.HIDE_MESSENGER_COUNT.save(true);
+        View messenger = button();
+        View notifications = button();
+        // Marked as it is made, so even the first count it gets is dropped.
+        TopBarButtons.barButton(messenger, "messenger");
+        TopBarButtons.barButton(notifications, "notifications");
+        assertEquals(0, TopBarButtons.barButtonCount(messenger, 6));
+        assertEquals("the glyph class's other buttons keep theirs", 6, TopBarButtons.barButtonCount(notifications, 6));
+        assertEquals("a glyph the hook never saw keeps its count", 6, TopBarButtons.barButtonCount(button(), 6));
+        assertEquals("the button stays", View.VISIBLE, messenger.getVisibility());
+        assertTrue(reported(TopBarButtons.COUNT_HIDDEN));
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertEquals("paused, Facebook's own count", 6, TopBarButtons.barButtonCount(messenger, 6));
     }
 }
