@@ -8,8 +8,11 @@ import android.os.SystemClock;
 
 import androidx.annotation.Nullable;
 
-import java.util.Map;
-import java.util.WeakHashMap;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -46,10 +49,24 @@ public final class FeedVideoAlone {
 
     private static final String FAMILY = FamilyNames.REEL_DECLUTTER;
 
-    /** Every feed that asked while the switch was on, and whether it's a tapped video's player. */
-    private static final Map<Object, Boolean> FEEDS = new WeakHashMap<>();
+    /**
+     * Every feed that asked while the switch was on, and whether it's a tapped video's player. Told
+     * apart by identity, never {@code equals}, so two of Facebook's feeds can't share an answer.
+     */
+    private static final List<Feed> FEEDS = new ArrayList<>();
 
-    private static volatile long tappedAt = NONE;
+    /** When the last feed video tap that no player has used yet came, or NONE. */
+    private static final AtomicLong TAPPED_AT = new AtomicLong(NONE);
+
+    private static final class Feed {
+        final WeakReference<Object> feed;
+        final boolean player;
+
+        Feed(Object feed, boolean player) {
+            this.feed = new WeakReference<>(feed);
+            this.player = player;
+        }
+    }
 
     /** Stands in for the uptime clock when a test sets it. */
     @Nullable
@@ -69,11 +86,11 @@ public final class FeedVideoAlone {
         try {
             HookStatus.invoked(FAMILY);
             if (!on()) {
-                tappedAt = NONE;
+                TAPPED_AT.set(NONE);
                 return;
             }
             HookStatus.bound(FAMILY, "feed video tap");
-            tappedAt = now();
+            TAPPED_AT.set(now());
             Logger.printDebug(() -> "Feed videos on their own: a feed video is opening its player");
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "feed video tap", failure);
@@ -94,13 +111,19 @@ public final class FeedVideoAlone {
             boolean alone;
             boolean first;
             synchronized (FEEDS) {
-                Boolean known = FEEDS.get(feed);
+                Boolean known = null;
+                for (Iterator<Feed> each = FEEDS.iterator(); each.hasNext(); ) {
+                    Feed seen = each.next();
+                    Object held = seen.feed.get();
+                    if (held == null) each.remove();
+                    else if (held == feed) known = seen.player;
+                }
                 first = known == null;
                 if (first) {
-                    long tapped = tappedAt;
-                    alone = tapped != NONE && now() - tapped <= WINDOW_MS;
-                    if (alone) tappedAt = NONE;
-                    FEEDS.put(feed, alone);
+                    // The tap goes to one player only, even with a tap landing while this reads it.
+                    long tapped = TAPPED_AT.get();
+                    alone = tapped != NONE && now() - tapped <= WINDOW_MS && TAPPED_AT.compareAndSet(tapped, NONE);
+                    FEEDS.add(new Feed(feed, alone));
                 } else {
                     alone = known;
                 }
@@ -131,7 +154,7 @@ public final class FeedVideoAlone {
         synchronized (FEEDS) {
             FEEDS.clear();
         }
-        tappedAt = NONE;
+        TAPPED_AT.set(NONE);
         clockForTests = null;
     }
 }

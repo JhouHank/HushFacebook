@@ -96,6 +96,30 @@ public class FeedVideoAloneTest {
         assertTrue("a second tap opens a second player alone", FeedVideoAlone.holdsBack(new Object()));
     }
 
+    /** Equal to every other one, the way a Facebook class with its own equals might be. */
+    private static final class EqualFeed {
+        @Override
+        public boolean equals(Object other) {
+            return other instanceof EqualFeed;
+        }
+
+        @Override
+        public int hashCode() {
+            return 1;
+        }
+    }
+
+    @Test
+    public void feedsAreToldApartByIdentityNotEquals() {
+        Object reelsTab = new EqualFeed();
+        assertFalse(FeedVideoAlone.holdsBack(reelsTab));
+        FeedVideoAlone.feedVideoTapped();
+        Object player = new EqualFeed();
+        assertTrue("an equal but different feed is a new feed", FeedVideoAlone.holdsBack(player));
+        assertFalse("the Reels tab keeps its own answer", FeedVideoAlone.holdsBack(reelsTab));
+        assertTrue(FeedVideoAlone.holdsBack(player));
+    }
+
     @Test
     public void aFeedFirstAskingLongAfterTheTapKeepsFacebooksAnswer() {
         FeedVideoAlone.feedVideoTapped();
