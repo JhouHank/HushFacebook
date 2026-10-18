@@ -213,6 +213,7 @@ public final class SettingsBackup {
             Settings.TAP_TO_PLAY,
             Settings.TAP_TO_PLAY_REELS_AFTER_FIRST,
             Settings.RESUME_LONG_VIDEOS,
+            Settings.RECENTLY_WATCHED,
             Settings.FRAME_STEP,
             Settings.DEFAULT_PLAYBACK_QUALITY,
             Settings.PICTURE_IN_PICTURE,

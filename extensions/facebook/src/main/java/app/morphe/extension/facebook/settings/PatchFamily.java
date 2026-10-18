@@ -125,7 +125,7 @@ public enum PatchFamily {
     TAP_TO_PLAY(FamilyNames.TAP_TO_PLAY, "tapToPlay", null,
             Settings.TAP_TO_PLAY, Settings.TAP_TO_PLAY_REELS_AFTER_FIRST),
     RESUME_LONG_VIDEOS(FamilyNames.RESUME_LONG_VIDEOS, "resumeLongVideos", null,
-            Settings.RESUME_LONG_VIDEOS),
+            Settings.RESUME_LONG_VIDEOS, Settings.RECENTLY_WATCHED),
     FRAME_STEP(FamilyNames.FRAME_STEP, "frameStep", null,
             Settings.FRAME_STEP),
     PLAYBACK_QUALITY(FamilyNames.PLAYBACK_QUALITY, "defaultPlaybackQuality", null,

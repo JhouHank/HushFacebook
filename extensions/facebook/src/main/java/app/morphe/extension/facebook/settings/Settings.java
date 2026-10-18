@@ -759,6 +759,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_resume_long_videos", FALSE);
 
     /**
+     * Keeps a list on the phone of the reels, videos and stories you watch, newest first, so one a
+     * refresh took away can be opened again ({@link app.morphe.extension.facebook.media.RecentlyWatched},
+     * #183). Starts off. Off or paused, nothing is added; what's listed stays until it's cleared.
+     */
+    public static final BooleanSetting RECENTLY_WATCHED =
+            new BooleanSetting("hushfacebook_recently_watched", FALSE);
+
+    /**
      * With a reel or video paused, a tap on its right third steps it one frame forward and a tap on
      * its left third one frame back ({@link app.morphe.extension.facebook.media.FrameStep}). Starts
      * off. Off or paused, every tap goes to Facebook as before.

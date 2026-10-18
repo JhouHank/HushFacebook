@@ -1659,3 +1659,25 @@ Couldn't find a file for this video. Play it for a moment, then try again.	Für 
 # context: toast when Android has no app that plays a video file
 No app on this phone can open this video	Keine App auf diesem Handy kann dieses Video öffnen
 New	Neu
+# context: label of the switch that keeps a list of the reels, videos and stories you watched
+Remember what you watch	Merken, was du ansiehst
+# context: summary of the Remember what you watch switch
+Keeps a list on this phone of the reels, videos and stories you watch, so you can find one again after the feed refreshes. Nothing leaves your phone.	Führt auf diesem Telefon eine Liste der Reels, Videos und Stories, die du ansiehst, damit du einen Eintrag wiederfindest, nachdem der Feed neu geladen wurde. Nichts verlässt dein Telefon.
+# context: title of the row and the list of the reels, videos and stories you watched, newest first; not Facebook's own Watch history
+Recently watched	Zuletzt angesehen
+# context: summary of the Recently watched row
+Reels, videos and stories you watched, newest first. Tap one to open it again.	Reels, Videos und Stories, die du angesehen hast, die neuesten zuerst. Tippe auf einen Eintrag, um ihn wieder zu öffnen.
+# context: chip in the Recently watched list that shows only videos
+Videos	Videos
+# context: kind of one entry in the Recently watched list: a reel
+Reel	Reel
+# context: kind of one entry in the Recently watched list: a story
+Story	Story
+# context: button that empties the Recently watched list at once
+Clear	Leeren
+# context: toast after Clear empties the Recently watched list
+List cleared	Liste geleert
+# context: shown in the Recently watched list while it's empty; names the Remember what you watch switch
+Nothing here yet. With Remember what you watch on, the reels, videos and stories you watch show up here.	Hier ist noch nichts. Wenn Merken, was du ansiehst aktiv ist, erscheinen hier die Reels, Videos und Stories, die du ansiehst.
+# context: shown in the Recently watched list when the picked chip has no entries
+Nothing of this kind yet.	Davon gibt es noch nichts.

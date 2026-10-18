@@ -1659,3 +1659,25 @@ Couldn't find a file for this video. Play it for a moment, then try again.	Khôn
 # context: toast when Android has no app that plays a video file
 No app on this phone can open this video	Không có ứng dụng nào trên điện thoại này mở được video này
 New	Mới
+# context: label of the switch that keeps a list of the reels, videos and stories you watched
+Remember what you watch	Ghi nhớ những gì bạn xem
+# context: summary of the Remember what you watch switch
+Keeps a list on this phone of the reels, videos and stories you watch, so you can find one again after the feed refreshes. Nothing leaves your phone.	Lưu trên điện thoại này danh sách reel, video và tin bạn xem, để bạn tìm lại được sau khi bảng tin tải lại. Không có gì rời khỏi điện thoại của bạn.
+# context: title of the row and the list of the reels, videos and stories you watched, newest first; not Facebook's own Watch history
+Recently watched	Đã xem gần đây
+# context: summary of the Recently watched row
+Reels, videos and stories you watched, newest first. Tap one to open it again.	Reel, video và tin bạn đã xem, mới nhất ở trên cùng. Nhấn vào một mục để mở lại.
+# context: chip in the Recently watched list that shows only videos
+Videos	Video
+# context: kind of one entry in the Recently watched list: a reel
+Reel	Reel
+# context: kind of one entry in the Recently watched list: a story
+Story	Tin
+# context: button that empties the Recently watched list at once
+Clear	Xóa
+# context: toast after Clear empties the Recently watched list
+List cleared	Đã xóa danh sách
+# context: shown in the Recently watched list while it's empty; names the Remember what you watch switch
+Nothing here yet. With Remember what you watch on, the reels, videos and stories you watch show up here.	Chưa có gì ở đây. Khi bật Ghi nhớ những gì bạn xem, reel, video và tin bạn xem sẽ hiện ở đây.
+# context: shown in the Recently watched list when the picked chip has no entries
+Nothing of this kind yet.	Chưa có mục nào thuộc loại này.

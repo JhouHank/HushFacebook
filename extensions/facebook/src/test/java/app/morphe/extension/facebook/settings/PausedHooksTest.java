@@ -97,6 +97,7 @@ import app.morphe.extension.facebook.media.ProgressBar;
 import app.morphe.extension.facebook.media.QualityChoiceForTests;
 import app.morphe.extension.facebook.media.SkipSilence;
 import app.morphe.extension.facebook.media.ReelSpeedForTests;
+import app.morphe.extension.facebook.media.RecentlyWatchedForTests;
 import app.morphe.extension.facebook.media.ResumePlaybackForTests;
 import app.morphe.extension.facebook.media.TapToPlay;
 import app.morphe.extension.facebook.media.TapToPlayForTests;
@@ -556,7 +557,10 @@ public class PausedHooksTest {
                 () -> TapToPlay.autoplaySetting(TapToPlayForTests.Autoplay.ON) != TapToPlayForTests.Autoplay.ON,
                 () -> TapToPlay.showReelPlayButton(false)));
         // A long video left at 5:00 is saved, and its next start seeks back there.
-        probes.put(PatchFamily.RESUME_LONG_VIDEOS, Collections.singletonList(ResumePlaybackForTests::resumesALongVideo));
+        // A long video picks up where it was left, and a reel played on and a story viewed go on the
+        // Recently watched list (#183).
+        probes.put(PatchFamily.RESUME_LONG_VIDEOS, Arrays.asList(ResumePlaybackForTests::resumesALongVideo,
+                RecentlyWatchedForTests::keepsAWatchedReel, StorySeenForTests::keepsAViewedStory));
         // A tap on the right third of a video you paused steps it a frame.
         probes.put(PatchFamily.FRAME_STEP, Collections.singletonList(FrameStepForTests::stepsAPausedVideo));
         // A new video's first choice plays the chosen quality rather than Facebook's.

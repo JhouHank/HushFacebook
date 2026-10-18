@@ -7,6 +7,7 @@ Changes in each Hushfacebook version, newest first.
 ### Added
 
 * **Facebook:** Settings added since you last looked now carry a small dot, on the switch and on its section's row on the home page. A switch's dot goes once you've left its page, and a section's dot once you've opened that section. Nothing shows on a fresh install or in search results.
+* **Facebook:** **Remember what you watch**, a new switch under Playback, keeps a list on your phone of the reels, videos and stories you watch, so one that vanished when the feed refreshed is easy to find again. **Recently watched**, the row right under it, shows them newest first with a chip for each kind, and a tap opens one in Facebook. Clear empties the list. A reel or video counts once it's played for about three seconds, and the list keeps the last 500. Stories are listed when the `View stories anonymously` patch is in your build, with its switch on or off. Nothing on the list leaves your phone, and it starts off. Part of `Resume long videos` (issue #183).
 
 * **Facebook:** **Open videos in another app**, a new switch under Downloads, adds Open in another app to the menu of a feed or Watch video, beside Download to phone. It hands the video's file to whatever player or casting app you pick, like VLC or Web Video Caster, so you can watch it elsewhere or send it to a TV. A video with no single file to hand over says so, and it starts off (issue #182).
 

@@ -1551,3 +1551,25 @@ Couldn't find a file for this video. Play it for a moment, then try again.	Não 
 # context: toast when Android has no app that plays a video file
 No app on this phone can open this video	Nenhum app neste celular consegue abrir este vídeo
 New	Novo
+# context: label of the switch that keeps a list of the reels, videos and stories you watched
+Remember what you watch	Lembrar o que você assiste
+# context: summary of the Remember what you watch switch
+Keeps a list on this phone of the reels, videos and stories you watch, so you can find one again after the feed refreshes. Nothing leaves your phone.	Guarda neste celular uma lista dos reels, vídeos e stories que você assiste, para você achar um de novo depois que o feed carregar de novo. Nada sai do seu celular.
+# context: title of the row and the list of the reels, videos and stories you watched, newest first; not Facebook's own Watch history
+Recently watched	Assistidos recentemente
+# context: summary of the Recently watched row
+Reels, videos and stories you watched, newest first. Tap one to open it again.	Reels, vídeos e stories que você assistiu, os mais recentes primeiro. Toque em um para abrir de novo.
+# context: chip in the Recently watched list that shows only videos
+Videos	Vídeos
+# context: kind of one entry in the Recently watched list: a reel
+Reel	Reel
+# context: kind of one entry in the Recently watched list: a story
+Story	Story
+# context: button that empties the Recently watched list at once
+Clear	Limpar
+# context: toast after Clear empties the Recently watched list
+List cleared	Lista limpa
+# context: shown in the Recently watched list while it's empty; names the Remember what you watch switch
+Nothing here yet. With Remember what you watch on, the reels, videos and stories you watch show up here.	Nada aqui ainda. Com Lembrar o que você assiste ativado, os reels, vídeos e stories que você assistir aparecem aqui.
+# context: shown in the Recently watched list when the picked chip has no entries
+Nothing of this kind yet.	Nada desse tipo ainda.

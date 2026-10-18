@@ -1659,3 +1659,25 @@ Couldn't find a file for this video. Play it for a moment, then try again.	No se
 # context: toast when Android has no app that plays a video file
 No app on this phone can open this video	Ninguna app de este teléfono puede abrir este video
 New	Nuevo
+# context: label of the switch that keeps a list of the reels, videos and stories you watched
+Remember what you watch	Recordar lo que ves
+# context: summary of the Remember what you watch switch
+Keeps a list on this phone of the reels, videos and stories you watch, so you can find one again after the feed refreshes. Nothing leaves your phone.	Guarda en este teléfono una lista de los reels, videos e historias que ves, para que puedas volver a encontrar uno cuando el feed se recargue. Nada sale de tu teléfono.
+# context: title of the row and the list of the reels, videos and stories you watched, newest first; not Facebook's own Watch history
+Recently watched	Vistos recientemente
+# context: summary of the Recently watched row
+Reels, videos and stories you watched, newest first. Tap one to open it again.	Reels, videos e historias que viste, los más recientes primero. Toca uno para volver a abrirlo.
+# context: chip in the Recently watched list that shows only videos
+Videos	Videos
+# context: kind of one entry in the Recently watched list: a reel
+Reel	Reel
+# context: kind of one entry in the Recently watched list: a story
+Story	Historia
+# context: button that empties the Recently watched list at once
+Clear	Borrar
+# context: toast after Clear empties the Recently watched list
+List cleared	Lista borrada
+# context: shown in the Recently watched list while it's empty; names the Remember what you watch switch
+Nothing here yet. With Remember what you watch on, the reels, videos and stories you watch show up here.	Todavía no hay nada. Con Recordar lo que ves activado, los reels, videos e historias que veas aparecen aquí.
+# context: shown in the Recently watched list when the picked chip has no entries
+Nothing of this kind yet.	Todavía no hay nada de este tipo.

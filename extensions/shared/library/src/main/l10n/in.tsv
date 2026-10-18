@@ -1659,3 +1659,25 @@ Couldn't find a file for this video. Play it for a moment, then try again.	Tidak
 # context: toast when Android has no app that plays a video file
 No app on this phone can open this video	Tidak ada aplikasi di ponsel ini yang bisa membuka video ini
 New	Baru
+# context: label of the switch that keeps a list of the reels, videos and stories you watched
+Remember what you watch	Ingat yang kamu tonton
+# context: summary of the Remember what you watch switch
+Keeps a list on this phone of the reels, videos and stories you watch, so you can find one again after the feed refreshes. Nothing leaves your phone.	Menyimpan daftar reel, video, dan cerita yang kamu tonton di ponsel ini, agar kamu bisa menemukannya lagi setelah feed dimuat ulang. Tidak ada yang keluar dari ponselmu.
+# context: title of the row and the list of the reels, videos and stories you watched, newest first; not Facebook's own Watch history
+Recently watched	Baru ditonton
+# context: summary of the Recently watched row
+Reels, videos and stories you watched, newest first. Tap one to open it again.	Reel, video, dan cerita yang kamu tonton, yang terbaru di atas. Ketuk salah satunya untuk membukanya lagi.
+# context: chip in the Recently watched list that shows only videos
+Videos	Video
+# context: kind of one entry in the Recently watched list: a reel
+Reel	Reel
+# context: kind of one entry in the Recently watched list: a story
+Story	Cerita
+# context: button that empties the Recently watched list at once
+Clear	Hapus
+# context: toast after Clear empties the Recently watched list
+List cleared	Daftar dihapus
+# context: shown in the Recently watched list while it's empty; names the Remember what you watch switch
+Nothing here yet. With Remember what you watch on, the reels, videos and stories you watch show up here.	Belum ada apa-apa. Saat Ingat yang kamu tonton menyala, reel, video, dan cerita yang kamu tonton muncul di sini.
+# context: shown in the Recently watched list when the picked chip has no entries
+Nothing of this kind yet.	Belum ada yang jenis ini.

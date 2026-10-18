@@ -198,6 +198,11 @@ final class VideoPages {
                 playback.addPreference(toggle(context, Settings.RESUME_LONG_VIDEOS,
                         L10n.t("Videos over two minutes pick up where you left off. Drag the bar to start elsewhere. Short reels, "
                                 + "live videos and ads start as usual.")));
+                // Asked at each start and each story card, so a change shows from the next one (#183).
+                playback.addPreference(toggle(context, Settings.RECENTLY_WATCHED,
+                        L10n.t("Keeps a list on this phone of the reels, videos and stories you watch, so you can find one "
+                                + "again after the feed refreshes. Nothing leaves your phone.")));
+                playback.addPreference(RecentlyWatchedScreen.row(page, context));
             }
             if (build.contains(PatchFamily.FRAME_STEP)) {
                 // Asked on each tap, so a change shows from the next one.

@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import app.morphe.extension.facebook.media.RecentlyWatched;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Logger;
@@ -254,9 +255,11 @@ public final class StorySeen {
     /**
      * Injection point, first thing in the seen helper's method that queues a viewed card for the
      * next send. [peek] is the flag Facebook sends as is_story_peek_view: a glance from outside the
-     * viewer, which doesn't count. Never throws.
+     * viewer, which doesn't count. Recently watched hears each card that isn't a peek here, with
+     * this switch on or off. Never throws.
      */
     public static void viewed(Object bucket, Object card, Object helper, boolean peek) {
+        if (!peek) remember(bucket, card);
         try {
             if (peek || !Utils.settingsReady() || !Settings.VIEW_STORIES_ANONYMOUSLY.get()) return;
             Stories access = stories;
@@ -271,6 +274,17 @@ public final class StorySeen {
             }
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.STORY_SEEN, "story card viewed", failure);
+        }
+    }
+
+    /** Hands a viewed card to Recently watched, which asks its own switch first. Never throws. */
+    private static void remember(Object bucket, Object card) {
+        try {
+            if (!RecentlyWatched.keeping()) return;
+            Stories access = stories;
+            RecentlyWatched.storyViewed(access.storyId(card), access.bucketId(bucket), card);
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.RESUME_LONG_VIDEOS, "recently watched story", failure);
         }
     }
 
