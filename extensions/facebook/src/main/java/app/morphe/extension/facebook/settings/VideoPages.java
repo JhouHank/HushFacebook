@@ -282,7 +282,7 @@ final class VideoPages {
             }
             if (build.contains(PatchFamily.VIDEO_DOWNLOAD) || build.contains(PatchFamily.PHOTO_DOWNLOAD)) {
                 downloads.addPreference(toggle(context, Settings.POST_MENU_DOWNLOAD_FIRST,
-                        L10n.t("Puts Download to phone and Save photo at the top of a post's three-dot menu instead of the bottom. A post with nothing to save gets neither.")));
+                        L10n.t("Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them (on photo posts the list is the More options page). A post with nothing to save gets neither.")));
             }
             if (build.contains(PatchFamily.PHOTO_DOWNLOAD)) {
                 downloads.addPreference(toggle(context, Settings.DOWNLOAD_PHOTOS,

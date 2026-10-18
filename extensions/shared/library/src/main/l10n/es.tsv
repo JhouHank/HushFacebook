@@ -1612,8 +1612,8 @@ Hide the reaction preview on comments	Ocultar la vista previa de reacciones en l
 Hides the stacked reaction icons in the corner of a comment. The space stays, so a tap where they were still opens the list of reactions.	Oculta los iconos de reacciones apilados en la esquina de un comentario. El espacio se mantiene, así que tocar donde estaban sigue abriendo la lista de reacciones.
 # context: switch title under Downloads; "Download" is the post menu row "Download to phone" and "post menus" are the three-dot menus under posts
 Download first in post menus	Descargar primero en los menús de publicaciones
-# context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere
-Puts Download to phone and Save photo at the top of a post's three-dot menu instead of the bottom. A post with nothing to save gets neither.	Pone Descargar en el teléfono y Guardar foto al principio del menú de tres puntos de una publicación en lugar de al final. Una publicación sin nada que guardar no recibe ninguno.
+# context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere; "More options" is the title of Facebook's own page, use Facebook's wording
+Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them (on photo posts the list is the More options page). A post with nothing to save gets neither.	Mueve Descargar en el teléfono y Guardar foto del final del menú de tres puntos de una publicación al principio de su lista de opciones. Las filas superiores de Facebook se quedan encima (en las publicaciones con fotos, la lista es la página Más opciones). Una publicación sin nada que guardar no recibe ninguno.
 # context: row title under Menu; opens a list of the Menu's tiles to hide, such as Marketplace and Gaming
 Menu tiles to hide	Mosaicos del menú que ocultar
 # context: title of the list of Menu tiles to hide

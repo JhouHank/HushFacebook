@@ -13,6 +13,10 @@ import app.morphe.extension.facebook.settings.Settings;
  * Where a post menu's save row goes. The row under a post holds only icons with counts and gives a
  * new child no room, so Hushfacebook's Download rows ride in the post's three-dot menu. With
  * {@link Settings#POST_MENU_DOWNLOAD_FIRST} on they sit above Facebook's rows, else below them.
+ * "Above" means first in the menu's own order. Facebook's bottom sheet then files each row by the
+ * kind and section tag Facebook gave it ({@code Vq3.A05} on 583) and shows its tagged top rows
+ * before the untagged ones, so ours lead the options list under those (on photo posts the More
+ * options page), not the whole sheet.
  *
  * <p>The two kinds of menu sort differently. Facebook's post menu keeps its rows in the order
  * number each was added with, smallest first, so a row goes on top with a number below every

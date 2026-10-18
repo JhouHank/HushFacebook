@@ -1289,17 +1289,19 @@ public final class L10nTranslations {
                 "Weitere Einstellungen");
         table.put("Most relevant",
                 "Relevanteste");
+        table.put("Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them (on photo posts the list is the More options page). A post with nothing to save gets neither.",
+                "Verschiebt Aufs Handy herunterladen und Foto speichern vom Ende des Drei-Punkte-Men\u00fcs eines Beitrags an den Anfang seiner Optionsliste. Facebooks eigene oberste Zeilen bleiben dar\u00fcber (bei Fotobeitr\u00e4gen ist die Liste die Seite Weitere Optionen). Ein Beitrag ohne speicherbare Inhalte bekommt keines von beiden.");
         table.put("Moves Facebook's tab bar to the bottom, within thumb reach, on accounts that show it at the top. Restart Facebook to see the change.",
                 "Verschiebt Facebooks Tab-Leiste nach unten, in Reichweite des Daumens, wenn sie bei deinem Konto oben steht. Starte Facebook neu, um die \u00c4nderung zu sehen.");
         table.put("Moves Facebook's tab bar to the top, under the search row, as older Facebook had it. Restart Facebook to see the change.",
                 "Verschiebt Facebooks Tab-Leiste nach oben, unter die Suchleiste, wie im \u00e4lteren Facebook. Starte Facebook neu, um die \u00c4nderung zu sehen.");
         table.put("Movies and Pictures",
                 "Movies und Pictures");
-        table.put("New",
-                "Neu");
     }
 
     private static void fillDe10(Map<String, String> table) {
+        table.put("New",
+                "Neu");
         table.put("Newest",
                 "Neueste");
         table.put("News feed",
@@ -1418,11 +1420,11 @@ public final class L10nTranslations {
                 "Alle Antwort-Threads \u00f6ffnen");
         table.put("Open in another app",
                 "In anderer App \u00f6ffnen");
-        table.put("Open links in your browser",
-                "Links in deinem Browser \u00f6ffnen");
     }
 
     private static void fillDe11(Map<String, String> table) {
+        table.put("Open links in your browser",
+                "Links in deinem Browser \u00f6ffnen");
         table.put("Open on a chosen tab",
                 "Mit einem gew\u00e4hlten Tab starten");
         table.put("Open the Messenger app",
@@ -1529,8 +1531,6 @@ public final class L10nTranslations {
                 "Profile, Fotos und Beitr\u00e4ge \u00f6ffnen sich nicht");
         table.put("Purple",
                 "Violett");
-        table.put("Puts Download to phone and Save photo at the top of a post's three-dot menu instead of the bottom. A post with nothing to save gets neither.",
-                "Setzt Aufs Handy herunterladen und Foto speichern an den Anfang des Drei-Punkte-Men\u00fcs eines Beitrags statt ans Ende. Ein Beitrag ohne speicherbare Inhalte bekommt keines von beiden.");
         table.put("Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings from the Hushfacebook settings row in Settings and privacy or with a long press on the Facebook logo.",
                 "Zeigt die Hushfacebook-Einstellungen im Men\u00fc, das beim langen Dr\u00fccken des Facebook-Symbols erscheint. Aus verschwinden sie aus diesem Men\u00fc, und du kannst die Einstellungen weiter \u00fcber die Zeile Hushfacebook-Einstellungen unter Einstellungen und Privatsph\u00e4re oder durch langes Dr\u00fccken des Facebook-Logos \u00f6ffnen.");
         table.put("Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings with a long press on the Facebook logo.",
@@ -3562,17 +3562,19 @@ public final class L10nTranslations {
                 "M\u00e1s ajustes");
         table.put("Most relevant",
                 "M\u00e1s relevantes");
+        table.put("Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them (on photo posts the list is the More options page). A post with nothing to save gets neither.",
+                "Mueve Descargar en el tel\u00e9fono y Guardar foto del final del men\u00fa de tres puntos de una publicaci\u00f3n al principio de su lista de opciones. Las filas superiores de Facebook se quedan encima (en las publicaciones con fotos, la lista es la p\u00e1gina M\u00e1s opciones). Una publicaci\u00f3n sin nada que guardar no recibe ninguno.");
         table.put("Moves Facebook's tab bar to the bottom, within thumb reach, on accounts that show it at the top. Restart Facebook to see the change.",
                 "Mueve la barra de pesta\u00f1as de Facebook abajo, al alcance del pulgar, en las cuentas que la muestran arriba. Reinicia Facebook para ver el cambio.");
         table.put("Moves Facebook's tab bar to the top, under the search row, as older Facebook had it. Restart Facebook to see the change.",
                 "Mueve la barra de pesta\u00f1as de Facebook arriba, debajo de la fila de b\u00fasqueda, como en el Facebook de antes. Reinicia Facebook para ver el cambio.");
         table.put("Movies and Pictures",
                 "Movies y Pictures");
-        table.put("New",
-                "Nuevo");
     }
 
     private static void fillEs10(Map<String, String> table) {
+        table.put("New",
+                "Nuevo");
         table.put("Newest",
                 "M\u00e1s recientes");
         table.put("News feed",
@@ -3691,11 +3693,11 @@ public final class L10nTranslations {
                 "Abrir todos los hilos de respuestas");
         table.put("Open in another app",
                 "Abrir en otra app");
-        table.put("Open links in your browser",
-                "Abrir enlaces en tu navegador");
     }
 
     private static void fillEs11(Map<String, String> table) {
+        table.put("Open links in your browser",
+                "Abrir enlaces en tu navegador");
         table.put("Open on a chosen tab",
                 "Abrir en una pesta\u00f1a elegida");
         table.put("Open the Messenger app",
@@ -3802,8 +3804,6 @@ public final class L10nTranslations {
                 "Los perfiles, las fotos y las publicaciones no se abrir\u00e1n");
         table.put("Purple",
                 "Morado");
-        table.put("Puts Download to phone and Save photo at the top of a post's three-dot menu instead of the bottom. A post with nothing to save gets neither.",
-                "Pone Descargar en el tel\u00e9fono y Guardar foto al principio del men\u00fa de tres puntos de una publicaci\u00f3n en lugar de al final. Una publicaci\u00f3n sin nada que guardar no recibe ninguno.");
         table.put("Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings from the Hushfacebook settings row in Settings and privacy or with a long press on the Facebook logo.",
                 "Pone la configuraci\u00f3n de Hushfacebook en el men\u00fa que aparece al mantener pulsado el icono de Facebook. Si lo desactivas, sale de ese men\u00fa y puedes seguir abriendo esta configuraci\u00f3n desde la fila Configuraci\u00f3n de Hushfacebook en Configuraci\u00f3n y privacidad o manteniendo pulsado el logotipo de Facebook.");
         table.put("Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings with a long press on the Facebook logo.",
@@ -5835,17 +5835,19 @@ public final class L10nTranslations {
                 "Pengaturan lainnya");
         table.put("Most relevant",
                 "Paling relevan");
+        table.put("Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them (on photo posts the list is the More options page). A post with nothing to save gets neither.",
+                "Memindahkan Unduh ke ponsel dan Simpan foto dari bagian bawah menu tiga titik sebuah kiriman ke awal daftar opsinya. Baris teratas milik Facebook tetap di atasnya (pada kiriman foto, daftarnya adalah halaman Opsi lainnya). Kiriman tanpa sesuatu untuk disimpan tidak mendapat keduanya.");
         table.put("Moves Facebook's tab bar to the bottom, within thumb reach, on accounts that show it at the top. Restart Facebook to see the change.",
                 "Memindahkan bilah tab Facebook ke bawah, dekat jempol, pada akun yang menampilkannya di atas. Mulai ulang Facebook untuk melihat perubahannya.");
         table.put("Moves Facebook's tab bar to the top, under the search row, as older Facebook had it. Restart Facebook to see the change.",
                 "Memindahkan bilah tab Facebook ke atas, di bawah baris pencarian, seperti Facebook versi lama. Mulai ulang Facebook untuk melihat perubahannya.");
         table.put("Movies and Pictures",
                 "Movies dan Pictures");
-        table.put("New",
-                "Baru");
     }
 
     private static void fillIn10(Map<String, String> table) {
+        table.put("New",
+                "Baru");
         table.put("Newest",
                 "Terbaru");
         table.put("News feed",
@@ -5964,11 +5966,11 @@ public final class L10nTranslations {
                 "Buka semua utas balasan");
         table.put("Open in another app",
                 "Buka di aplikasi lain");
-        table.put("Open links in your browser",
-                "Buka tautan di browser Anda");
     }
 
     private static void fillIn11(Map<String, String> table) {
+        table.put("Open links in your browser",
+                "Buka tautan di browser Anda");
         table.put("Open on a chosen tab",
                 "Buka di tab pilihan");
         table.put("Open the Messenger app",
@@ -6075,8 +6077,6 @@ public final class L10nTranslations {
                 "Profil, foto, dan postingan tidak akan terbuka");
         table.put("Purple",
                 "Ungu");
-        table.put("Puts Download to phone and Save photo at the top of a post's three-dot menu instead of the bottom. A post with nothing to save gets neither.",
-                "Menaruh Unduh ke ponsel dan Simpan foto di bagian atas menu tiga titik sebuah kiriman, bukan di bawah. Kiriman tanpa sesuatu untuk disimpan tidak mendapat keduanya.");
         table.put("Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings from the Hushfacebook settings row in Settings and privacy or with a long press on the Facebook logo.",
                 "Menaruh Pengaturan Hushfacebook di menu yang muncul saat ikon Facebook ditekan lama. Jika dimatikan, pintasan itu hilang dari menu tersebut, dan kamu tetap bisa membuka pengaturan ini dari baris Pengaturan Hushfacebook di Pengaturan dan privasi atau dengan menekan lama logo Facebook.");
         table.put("Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings with a long press on the Facebook logo.",
@@ -8108,17 +8108,19 @@ public final class L10nTranslations {
                 "Mais configura\u00e7\u00f5es");
         table.put("Most relevant",
                 "Mais relevantes");
+        table.put("Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them (on photo posts the list is the More options page). A post with nothing to save gets neither.",
+                "Move Baixar no celular e Salvar foto do final do menu de tr\u00eas pontos de uma publica\u00e7\u00e3o para o in\u00edcio da lista de op\u00e7\u00f5es. As linhas do topo do Facebook continuam acima delas (em publica\u00e7\u00f5es com fotos, a lista \u00e9 a p\u00e1gina Mais op\u00e7\u00f5es). Uma publica\u00e7\u00e3o sem nada para salvar n\u00e3o recebe nenhum dos dois.");
         table.put("Moves Facebook's tab bar to the bottom, within thumb reach, on accounts that show it at the top. Restart Facebook to see the change.",
                 "Move a barra de abas do Facebook para baixo, ao alcance do polegar, nas contas que a mostram no alto. Reinicie o Facebook para ver a mudan\u00e7a.");
         table.put("Moves Facebook's tab bar to the top, under the search row, as older Facebook had it. Restart Facebook to see the change.",
                 "Move a barra de abas do Facebook para o alto, abaixo da linha de busca, como no Facebook antigo. Reinicie o Facebook para ver a mudan\u00e7a.");
         table.put("Movies and Pictures",
                 "Movies e Pictures");
-        table.put("New",
-                "Novo");
     }
 
     private static void fillPt_rBR10(Map<String, String> table) {
+        table.put("New",
+                "Novo");
         table.put("Newest",
                 "Mais recentes");
         table.put("News feed",
@@ -8237,11 +8239,11 @@ public final class L10nTranslations {
                 "Abrir todas as respostas");
         table.put("Open in another app",
                 "Abrir em outro app");
-        table.put("Open links in your browser",
-                "Abrir links no seu navegador");
     }
 
     private static void fillPt_rBR11(Map<String, String> table) {
+        table.put("Open links in your browser",
+                "Abrir links no seu navegador");
         table.put("Open on a chosen tab",
                 "Abrir em uma aba escolhida");
         table.put("Open the Messenger app",
@@ -8348,8 +8350,6 @@ public final class L10nTranslations {
                 "Perfis, fotos e publica\u00e7\u00f5es n\u00e3o v\u00e3o abrir");
         table.put("Purple",
                 "Roxo");
-        table.put("Puts Download to phone and Save photo at the top of a post's three-dot menu instead of the bottom. A post with nothing to save gets neither.",
-                "Coloca Baixar no celular e Salvar foto no topo do menu de tr\u00eas pontos de uma publica\u00e7\u00e3o, em vez de no final. Uma publica\u00e7\u00e3o sem nada para salvar n\u00e3o recebe nenhum dos dois.");
         table.put("Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings from the Hushfacebook settings row in Settings and privacy or with a long press on the Facebook logo.",
                 "Coloca as Configura\u00e7\u00f5es do Hushfacebook no menu que aparece ao segurar o \u00edcone do Facebook. Desligado, o atalho sai desse menu, e voc\u00ea ainda pode abrir estas configura\u00e7\u00f5es pela linha Configura\u00e7\u00f5es do Hushfacebook em Configura\u00e7\u00f5es e privacidade ou tocando e segurando o logotipo do Facebook.");
         table.put("Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings with a long press on the Facebook logo.",
@@ -10381,17 +10381,19 @@ public final class L10nTranslations {
                 "Di\u011fer ayarlar");
         table.put("Most relevant",
                 "En alakal\u0131");
+        table.put("Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them (on photo posts the list is the More options page). A post with nothing to save gets neither.",
+                "Telefona indir ve Foto\u011fraf\u0131 kaydet sat\u0131rlar\u0131n\u0131 bir g\u00f6nderinin \u00fc\u00e7 nokta men\u00fcs\u00fcn\u00fcn sonundan se\u00e7enekler listesinin ba\u015f\u0131na ta\u015f\u0131r. Facebook'un kendi \u00fcst sat\u0131rlar\u0131 bunlar\u0131n \u00fcst\u00fcnde kal\u0131r (foto\u011fraf g\u00f6nderilerinde liste Di\u011fer se\u00e7enekler sayfas\u0131d\u0131r). Kaydedilecek bir \u015fey olmayan g\u00f6nderide ikisi de g\u00f6r\u00fcnmez.");
         table.put("Moves Facebook's tab bar to the bottom, within thumb reach, on accounts that show it at the top. Restart Facebook to see the change.",
                 "Sekme \u00e7ubu\u011funu \u00fcstte g\u00f6steren hesaplarda Facebook'un sekme \u00e7ubu\u011funu ba\u015fparma\u011f\u0131n\u0131z\u0131n eri\u015fece\u011fi alt k\u0131sma ta\u015f\u0131r. De\u011fi\u015fikli\u011fi g\u00f6rmek i\u00e7in Facebook'u yeniden ba\u015flat\u0131n.");
         table.put("Moves Facebook's tab bar to the top, under the search row, as older Facebook had it. Restart Facebook to see the change.",
                 "Facebook'un sekme \u00e7ubu\u011funu, eski Facebook'taki gibi arama sat\u0131r\u0131n\u0131n alt\u0131na, \u00fcste ta\u015f\u0131r. De\u011fi\u015fikli\u011fi g\u00f6rmek i\u00e7in Facebook'u yeniden ba\u015flat\u0131n.");
         table.put("Movies and Pictures",
                 "Movies ve Pictures");
-        table.put("New",
-                "Yeni");
     }
 
     private static void fillTr10(Map<String, String> table) {
+        table.put("New",
+                "Yeni");
         table.put("Newest",
                 "En yeni");
         table.put("News feed",
@@ -10510,11 +10512,11 @@ public final class L10nTranslations {
                 "T\u00fcm yan\u0131t dizilerini a\u00e7");
         table.put("Open in another app",
                 "Ba\u015fka uygulamada a\u00e7");
-        table.put("Open links in your browser",
-                "Ba\u011flant\u0131lar\u0131 taray\u0131c\u0131nda a\u00e7");
     }
 
     private static void fillTr11(Map<String, String> table) {
+        table.put("Open links in your browser",
+                "Ba\u011flant\u0131lar\u0131 taray\u0131c\u0131nda a\u00e7");
         table.put("Open on a chosen tab",
                 "Se\u00e7ilen sekmede a\u00e7");
         table.put("Open the Messenger app",
@@ -10621,8 +10623,6 @@ public final class L10nTranslations {
                 "Profiller, foto\u011fraflar ve g\u00f6nderiler a\u00e7\u0131lmayacak");
         table.put("Purple",
                 "Mor");
-        table.put("Puts Download to phone and Save photo at the top of a post's three-dot menu instead of the bottom. A post with nothing to save gets neither.",
-                "Telefona indir ve Foto\u011fraf\u0131 kaydet sat\u0131rlar\u0131n\u0131 bir g\u00f6nderinin \u00fc\u00e7 nokta men\u00fcs\u00fcn\u00fcn alt\u0131 yerine en \u00fcst\u00fcne koyar. Kaydedilecek bir \u015fey olmayan g\u00f6nderide ikisi de g\u00f6r\u00fcnmez.");
         table.put("Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings from the Hushfacebook settings row in Settings and privacy or with a long press on the Facebook logo.",
                 "Facebook simgesine bas\u0131l\u0131 tutunca a\u00e7\u0131lan men\u00fcye Hushfacebook ayarlar\u0131n\u0131 koyar. Kapal\u0131yken bu men\u00fcden \u00e7\u0131kar. Bu ayarlar\u0131 yine Ayarlar ve gizlilik i\u00e7indeki Hushfacebook ayarlar\u0131 sat\u0131r\u0131ndan ya da Facebook logosuna bas\u0131l\u0131 tutarak a\u00e7abilirsin.");
         table.put("Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings with a long press on the Facebook logo.",
@@ -12654,17 +12654,19 @@ public final class L10nTranslations {
                 "C\u00e0i \u0111\u1eb7t kh\u00e1c");
         table.put("Most relevant",
                 "Ph\u00f9 h\u1ee3p nh\u1ea5t");
+        table.put("Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them (on photo posts the list is the More options page). A post with nothing to save gets neither.",
+                "Chuy\u1ec3n T\u1ea3i v\u1ec1 \u0111i\u1ec7n tho\u1ea1i v\u00e0 L\u01b0u \u1ea3nh t\u1eeb cu\u1ed1i menu ba ch\u1ea5m c\u1ee7a b\u00e0i vi\u1ebft l\u00ean \u0111\u1ea7u danh s\u00e1ch t\u00f9y ch\u1ecdn. C\u00e1c h\u00e0ng tr\u00ean c\u00f9ng c\u1ee7a Facebook v\u1eabn \u1edf tr\u00ean ch\u00fang (v\u1edbi b\u00e0i vi\u1ebft c\u00f3 \u1ea3nh, danh s\u00e1ch l\u00e0 trang T\u00f9y ch\u1ecdn kh\u00e1c). B\u00e0i vi\u1ebft kh\u00f4ng c\u00f3 g\u00ec \u0111\u1ec3 l\u01b0u s\u1ebd kh\u00f4ng c\u00f3 m\u1ee5c n\u00e0o.");
         table.put("Moves Facebook's tab bar to the bottom, within thumb reach, on accounts that show it at the top. Restart Facebook to see the change.",
                 "Chuy\u1ec3n thanh tab c\u1ee7a Facebook xu\u1ed1ng d\u01b0\u1edbi c\u00f9ng, trong t\u1ea7m ng\u00f3n c\u00e1i, v\u1edbi t\u00e0i kho\u1ea3n hi\u1ec7n thanh n\u00e0y \u1edf tr\u00ean c\u00f9ng. Kh\u1edfi \u0111\u1ed9ng l\u1ea1i Facebook \u0111\u1ec3 th\u1ea5y thay \u0111\u1ed5i.");
         table.put("Moves Facebook's tab bar to the top, under the search row, as older Facebook had it. Restart Facebook to see the change.",
                 "Chuy\u1ec3n thanh tab c\u1ee7a Facebook l\u00ean tr\u00ean c\u00f9ng, ngay d\u01b0\u1edbi h\u00e0ng t\u00ecm ki\u1ebfm, nh\u01b0 Facebook b\u1ea3n c\u0169. Kh\u1edfi \u0111\u1ed9ng l\u1ea1i Facebook \u0111\u1ec3 th\u1ea5y thay \u0111\u1ed5i.");
         table.put("Movies and Pictures",
                 "Movies v\u00e0 Pictures");
-        table.put("New",
-                "M\u1edbi");
     }
 
     private static void fillVi10(Map<String, String> table) {
+        table.put("New",
+                "M\u1edbi");
         table.put("Newest",
                 "M\u1edbi nh\u1ea5t");
         table.put("News feed",
@@ -12783,11 +12785,11 @@ public final class L10nTranslations {
                 "M\u1edf m\u1ecdi chu\u1ed7i ph\u1ea3n h\u1ed3i");
         table.put("Open in another app",
                 "M\u1edf trong \u1ee9ng d\u1ee5ng kh\u00e1c");
-        table.put("Open links in your browser",
-                "M\u1edf li\u00ean k\u1ebft trong tr\u00ecnh duy\u1ec7t");
     }
 
     private static void fillVi11(Map<String, String> table) {
+        table.put("Open links in your browser",
+                "M\u1edf li\u00ean k\u1ebft trong tr\u00ecnh duy\u1ec7t");
         table.put("Open on a chosen tab",
                 "M\u1edf \u1edf tab \u0111\u00e3 ch\u1ecdn");
         table.put("Open the Messenger app",
@@ -12894,8 +12896,6 @@ public final class L10nTranslations {
                 "Trang c\u00e1 nh\u00e2n, \u1ea3nh v\u00e0 b\u00e0i vi\u1ebft kh\u00f4ng m\u1edf \u0111\u01b0\u1ee3c");
         table.put("Purple",
                 "T\u00edm");
-        table.put("Puts Download to phone and Save photo at the top of a post's three-dot menu instead of the bottom. A post with nothing to save gets neither.",
-                "\u0110\u1eb7t T\u1ea3i v\u1ec1 \u0111i\u1ec7n tho\u1ea1i v\u00e0 L\u01b0u \u1ea3nh \u1edf \u0111\u1ea7u menu ba ch\u1ea5m c\u1ee7a b\u00e0i vi\u1ebft thay v\u00ec \u1edf cu\u1ed1i. B\u00e0i vi\u1ebft kh\u00f4ng c\u00f3 g\u00ec \u0111\u1ec3 l\u01b0u s\u1ebd kh\u00f4ng c\u00f3 m\u1ee5c n\u00e0o.");
         table.put("Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings from the Hushfacebook settings row in Settings and privacy or with a long press on the Facebook logo.",
                 "Th\u00eam c\u00e0i \u0111\u1eb7t Hushfacebook v\u00e0o menu hi\u1ec7n ra khi nh\u1ea5n gi\u1eef bi\u1ec3u t\u01b0\u1ee3ng Facebook. Khi t\u1eaft, l\u1ed1i t\u1eaft r\u1eddi kh\u1ecfi menu \u0111\u00f3, v\u00e0 b\u1ea1n v\u1eabn m\u1edf \u0111\u01b0\u1ee3c c\u00e1c c\u00e0i \u0111\u1eb7t n\u00e0y t\u1eeb d\u00f2ng C\u00e0i \u0111\u1eb7t Hushfacebook trong C\u00e0i \u0111\u1eb7t & quy\u1ec1n ri\u00eang t\u01b0 ho\u1eb7c b\u1eb1ng c\u00e1ch nh\u1ea5n gi\u1eef logo Facebook.");
         table.put("Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings with a long press on the Facebook logo.",

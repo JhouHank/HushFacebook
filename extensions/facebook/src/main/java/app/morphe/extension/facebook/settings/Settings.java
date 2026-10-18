@@ -1255,9 +1255,10 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_post_menu_photo_save", FALSE);
 
     /**
-     * Puts Download to phone and Save photo at the top of a post's three-dot menu instead of the
-     * bottom (issue #151). The row under a post has no room for a button, so the menu is where a
-     * post's download lives. Off until you turn it on.
+     * Moves Download to phone and Save photo from the end of a post's three-dot menu to the start of
+     * its options list (issue #151). Facebook's sheet keeps the rows it tags itself above them, and
+     * on photo posts that list is the More options page. The row under a post has no room for a
+     * button, so the menu is where a post's download lives. Off until you turn it on.
      */
     public static final BooleanSetting POST_MENU_DOWNLOAD_FIRST =
             new BooleanSetting("hushfacebook_post_menu_download_first", FALSE);

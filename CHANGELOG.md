@@ -13,7 +13,7 @@ Changes in each Hushfacebook version, newest first.
 
 * **Facebook:** **Menu tiles to hide**, a new list under Menu, takes the tiles you tick out of the Menu's shortcut grid, Marketplace and Gaming for example. Tiles are matched by where they open, not by their name, so it works in any language. The next tile moves up, and See more and the sections above the grid stay. Pull to refresh the Menu after you change it (issue #153).
 
-* **Facebook:** **Download first in post menus**, a new switch under Downloads, moves Download to phone and Save photo to the top of a post's three-dot menu instead of the bottom. The row under a post only has room for icons and counts, so the menu is where a post's download lives. A post with nothing to save gets no row, and it starts off (issue #151).
+* **Facebook:** **Download first in post menus**, a new switch under Downloads, moves Download to phone and Save photo from the end of a post's three-dot menu to the start of its options list. Facebook's own top rows stay above them, and on photo posts that list is the More options page. The row under a post only has room for icons and counts, so the menu is where a post's download lives. A post with nothing to save gets no row, and it starts off (issue #151).
 
 * **Facebook:** New patch, `Open comments with a gesture`. Two switches under Reels and Watch let a double tap or a press and hold on a reel open its comments instead of liking it or holding it. The sheet is the one the Comment button opens. A double tap that opens comments doesn't send a like, and `Turn off double tap to like` and `Hold a reel for 2x` keep working as they did when this is off. Both start off. It covers reels, not feed posts (issue #179).
 
