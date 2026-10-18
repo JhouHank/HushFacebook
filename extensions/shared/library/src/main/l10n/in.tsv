@@ -1581,7 +1581,7 @@ Takes the row of profile pictures off the share sheet, the people Facebook sugge
 Hide who is typing in comments	Sembunyikan siapa yang sedang mengetik di komentar
 Takes away the line that says someone is typing a comment. Your own typing is a separate switch under Privacy.	Menghapus baris yang menunjukkan seseorang sedang mengetik komentar. Saat Anda sendiri mengetik punya sakelar terpisah di Privasi.
 Hide the search pill on reels	Sembunyikan saran pencarian di reel
-Hides the search suggestion under a reel's caption, the magnifier with a question to look up. Off by default, since it hasn't been tried on a real account yet.	Menyembunyikan saran pencarian di bawah keterangan reel, ikon kaca pembesar dengan pertanyaan untuk dicari. Nonaktif secara default, karena belum dicoba pada akun sungguhan.
+Hides the search suggestion under a reel's caption, the magnifier with a question to look up.	Menyembunyikan saran pencarian di bawah keterangan reel, ikon kaca pembesar dengan pertanyaan untuk dicari.
 # context: switch title under Appearance; the button is Facebook's Messenger icon in the top bar of Home
 Hide the Messenger button	Sembunyikan tombol Messenger
 # context: summary of that switch; the other top bar buttons move over to fill the space; Hushfacebook is the app's name
