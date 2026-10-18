@@ -6,6 +6,8 @@ Changes in each Hushfacebook version, newest first.
 
 ### Added
 
+* **Facebook:** The settings now come in Simplified Chinese when Facebook runs in it. Every row, switch name and description is translated, and Facebook's own feature names follow the words its Simplified Chinese app uses. Traditional Chinese still gets English for now. If a line reads oddly, a better wording is welcome on the issue tracker.
+
 * **Facebook:** Settings added since you last looked now carry a small dot, on the switch and on its section's row on the home page. A switch's dot goes once you've left its page, and a section's dot once you've opened that section. Nothing shows on a fresh install or in search results.
 * **Facebook:** **Remember what you watch**, a new switch under Playback, keeps a list on your phone of the reels, videos and stories you watch, so one that vanished when the feed refreshed is easy to find again. **Recently watched**, the row right under it, shows them newest first with a chip for each kind, and a tap opens one in Facebook. Clear empties the list. A reel or video counts once it's played for about three seconds, and the list keeps the last 500. Stories are listed when the `View stories anonymously` patch is in your build, with its switch on or off. Nothing on the list leaves your phone, and it starts off. Part of `Resume long videos` (issue #183).
 
