@@ -238,7 +238,17 @@ adb shell touch /sdcard/Android/data/com.facebook.katana/files/hushfacebook-safe
 adb shell am force-stop com.facebook.katana
 ```
 
-Open Facebook and the settings say Hushfacebook is paused. `Resume` deletes the file. Android 11 answers that adb line with "Permission denied", so the file can't be made there.
+Open Facebook and the settings say Hushfacebook is paused. `Resume` deletes the file.
+
+Android 11 answers that adb line with "Permission denied". The same file in `Android/media/com.facebook.katana` works too, and adb can usually write there when it can't write in `Android/data`:
+
+```
+adb shell mkdir -p /sdcard/Android/media/com.facebook.katana
+adb shell touch /sdcard/Android/media/com.facebook.katana/hushfacebook-safe-mode
+adb shell am force-stop com.facebook.katana
+```
+
+That one has been seen working on Android 16. It hasn't been tried on Android 11 yet.
 
 A pause only changes what the switches answer and every patch's code stays in place. So if Facebook keeps closing, or the file can't be made, patch again without the patch you suspect, signed with the same key, and install it over your copy. Your sign-in and settings stay. The next diagnostic report you export shows the error that closed Facebook.
 

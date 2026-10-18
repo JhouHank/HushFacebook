@@ -679,8 +679,7 @@ final class SettingsNavigation extends BaseAdapter {
     }
 
     private boolean markerLeft() {
-        java.io.File marker = HushfacebookPause.markerFile(screen.getContext());
-        return marker != null && marker.exists();
+        return HushfacebookPause.presentMarker(screen.getContext()) != null;
     }
 
     private int dp(int value) { return Math.round(value * screen.getContext().getResources().getDisplayMetrics().density); }
