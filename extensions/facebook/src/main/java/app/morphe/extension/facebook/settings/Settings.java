@@ -979,17 +979,20 @@ public class Settings extends BaseSettings {
 
     /**
      * The Upgrades section of Facebook's Menu, the group Facebook types UPSELL, with its offers.
-     * Only that group goes: Settings, Help and support and the rest of the Menu stay.
+     * Only that group goes: Settings, Help and support and the rest of the Menu stay. A Menu built
+     * before the switch changed keeps the group on screen even though its sections ask again (#184),
+     * so the change waits for a restart.
      */
     public static final BooleanSetting HIDE_MENU_UPGRADES =
-            new BooleanSetting("hushfacebook_hide_menu_upgrades", TRUE);
+            new BooleanSetting("hushfacebook_hide_menu_upgrades", TRUE, true);
 
     /**
      * The Also from Meta section of Facebook's Menu, the group Facebook types
      * PRODUCTS_FROM_FACEBOOK: its links to Meta's other apps and its cards for Meta's devices.
+     * Like Upgrades, it waits for a restart.
      */
     public static final BooleanSetting HIDE_MENU_ALSO_FROM_META =
-            new BooleanSetting("hushfacebook_hide_menu_also_from_meta", TRUE);
+            new BooleanSetting("hushfacebook_hide_menu_also_from_meta", TRUE, true);
 
     /**
      * The Muse card in Facebook's Menu, Meta's ad for its AI agent app, which reads as dismissed
