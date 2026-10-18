@@ -128,6 +128,10 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.HIDE_REEL_SEARCH_PILL,
                     L10n.t("Hides the search suggestion under a reel's caption, the magnifier with a question to look up. "
                             + "Off by default, since it hasn't been tried on a real account yet.")));
+            // The sidebar buttons are built as each reel is, so a change shows from the next reel.
+            reels.addPreference(toggle(context, Settings.HIDE_REEL_COUNTS,
+                    L10n.t("Takes the numbers away from under a reel's Like, Comment and Share icons. "
+                            + "The icons stay where they are. A change shows from the next reel.")));
         }
         if (build.contains(PatchFamily.REEL_WATCH_HISTORY)) {
             reels.addPreference(toggle(context, Settings.DONT_SEND_REEL_WATCH_HISTORY,

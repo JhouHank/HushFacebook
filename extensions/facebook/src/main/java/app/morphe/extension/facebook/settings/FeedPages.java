@@ -189,6 +189,9 @@ final class FeedPages {
                 feed.addPreference(toggle(context, Settings.HIDE_POST_FOLLOW_LINK,
                         L10n.t("Hides the \"Follow\" link next to the name on posts from Pages and people you don't follow. "
                                 + "Tapping the name still opens the profile. A change shows on the posts drawn after it.")));
+                feed.addPreference(toggle(context, Settings.HIDE_POST_COUNTS,
+                        L10n.t("Takes the numbers off the Like, Comment and Share buttons under posts, so each shows "
+                                + "just its word. The buttons stay where they are. A change shows on the posts drawn after it.")));
             }
             if (build.contains(PatchFamily.SEEN_POSTS)) {
                 seenPosts(feed, context);

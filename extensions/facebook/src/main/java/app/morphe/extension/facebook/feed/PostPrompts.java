@@ -21,6 +21,11 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * yes. {@link #showFollowLink} answers that check no, so the header is drawn as for a post that has
  * no such text.
  *
+ * <p>A third switch, also off by default, takes the numbers off a post's Like, Comment and Share
+ * buttons. Each button's text comes from one builder that answers an empty text for a post nobody
+ * has reacted to, commented on or shared, and the button then shows just its word. {@link
+ * #hidePostCounts} tells that builder to answer the same way for every post (#180).
+ *
  * <p>Off, paused, before the settings are ready, or when anything here fails, the answer is
  * Facebook's own.
  */
@@ -36,6 +41,11 @@ public final class PostPrompts {
     private static volatile boolean logged;
 
     private static volatile boolean followLogged;
+
+    /** Counted under the patch's name each time a button's count is answered away. */
+    static final String COUNTS_HIDDEN = "Post count kept out";
+
+    private static volatile boolean countsLogged;
 
     private PostPrompts() {
     }
@@ -98,6 +108,30 @@ public final class PostPrompts {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "follow link", failure);
             return shown;
+        }
+    }
+
+    /**
+     * The hook, at the start of the builder that turns a post's reaction, comment or share count
+     * into the text on its button. True makes the builder answer the empty text it gives a count of
+     * zero, so the button shows its word and keeps its place. False, which is the answer while the
+     * switch is off, paused, before the settings are ready or when anything here fails, lets the
+     * builder write the number as Facebook does.
+     */
+    public static boolean hidePostCounts() {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (!Utils.settingsReady() || !Settings.HIDE_POST_COUNTS.get()) return false;
+            HookStatus.bound(FAMILY, "count text");
+            HookStatus.counted(FAMILY, COUNTS_HIDDEN);
+            if (!countsLogged) {
+                countsLogged = true;
+                Logger.printDebug(() -> "Post prompts: a post button's count was kept out");
+            }
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "count text", failure);
+            return false;
         }
     }
 }

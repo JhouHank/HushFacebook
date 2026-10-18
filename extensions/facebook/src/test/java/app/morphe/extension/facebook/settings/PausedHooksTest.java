@@ -402,10 +402,12 @@ public class PausedHooksTest {
                 () -> FeedGuardForTests.hidesPopularPost(Category.ORGANIC),
                 () -> FeedGuardForTests.hidesRepost(Category.ORGANIC)));
         // A story with a bumper is answered as one without, so no strip is drawn and no room kept, and a
-        // header whose title plugin would add "Follow" is told it has nothing to add.
+        // header whose title plugin would add "Follow" is told it has nothing to add. A button's count
+        // builder is told to give its zero answer, so the button shows its word.
         probes.put(PatchFamily.POST_PROMPTS, Arrays.asList(
                 () -> !PostPrompts.keep(true),
-                () -> !PostPrompts.showFollowLink(true)));
+                () -> !PostPrompts.showFollowLink(true),
+                PostPrompts::hidePostCounts));
         // A post the store remembers is dropped by the feed guard while the switch is on.
         probes.put(PatchFamily.SEEN_POSTS, Collections.singletonList(SeenPostsForTests::hidesARememberedPost));
         // The pill socket's yes for Meta AI's questions is answered as a no, so it draws no row for
@@ -494,7 +496,9 @@ public class PausedHooksTest {
                 // A video whose audio Facebook would pick in Spanish is asked for no language.
                 () -> !"es".equals(OriginalAudio.language("es")),
                 // The search pill is answered as empty only while the patch runs.
-                ReelDeclutter::hideSearchPill));
+                ReelDeclutter::hideSearchPill,
+                // A sidebar button's count loses its number only while the patch runs.
+                () -> !"12".equals(ReelDeclutter.countText("12"))));
         // A reel that would get the interest prompt is answered as one that doesn't.
         probes.put(PatchFamily.REEL_PROMPTS, Collections.singletonList(() -> !ReelPrompts.keep(true)));
         // The Reels batcher's send of the reels you watched never reaches its executor.

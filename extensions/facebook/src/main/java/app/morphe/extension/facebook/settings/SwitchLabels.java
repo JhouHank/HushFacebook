@@ -38,6 +38,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_FEED_REELS) return L10n.t("Hide Reels in the feed");
         if (setting == Settings.HIDE_POST_PROMPTS) return L10n.t("Hide post prompts");
         if (setting == Settings.HIDE_POST_FOLLOW_LINK) return L10n.t("Hide the Follow link on posts");
+        if (setting == Settings.HIDE_POST_COUNTS) return L10n.t("Hide counts on posts");
         if (setting == Settings.HIDE_SEEN_POSTS) return L10n.t("Hide posts you've already seen");
         if (setting == Settings.HIDE_META_AI_QUESTIONS) return L10n.t("Hide Meta AI questions under posts");
         if (setting == Settings.KEEP_POST_DATES) return L10n.t("Keep post dates");
@@ -113,6 +114,7 @@ final class SwitchLabels {
         if (setting == Settings.PLAY_REELS_ONCE) return L10n.t("Play reels once");
         if (setting == Settings.ORIGINAL_AUDIO) return L10n.t("Keep the original audio");
         if (setting == Settings.HIDE_REEL_SEARCH_PILL) return L10n.t("Hide the search pill on reels");
+        if (setting == Settings.HIDE_REEL_COUNTS) return L10n.t("Hide counts on reels");
         if (setting == Settings.DONT_SEND_REEL_WATCH_HISTORY) return L10n.t("Don't send reel watch history");
         if (setting == Settings.HOLD_ANALYTICS_UPLOADS) return L10n.t("Hold back analytics uploads");
         if (setting == Settings.HOLD_CAMERA_ROLL_PROCESSING) return L10n.t("Hold back camera roll processing");

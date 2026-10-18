@@ -451,6 +451,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_reel_search_pill", FALSE);
 
     /**
+     * The numbers under a reel's Like, Comment and Share icons go, and the icons stay where they are
+     * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#countText}, #180). Off by default.
+     * A change shows on the buttons drawn after it.
+     */
+    public static final BooleanSetting HIDE_REEL_COUNTS =
+            new BooleanSetting("hushfacebook_hide_reel_counts", FALSE);
+
+    /**
      * The batches of watched reels the Reels viewer sends as FbShortsSeenStateMutation: only their
      * ids, the record Facebook ranks the Reels feed with, which nobody else sees. Held back, reels
      * already watched may come back in the feed.
@@ -1449,6 +1457,14 @@ public class Settings extends BaseSettings {
      */
     public static final BooleanSetting HIDE_POST_FOLLOW_LINK =
             new BooleanSetting("hushfacebook_hide_post_follow_link", FALSE);
+
+    /**
+     * The numbers on a post's Like, Comment and Share buttons go and each button shows its word, as
+     * on a post nobody has reacted to yet ({@link app.morphe.extension.facebook.feed.PostPrompts#hidePostCounts},
+     * #180). The buttons stay where they are. Off by default. A change shows on the posts drawn after it.
+     */
+    public static final BooleanSetting HIDE_POST_COUNTS =
+            new BooleanSetting("hushfacebook_hide_post_counts", FALSE);
 
     /**
      * Posts you've already scrolled past stay out of the feed on later loads

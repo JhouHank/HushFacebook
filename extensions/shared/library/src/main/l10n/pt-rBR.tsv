@@ -1482,3 +1482,11 @@ Keeps the Messenger button but drops the unread count on it.	Mantém o botão do
 Hide the Facebook logo	Ocultar o logotipo do Facebook
 # context: summary of that switch; Hushfacebook is the app's name and stays as it is; press and hold is a long press
 Hides the Facebook logo in the top bar. The empty spot is the same size and still opens Hushfacebook settings when you press and hold it. Restart Facebook to see the change.	Oculta o logotipo do Facebook na barra superior. O espaço vazio tem o mesmo tamanho e, ao ser mantido pressionado, ainda abre as configurações do Hushfacebook. Reinicie o Facebook para ver a mudança.
+# context: switch title under News feed; the counts are the numbers on the Like, Comment and Share buttons under a post
+Hide counts on posts	Ocultar os números nas publicações
+# context: summary of that switch; Like, Comment and Share are Facebook's own button labels, so use Facebook's wording in your language
+Takes the numbers off the Like, Comment and Share buttons under posts, so each shows just its word. The buttons stay where they are. A change shows on the posts drawn after it.	Tira os números dos botões Curtir, Comentar e Compartilhar abaixo das publicações, para que cada um mostre só a palavra. Os botões continuam no mesmo lugar. A mudança aparece nas publicações carregadas depois dela.
+# context: switch title under Reels and Watch; the counts are the numbers under the Like, Comment and Share icons down a reel's right side
+Hide counts on reels	Ocultar os números nos reels
+# context: summary of that switch; Like, Comment and Share are Facebook's own button labels, so use Facebook's wording in your language
+Takes the numbers away from under a reel's Like, Comment and Share icons. The icons stay where they are. A change shows from the next reel.	Tira os números de baixo dos ícones Curtir, Comentar e Compartilhar de um reel. Os ícones continuam no mesmo lugar. A mudança aparece a partir do próximo reel.

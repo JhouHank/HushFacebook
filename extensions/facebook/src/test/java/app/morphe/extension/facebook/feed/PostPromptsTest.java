@@ -43,6 +43,7 @@ public class PostPromptsTest {
         PauseForTests.resume();
         Settings.HIDE_POST_PROMPTS.resetToDefault();
         Settings.HIDE_POST_FOLLOW_LINK.resetToDefault();
+        Settings.HIDE_POST_COUNTS.resetToDefault();
         HookStatus.clear();
     }
 
@@ -125,6 +126,50 @@ public class PostPromptsTest {
         Settings.HIDE_POST_FOLLOW_LINK.save(false);
         assertTrue(PostPrompts.showFollowLink(1));
         assertFalse(PostPrompts.showFollowLink(0));
+    }
+
+    /**
+     * The counts (#180): the switch starts off, so the count builder writes Facebook's number. On,
+     * the builder is told to give its zero answer, the empty text that leaves the word on the
+     * button, and the status line counts it. Off again, the number is back.
+     */
+    @Test
+    public void theCountsStayUntilTheirSwitchIsOn() {
+        assertFalse("the switch doesn't start on", Settings.HIDE_POST_COUNTS.get());
+        assertFalse("a count went with the switch off", PostPrompts.hidePostCounts());
+
+        Settings.HIDE_POST_COUNTS.save(true);
+        assertTrue("a count stayed with the switch on", PostPrompts.hidePostCounts());
+        assertTrue("the status line doesn't count the hidden count",
+                statusLine().contains(PostPrompts.COUNTS_HIDDEN + " 1"));
+
+        Settings.HIDE_POST_COUNTS.save(false);
+        assertFalse("turning the switch off didn't bring the count back", PostPrompts.hidePostCounts());
+    }
+
+    @Test
+    public void pausedTheCountsStay() {
+        Settings.HIDE_POST_COUNTS.save(true);
+        for (HushfacebookPause.Reason reason : new HushfacebookPause.Reason[] {
+                HushfacebookPause.Reason.SWITCH, HushfacebookPause.Reason.CRASH_LOOP}) {
+            PauseForTests.pause(reason);
+            assertFalse("a Hushfacebook paused by " + reason + " hid a count", PostPrompts.hidePostCounts());
+            PauseForTests.resume();
+        }
+        assertTrue("resumed, the count didn't go again", PostPrompts.hidePostCounts());
+    }
+
+    /** The counts switch answers for nothing else, and the other two don't answer for it. */
+    @Test
+    public void theCountsSwitchSharesNoAnswer() {
+        Settings.HIDE_POST_COUNTS.save(true);
+        Settings.HIDE_POST_PROMPTS.save(false);
+        assertTrue("the counts switch hid a bumper", PostPrompts.keep(true));
+        assertTrue("the counts switch hid a Follow link", PostPrompts.showFollowLink(true));
+        Settings.HIDE_POST_COUNTS.save(false);
+        Settings.HIDE_POST_PROMPTS.save(true);
+        Settings.HIDE_POST_FOLLOW_LINK.save(true);
+        assertFalse("the other switches hid a count", PostPrompts.hidePostCounts());
     }
 
     /** The patch hands Facebook's answer over as an int, since a boolean method may return one. */
