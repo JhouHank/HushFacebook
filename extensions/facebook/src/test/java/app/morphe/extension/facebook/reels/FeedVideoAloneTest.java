@@ -33,7 +33,8 @@ import app.morphe.extension.shared.settings.PauseForTests;
 
 /**
  * Open feed videos on their own (#161): the first new reels feed to ask for more soon after a feed
- * video tap, or from the full-screen player, is that video's player and gets no, every time; so is a
+ * video tap or the reels viewer opening from a feed surface, or from the full-screen player, is that
+ * video's player and gets no, every time; so is a
  * feed or data source first asking while a Warion viewer is open, until that viewer closes; a feed
  * that asked before, one asking long after the tap, or one asking from the main screen keeps
  * Facebook's answer; off or paused, nothing is held back.
@@ -228,6 +229,61 @@ public class FeedVideoAloneTest {
         FeedVideoAlone.warionOpening(null, true);
         FeedVideoAlone.warionClosed(null);
         assertFalse("nobody asking is left alone", FeedVideoAlone.seedOnly(null));
+    }
+
+    /** Stands in for Facebook's PlayerOrigin, which reads as "surface::subsurface". */
+    private static Object origin(String text) {
+        return new Object() {
+            @Override
+            public String toString() {
+                return text;
+            }
+        };
+    }
+
+    @Test
+    public void aReelsViewerOpeningFromAFeedKeepsItsVideoAlone() {
+        Object reelsTab = new Object();
+        FeedVideoAlone.reelsViewerOpening(origin("fb_shorts_tab::fb_shorts_viewer"));
+        assertFalse("the Reels tab opening its viewer", FeedVideoAlone.seedOnly(reelsTab));
+
+        FeedVideoAlone.reelsViewerOpening(origin("newsfeed::fb_shorts_native_in_feed_unit"));
+        Object source = new Object();
+        assertTrue("a feed reel's data source asking inside the entry", FeedVideoAlone.seedOnly(source));
+        clock.addAndGet(60_000);
+        assertTrue("and every time after", FeedVideoAlone.seedOnly(source));
+        assertFalse("one opening is one player", FeedVideoAlone.seedOnly(new Object()));
+        assertFalse("the Reels tab keeps its answer", FeedVideoAlone.seedOnly(reelsTab));
+
+        for (String feed : new String[]{"group::feed_story", "user_timeline", "permalink::shared_video_feed_story",
+                "friendly_feed::fb_shorts_reshare_feed_unit"}) {
+            FeedVideoAlone.reelsViewerOpening(origin(feed));
+            assertTrue(feed, FeedVideoAlone.seedOnly(new Object()));
+        }
+        for (String elsewhere : new String[]{"profile_reels_tab::fb_shorts_profile_viewer", "search::fb_shorts_viewer",
+                "notifications", "video_home::feed_story", "newsfeeds::feed_story", ""}) {
+            FeedVideoAlone.reelsViewerOpening(origin(elsewhere));
+            assertFalse(elsewhere, FeedVideoAlone.seedOnly(new Object()));
+        }
+        assertTrue(statusLine(), statusLine().contains(FeedVideoAlone.OPENED + " 5"));
+    }
+
+    @Test
+    public void offOrPausedTheViewersOriginArmsNothing() {
+        Settings.FEED_VIDEOS_ALONE.save(false);
+        FeedVideoAlone.reelsViewerOpening(origin("newsfeed::feed_story"));
+        Settings.FEED_VIDEOS_ALONE.save(true);
+        assertFalse("opened while off", FeedVideoAlone.seedOnly(new Object()));
+
+        FeedVideoAlone.reelsViewerOpening(origin("newsfeed::feed_story"));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("paused", FeedVideoAlone.seedOnly(new Object()));
+        FeedVideoAlone.reelsViewerOpening(origin("newsfeed::feed_story"));
+        PauseForTests.resume();
+        assertFalse("an opening while paused arms nothing", FeedVideoAlone.seedOnly(new Object()));
+
+        FeedVideoAlone.reelsViewerOpening(null);
+        assertFalse("no origin", FeedVideoAlone.seedOnly(new Object()));
     }
 
     @Test

@@ -514,6 +514,11 @@ public class PausedHooksTest {
                 () -> {
                     FeedVideoAlone.feedVideoTapped();
                     return FeedVideoAlone.holdsBack(new Object());
+                },
+                // So does a reel's data source as the reels viewer opens from the feed.
+                () -> {
+                    FeedVideoAlone.reelsViewerOpening("newsfeed::feed_story");
+                    return FeedVideoAlone.seedOnly(new Object());
                 }));
         // A reel that would get the interest prompt is answered as one that doesn't.
         probes.put(PatchFamily.REEL_PROMPTS, Collections.singletonList(() -> !ReelPrompts.keep(true)));

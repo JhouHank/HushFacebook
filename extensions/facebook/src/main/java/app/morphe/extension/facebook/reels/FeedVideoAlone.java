@@ -33,12 +33,14 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * own over the main one, or, for a reel in the feed, the Warion viewer inside the main screen. The
  * player starts with that one video, then fills in reels after it, and those are the endless reels a
  * swipe up leads to. The patch tells this class when a feed video tap goes through Facebook's Warion
- * step and when a Warion viewer opens and closes, and asks it before every "fetch more" a reels feed
- * makes and every time a reels data source asks whether it shows its seed video alone.
+ * step, where the reels viewer opens from, and when a Warion viewer opens and closes, and asks it
+ * before every "fetch more" a reels feed makes and every time a reels data source asks whether it
+ * shows its seed video alone.
  *
  * <p>With the switch on, a reels feed or data source that never asked before is taken to be a tapped
  * video's player when it first asks while a Warion viewer is open, while the full-screen player is the
- * screen in front, or within {@link #WINDOW_MS} of a Warion step. It gets no more reels (its seed video
+ * screen in front, or within {@link #WINDOW_MS} of a Warion step or of the reels viewer opening from a
+ * feed. It gets no more reels (its seed video
  * alone, in the data source's case) then and on every later ask. One held for a Warion viewer is
  * decided again on its first ask after that viewer closes. One that first asked from the main screen
  * with no viewer open, the Reels and Video tabs' among them, keeps Facebook's answer. Off, paused, before the settings are ready, or when anything
@@ -58,6 +60,14 @@ public final class FeedVideoAlone {
     static final Set<String> PLAYER_SCREENS = Set.of(
             "com.facebook.katana.immersiveactivity.ImmersiveActivity",
             "com.facebook.katana.immersiveactivity.ImmersivePortraitActivity");
+
+    /**
+     * The surfaces of Facebook's feeds, a player origin's part before "::": home, groups, profiles,
+     * pages, a single post, and the Following and Friends feeds. The Reels tab, a profile's reels,
+     * search and notifications aren't among them.
+     */
+    static final Set<String> FEED_SURFACES = Set.of("newsfeed", "group", "user_timeline", "profile",
+            "page_timeline", "permalink", "following_np_subtab", "friendly_feed");
 
     /** The screen created or resumed last, or an empty reference. */
     private static volatile WeakReference<Activity> front = new WeakReference<>(null);
@@ -189,6 +199,41 @@ public final class FeedVideoAlone {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "feed video tap", failure);
         }
+    }
+
+    /**
+     * Injection point, in Facebook's reels viewer entry as it reads where the video opens from, before
+     * the viewer's data source first asks. A feed reel goes this way on some accounts with no Warion
+     * step (S25 2026-10-18), so a video opening from a feed surface counts as a feed video tap. One
+     * opening from anywhere else is left to Facebook. Never throws.
+     *
+     * @param origin Facebook's player origin, "surface::subsurface" as text.
+     */
+    public static void reelsViewerOpening(@Nullable Object origin) {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (!on()) {
+                TAPPED_AT.set(NONE);
+                return;
+            }
+            if (origin == null) return;
+            HookStatus.bound(FAMILY, "reels viewer entry");
+            String where = origin.toString();
+            if (fromFeed(where)) {
+                TAPPED_AT.set(now());
+                Logger.printDebug(() -> "Feed videos on their own: a feed video is opening the reels viewer from " + where);
+            } else {
+                Logger.printDebug(() -> "Feed videos on their own: the reels viewer is opening from " + where + ", not a feed");
+            }
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reels viewer entry", failure);
+        }
+    }
+
+    /** Whether [origin], a player origin as text, names a feed's surface. */
+    static boolean fromFeed(String origin) {
+        int cut = origin.indexOf("::");
+        return FEED_SURFACES.contains(cut < 0 ? origin : origin.substring(0, cut));
     }
 
     /**

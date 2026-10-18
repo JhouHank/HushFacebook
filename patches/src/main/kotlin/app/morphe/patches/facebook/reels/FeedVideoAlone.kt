@@ -55,9 +55,18 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
  *   skipped: suppressing CSR vend for seed video") and in its fetch more. Facebook answers yes only
  *   on a load error behind server flags.
  *
- * The Warion step tells the extension a feed video is opening, and the fragment tells it when a
- * Warion viewer opens and closes. Both fetch mores ask it first, with the object asking, and answer
- * false (nothing fetched) when the extension says so, and the data source's seed check answers yes.
+ * - On some accounts a feed reel skips the Warion step (S25 2026-10-18, a reel shared to the home
+ *   feed): it goes straight to the reels viewer's entry (LX/7uc;->A01(Context,FbUserSession,LX/96i;I)V,
+ *   the one method logging "Start new transition for vid[%s] failed"), and the viewer's data source
+ *   first asks its seed check inside that call, with the main screen in front and no viewer open.
+ *   The entry reads the video's PlayerOrigin ("surface::subsurface", a kept class) from its params
+ *   near the top, before anything else runs. The Reels tab, a profile's reels and the split screen
+ *   launcher use the same entry with their own surfaces.
+ *
+ * The Warion step tells the extension a feed video is opening, the reels viewer's entry tells it
+ * where the video opens from, and the fragment tells it when a Warion viewer opens and closes.
+ * Both fetch mores ask it first, with the object asking, and answer false (nothing fetched) when
+ * the extension says so, and the data source's seed check answers yes.
  */
 
 internal const val FEED_VIDEO_ALONE = "$EXTENSION_PACKAGE/reels/FeedVideoAlone;"
@@ -66,6 +75,13 @@ internal const val HOLDS_BACK = "$FEED_VIDEO_ALONE->holdsBack(Ljava/lang/Object;
 internal const val WARION_OPENING = "$FEED_VIDEO_ALONE->warionOpening(Ljava/lang/Object;Z)V"
 internal const val WARION_CLOSED = "$FEED_VIDEO_ALONE->warionClosed(Ljava/lang/Object;)V"
 internal const val SEED_ONLY = "$FEED_VIDEO_ALONE->seedOnly(Ljava/lang/Object;)Z"
+internal const val VIEWER_OPENING = "$FEED_VIDEO_ALONE->reelsViewerOpening(Ljava/lang/Object;)V"
+
+/** The line only the reels viewer's entry logs. */
+internal const val VIEWER_ENTRY = "Start new transition for vid[%s] failed"
+
+/** Where a video says it opened from. Kept by name. */
+internal const val PLAYER_ORIGIN = "Lcom/facebook/video/common/playerorigin/PlayerOrigin;"
 
 /** Facebook's video fragment, a Warion viewer when its arguments say so. Kept by name. */
 internal const val WARION_FRAGMENT = "Lcom/facebook/video/watch/fragment/WatchFeedOrWarionFragment;"
@@ -89,6 +105,26 @@ private const val PATCH = "Clean up Reels"
 
 /** Whether [method] can be the Warion step: it holds the trace and answers nothing. */
 internal fun isWarionStep(method: Method): Boolean = method.returnType == "V" && holdsString(method, WARION_CLICK)
+
+/** Whether [method] can be the reels viewer's entry: it holds the line and answers nothing. */
+internal fun isViewerEntry(method: Method): Boolean = method.returnType == "V" && holdsString(method, VIEWER_ENTRY)
+
+/** Where the viewer's entry has read the video's origin: the index right after, and the register holding it. */
+internal data class OriginRead(val index: Int, val origin: Int)
+
+/**
+ * Where [method] first reads a [PLAYER_ORIGIN] field: the index after that read and its register.
+ * Null when it reads none, or into a register too high for a four-bit call.
+ */
+internal fun originRead(method: Method): OriginRead? {
+    val code = method.implementation?.instructions?.toList() ?: return null
+    val at = code.indexOfFirst {
+        it.opcode == Opcode.IGET_OBJECT && ((it as ReferenceInstruction).reference as FieldReference).type == PLAYER_ORIGIN
+    }
+    if (at < 0) return null
+    val origin = (code[at] as TwoRegisterInstruction).registerA
+    return if (origin > 15) null else OriginRead(at + 1, origin)
+}
 
 /** Whether [method] can be the fetch more: an instance method holding the trace and answering a boolean. */
 internal fun isFetchMore(method: Method): Boolean =
@@ -177,12 +213,16 @@ internal fun implementsSeedCheck(classDef: ClassDef, method: Method, check: Meth
         method.parameterTypes.isEmpty() && method.implementation != null
 
 /**
- * Hooks the Warion step, the Warion viewer's opening and closing, both reels fetch mores and the
- * data source's seed check. Refuses unless each anchor finds one method.
+ * Hooks the Warion step, the reels viewer's entry, the Warion viewer's opening and closing, both
+ * reels fetch mores and the data source's seed check. Refuses unless each anchor finds one method.
  */
 internal fun BytecodePatchContext.keepFeedVideosAlone() {
     oneMethodHolding(WARION_CLICK, "Warion step answering void", ::isWarionStep)
         .addInstruction(0, "invoke-static { }, $FEED_VIDEO_TAPPED")
+    val entry = oneMethodHolding(VIEWER_ENTRY, "reels viewer entry answering void", ::isViewerEntry)
+    val origin = originRead(entry)
+        ?: throw PatchException("$PATCH: the reels viewer's entry reads no $PLAYER_ORIGIN field into a low register")
+    entry.addInstruction(origin.index, "invoke-static { v${origin.origin} }, $VIEWER_OPENING")
     oneMethodHolding(FETCH_MORE, "instance fetch more answering a boolean", ::isFetchMore)
         .holdBackWhen(HOLDS_BACK)
     val loader = oneMethodHolding(SEED_TAIL, "instance loader fetch more answering a boolean", ::isLoaderFetchMore)
