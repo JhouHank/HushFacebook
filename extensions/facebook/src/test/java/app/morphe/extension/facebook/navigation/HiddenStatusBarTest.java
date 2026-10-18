@@ -12,7 +12,10 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
+import android.view.View;
 import android.view.Window;
+
+import com.facebook.katana.activity.FbMainTabActivity;
 
 import org.junit.After;
 import org.junit.Before;
@@ -34,8 +37,9 @@ import app.morphe.extension.shared.settings.PauseForTests;
 /**
  * Hide the status bar (#124 leftover): on, the main screen's bar is asked away and asked away again
  * whenever it shows; off or paused, a bar this hid comes back once, and a bar Facebook hid itself
- * is left alone; a failure stops that screen's checks. A real window's insets are run once to show
- * they're reachable without failing.
+ * is left alone; a failure stops that screen's checks. Facebook's strip behind the bar closes only
+ * on the main screen with its bar gone. A real window's insets are run once to show they're
+ * reachable without failing.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
@@ -194,6 +198,39 @@ public class HiddenStatusBarTest {
         new HiddenStatusBar.Screens().onActivityResumed(other);
         assertNull(HiddenStatusBar.WINDOWS.get(other.getWindow()));
         assertEquals("the main screen is the see-through bars' one", TranslucentBars.MAIN_SCREEN, HiddenStatusBar.MAIN_SCREEN);
+    }
+
+    @Test
+    public void facebooksStripClosesOnlyOnTheMainScreenWithItsBarGone() {
+        Activity main = Robolectric.buildActivity(FbMainTabActivity.class).get();
+        Activity other = Robolectric.buildActivity(Activity.class).get();
+
+        assertEquals(0, HiddenStatusBar.topInset(75, main, false));
+        assertTrue(statusLine(), statusLine().contains(HiddenStatusBar.STRIP_CLOSED + " 1"));
+        assertEquals("a bar showing keeps its strip", 75, HiddenStatusBar.topInset(75, main, true));
+        assertEquals("no insets yet", 75, HiddenStatusBar.topInset(75, main, null));
+        assertEquals("another screen", 75, HiddenStatusBar.topInset(75, other, false));
+        assertEquals("no screen", 75, HiddenStatusBar.topInset(75, null, false));
+        assertTrue(statusLine(), statusLine().contains(HiddenStatusBar.STRIP_CLOSED + " 1"));
+    }
+
+    @Test
+    public void offPausedOrWithoutAViewFacebooksInsetStays() {
+        Activity main = Robolectric.buildActivity(FbMainTabActivity.class).setup().get();
+        View content = main.findViewById(android.R.id.content);
+
+        Settings.HIDE_STATUS_BAR.save(false);
+        assertEquals(75, HiddenStatusBar.topInset(content, 75));
+        Settings.HIDE_STATUS_BAR.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertEquals(75, HiddenStatusBar.topInset(content, 75));
+        PauseForTests.resume();
+        assertEquals(75, HiddenStatusBar.topInset(null, 75));
+        assertEquals(0, HiddenStatusBar.topInset(content, 0));
+        // Robolectric's window never reports its bar gone, so the strip stays, and nothing fails.
+        assertEquals(75, HiddenStatusBar.topInset(content, 75));
+        String line = statusLine();
+        assertTrue(String.valueOf(line), line == null || !line.contains("threw"));
     }
 
     @Test

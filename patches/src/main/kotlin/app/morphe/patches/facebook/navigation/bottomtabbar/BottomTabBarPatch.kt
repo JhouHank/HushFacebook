@@ -57,7 +57,8 @@ internal const val OVERRIDE = "$BOTTOM_TAB_BAR->override(I)I"
  *
  * See-through bars, one more switch off by default, needs no hook: the extension finds both bars
  * by their kept classes as the main screen draws (TranslucentBars.java, started from the settings
- * entry's onApplicationCreate while this patch is in).
+ * entry's onApplicationCreate while this patch is in). Hide the status bar works the same way, and
+ * one hook closes the strip Facebook draws behind the bar once it's gone (see StatusBarStrip.kt).
  */
 @Suppress("unused")
 val bottomTabBarPatch = bytecodePatch(
@@ -82,12 +83,17 @@ val bottomTabBarPatch = bytecodePatch(
             classDefByStrings(OVERRIDE_KEY, StringComparisonType.EQUALS).filterNot { it.type.startsWith(EXTENSION_CLASSES) },
         )
         val reads = mutableListOf<OverrideRead>()
+        val paddings = mutableListOf<Method>()
         classDefForEach { classDef ->
             if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEach
-            classDef.methods.forEach { method -> reads += overrideReads(method, key) }
+            classDef.methods.forEach { method ->
+                reads += overrideReads(method, key)
+                if (takesSystemBarPadding(method)) paddings += method
+            }
         }
         if (reads.isEmpty()) refuse("nothing reads $key from FbSharedPreferences")
         hookBigScreenLayout(reads)
+        hookStatusBarStrip(paddings)
         reads.groupBy { it.method }.forEach { (method, sites) ->
             mutableClassDefBy(method.definingClass).findMutableMethodOf(method).hookOverrideReads(sites)
         }

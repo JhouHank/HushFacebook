@@ -7,7 +7,9 @@ package app.morphe.extension.facebook.navigation;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.os.Bundle;
+import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowInsets;
@@ -40,6 +42,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * so one the person swiped in stays until Android hides it. Off or paused, the bar comes back on
  * the next check, and only on a screen this hid it on.
  *
+ * <p>On Android 15 and up Facebook draws a strip of its own behind the bar and pads the screen below
+ * it, both sized from the window's system insets, which keep the bar's height after it's asked
+ * away. {@link #topInset} closes that strip while the bar is gone.
+ *
  * <p>Any failure leaves that screen's bar as it is and stops the checks there.
  */
 public final class HiddenStatusBar {
@@ -50,6 +56,8 @@ public final class HiddenStatusBar {
     static final String HIDDEN = "Status bar hidden";
     /** Counted each time the switch going off or a pause brings the bar back. */
     static final String GIVEN_BACK = "Status bar given back";
+    /** Counted each time Facebook's strip behind a hidden bar is closed up. */
+    static final String STRIP_CLOSED = "Status bar strip closed";
 
     private static final String FAMILY = FamilyNames.BOTTOM_TAB_BAR;
 
@@ -78,6 +86,48 @@ public final class HiddenStatusBar {
     /** Whether the bar goes now: the switch on, nothing paused, the settings ready. */
     public static boolean on() {
         return Utils.settingsReady() && Settings.HIDE_STATUS_BAR.get();
+    }
+
+    /**
+     * Called first thing where Facebook pads its screens for the system bars (583
+     * {@code LX/2Ns;->A00}), with the window's content view and the top inset it's about to size
+     * its strip behind the status bar to and pad the content by. Facebook reads that inset off the
+     * window's system insets, which keep the bar's height after it's asked away, so a bar this hid
+     * left a strip of background above the top bar (S22, 2026-10-18: 75 px). On the main screen,
+     * with the switch on and the bar gone, the answer is 0, so the strip closes and the top bar
+     * moves up to the edge. Anything else keeps Facebook's inset, and so does a failure. A bar
+     * swiped in for a moment doesn't change the insets, so it shows over the top bar.
+     */
+    public static int topInset(View content, int top) {
+        try {
+            if (top <= 0 || content == null || !on()) return top;
+            WindowInsets insets = content.getRootWindowInsets();
+            Boolean showing = insets == null ? null : insets.isVisible(WindowInsets.Type.statusBars());
+            return topInset(top, screenOf(content.getContext()), showing);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "hidden status bar strip", failure);
+            return top;
+        }
+    }
+
+    /** [top], or 0 when [screen] is the main screen and its bar is known to be gone. */
+    static int topInset(int top, @Nullable Activity screen, @Nullable Boolean showing) {
+        if (screen == null || !MAIN_SCREEN.equals(screen.getClass().getName()) || !Boolean.FALSE.equals(showing)) {
+            return top;
+        }
+        HookStatus.invoked(FAMILY);
+        HookStatus.counted(FAMILY, STRIP_CLOSED);
+        return 0;
+    }
+
+    @Nullable
+    private static Activity screenOf(Context context) {
+        for (int depth = 0; depth < 10 && context != null; depth++) {
+            if (context instanceof Activity) return (Activity) context;
+            if (!(context instanceof ContextWrapper)) return null;
+            context = ((ContextWrapper) context).getBaseContext();
+        }
+        return null;
     }
 
     /** The checks of [window], made once and asked again at each check. */
