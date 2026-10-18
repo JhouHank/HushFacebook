@@ -1670,6 +1670,7 @@ Reel	Reels
 Story	快拍
 # context: button that empties the Recently watched list at once
 Clear	清空
+Just now	刚刚
 # context: toast after Clear empties the Recently watched list
 List cleared	列表已清空
 # context: shown in the Recently watched list while it's empty; names the Remember what you watch switch

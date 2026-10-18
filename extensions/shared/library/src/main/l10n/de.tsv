@@ -1675,6 +1675,7 @@ Reel	Reel
 Story	Story
 # context: button that empties the Recently watched list at once
 Clear	Leeren
+Just now	Gerade eben
 # context: toast after Clear empties the Recently watched list
 List cleared	Liste geleert
 # context: shown in the Recently watched list while it's empty; names the Remember what you watch switch

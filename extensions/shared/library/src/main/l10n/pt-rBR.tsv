@@ -1567,6 +1567,7 @@ Reel	Reel
 Story	Story
 # context: button that empties the Recently watched list at once
 Clear	Limpar
+Just now	Agora mesmo
 # context: toast after Clear empties the Recently watched list
 List cleared	Lista limpa
 # context: shown in the Recently watched list while it's empty; names the Remember what you watch switch

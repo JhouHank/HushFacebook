@@ -204,6 +204,19 @@ public class RecentlyWatchedScreenTest {
     }
 
     @Test
+    public void underAMinuteAgoReadsJustNow() {
+        long now = 50_000_000L;
+        RecentlyWatchedForTests.watched(RecentlyWatched.REEL, "r1", null, null, null, now - 59_999, 0);
+        assertEquals("Just now", RecentlyWatchedScreen.detail(RecentlyWatchedForTests.entries().get(0), now));
+        RecentlyWatchedForTests.watched(RecentlyWatched.REEL, "r2", null, null, null, now + 5_000, 0);
+        assertEquals("a clock that went back", "Just now",
+                RecentlyWatchedScreen.detail(RecentlyWatchedForTests.entries().get(0), now));
+        RecentlyWatchedForTests.watched(RecentlyWatched.REEL, "r3", null, null, null, now - 3 * 60_000, 0);
+        String older = RecentlyWatchedScreen.detail(RecentlyWatchedForTests.entries().get(0), now);
+        assertTrue(older, older.startsWith("3 min"));
+    }
+
+    @Test
     public void theChipsShowOneKind() {
         watchedThree();
         try (ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup()) {

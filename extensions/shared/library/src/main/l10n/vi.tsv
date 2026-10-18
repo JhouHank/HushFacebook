@@ -1675,6 +1675,7 @@ Reel	Reel
 Story	Tin
 # context: button that empties the Recently watched list at once
 Clear	Xóa
+Just now	Vừa xong
 # context: toast after Clear empties the Recently watched list
 List cleared	Đã xóa danh sách
 # context: shown in the Recently watched list while it's empty; names the Remember what you watch switch

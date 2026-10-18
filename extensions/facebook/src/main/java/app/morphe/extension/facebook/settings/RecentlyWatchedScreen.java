@@ -228,8 +228,13 @@ final class RecentlyWatchedScreen {
         List<String> parts = new ArrayList<>();
         if (entry.owner != null) parts.add(kindLabel(entry.kind));
         if (entry.durationMs > 0) parts.add(DateUtils.formatElapsedTime(Math.max(1, entry.durationMs / 1000)));
-        parts.add(DateUtils.getRelativeTimeSpanString(entry.watchedAt, Math.max(now, entry.watchedAt),
-                DateUtils.MINUTE_IN_MILLIS, DateUtils.FORMAT_ABBREV_RELATIVE).toString());
+        // Under a minute, Android's own words would be "0 min. ago".
+        if (now - entry.watchedAt < DateUtils.MINUTE_IN_MILLIS) {
+            parts.add(L10n.t("Just now"));
+        } else {
+            parts.add(DateUtils.getRelativeTimeSpanString(entry.watchedAt, now, DateUtils.MINUTE_IN_MILLIS,
+                    DateUtils.FORMAT_ABBREV_RELATIVE).toString());
+        }
         return TextUtils.join(DOT, parts);
     }
 

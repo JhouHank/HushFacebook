@@ -1675,6 +1675,7 @@ Reel	Reel
 Story	Hikaye
 # context: button that empties the Recently watched list at once
 Clear	Temizle
+Just now	Az önce
 # context: toast after Clear empties the Recently watched list
 List cleared	Liste temizlendi
 # context: shown in the Recently watched list while it's empty; names the Remember what you watch switch
