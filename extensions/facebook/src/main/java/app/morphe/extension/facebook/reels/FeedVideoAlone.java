@@ -4,6 +4,10 @@
  */
 package app.morphe.extension.facebook.reels;
 
+import android.app.Activity;
+import android.app.Application;
+import android.content.Context;
+import android.os.Bundle;
 import android.os.SystemClock;
 
 import androidx.annotation.Nullable;
@@ -12,6 +16,7 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 
@@ -24,16 +29,18 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
 /**
  * Opens a video tapped in the feed on its own, with no reels to swipe to after it (#161).
  *
- * <p>A feed video opens in Facebook's full-screen player through one step Facebook calls Warion.
- * The player starts with that one video, then asks its reels feed for more, and what comes back is
- * the endless reels a swipe up leads to. The patch tells this class about each Warion step, and asks
- * it before every "fetch more" a reels feed makes.
+ * <p>A video or reel tapped in the feed opens Facebook's full-screen player, a screen of its own over
+ * the main one. The player starts with that one video, then asks its reels feed for more, and what
+ * comes back is the endless reels a swipe up leads to. Some feed videos get there through one step
+ * Facebook calls Warion, which the patch tells this class about, and the patch asks this class
+ * before every "fetch more" a reels feed makes.
  *
- * <p>With the switch on, the first reels feed to ask for more within {@link #WINDOW_MS} of a feed
- * video tap, if it never asked before, is taken to be that video's player. It gets no, then and on
- * every later ask, so the video stays alone. A feed that asked before the tap, the Reels tab's among
- * them, keeps Facebook's answer. Off, paused, before the settings are ready, or when anything here
- * fails, every feed gets Facebook's own answer.
+ * <p>With the switch on, a reels feed that never asked before is taken to be a tapped video's player
+ * when it first asks while the full-screen player is the screen in front, or within
+ * {@link #WINDOW_MS} of a Warion step. It gets no, then and on every later ask, so the video stays
+ * alone. A feed that first asked from the main screen, the Reels and Video tabs' among them, keeps
+ * Facebook's answer. Off, paused, before the settings are ready, or when anything here fails, every
+ * feed gets Facebook's own answer.
  */
 public final class FeedVideoAlone {
     /** Counted once for each player a feed video opened that this kept to that video. */
@@ -44,6 +51,16 @@ public final class FeedVideoAlone {
 
     /** How long after a feed video tap its player's first ask for more is still taken as that player's. */
     static final long WINDOW_MS = 5000;
+
+    /** Facebook's full-screen player, the manifest screen a video or reel tapped in the feed opens in. */
+    static final Set<String> PLAYER_SCREENS = Set.of(
+            "com.facebook.katana.immersiveactivity.ImmersiveActivity",
+            "com.facebook.katana.immersiveactivity.ImmersivePortraitActivity");
+
+    /** The screen created or resumed last, or an empty reference. */
+    private static volatile WeakReference<Activity> front = new WeakReference<>(null);
+
+    private static boolean watching;
 
     private static final long NONE = Long.MIN_VALUE;
 
@@ -79,6 +96,64 @@ public final class FeedVideoAlone {
     static boolean on() {
         // Settings mustn't load before the extension has its context.
         return Utils.settingsReady() && Settings.FEED_VIDEOS_ALONE.get();
+    }
+
+    /**
+     * Called once per Facebook start, from the settings entry's onApplicationCreate, with Clean up
+     * Reels in the build: from then on each screen that's created or resumed is the one in front.
+     */
+    public static synchronized void watch(Context context) {
+        try {
+            if (watching || !(context instanceof Application)) return;
+            ((Application) context).registerActivityLifecycleCallbacks(new Screens());
+            watching = true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "feed video screens", failure);
+        }
+    }
+
+    /** Records [screen] as the one in front. */
+    static void inFront(@Nullable Activity screen) {
+        front = new WeakReference<>(screen);
+    }
+
+    /** Whether the screen in front is the full-screen player. */
+    static boolean playerInFront() {
+        Activity screen = front.get();
+        return screen != null && !screen.isFinishing() && PLAYER_SCREENS.contains(screen.getClass().getName());
+    }
+
+    /** Keeps the screen in front up to date. */
+    static final class Screens implements Application.ActivityLifecycleCallbacks {
+        @Override
+        public void onActivityCreated(Activity activity, @Nullable Bundle state) {
+            inFront(activity);
+        }
+
+        @Override
+        public void onActivityResumed(Activity activity) {
+            inFront(activity);
+        }
+
+        @Override
+        public void onActivityStarted(Activity activity) {
+        }
+
+        @Override
+        public void onActivityPaused(Activity activity) {
+        }
+
+        @Override
+        public void onActivityStopped(Activity activity) {
+        }
+
+        @Override
+        public void onActivitySaveInstanceState(Activity activity, Bundle state) {
+        }
+
+        @Override
+        public void onActivityDestroyed(Activity activity) {
+        }
     }
 
     /** Injection point, first thing in Facebook's Warion step, as a feed video opens its player. Never throws. */
@@ -122,7 +197,8 @@ public final class FeedVideoAlone {
                 if (first) {
                     // The tap goes to one player only, even with a tap landing while this reads it.
                     long tapped = TAPPED_AT.get();
-                    alone = tapped != NONE && now() - tapped <= WINDOW_MS && TAPPED_AT.compareAndSet(tapped, NONE);
+                    boolean fromTap = tapped != NONE && now() - tapped <= WINDOW_MS && TAPPED_AT.compareAndSet(tapped, NONE);
+                    alone = fromTap || playerInFront();
                     FEEDS.add(new Feed(feed, alone));
                 } else {
                     alone = known;
@@ -130,11 +206,13 @@ public final class FeedVideoAlone {
             }
             if (first) {
                 if (alone) HookStatus.counted(FAMILY, OPENED);
-                String id = Integer.toHexString(System.identityHashCode(feed));
+                String id = feed.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(feed));
+                Activity screen = front.get();
+                String where = screen == null ? "no screen" : screen.getClass().getName();
                 boolean player = alone;
                 Logger.printDebug(() -> player
-                        ? "Feed videos on their own: reels feed " + id + " is a tapped feed video's player, nothing comes after the video"
-                        : "Feed videos on their own: reels feed " + id + " asked for more and keeps Facebook's answer");
+                        ? "Feed videos on their own: reels feed " + id + " is a tapped feed video's player (" + where + "), nothing comes after the video"
+                        : "Feed videos on their own: reels feed " + id + " asked for more from " + where + " and keeps Facebook's answer");
             }
             if (alone) HookStatus.counted(FAMILY, HELD_BACK);
             return alone;
@@ -156,5 +234,6 @@ public final class FeedVideoAlone {
         }
         TAPPED_AT.set(NONE);
         clockForTests = null;
+        inFront(null);
     }
 }

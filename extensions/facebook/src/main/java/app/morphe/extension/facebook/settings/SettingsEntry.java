@@ -59,6 +59,7 @@ import app.morphe.extension.facebook.navigation.HiddenStatusBar;
 import app.morphe.extension.facebook.navigation.ReelsTab;
 import app.morphe.extension.facebook.navigation.TranslucentBars;
 import app.morphe.extension.facebook.notifications.PushDiagnostics;
+import app.morphe.extension.facebook.reels.FeedVideoAlone;
 import app.morphe.extension.facebook.stories.StorySeenButton;
 import app.morphe.extension.facebook.theme.AccentResources;
 import app.morphe.extension.facebook.theme.MaterialYouTheme;
@@ -159,6 +160,8 @@ public final class SettingsEntry {
                 TranslucentBars.watch(context);
                 HiddenStatusBar.watch(context);
             }
+            // Open feed videos on their own, a Clean up Reels switch: which screen is in front.
+            if (SettingsStatus.reelDeclutter()) FeedVideoAlone.watch(context);
             // Last, so nothing above waits on it. The open itself waits for the first screen to resume.
             ReopenSettingsAfterRestart.reopenIfPending(SettingsEntry::reopenOn);
         } catch (Throwable ex) {

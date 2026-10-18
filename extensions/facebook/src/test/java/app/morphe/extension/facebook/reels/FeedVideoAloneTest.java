@@ -8,11 +8,17 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.app.Activity;
+
+import com.facebook.katana.activity.FbMainTabActivity;
+import com.facebook.katana.immersiveactivity.ImmersiveActivity;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -27,8 +33,9 @@ import app.morphe.extension.shared.settings.PauseForTests;
 
 /**
  * Open feed videos on their own (#161): the first new reels feed to ask for more soon after a feed
- * video tap is that video's player and gets no, every time; a feed that asked before the tap, or one
- * asking long after it, keeps Facebook's answer; off or paused, nothing is held back.
+ * video tap, or from the full-screen player, is that video's player and gets no, every time; a feed
+ * that asked before, one asking long after the tap, or one asking from the main screen keeps
+ * Facebook's answer; off or paused, nothing is held back.
  */
 @RunWith(RobolectricTestRunner.class)
 public class FeedVideoAloneTest {
@@ -118,6 +125,41 @@ public class FeedVideoAloneTest {
         assertTrue("an equal but different feed is a new feed", FeedVideoAlone.holdsBack(player));
         assertFalse("the Reels tab keeps its own answer", FeedVideoAlone.holdsBack(reelsTab));
         assertTrue(FeedVideoAlone.holdsBack(player));
+    }
+
+    @Test
+    public void aFeedFirstAskingFromTheFullScreenPlayerIsThatPlayers() {
+        Activity main = Robolectric.buildActivity(FbMainTabActivity.class).get();
+        Activity player = Robolectric.buildActivity(ImmersiveActivity.class).get();
+        FeedVideoAlone.Screens screens = new FeedVideoAlone.Screens();
+
+        screens.onActivityResumed(main);
+        Object reelsTab = new Object();
+        assertFalse("the Reels tab asks from the main screen", FeedVideoAlone.holdsBack(reelsTab));
+
+        screens.onActivityCreated(player, null);
+        Object playersFeed = new Object();
+        assertTrue("no Warion step, the player in front is enough", FeedVideoAlone.holdsBack(playersFeed));
+        assertFalse("a feed that asked before keeps its answer", FeedVideoAlone.holdsBack(reelsTab));
+
+        screens.onActivityResumed(main);
+        assertTrue("back on the main screen the player's feed is still held", FeedVideoAlone.holdsBack(playersFeed));
+        assertFalse("a new feed asking from the main screen", FeedVideoAlone.holdsBack(new Object()));
+
+        screens.onActivityResumed(player);
+        player.finish();
+        assertFalse("a player on its way out", FeedVideoAlone.holdsBack(new Object()));
+        assertTrue(statusLine(), statusLine().contains(FeedVideoAlone.OPENED + " 1"));
+    }
+
+    @Test
+    public void offTheFullScreenPlayerHoldsNothingBack() {
+        new FeedVideoAlone.Screens().onActivityCreated(Robolectric.buildActivity(ImmersiveActivity.class).get(), null);
+        Settings.FEED_VIDEOS_ALONE.save(false);
+        assertFalse(FeedVideoAlone.holdsBack(new Object()));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        Settings.FEED_VIDEOS_ALONE.save(true);
+        assertFalse("paused", FeedVideoAlone.holdsBack(new Object()));
     }
 
     @Test
