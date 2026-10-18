@@ -6,7 +6,8 @@ $auditAst = [System.Management.Automation.Language.Parser]::ParseFile($auditPath
 if ($parseErrors.Count) { throw ($parseErrors -join "`n") }
 $testFunctions = @('Assert-AuditLease', 'Assert-AuditSteps', 'Assert-AuditForeground', 'Invoke-Adb',
     'Get-AuditLocales', 'Get-AuditNightMode', 'Restore-AuditState', 'Format-Shell',
-    'New-AuditBaseline', 'Test-AuditBaseline', 'Publish-AuditBaseline', 'Save-SettingsPages', 'Write-Step', 'Test-AuditDestination', 'Select-AuditTapNode', 'Get-UiNodes', 'Send-Profile', 'Test-AuditLocaleList', 'Get-AuditLauncher', 'Get-Report')
+    'New-AuditBaseline', 'Test-AuditBaseline', 'Publish-AuditBaseline', 'Save-SettingsPages', 'Write-Step', 'Test-AuditDestination', 'Select-AuditTapNode', 'Get-UiNodes', 'Send-Profile', 'Test-AuditLocaleList', 'Get-AuditLauncher', 'Get-Report',
+    'Test-AuditReelViewer', 'Get-AuditReelProof')
 foreach ($functionName in $testFunctions) {
     $definition = $auditAst.Find({ param($node)
         $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $functionName
@@ -54,6 +55,7 @@ function Invoke-FakeAdb {
     if ($command -like '*cat */page.json*') { return $script:pageAck }
     if ($command -like '*cat */import.txt*') { return 'applied 4' }
     if ($command -like '*dumpsys activity activities') { return $script:foreground }
+    if ($command -like '*dumpsys activity top') { return $script:topDump }
     if ($command -like '*dumpsys window') {
         if ($script:changeOwnWindowAfterDump -and $null -ne $script:postDumpFocusReads) {
             $script:postDumpFocusReads++
@@ -176,20 +178,62 @@ try {
     $script:changeOwnWindowAfterDump = $false
     $script:postDumpFocusReads = $null
     $script:focusedWindow = "mCurrentFocus=Window{1 u0 $Package/$Package.Main}"
+    # A playing reel can't be dumped, so its fragment tree proves it (the S22's layout, 2026-10-18).
+    function New-TopDump([string]$Resumed = 'true', [string]$Reel = 'true', [string]$Parent = 'true',
+            [string]$ParentName = 'VideoHomeRootFragment{5a5ee79}', [string]$ReelHeader = 'WatchFeedOrWarionFragment{90bc1ee} (cc7d9f26 id=0x7f0a06ff)') {
+        return @('TASK 10433:com.facebook.katana id=7721 userId=0',
+            "  ACTIVITY $Package/.Main ebc6768 pid=18012 userId=0",
+            '    Local Activity a1 State:',
+            "      mResumed=$Resumed mStopped=false mFinished=false",
+            "      mCreated=true mResumed=$Resumed mStopped=false    Active Fragments:",
+            '    VideoHomeRootFragment{5a5ee79} (15d18ac3 id=0x7f0a0ccd)',
+            "        mHidden=false mDetached=false mMenuVisible=$Parent mHasMenu=false",
+            "        mRetainInstance=false mUserVisibleHint=$Parent",
+            '        Child FragmentManager{1 in VideoHomeRootFragment{5a5ee79}}:',
+            '          Active Fragments:',
+            "          $ReelHeader",
+            "              mHidden=false mDetached=false mMenuVisible=$Reel mHasMenu=false",
+            "              mRetainInstance=false mUserVisibleHint=$Reel",
+            "              mParentFragment=$ParentName (15d18ac3 id=0x7f0a0ccd)",
+            '              Child FragmentManager{2 in WatchFeedOrWarionFragment{90bc1ee}}:',
+            '                mParent=WatchFeedOrWarionFragment{90bc1ee} (cc7d9f26 id=0x7f0a06ff)',
+            '            #0: WatchFeedOrWarionFragment{90bc1ee} (cc7d9f26 id=0x7f0a06ff)',
+            'TASK 10468:com.other.app id=7401 userId=0',
+            '  ACTIVITY com.other.app/.Main 30d65d pid=2364 userId=0',
+            '      mResumed=false mStopped=true mFinished=false')
+    }
+    Assert-That (Test-AuditReelViewer (New-TopDump) "$Package/.Main") 'A visible reel viewer was not proved.'
+    Assert-That (-not (Test-AuditReelViewer (New-TopDump) "$Package/.Other")) "Another screen's reel viewer passed."
+    Assert-That (-not (Test-AuditReelViewer (New-TopDump -Resumed 'false') "$Package/.Main")) 'A paused screen passed.'
+    Assert-That (-not (Test-AuditReelViewer (New-TopDump -Reel 'false') "$Package/.Main")) 'A reel viewer in a hidden tab passed.'
+    Assert-That (-not (Test-AuditReelViewer (New-TopDump -Parent 'false') "$Package/.Main")) 'A reel viewer under a hidden fragment passed.'
+    Assert-That (-not (Test-AuditReelViewer (New-TopDump -ParentName 'GoneFragment{123abc}') "$Package/.Main")) 'A reel viewer with no parent header passed.'
+    Assert-That (-not (Test-AuditReelViewer (New-TopDump -ReelHeader 'OtherFragment{77} (aa id=0x1)') "$Package/.Main")) 'A reel viewer only listed passed.'
+    Assert-That (-not (Test-AuditReelViewer @((New-TopDump) + (New-TopDump)) "$Package/.Main")) 'A screen listed twice passed.'
+    $script:topDump = (New-TopDump) -join "`n"
+    $inputReel = $true
+    $script:adbCalls.Clear()
+    Invoke-Adb shell input swipe 10 20 10 5 | Out-Null
+    Invoke-Adb shell input keyevent KEYCODE_BACK | Out-Null
+    Assert-That (@($script:adbCalls | Where-Object { $_ -like '* input *' }).Count -eq 2) 'A proved reel refused a swipe or Back.'
+    Assert-That (-not @($script:adbCalls | Where-Object { $_ -like '*uiautomator*' }).Count) 'A reel was dumped while it played.'
+    $script:adbCalls.Clear()
+    Assert-Throws { Invoke-Adb shell input tap 10 10 } 'A reel got a tap.'
+    $script:topDump = (New-TopDump -Reel 'false') -join "`n"
+    Assert-Throws { Invoke-Adb shell input swipe 10 20 10 5 } 'A swipe went to a reel viewer that is not on screen.'
+    Assert-That (-not @($script:adbCalls | Where-Object { $_ -like '* input *' }).Count) 'Input escaped the reel guard.'
+    $inputReel = $false
     function New-TestNode([string]$Label, [string]$Class = 'android.view.View', [string]$Owner = $Package) {
         return [pscustomobject]@{ text = $Label; 'content-desc' = $Label; package = $Owner; class = $Class }
     }
     $feedNodes = @((New-TestNode "What's on your mind?"), (New-TestNode 'Go to profile'))
     Assert-That (Test-AuditDestination 'fb://feed' $feedNodes) 'A proved feed was rejected.'
     Assert-That (Test-AuditDestination 'fb://feed' @((New-TestNode 'Facebook logo'))) 'Home with its composer hidden was rejected.'
-    Assert-That (Test-AuditDestination 'fb://watch' @((New-TestNode 'Reel details'))) 'The immersive Reels destination was rejected.'
     foreach ($route in @('fb://watch', 'fb://fb_shorts/viewer', 'fb://notifications', 'fb://marketplace', 'fb://profile', 'fb://search', 'fb://bookmarks')) {
         Assert-That (-not (Test-AuditDestination $route $feedNodes)) "Home fallback passed as $route."
         Assert-That (-not (Test-AuditDestination $route @())) "Empty UI passed as $route."
     }
     $destinations = @{
-        'fb://watch' = @((New-TestNode 'Reels tab details'))
-        'fb://fb_shorts/viewer' = @((New-TestNode 'Reel details'))
         'fb://notifications' = @((New-TestNode 'Notifications'))
         'fb://marketplace' = @((New-TestNode 'Marketplace'), (New-TestNode 'Search Marketplace'))
         'fb://profile' = @((New-TestNode 'Edit profile'), (New-TestNode 'Edit profile picture'))

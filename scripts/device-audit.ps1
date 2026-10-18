@@ -83,6 +83,10 @@ $LauncherClass = 'com.facebook.katana.LoginActivity'
 $Entry = $null
 $Extra = 'app.morphe.extension.facebook'
 $AuditDir = "/sdcard/Android/data/$Package/files/hushfacebook-audit"
+# These links open a playing reel, and uiautomator can't read a screen while a video plays
+# ("could not get idle state", about 11 seconds a try). Their destination and their input are
+# proved from the fragment tree instead (Get-AuditReelProof), and a reel never gets a tap.
+$ReelRoutes = @('fb://watch', 'fb://fb_shorts/viewer')
 $translationTables = Join-Path $PSScriptRoot '..\extensions\shared\library\src\main\l10n'
 
 if (-not $Serial) { throw 'Pass -Serial or set HUSHFACEBOOK_DEVICE_SERIAL.' }
@@ -184,8 +188,15 @@ function Invoke-Adb {
         if (-not $identityVerified) { throw 'Device identity has not been verified. No input was sent.' }
         if (-not ($arguments.Count -eq 4 -and $arguments[2] -eq 'keyevent' -and $arguments[3] -eq 'KEYCODE_WAKEUP')) {
             Assert-AuditForeground
-            $fresh = @(Get-UiNodes)
-            if ($fresh.Count -eq 0) { throw 'No fresh Facebook UI nodes. No input was sent.' }
+            if ($inputReel) {
+                # A playing reel can't be dumped, so its fragments prove the screen. A tap soon after
+                # another one likes a reel, so it never gets one.
+                if ($arguments[2] -eq 'tap') { throw 'A reel never gets a tap. No tap was sent.' }
+                if (-not (Get-AuditReelProof)) { throw 'The reel viewer is not on screen. No input was sent.' }
+            } else {
+                $fresh = @(Get-UiNodes)
+                if ($fresh.Count -eq 0) { throw 'No fresh Facebook UI nodes. No input was sent.' }
+            }
             $nodeWindow = $script:auditWindowIdentity
             if ($arguments[2] -eq 'tap') {
                 if ($inputNodeLabel -cnotin @('Comment', 'Settings and privacy', 'Feeds')) {
@@ -262,8 +273,6 @@ function Test-AuditDestination([string]$Route, [object[]]$Nodes) {
             return ($labels -ccontains "What's on your mind?" -and $labels -ccontains 'Go to profile') -or
                 @($own | Where-Object { $_.'content-desc' -ceq 'Facebook logo' }).Count -gt 0
         }
-        'fb://watch' { return $labels -ccontains 'Reels tab details' -or $labels -ccontains 'Reel details' }
-        'fb://fb_shorts/viewer' { return $labels -ccontains 'Reel details' }
         'fb://notifications' {
             # The link opens a page whose title isn't a node and which a warm app restores scrolled
             # down, so a row's own settings button counts too.
@@ -286,6 +295,62 @@ function Test-AuditDestination([string]$Route, [object[]]$Nodes) {
         }
     }
     return $false
+}
+
+# Whether $Activity's section of "dumpsys activity top" is resumed and shows a reel viewer: a
+# WatchFeedOrWarionFragment that's shown and visible to the user, inside fragments that are too.
+# A fragment's fields are the lines indented under its header, up to its child fragments. Lines
+# naming a fragment after "#n:" or "mParent=" only list it. Anything ambiguous is no proof.
+function Test-AuditReelViewer([string[]]$Top, [string]$Activity) {
+    $lines = @(($Top -join "`n") -split "\r?\n")
+    $heads = @(for ($i = 0; $i -lt $lines.Count; $i++) { if ($lines[$i] -match '^(?:TASK |\s*ACTIVITY )') { $i } })
+    $mine = @($heads | Where-Object { $lines[$_] -match '^\s*ACTIVITY (\S+)\s' -and $Matches[1] -ceq $Activity })
+    if ($mine.Count -ne 1) { return $false }
+    $next = @(@($heads | Where-Object { $_ -gt $mine[0] }) + $lines.Count)[0]
+    if ($next -le $mine[0] + 1) { return $false }
+    $section = $lines[($mine[0] + 1)..($next - 1)]
+    if (-not @($section | Where-Object { $_ -cmatch '\bmResumed=true\b' }).Count) { return $false }
+    $fields = @{}
+    $name = $null
+    $indent = 0
+    foreach ($line in $section) {
+        $depth = $line.Length - $line.TrimStart().Length
+        if ($line -match '^\s+([\w$.]+\{[0-9a-f]+\}) \(') {
+            if ($fields.ContainsKey($Matches[1])) { return $false }
+            $name = $Matches[1]
+            $indent = $depth
+            $fields[$name] = [Collections.Generic.List[string]]::new()
+        } elseif ($null -ne $name -and ($depth -le $indent -or $line -match '^\s+Child FragmentManager')) {
+            $name = $null
+        } elseif ($null -ne $name) {
+            $fields[$name].Add($line)
+        }
+    }
+    foreach ($reel in @($fields.Keys | Where-Object { $_.StartsWith('WatchFeedOrWarionFragment{', [StringComparison]::Ordinal) })) {
+        $at = $reel
+        for ($level = 0; $null -ne $at -and $level -lt 12; $level++) {
+            if (-not $fields.ContainsKey($at)) { break }
+            $text = $fields[$at] -join "`n"
+            if ($text -cnotmatch '\bmHidden=false\b' -or $text -cnotmatch '\bmDetached=false\b' -or
+                    $text -cnotmatch '\bmMenuVisible=true\b' -or $text -cnotmatch '\bmUserVisibleHint=true\b') { break }
+            $parents = @([regex]::Matches($text, '(?m)^\s*mParentFragment=([\w$.]+\{[0-9a-f]+\})') | ForEach-Object { $_.Groups[1].Value })
+            if ($parents.Count -gt 1) { break }
+            $at = if ($parents.Count) { $parents[0] } else { $null }
+        }
+        if ($null -eq $at) { return $true }
+    }
+    return $false
+}
+
+# Proves the reel viewer is in front from the resumed Facebook screen's fragments, which can be
+# read while a video plays.
+function Get-AuditReelProof {
+    Assert-AuditForeground
+    $windowBefore = $script:auditWindowIdentity
+    $top = @(Invoke-Adb shell dumpsys activity top)
+    Assert-AuditForeground
+    if ($script:auditWindowIdentity -cne $windowBefore) { return $false }
+    return Test-AuditReelViewer $top $windowBefore.Substring(0, $windowBefore.IndexOf('|'))
 }
 
 # The one node a "tap:<label>" step may tap, or $null. A row can repeat its label on a child that
@@ -675,6 +740,7 @@ try {
     if (-not $SkipWalk) {
         $stepNumber = 0
         $routeVerified = $false
+        $routeReel = $false
         $skipBack = $false
         foreach ($step in $Visit) {
             $stepNumber++
@@ -685,6 +751,12 @@ try {
                 continue
             }
             if ($step -like 'tap:*') {
+                if ($routeReel) {
+                    $skipBack = $true
+                    $summary.Add("Walk: step $stepNumber ($step) would tap a reel. No tap sent.")
+                    if ($OptionalVisit -cnotcontains $step) { $problems.Add("Required step $stepNumber would tap a reel: $step") }
+                    continue
+                }
                 $skipBack = $false
                 $label = $step.Substring(4)
                 $node = $null
@@ -712,29 +784,40 @@ try {
                     if ($OptionalVisit -cnotcontains $step) { $problems.Add("Required step $stepNumber was not reached: $step") }
                 }
             } elseif ($step -eq 'longpress') {
-                Invoke-Adb shell input swipe $swipeX ([int]($height / 2)) $swipeX ([int]($height / 2)) 2500 | Out-Null
+                $inputReel = $routeReel
+                $inputWindow = if ($routeReel) { $routeWindow }
+                try { Invoke-Adb shell input swipe $swipeX ([int]($height / 2)) $swipeX ([int]($height / 2)) 2500 | Out-Null }
+                finally { $inputReel = $false; $inputWindow = $null }
                 Start-Sleep -Seconds 1
             } elseif ($step -eq 'back') {
                 if ($skipBack) { $skipBack = $false; continue }
-                Invoke-Adb shell input keyevent KEYCODE_BACK | Out-Null
+                $inputReel = $routeReel
+                try { Invoke-Adb shell input keyevent KEYCODE_BACK | Out-Null }
+                finally { $inputReel = $false }
+                $routeReel = $false
                 Start-Sleep -Seconds 1
             } else {
                 $routeVerified = $false
+                $routeReel = $false
+                $reel = $ReelRoutes -ccontains $step
                 $launch = (Invoke-Adb shell am start -W -a android.intent.action.VIEW -d $step -p $Package) -join "`n"
                 Start-Sleep -Seconds $SettleSeconds
-                $routeVerified = $launch -cmatch '(?m)^Status: ok\r?$' -and (Test-AuditDestination $step @(Get-UiNodes))
+                $routeVerified = $launch -cmatch '(?m)^Status: ok\r?$' -and
+                    $(if ($reel) { Get-AuditReelProof } else { Test-AuditDestination $step @(Get-UiNodes) })
                 if (-not $routeVerified) {
                     $summary.Add("Walk: destination not proved at step $stepNumber ($step). No input sent.")
                     if ($OptionalVisit -cnotcontains $step) { $problems.Add("Required destination not reached at step ${stepNumber}: $step") }
                     continue
                 }
                 $routeWindow = $script:auditWindowIdentity
+                $routeReel = $reel
                 # Before the swipes too, while a tab bar that slides away is still on screen.
                 Save-Screenshot (Join-Path $OutDir ('walk-{0:00}-{1}-top.png' -f $stepNumber, ($step -replace '[^A-Za-z0-9]+', '-').Trim('-')))
                 for ($i = 0; $i -lt $Swipes; $i++) {
                     $inputWindow = $routeWindow
+                    $inputReel = $routeReel
                     try { Invoke-Adb shell input swipe $swipeX $swipeFrom $swipeX $swipeTo 300 | Out-Null }
-                    finally { $inputWindow = $null }
+                    finally { $inputWindow = $null; $inputReel = $false }
                     Start-Sleep -Milliseconds 1500
                 }
             }

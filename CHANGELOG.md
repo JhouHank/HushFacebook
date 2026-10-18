@@ -70,6 +70,7 @@ Changes in each Hushfacebook version, newest first.
 * **Tooling:** The device audit starts Facebook through the launcher entry the phone has turned on, so a run, and the phone smoke walk, still work after you pick another app icon. They read the entry from the phone, never change a component, and stop before touching any setting if they find none or more than one.
 
 * **Tooling:** The device audit's walk gets through a test account with no profile picture and the pages Facebook's links open now. Notifications restored partway down, the profile's Add profile picture button and the Menu opened as a page of its own all count as arrived. A row that repeats its label on a part inside it, like the Menu's Settings and privacy, can be tapped, and the tap still has to land inside that row.
+* **Tooling:** The device audit's Watch and Shorts stops no longer hang on a playing reel. The phone can't read a screen while a video plays, so the walk now proves the reel viewer from Facebook's own screen state: the right screen in front and the reel page showing, with nothing hiding it. A reel stop still takes swipes and Back but never a tap, since a second tap likes the reel.
 
 * **Tooling:** The script contract tests pass on a published index again. Their check that the release facts refuse a second Facebook build swapped one into the CHANGELOG part of the index, which the facts check skips on purpose, so it failed as soon as a changelog bullet named the target build. It now swaps it into the facts.
 
