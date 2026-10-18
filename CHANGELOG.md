@@ -9,7 +9,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** New switch in Clean up Reels, `Open feed videos on their own`. A video you tap in the feed opens full screen by itself, and a swipe up no longer leads into an endless reels feed. The Reels tab keeps scrolling as before. It starts off (issue #161).
 * **Facebook:** New switch, `Hide the status bar`, under Appearance with the other bar switches. The phone's status bar with the time and battery goes from Facebook's main screen, so the feed gets the whole screen, and a swipe down from the top edge shows it for a moment. It starts off (issue #124).
 
-* **Facebook:** New patch, `Open comments at full height`. With its switch under Comments on, the comment sheet opens all the way up instead of stopping part way, on posts, videos, reels and stories. On reels and videos, the Comment button opens that sheet instead of the split view with the video on top. It starts off (issue #179).
+* **Facebook:** New patch, `Open comments at full height`. With its switch under Comments on, the comment sheet opens all the way up instead of stopping part way, on posts, videos, reels and stories. On reels and videos, the Comment button opens that sheet instead of the split view with the video on top, and the copy of the reel Facebook draws above the comments is hidden so they get the whole sheet. It starts off (issue #179).
 
 * **Facebook:** The settings now come in Simplified Chinese when Facebook runs in it. Every row, switch name and description is translated, and Facebook's own feature names follow the words its Simplified Chinese app uses. Traditional Chinese still gets English for now. If a line reads oddly, a better wording is welcome on the issue tracker.
 

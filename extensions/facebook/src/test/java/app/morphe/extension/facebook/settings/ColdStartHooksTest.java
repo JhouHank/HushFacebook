@@ -337,6 +337,14 @@ public class ColdStartHooksTest {
                 FullHeightComments.skipSplitScreen());
         assertFalse("a comment sheet sized before the context was made full screen",
                 FullHeightComments.fillsScreen(1f));
+        android.widget.FrameLayout earlyHeader = new android.widget.FrameLayout(RuntimeEnvironment.getApplication());
+        earlyHeader.setId(0x7f0a0612);
+        earlyHeader.addView(new android.view.TextureView(RuntimeEnvironment.getApplication()));
+        android.widget.FrameLayout earlySheet = new android.widget.FrameLayout(RuntimeEnvironment.getApplication());
+        earlySheet.addView(earlyHeader);
+        FullHeightComments.watchHeader(earlySheet, 0x7f0a0612);
+        assertFalse("a comment sheet set up before the context lost the video above its comments",
+                earlyHeader.getVisibility() == android.view.View.GONE);
         assertFalse("a word typed before the context lost its tag suggestions", TagSuggestionsForTests.skipsAPlainWord());
         assertFalse("a list of people open before the context was closed", TagSuggestionsForTests.closesAListLeftOpen());
         assertFalse("a Chats list built before the context lost the Get Messenger card",

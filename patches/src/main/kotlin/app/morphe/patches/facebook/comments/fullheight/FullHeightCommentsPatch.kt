@@ -23,9 +23,13 @@ import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -58,10 +62,16 @@ internal const val SIMPLE_POPOVER = "Lcom/facebook/widget/popover/SimplePopoverF
 /** The comment sheet's popover fragment, a kept class, holding the share of the screen's height it opens to. */
 internal const val UFI_POPOVER = "Lcom/facebook/ufiservices/flyout/fragment/SimpleUFIPopoverFragment;"
 
+/** The trace Facebook's comments helper opens while it sets up a comment sheet's views, held by that method. */
+internal const val SET_COMMENT_VIEWS = "ComponentsCommentsHelper.setCommentViews"
+
+internal const val FIND_VIEW = "Landroid/view/View;->findViewById(I)Landroid/view/View;"
+
 internal const val FULL_HEIGHT_COMMENTS = "$EXTENSION_PACKAGE/comments/FullHeightComments;"
 internal const val SHEET_HEIGHT = "$FULL_HEIGHT_COMMENTS->sheetHeight(F)F"
 internal const val SKIP_SPLIT_SCREEN = "$FULL_HEIGHT_COMMENTS->skipSplitScreen()Z"
 internal const val FILLS_SCREEN = "$FULL_HEIGHT_COMMENTS->fillsScreen(F)Z"
+internal const val WATCH_HEADER = "$FULL_HEIGHT_COMMENTS->watchHeader(Landroid/view/View;I)V"
 
 /**
  * Open comments at full height (#179).
@@ -91,6 +101,13 @@ internal const val FILLS_SCREEN = "$FULL_HEIGHT_COMMENTS->fillsScreen(F)Z"
  * the share from its one float field. First thing in that override, the extension is handed the
  * share, and a yes answers that the sheet fills the screen, the way Facebook draws a post's comments.
  *
+ * A full-screen reel sheet still draws the reel in the sheet's header, a LithoView above the
+ * comment list, so the list starts a third of the way down. The method holding [SET_COMMENT_VIEWS]
+ * (583 arm64 `LX/A7c;->A0A(View, View, FeedbackParams)`) finds that header by an id in its first
+ * [FIND_VIEW] call on the sheet's views, its first parameter. First thing in it, the extension is
+ * handed those views and that id, and hides the header while it holds a video. A post's header,
+ * its reactions, has none and stays.
+ *
  * In the default selection with its switch off, so nothing changes until it's turned on.
  */
 @Suppress("unused")
@@ -119,6 +136,8 @@ val fullHeightCommentsPatch = bytecodePatch(
         val ufiPopover = classDefByOrNull(UFI_POPOVER) ?: refuse("$UFI_POPOVER isn't in this build")
         val fills = fillsScreenOverride(popover, ufiPopover)
         val share = shareField(fills)
+        val views = commentViewsSetup(holders(SET_COMMENT_VIEWS))
+        val header = headerId(views)
 
         mutableClassDefBy(POPOVER_PARAMS).methods.single { it.descriptor() == sheet.descriptor() }
             .raiseSheet(height)
@@ -127,6 +146,8 @@ val fullHeightCommentsPatch = bytecodePatch(
                 .skipSplitScreen()
         }
         mutableClassDefBy(UFI_POPOVER).methods.single { it.descriptor() == fills.descriptor() }.fillScreen(share)
+        mutableClassDefBy(views.definingClass).methods.single { it.descriptor() == views.descriptor() }
+            .watchHeader(header)
         enableStatus("fullHeightComments")
     }
 }
@@ -259,6 +280,61 @@ internal fun MutableMethod.fillScreen(share: FieldReference) {
             return v0
         """,
         ExternalLabel("facebook", getInstruction(0)),
+    )
+}
+
+/**
+ * The method setting up a comment sheet's views: the one method among [holders] holding
+ * [SET_COMMENT_VIEWS], an instance method taking the sheet's views first, with two local registers
+ * for the hook.
+ */
+internal fun commentViewsSetup(holders: List<ClassDef>): Method {
+    val found = holders.flatMap { methodsHolding(it, SET_COMMENT_VIEWS) }.distinctBy { it.descriptor() }
+    val setup = found.singleOrNull()
+        ?: refuse("expected one method holding \"$SET_COMMENT_VIEWS\", found ${found.size}: ${found.joinToString { it.descriptor() }}")
+    if (AccessFlags.STATIC.isSet(setup.accessFlags) || setup.parameterTypes.firstOrNull()?.toString() != VIEW) {
+        refuse("${setup.descriptor()} doesn't take the sheet's views first")
+    }
+    if (setup.localRegisterCount() < 2) refuse("${setup.descriptor()} has no two local registers for the hook")
+    return setup
+}
+
+/**
+ * The id of the sheet's header: the literal [setup] loads right before its first [FIND_VIEW] call,
+ * into that call's id register, the call made on [setup]'s first parameter.
+ */
+internal fun headerId(setup: Method): Int {
+    val instructions = setup.implementation!!.instructions.toList()
+    val at = instructions.indexOfFirst {
+        it.opcode == Opcode.INVOKE_VIRTUAL && (it as ReferenceInstruction).reference.toString() == FIND_VIEW
+    }
+    if (at < 1) refuse("${setup.descriptor()} makes no $FIND_VIEW call after loading an id")
+    val call = instructions[at] as FiveRegisterInstruction
+    val views = setup.implementation!!.registerCount - setup.parameterTypes.sumOf { width(it.toString()) }
+    if (call.registerC != views) refuse("${setup.descriptor()}'s first $FIND_VIEW call isn't on its first parameter")
+    val load = instructions[at - 1]
+    if (load.opcode !in CONSTS || (load as OneRegisterInstruction).registerA != call.registerD) {
+        refuse("${setup.descriptor()} doesn't load its first $FIND_VIEW call's id right before it")
+    }
+    return (load as NarrowLiteralInstruction).narrowLiteral
+}
+
+private const val VIEW = "Landroid/view/View;"
+
+private val CONSTS = setOf(Opcode.CONST, Opcode.CONST_4, Opcode.CONST_16, Opcode.CONST_HIGH16)
+
+/**
+ * First thing in the setup of a comment sheet's views: hand the extension the sheet's views, the
+ * first parameter, and the header's [id], through two locals, which hold nothing yet.
+ */
+internal fun MutableMethod.watchHeader(id: Int) {
+    addInstructions(
+        0,
+        """
+            move-object/from16 v1, p1
+            const v0, $id
+            invoke-static { v1, v0 }, $WATCH_HEADER
+        """,
     )
 }
 

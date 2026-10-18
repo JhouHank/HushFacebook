@@ -697,11 +697,13 @@ public class PausedHooksTest {
                 () -> CommentSheetOptions.hidesComment(new GraphQLComment("Big SPOILER inside")),
                 () -> CommentSheetOptions.incomingTypers(3) == 0));
         // A reel's comment sheet asking for two thirds of the screen gets all of it, a split-screen
-        // launcher answers that it didn't open, and a full-height sheet fills the screen.
+        // launcher answers that it didn't open, a full-height sheet fills the screen, and the reel
+        // drawn above the comments is hidden.
         probes.put(PatchFamily.FULL_HEIGHT_COMMENTS, Arrays.asList(
                 () -> FullHeightComments.sheetHeight(0.66f) == 1f,
                 FullHeightComments::skipSplitScreen,
-                () -> FullHeightComments.fillsScreen(1f)));
+                () -> FullHeightComments.fillsScreen(1f),
+                PausedHooksTest::hidesTheVideoAboveTheComments));
         // A word without @ in a post or comment box looks nobody up, and a list of people left open
         // by an earlier @ is closed.
         probes.put(PatchFamily.TAG_SUGGESTIONS, Arrays.asList(
@@ -882,6 +884,18 @@ public class PausedHooksTest {
     /** A scrubber still in Facebook's thin look, which an update would give the kept look. */
     private static boolean givesAThinBarTheKeptLook() {
         return ProgressBar.looksAgain(new android.widget.LinearLayout(RuntimeEnvironment.getApplication()));
+    }
+
+    /** A comment sheet whose header holds a video, the reel above its comments, set up by Facebook. */
+    private static boolean hidesTheVideoAboveTheComments() {
+        android.content.Context app = RuntimeEnvironment.getApplication();
+        FrameLayout header = new FrameLayout(app);
+        header.setId(0x7f0a0612);
+        header.addView(new android.view.TextureView(app));
+        FrameLayout sheet = new FrameLayout(app);
+        sheet.addView(header);
+        FullHeightComments.watchHeader(sheet, 0x7f0a0612);
+        return header.getVisibility() == View.GONE;
     }
 
     /** A press at the far end of a bar whose thumb sits at its start, then a cancel to end it. */

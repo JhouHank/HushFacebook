@@ -35,8 +35,10 @@ import java.io.File
  * two by the reason they log, each a boolean method with a local register; each asks the
  * extension first, a yes answers false, and a no lands on Facebook's first instruction. The comment
  * sheet's "fill the screen?" override reads one float of its own, and the hook hands it to the
- * extension first, returning a yes and landing a no on Facebook's first instruction. Reads the
- * fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
+ * extension first, returning a yes and landing a no on Facebook's first instruction. The comments
+ * helper's view setup is found by its trace, its first findViewById on the sheet's views loads the
+ * header's id, and the hook hands the views and that id to the extension first through two locals.
+ * Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class FullHeightCommentsFixtureTest {
     private fun bundles(check: (File) -> Unit) {
@@ -151,6 +153,42 @@ class FullHeightCommentsFixtureTest {
         assertEquals("$where: a yes is the answer", register, (patched[4] as OneRegisterInstruction).registerA)
         assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(5).map { it.opcode })
         assertEquals("$where: a no lands on Facebook's first instruction", setOf(4, 5), ControlFlow.of(method).normal[3].toSet())
+    }
+
+    private fun commentViews(bundle: File) {
+        val setup = commentViewsSetup(holders(bundle, SET_COMMENT_VIEWS))
+        val where = "${bundle.name}: ${setup.descriptor()}"
+        val id = headerId(setup)
+        assertEquals("$where: the header's id is one of the app's", 0x7f, id ushr 24)
+
+        val owner = FixtureDex.classes(bundle, setOf(setup.definingClass)).values.single()
+        val context = PatchContexts.of(listOf(owner))
+        val method = context.mutableClassDefBy(owner.type).methods.single { it.descriptor() == setup.descriptor() }
+        val original = method.implementation!!.instructions.toList()
+        method.watchHeader(id)
+        val patched = method.implementation!!.instructions.toList()
+        assertEquals("$where gains three instructions", original.size + 3, patched.size)
+        val views = method.implementation!!.registerCount -
+            setup.parameterTypes.sumOf { if (it.toString() == "J" || it.toString() == "D") 2 else 1 }
+        assertEquals("$where: the sheet's views are moved first", Opcode.MOVE_OBJECT_FROM16, patched[0].opcode)
+        val move = patched[0] as TwoRegisterInstruction
+        assertEquals("$where: from the first parameter", views, move.registerB)
+        assertTrue("$where: the hook writes v${move.registerA}, which isn't a local", move.registerA < method.localRegisterCount())
+        assertEquals("$where: then the header's id", Opcode.CONST, patched[1].opcode)
+        assertEquals("$where: the id Facebook finds the header by", id, (patched[1] as NarrowLiteralInstruction).narrowLiteral)
+        val load = (patched[1] as OneRegisterInstruction).registerA
+        assertTrue("$where: the hook writes v$load, which isn't a local", load < method.localRegisterCount())
+        assertEquals("$where: then the extension is handed both", Opcode.INVOKE_STATIC, patched[2].opcode)
+        assertEquals("$where: then the extension is handed both", WATCH_HEADER, patched[2].reference())
+        val call = patched[2] as FiveRegisterInstruction
+        assertEquals("$where: the views and the id", listOf(2, move.registerA, load),
+            listOf(call.registerCount, call.registerC, call.registerD))
+        assertEquals("$where: Facebook's code stays", original.map { it.opcode }, patched.drop(3).map { it.opcode })
+    }
+
+    @Test
+    fun `each declared build hands the comment sheet's views and its header's id to the extension as they're set up`() = bundles { bundle ->
+        commentViews(bundle)
     }
 
     @Test
