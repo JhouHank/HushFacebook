@@ -138,20 +138,45 @@ public final class PostPrompts {
     /** Counted under the patch's name each time a reaction preview is left undrawn. */
     static final String REACTIONS_HIDDEN = "Reaction preview kept out";
 
+    /** Counted under the patch's name each time a comment's reaction preview is left undrawn. */
+    static final String COMMENT_REACTIONS_HIDDEN = "Comment reaction preview kept out";
+
     private static volatile boolean reactionsLogged;
 
+    private static volatile boolean commentReactionsLogged;
+
     /**
-     * The hook, at the start of the two draw methods behind the reaction preview under a post: the
-     * stacked reaction faces at the end of the button row, and the bling bar's reaction icons with
-     * their count line. True makes the draw method return before it paints anything, so the space
+     * The hook, at the start of the draw method behind the bling bar's reaction icons and count
+     * line under a post. True makes the draw method return before it paints anything, so the space
      * stays and so does a tap on it (#158). False, which is the answer while the switch is off,
      * paused, before the settings are ready or when anything here fails, draws as Facebook does.
      * Runs every frame, so it only reads the switch and bumps two counters.
      */
     public static boolean hideReactionPreview() {
+        return hideReactionPreview(false);
+    }
+
+    /**
+     * The hook, at the start of the draw method behind the stacked reaction faces, which
+     * FDSInlineReactions builds for the end of a post's button row and for the corner of a comment
+     * bubble. The patch hands over whether the faces belong to a comment, and each surface answers
+     * to its own switch. Same answers and cost as {@link #hideReactionPreview()}.
+     */
+    public static boolean hideReactionPreview(boolean comment) {
         try {
             HookStatus.invoked(FAMILY);
-            if (!Utils.settingsReady() || !Settings.HIDE_POST_REACTIONS.get()) return false;
+            if (!Utils.settingsReady()) return false;
+            if (comment) {
+                if (!Settings.HIDE_COMMENT_REACTIONS.get()) return false;
+                HookStatus.bound(FAMILY, "comment reaction preview");
+                HookStatus.counted(FAMILY, COMMENT_REACTIONS_HIDDEN);
+                if (!commentReactionsLogged) {
+                    commentReactionsLogged = true;
+                    Logger.printDebug(() -> "Post prompts: a comment's reaction preview was left undrawn");
+                }
+                return true;
+            }
+            if (!Settings.HIDE_POST_REACTIONS.get()) return false;
             HookStatus.bound(FAMILY, "reaction preview");
             HookStatus.counted(FAMILY, REACTIONS_HIDDEN);
             if (!reactionsLogged) {
@@ -160,7 +185,7 @@ public final class PostPrompts {
             }
             return true;
         } catch (Throwable failure) {
-            HookStatus.threw(FAMILY, "reaction preview", failure);
+            HookStatus.threw(FAMILY, comment ? "comment reaction preview" : "reaction preview", failure);
             return false;
         }
     }

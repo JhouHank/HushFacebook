@@ -54,12 +54,12 @@ internal fun facepileTypes(component: ClassDef, isDrawable: (String) -> Boolean)
  * Asks the extension first thing and returns before anything is painted when it says so. At the
  * first instruction no local holds anything yet, so v0 is free there.
  */
-internal fun MutableMethod.skipDrawWhen(hook: String) {
+internal fun MutableMethod.skipDrawWhen(ask: String) {
     requireLocals(PATCH, 1)
     addInstructionsWithLabels(
         0,
         """
-            invoke-static { }, $hook
+            $ask
             move-result v0
             if-eqz v0, :facebooks_draw
             return-void
@@ -88,6 +88,14 @@ internal fun BytecodePatchContext.hideReactionPreview() {
     val barDraws = bar.methods.filter { isDrawMethod(it, "onDraw") }
     if (barDraws.size != 1) throw PatchException("$PATCH: expected one onDraw(Canvas) in ${bar.type}, found ${barDraws.size}")
 
-    mutableClassDefBy(facepile).methods.single { isDrawMethod(it, "draw") }.skipDrawWhen(HIDE_REACTION_PREVIEW)
-    mutableClassDefBy(bar.type).methods.single { isDrawMethod(it, "onDraw") }.skipDrawWhen(HIDE_REACTION_PREVIEW)
+    val factories = component.methods.filter { AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == facepile }
+    val factory = factories.singleOrNull() ?: throw PatchException(
+        "$PATCH: expected one static method on ${component.type} returning $facepile, found ${factories.size}",
+    )
+
+    // Comments draw the same facepile, so it learns which surface it was built for before it can be asked.
+    tagCommentFaces(component, classDefBy(facepile), factory)
+    mutableClassDefBy(facepile).methods.single { isDrawMethod(it, "draw") }.skipDrawWhen(facepileAsk(facepile))
+    mutableClassDefBy(bar.type).methods.single { isDrawMethod(it, "onDraw") }
+        .skipDrawWhen("invoke-static { }, $HIDE_REACTION_PREVIEW")
 }

@@ -144,6 +144,7 @@ public final class SettingsBackup {
             Settings.HIDE_POST_FOLLOW_LINK,
             Settings.HIDE_POST_COUNTS,
             Settings.HIDE_POST_REACTIONS,
+            Settings.HIDE_COMMENT_REACTIONS,
             Settings.HIDE_SEEN_POSTS,
             Settings.HIDE_META_AI_QUESTIONS,
             Settings.KEEP_POST_DATES,

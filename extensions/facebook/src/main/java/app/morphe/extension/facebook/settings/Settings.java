@@ -1516,6 +1516,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_post_reactions", FALSE);
 
     /**
+     * The stacked reaction faces in the corner of a comment bubble are left undrawn, and a tap on them
+     * still opens the list of reactions
+     * ({@link app.morphe.extension.facebook.feed.PostPrompts#hideReactionPreview(boolean)}, #158). Off by
+     * default. A change shows on the comments drawn after it.
+     */
+    public static final BooleanSetting HIDE_COMMENT_REACTIONS =
+            new BooleanSetting("hushfacebook_hide_comment_reaction_preview", FALSE);
+
+    /**
      * Posts you've already scrolled past stay out of the feed on later loads
      * ({@link app.morphe.extension.facebook.feed.SeenPosts}). Off by default: it remembers which
      * posts you saw, on the phone only. Posts already on screen are never touched, and a change

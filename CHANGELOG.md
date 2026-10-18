@@ -26,6 +26,8 @@ Changes in each Hushfacebook version, newest first.
 
 * **Facebook:** **Hide the reaction preview on posts**, a new switch under News feed, stops drawing the stacked reaction icons at the end of the button row and the reactions count under a post (issue #158). The space stays where it was. It starts off. Part of `Hide post prompts`.
 
+* **Facebook:** **Hide the reaction preview on comments**, a new switch under Comments, stops drawing the stacked reaction icons in the corner of a comment (issue #158). The space stays, so a tap where they were still opens the list of reactions. It starts off and shows on the comments drawn after you change it. The switch for posts leaves comments alone, and this one leaves posts alone. Part of `Hide post prompts`.
+
 ### Fixed
 
 * **Facebook:** With `View stories anonymously` on, a story you watched to the end now stays watched when Facebook restarts or reloads the story tray (issues #61 and #165). Facebook builds the tray a few times over as it starts, the last time from its servers, and only the first of those got marked, so the ring came back blue.

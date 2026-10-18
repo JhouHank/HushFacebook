@@ -15,7 +15,10 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.dexbacked.DexBackedDexFile
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.immutable.reference.ImmutableMethodReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -63,22 +66,101 @@ class ReactionPreviewFixtureTest {
                 assertNotNull("$name: no $PILLS_BLING_BAR", bar)
                 assertEquals("$name: onDraw(Canvas) methods on the bling bar", 1, bar!!.methods.count { isDrawMethod(it, "onDraw") })
 
-                val context = PatchContexts.of(listOf(component, facepile, bar))
-                context.hideReactionPreview()
-                for ((original, label) in listOf(facepile.method("draw") to "facepile", bar.method("onDraw") to "bling bar")) {
-                    val type = original.definingClass
-                    val patched = context.mutableClassDefBy(type).methods.single {
-                        it.name == original.name && it.parameterTypes.map(CharSequence::toString) == original.parameterTypes.map(CharSequence::toString)
-                    }.implementation!!.instructions.toList()
-                    val before = original.implementation!!.instructions.toList()
-                    assertEquals("$name: $label: four instructions added", before.size + 4, patched.size)
-                    assertEquals("$name: $label: the extension is asked first", HIDE_REACTION_PREVIEW,
-                        ((patched[0] as ReferenceInstruction).reference as MethodReference).toString())
-                    assertEquals("$name: $label: shape of the early return",
-                        listOf(Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.RETURN_VOID),
-                        patched.take(4).map { it.opcode })
-                    assertEquals("$name: $label: the rest is Facebook's", before.map { it.opcode }, patched.drop(4).map { it.opcode })
+                // The comment component, and the methods that call the factory (a negative control: not all pair it with a component).
+                val commentClasses = FixtureDex.classesHolding(bundle, COMMENT_REACTION_KEY).filter(::isCommentComponent)
+                assertEquals("$name: classes holding the comment component's strings", 1, commentClasses.size)
+                val comment = commentClasses.single()
+                val factory = component.methods.single {
+                    AccessFlags.STATIC.isSet(it.accessFlags) && it.returnType == facepile.type
                 }
+                val factoryRef = ImmutableMethodReference(component.type, factory.name,
+                    factory.parameterTypes.map(CharSequence::toString), factory.returnType)
+                val usesFactory = { dex: DexBackedDexFile ->
+                    dex.methodSection.any { it.definingClass == component.type && it.name == factory.name }
+                }
+                val everyCaller = FixtureDex.methodsWhere(bundle, usesFactory) { method ->
+                    method.definingClass != component.type && method.implementation?.instructions?.any {
+                        (it.opcode == Opcode.INVOKE_STATIC || it.opcode == Opcode.INVOKE_STATIC_RANGE) &&
+                            ((it as ReferenceInstruction).reference as? MethodReference)?.let { ref ->
+                                ref.definingClass == component.type && ref.name == factory.name
+                            } == true
+                    } == true
+                }
+                val pairedCallers = everyCaller.filter { faceCaller(it, factoryRef, component.type) != null }
+                assertEquals("$name: methods pairing the factory's Drawable with a component", 1, pairedCallers.size)
+                assertTrue("$name: no other caller was rejected, so the pairing check proves nothing",
+                    everyCaller.size > pairedCallers.size)
+                val callerType = pairedCallers.single().definingClass
+                val callerClass = FixtureDex.classes(bundle, setOf(callerType)).getValue(callerType)
+
+                val context = PatchContexts.of(listOf(component, facepile, bar, comment, callerClass))
+                context.hideReactionPreview()
+
+                // The bling bar asks the post question; the facepile asks with its own flag.
+                val barPatched = context.mutableClassDefBy(bar.type).methods.single { isDrawMethod(it, "onDraw") }
+                    .implementation!!.instructions.toList()
+                val barBefore = bar.method("onDraw").implementation!!.instructions.toList()
+                assertEquals("$name: bling bar: four instructions added", barBefore.size + 4, barPatched.size)
+                assertEquals("$name: bling bar: the extension is asked first", HIDE_REACTION_PREVIEW,
+                    ((barPatched[0] as ReferenceInstruction).reference as MethodReference).toString())
+                assertEquals("$name: bling bar: shape of the early return",
+                    listOf(Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.RETURN_VOID),
+                    barPatched.take(4).map { it.opcode })
+                assertEquals("$name: bling bar: the rest is Facebook's", barBefore.map { it.opcode },
+                    barPatched.drop(4).map { it.opcode })
+
+                val faceBefore = facepile.method("draw").implementation!!.instructions.toList()
+                val facePatched = context.mutableClassDefBy(facepile.type).methods.single { isDrawMethod(it, "draw") }
+                    .implementation!!.instructions.toList()
+                assertEquals("$name: facepile: five instructions added", faceBefore.size + 5, facePatched.size)
+                assertEquals("$name: facepile: reads its own flag, asks the extension, returns early",
+                    listOf(Opcode.IGET_BOOLEAN, Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ, Opcode.RETURN_VOID),
+                    facePatched.take(5).map { it.opcode })
+                assertEquals("$name: facepile: the flag read", "${facepile.type}->$COMMENT_FLAG:Z",
+                    ((facePatched[0] as ReferenceInstruction).reference as FieldReference).toString())
+                assertEquals("$name: facepile: the extension is asked with the flag", HIDE_FACEPILE,
+                    ((facePatched[1] as ReferenceInstruction).reference as MethodReference).toString())
+                assertEquals("$name: facepile: the rest is Facebook's", faceBefore.map { it.opcode },
+                    facePatched.drop(5).map { it.opcode })
+
+                // The flags and their helpers.
+                for ((type, helper) in listOf(component.type to COMMENT_MARK, facepile.type to COMMENT_COPY)) {
+                    val patchedClass = context.mutableClassDefBy(type)
+                    assertTrue("$name: $type has no $COMMENT_FLAG (instance: ${patchedClass.instanceFields.map { "${it.name}:${it.type}" }}, " +
+                        "all: ${patchedClass.fields.map { "${it.name}:${it.type}" }})",
+                        patchedClass.instanceFields.any { it.name == COMMENT_FLAG && it.type == "Z" })
+                    assertEquals("$name: $type's $helper", 1,
+                        patchedClass.methods.count { it.name == helper && AccessFlags.STATIC.isSet(it.accessFlags) })
+                }
+
+                // The component's flag is set right after each FDSInlineReactions the comment component builds.
+                var marks = 0
+                var constructions = 0
+                for (method in context.mutableClassDefBy(comment.type).methods) {
+                    val code = method.implementation?.instructions?.toList() ?: continue
+                    code.forEachIndexed { index, instruction ->
+                        val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference ?: return@forEachIndexed
+                        if ((instruction.opcode == Opcode.INVOKE_DIRECT || instruction.opcode == Opcode.INVOKE_DIRECT_RANGE) &&
+                            ref.name == "<init>" && ref.definingClass == component.type) {
+                            constructions++
+                            val nextRef = (code[index + 1] as? ReferenceInstruction)?.reference as? MethodReference
+                            if (nextRef?.name == COMMENT_MARK) marks++
+                        }
+                    }
+                }
+                assertTrue("$name: the comment component builds no FDSInlineReactions", constructions > 0)
+                assertEquals("$name: constructions followed by the mark", constructions, marks)
+
+                // The lambda copies it onto the Drawable right after getting it.
+                val lambda = context.mutableClassDefBy(callerClass.type).methods.single {
+                    it.name == pairedCallers.single().name && it.parameterTypes == pairedCallers.single().parameterTypes
+                }.implementation!!.instructions.toList()
+                val copyAt = lambda.indexOfFirst {
+                    ((it as? ReferenceInstruction)?.reference as? MethodReference)?.name == COMMENT_COPY
+                }
+                assertTrue("$name: the lambda never copies the flag", copyAt > 0)
+                assertEquals("$name: the copy follows the Drawable's move-result-object", Opcode.MOVE_RESULT_OBJECT,
+                    lambda[copyAt - 1].opcode)
                 checked += version
                 abis += name.substringAfter("-$version-").substringBefore(".apkm")
             }
@@ -90,10 +172,13 @@ class ReactionPreviewFixtureTest {
     @Test
     fun `the extension has the hook`() {
         val type = HIDE_REACTION_PREVIEW.substringBefore("->")
-        val hook = ExtensionDex.classDef(type).methods.singleOrNull { it.name == "hideReactionPreview" }
-        assertNotNull("the extension has no PostPrompts.hideReactionPreview", hook)
-        assertEquals("hideReactionPreview's shape", HIDE_REACTION_PREVIEW,
-            "${hook!!.definingClass}->${hook.name}(${hook.parameterTypes.joinToString("")})${hook.returnType}")
-        assertTrue("hideReactionPreview isn't static", AccessFlags.STATIC.isSet(hook.accessFlags))
+        val hooks = ExtensionDex.classDef(type).methods.filter { it.name == "hideReactionPreview" }
+        for (wanted in listOf(HIDE_REACTION_PREVIEW, HIDE_FACEPILE)) {
+            val hook = hooks.singleOrNull {
+                "${it.definingClass}->${it.name}(${it.parameterTypes.joinToString("")})${it.returnType}" == wanted
+            }
+            assertNotNull("the extension has no $wanted (found ${hooks.map { it.parameterTypes }})", hook)
+            assertTrue("$wanted isn't static", AccessFlags.STATIC.isSet(hook!!.accessFlags))
+        }
     }
 }

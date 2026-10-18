@@ -373,7 +373,8 @@ final class FeedPages {
         boolean order = build.contains(PatchFamily.DEFAULT_COMMENT_ORDER);
         boolean summaries = build.contains(PatchFamily.META_AI_SUMMARIES);
         boolean options = build.contains(PatchFamily.COMMENT_SHEET_OPTIONS);
-        if (!order && !summaries && !options) return;
+        boolean reactions = build.contains(PatchFamily.POST_PROMPTS);
+        if (!order && !summaries && !options && !reactions) return;
         PreferenceCategory comments = category(screen, L10n.t("Comments"));
         if (order) {
             comments.addPreference(toggle(context, Settings.DEFAULT_COMMENT_ORDER,
@@ -384,6 +385,11 @@ final class FeedPages {
             comments.addPreference(toggle(context, Settings.HIDE_META_AI_SUMMARIES,
                     L10n.t("Hides Meta AI's summary at the top of comments and the comment summary under a post's buttons. The "
                             + "comments themselves stay.")));
+        }
+        if (reactions) {
+            comments.addPreference(toggle(context, Settings.HIDE_COMMENT_REACTIONS,
+                    L10n.t("Hides the stacked reaction icons in the corner of a comment. The space stays, so a tap "
+                            + "where they were still opens the list of reactions.")));
         }
         if (options) {
             comments.addPreference(toggle(context, Settings.LIKE_ONLY,
