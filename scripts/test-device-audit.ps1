@@ -6,7 +6,7 @@ $auditAst = [System.Management.Automation.Language.Parser]::ParseFile($auditPath
 if ($parseErrors.Count) { throw ($parseErrors -join "`n") }
 $testFunctions = @('Assert-AuditLease', 'Assert-AuditSteps', 'Assert-AuditForeground', 'Invoke-Adb',
     'Get-AuditLocales', 'Get-AuditNightMode', 'Restore-AuditState', 'Format-Shell',
-    'New-AuditBaseline', 'Test-AuditBaseline', 'Publish-AuditBaseline', 'Save-SettingsPages', 'Write-Step', 'Test-AuditDestination', 'Get-UiNodes', 'Send-Profile', 'Test-AuditLocaleList', 'Get-AuditLauncher', 'Get-Report')
+    'New-AuditBaseline', 'Test-AuditBaseline', 'Publish-AuditBaseline', 'Save-SettingsPages', 'Write-Step', 'Test-AuditDestination', 'Select-AuditTapNode', 'Get-UiNodes', 'Send-Profile', 'Test-AuditLocaleList', 'Get-AuditLauncher', 'Get-Report')
 foreach ($functionName in $testFunctions) {
     $definition = $auditAst.Find({ param($node)
         $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $functionName
@@ -153,6 +153,15 @@ try {
     $inputWindow = $null
     $script:focusedWindow = "mCurrentFocus=Window{1 u0 $Package/$Package.Main}"
     Assert-Throws { Invoke-Adb shell input tap 30 30 } 'A moved navigation node permitted a stale-coordinate tap.'
+    # The S22's menu row repeats its label on an unclickable child that also holds the tap point.
+    $script:uiDump = "<?xml version=`"1.0`"?><hierarchy><node package=`"$Package`" text=`"`" content-desc=`"Settings and privacy`" clickable=`"true`" bounds=`"[0,1966][1080,2091]`"><node package=`"$Package`" text=`"`" content-desc=`"Settings and privacy`" clickable=`"false`" bounds=`"[136,2001][956,2058]`" /></node></hierarchy>"
+    $inputNodeLabel = 'Settings and privacy'
+    $script:adbCalls.Clear()
+    Invoke-Adb shell input tap 540 2028 | Out-Null
+    Assert-That (@($script:adbCalls | Where-Object { $_ -like '* input tap 540 2028' }).Count -eq 1) 'A row with its label repeated inside it refused the tap.'
+    Assert-Throws { Invoke-Adb shell input tap 540 1900 } 'A tap outside the selected row was permitted.'
+    $script:uiDump = $savedDump
+    $inputNodeLabel = 'Comment'
     $script:takeFocusOnDump = $true
     $script:adbCalls.Clear()
     Assert-Throws { Invoke-Adb shell input tap 10 10 } 'An overlay arriving during the dump permitted input.'
@@ -206,6 +215,19 @@ try {
         $foreign = @($linkedPages[$route] | ForEach-Object { New-TestNode $_.text $_.class 'com.other.app' })
         Assert-That (-not (Test-AuditDestination $route $foreign)) "Foreign package passed as linked $route."
     }
+    # The S22's menu row repeats its label on a child that isn't clickable.
+    function New-TapNode([string]$Label, [string]$Bounds, [string]$Clickable, [string]$Owner = $Package) {
+        return [pscustomobject]@{ text = ''; 'content-desc' = $Label; package = $Owner; bounds = $Bounds; clickable = $Clickable }
+    }
+    $row = New-TapNode 'Settings and privacy' '[0,1966][1080,2091]' 'true'
+    $rowText = New-TapNode 'Settings and privacy' '[136,2001][956,2058]' 'false'
+    $gear = New-TapNode 'Settings' '[962,87][1063,188]' 'true'
+    Assert-That ([object]::ReferenceEquals((Select-AuditTapNode 'Settings and privacy' @($gear, $rowText, $row)), $row)) 'A row with its label repeated inside it was not tapped.'
+    Assert-That ([object]::ReferenceEquals((Select-AuditTapNode 'Settings' @($gear, $row)), $gear)) 'A lone matching node was not tapped.'
+    Assert-That ($null -eq (Select-AuditTapNode 'Settings and privacy' @($row, (New-TapNode 'Settings and privacy' '[0,100][1080,200]' 'true')))) 'Two clickable matches picked one.'
+    Assert-That ($null -eq (Select-AuditTapNode 'Settings and privacy' @($row, (New-TapNode 'Settings and privacy' '[0,1900][1080,2058]' 'false')))) 'A match outside the clickable row was ignored.'
+    Assert-That ($null -eq (Select-AuditTapNode 'Settings and privacy' @($rowText, (New-TapNode 'Settings and privacy' '[136,1001][956,1058]' 'false')))) 'Two unclickable matches picked one.'
+    Assert-That ($null -eq (Select-AuditTapNode 'Settings and privacy' @((New-TapNode 'Settings and privacy' '[0,1966][1080,2091]' 'true' 'com.other.app')))) 'A foreign node was tapped.'
     Write-TestLease -Owner 'replacement'
     Assert-Throws { Invoke-Adb shell input tap 10 10 } 'Ownership loss during the walk permitted input.'
 

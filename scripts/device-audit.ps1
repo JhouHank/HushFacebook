@@ -191,13 +191,13 @@ function Invoke-Adb {
                 if ($inputNodeLabel -cnotin @('Comment', 'Settings and privacy', 'Feeds')) {
                     throw 'No permitted navigation node was selected. No tap was sent.'
                 }
-                $hits = @($fresh | Where-Object {
-                    ($_.text -ceq $inputNodeLabel -or $_.'content-desc' -ceq $inputNodeLabel) -and
-                    $_.bounds -match '^\[(\d+),(\d+)\]\[(\d+),(\d+)\]$' -and
-                    [int]$arguments[3] -ge [int]$Matches[1] -and [int]$arguments[3] -lt [int]$Matches[3] -and
-                    [int]$arguments[4] -ge [int]$Matches[2] -and [int]$arguments[4] -lt [int]$Matches[4]
-                })
-                if ($hits.Count -ne 1) { throw 'The navigation node moved or became ambiguous. No tap was sent.' }
+                # The label must still name one target on the fresh screen, and the tap must land in it.
+                $target = Select-AuditTapNode $inputNodeLabel $fresh
+                if ($null -eq $target -or $target.bounds -notmatch '^\[(\d+),(\d+)\]\[(\d+),(\d+)\]$' -or
+                        [int]$arguments[3] -lt [int]$Matches[1] -or [int]$arguments[3] -ge [int]$Matches[3] -or
+                        [int]$arguments[4] -lt [int]$Matches[2] -or [int]$arguments[4] -ge [int]$Matches[4]) {
+                    throw 'The navigation node moved or became ambiguous. No tap was sent.'
+                }
             }
             # A dump can take seconds. An overlay may have taken input while it was running.
             Assert-AuditForeground
@@ -286,6 +286,27 @@ function Test-AuditDestination([string]$Route, [object[]]$Nodes) {
         }
     }
     return $false
+}
+
+# The one node a "tap:<label>" step may tap, or $null. A row can repeat its label on a child that
+# isn't clickable (the menu's Settings and privacy row on the S22), so several matches still
+# name one target when exactly one is clickable and every other match sits inside it.
+function Select-AuditTapNode([string]$Label, [object[]]$Nodes) {
+    $boundsPattern = '^\[(\d+),(\d+)\]\[(\d+),(\d+)\]$'
+    $found = @($Nodes | Where-Object { $_.text -ceq $Label -or $_.'content-desc' -ceq $Label } |
+        Where-Object { $_.package -ceq $Package -and $_.bounds -match $boundsPattern })
+    if ($found.Count -eq 1) { return $found[0] }
+    $rows = @($found | Where-Object { $_.clickable -ceq 'true' })
+    if ($found.Count -lt 2 -or $rows.Count -ne 1) { return $null }
+    $null = $rows[0].bounds -match $boundsPattern
+    $outer = @([int]$Matches[1], [int]$Matches[2], [int]$Matches[3], [int]$Matches[4])
+    foreach ($other in $found) {
+        if ([object]::ReferenceEquals($other, $rows[0])) { continue }
+        $null = $other.bounds -match $boundsPattern
+        if ([int]$Matches[1] -lt $outer[0] -or [int]$Matches[2] -lt $outer[1] -or
+                [int]$Matches[3] -gt $outer[2] -or [int]$Matches[4] -gt $outer[3]) { return $null }
+    }
+    return $rows[0]
 }
 
 function Save-Screenshot([string]$Path) {
@@ -672,9 +693,7 @@ try {
                         Invoke-Adb shell input swipe $swipeX $swipeTo $swipeX $swipeFrom 300 | Out-Null
                         Start-Sleep -Milliseconds 1200
                     }
-                    $node = Get-UiNodes | Where-Object { $_.text -eq $label -or $_.'content-desc' -eq $label } |
-                        Where-Object { $_.package -ceq $Package -and $_.bounds -match '^\[(\d+),(\d+)\]\[(\d+),(\d+)\]$' }
-                    if (@($node).Count -ne 1) { $node = $null }
+                    $node = Select-AuditTapNode $label @(Get-UiNodes)
                 }
                 if ($node -and $node.bounds -match '^\[(\d+),(\d+)\]\[(\d+),(\d+)\]$') {
                     if ([int]$Matches[1] -lt 0 -or [int]$Matches[2] -lt 0 -or
