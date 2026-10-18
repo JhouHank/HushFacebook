@@ -76,6 +76,18 @@ function Get-SourceKinds {
     return @('morphe-patches', 'revanced-patches', 'xposed-module', 'apk-distribution', 'source-archive', 'readme-only')
 }
 
+function ConvertTo-SourceFixtureBuild {
+    # A fixture build is a Facebook version name, or "name (versionCode)" when one version ships
+    # as several builds (arm64-v8a and armeabi-v7a carry different codes). Two builds of one
+    # version are two fixtures, because the receipt proves each by its own run.
+    param([AllowNull()]$Build)
+    $text = ([string]$Build).Trim()
+    if ($text -match '^(?<name>[^\s(]+)\s*\((?<code>\d+)\)$') {
+        return [pscustomobject]@{ Name = $Matches['name']; Code = $Matches['code'] }
+    }
+    return [pscustomobject]@{ Name = $text; Code = '' }
+}
+
 function Get-SourceIndexIds {
     # The indexes the audit knows how to read. A new one needs its reader in the audit first.
     return @('morphe-directory', 'awesome-morphe', 'morphe-patch-tracker', 'jman-bundles', 'morphe-archive')
@@ -510,7 +522,8 @@ function Test-SourceLedger {
         if (-not (Test-SourceHttpsUrl $receipt @('github.com')) -or "$receipt" -notmatch '/releases/download/v[^/]+/release-receipt-[^/]+\.json$') {
             $problems.Add("$label names no release receipt as fixture evidence (a github.com release-receipt-<version>.json).")
         }
-        $unproved = @($declaredBuilds | Where-Object { $builds -notcontains $_ })
+        $provedNames = @($builds | ForEach-Object { (ConvertTo-SourceFixtureBuild $_).Name } | Sort-Object -Unique)
+        $unproved = @($declaredBuilds | Where-Object { $provedNames -notcontains $_ })
         if ($builds.Count -lt 2 -or $unproved.Count -gt 0) {
             $missing = if ($unproved.Count -gt 0) { $unproved -join ', ' } else { 'a second fixture' }
             $problems.Add("$label lacks two-fixture evidence: it names $(@($builds).Count) build(s) and is missing $missing.")

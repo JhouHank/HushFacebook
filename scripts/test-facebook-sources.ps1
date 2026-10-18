@@ -351,8 +351,9 @@ $adoptedCommit = 'ad' * 20
 $declaredBuilds = @((Get-PatchTarget -PatchList ([IO.File]::ReadAllText((Join-Path $Root 'patches-list.json')) | ConvertFrom-Json)).PackageVersions)
 Assert-True ($declaredBuilds.Count -ge 1) 'The catalog declares no build, so the receipt cases would prove nothing.'
 # Only the newest Facebook is declared, and an adopted source still needs two-fixture evidence: the
-# declared build and one before it, both unforced in one receipt, as the real ledger's receipts are.
-$evidenceBuilds = @(@($declaredBuilds) + '580.0.0.51.74' | Select-Object -Unique)
+# declared version's two builds (arm64-v8a and armeabi-v7a carry different version codes), both
+# unforced in one receipt, as the real ledger's receipts are.
+$evidenceBuilds = @($declaredBuilds | ForEach-Object { "$_ (900000001)"; "$_ (900000002)" })
 [IO.File]::WriteAllText((Join-Path $fixtureRoot 'NOTICE'), "Fixture NOTICE`n  alpha  https://github.com/fixture-owner/alpha-patches`n")
 [IO.File]::WriteAllText((Join-Path $fixtureRoot 'provenance.json'), (@{ rules = @(@{ paths = @('patches/**'); origin = 'ported'
     upstream = 'https://github.com/fixture-owner/alpha-patches'; commit = $adoptedCommit; license = 'GPL-3.0'; via = @() }) } | ConvertTo-Json -Depth 6))
@@ -381,7 +382,7 @@ $fixtureLedger = [ordered]@{
             hushfacebook = [ordered]@{ status = 'submitted'; url = 'https://github.com/nvbangg/awesome-morphe/issues/1'; submitted = '2026-09-01' } }
         [ordered]@{ id = 'morphe-patch-tracker'; name = 'Morphe Patch Tracker'; url = 'https://drnx64.github.io/morphe-track-patches/'
             hushfacebook = [ordered]@{ status = 'listed'; url = 'https://drnx64.github.io/morphe-track-patches/#/bundle/sysadmindoc'; checked = '2026-09-01' } }
-        [ordered]@{ id = 'jman-bundles'; name = 'Jman''s ReVanced Patch Bundles'; url = 'https://github.com/Jman-Github/ReVanced-Patch-Bundles'
+        [ordered]@{ id = 'jman-bundles'; name = 'Jman''s Patch Bundle Registry'; url = 'https://github.com/Jman-Github/Patch-Bundle-Registry'
             hushfacebook = [ordered]@{ status = 'not-listed'; checked = '2026-09-01' } }
         [ordered]@{ id = 'morphe-archive'; name = 'Morphe Archive'; url = 'https://rushiforai.github.io/morphe-archive/'
             hushfacebook = [ordered]@{ status = 'listed'; url = 'https://github.com/rushiforai/morphe-archive'; checked = '2026-09-01' } }
@@ -429,12 +430,14 @@ function New-FakeAnswers {
         tracker = @{ Status = 200; Content = (@{
             'sysadmindoc:stable' = @{ repo_url = 'https://github.com/SysAdminDoc/Hushfacebook'; apps = @(@{ package = 'com.facebook.katana'; patches = @(@{ name = 'Hide sponsored posts' }) }) }
             'alpha:stable' = @{ repo_url = 'https://github.com/fixture-owner/alpha-patches'; apps = @(@{ package = 'com.facebook.katana'; patches = @(@{ name = 'Hide ads' }) }) }
-        } | ConvertTo-Json -Depth 8) }
-        jmanSources = @{ Status = 200; Content = '{"alpha-stable":{"patches":"https://api.github.com/repos/fixture-owner/alpha-patches"},"gamma-stable":{"patches":"https://gitlab.com/api/v4/projects/fixture-group%2Fgamma-patches"}}' }
-        jmanCatalog = @{ Status = 200; Content = ("# Catalog`n| [Alpha](#alpha) | 1 | 1 | Generated |`n### X Alpha Bundle Patch List:`n" +
-            "| **Name** | **Description** | **Compatible Apps** | **Compatible Versions** |`n|---|---|---|---|`n" +
-            "| ${tick}Hide ads${tick} | ${tick}Removes ads.${tick} | ${tick}Facebook${tick} | ${tick}580.0.0.51.74${tick} |`n" +
-            "### X Gamma Bundle Patch List:`n| ${tick}Open links outside${tick} | ${tick}d${tick} | ${tick}Facebook Lite${tick} | ${tick}Any${tick} |`n") }
+        } | ConvertTo-Json -Depth 8) -replace '\}\s*$', (',"Alpha:stable":{"repo_url":"https://github.com/fixture-owner/alpha-patches","apps":[]}}') }
+        # Jman's catalog API, a page of source addresses at a time per package. Katana's rows come in
+        # two short pages, since the API's pages can run short of the limit it was asked for.
+        jman = @{
+            'com.facebook.katana' = @(@('https://github.com/fixture-owner/alpha-patches'), @('https://github.com/fixture-owner/alpha-patches'))
+            'com.facebook.orca' = @()
+            'com.facebook.lite' = @(@('https://gitlab.com/fixture-group/gamma-patches'))
+        }
         archive = @{ Status = 200; Content = '{"name":"patches-list.json"}' }
         searchHits = @(
             @{ repository = @{ full_name = 'fixture-owner/alpha-patches' }; path = 'patches/Alpha.kt'; sha = $blobKnown }
@@ -472,7 +475,8 @@ function New-FakeAnswers {
         repoMeta = @{ Status = 200; Content = '{"full_name":"newcomer/fb-patches","license":{"spdx_id":"MIT"},"fork":false,"archived":false,"pushed_at":"2026-09-20T00:00:00Z","description":"Facebook patches"}' }
         oldNameMeta = @{ Status = 200; Content = '{"full_name":"fixture-owner/alpha-patches","fork":false,"archived":false}' }
         receipt = @{ Status = 200; Content = (@{ targets = @($evidenceBuilds | ForEach-Object {
-            @{ source = @{ versionName = $_; forced = $false }; patches = @(@{ name = 'Hide ads'; applied = $true }) } }) } | ConvertTo-Json -Depth 8) }
+            $build = ConvertTo-SourceFixtureBuild $_
+            @{ source = @{ versionName = $build.Name; versionCode = $build.Code; forced = $false }; patches = @(@{ name = 'Hide ads'; applied = $true }) } }) } | ConvertTo-Json -Depth 8) }
     }
     return $answers
 }
@@ -487,6 +491,10 @@ $fakeForge = @{ Answers = (New-FakeAnswers); Requests = (New-Object System.Colle
         $authorization = if ($Headers -and $Headers.ContainsKey('Authorization')) { [string]$Headers['Authorization'] } else { $null }
         $privateToken = if ($Headers -and $Headers.ContainsKey('PRIVATE-TOKEN')) { [string]$Headers['PRIVATE-TOKEN'] } else { $null }
         $fakeForge.Requests.Add([pscustomobject]@{ Uri = $url; Authorization = $authorization; PrivateToken = $privateToken })
+        if ($fakeForge.ContainsKey('TimeoutOnce') -and $fakeForge.TimeoutOnce.Contains($url)) {
+            [void]$fakeForge.TimeoutOnce.Remove($url)
+            throw (New-Object System.Exception 'The request was canceled due to the configured HttpClient.Timeout of 120 seconds elapsing.')
+        }
         $a = $fakeForge.Answers
         $answer = $null
         switch -Regex ($url) {
@@ -494,8 +502,19 @@ $fakeForge = @{ Answers = (New-FakeAnswers); Requests = (New-Object System.Colle
             '^https://morphe-patches\.software/data/bundles\.json$' { $answer = $a.directory; break }
             '^https://raw\.githubusercontent\.com/nvbangg/awesome-morphe/main/data/hashes\.json$' { $answer = $a.awesome; break }
             '^https://raw\.githubusercontent\.com/drnx64/morphe-track-patches/main/data/bundles\.json$' { $answer = $a.tracker; break }
-            '^https://raw\.githubusercontent\.com/Jman-Github/ReVanced-Patch-Bundles/bundles/patch-bundles/bundle-sources\.json$' { $answer = $a.jmanSources; break }
-            '^https://raw\.githubusercontent\.com/Jman-Github/ReVanced-Patch-Bundles/bundles/patch-bundles/PATCH-LIST-CATALOG\.md$' { $answer = $a.jmanCatalog; break }
+            '^https://patch-bundles\.api\.jmancentral\.com/apps/([^/]+)/bundles\?limit=100&offset=(\d+)$' {
+                $pages = @($a.jman[$Matches[1]])
+                $start = 0
+                $rows = @()
+                $total = 0
+                foreach ($page in $pages) { $total += @($page).Count }
+                foreach ($page in $pages) {
+                    if ($start -eq [int]$Matches[2]) { $rows = @($page | ForEach-Object { @{ id = 'b'; source = @{ url = $_ } } }); break }
+                    $start += @($page).Count
+                }
+                $answer = @{ Status = 200; Content = (@{ data = $rows; total = $total; limit = 100; offset = [int]$Matches[2] } | ConvertTo-Json -Depth 8) }
+                break
+            }
             '^https://api\.github\.com/repos/rushiforai/morphe-archive/contents/examplepatches/SysAdminDoc/Hushfacebook/patches-list\.json$' { $answer = $a.archive; break }
             '^https://api\.github\.com/search/code\?q=([^&]+)&per_page=100&page=1$' {
                 $query = [Uri]::UnescapeDataString($Matches[1])
@@ -632,6 +651,16 @@ $fakeForge = @{ Answers = (New-FakeAnswers); Requests = (New-Object System.Colle
         @($fakeForge.Requests | Where-Object { $_.Uri -like 'https://gitlab.com/api/*' -and $_.PrivateToken -ne $fakeGitLabToken }).Count -eq 0 -and
         $clean.ReportText.IndexOf($fakeGitLabToken) -lt 0 -and $stamped.IndexOf($fakeGitLabToken) -lt 0) `
         'The GitLab token leaked or a GitLab request lacked its private-token header.'
+    Reset-FixtureLedger
+
+    # A request that times out is tried again, and the run that gets its answer then reads clean.
+    $fakeForge.TimeoutOnce = New-Object System.Collections.Generic.List[string]
+    $fakeForge.TimeoutOnce.Add($receiptUrl)
+    $retried = Invoke-Audit
+    Assert-True ($retried.ExitCode -eq 0 -and $retried.Report.clean -and $fakeForge.TimeoutOnce.Count -eq 0 -and
+        @($fakeForge.Requests | Where-Object { $_.Uri -eq $receiptUrl }).Count -eq 2) `
+        "A request that timed out once was not tried again: $($retried.Said)"
+    $fakeForge.Remove('TimeoutOnce')
     Reset-FixtureLedger
 
     # Neither an explicit skip nor a missing token can certify a complete census. Its existing
@@ -814,6 +843,11 @@ $fakeForge = @{ Answers = (New-FakeAnswers); Requests = (New-Object System.Colle
     Assert-Drift 'fixture-evidence' "*alpha-patches*no unforced run of Facebook $($evidenceBuilds[0])*" 'An adopted source whose receipt forced a build'
     $fakeForge.Answers = New-FakeAnswers
 
+    # A version name alone doesn't prove the build its evidence names by version code.
+    $fakeForge.Answers.receipt.Content = $fakeForge.Answers.receipt.Content -replace '900000002', '900000007'
+    Assert-Drift 'fixture-evidence' "*alpha-patches*no unforced run of Facebook $($evidenceBuilds[1])*" 'An adopted source whose receipt lacks one build by version code'
+    $fakeForge.Answers = New-FakeAnswers
+
     $fakeForge.Answers.alphaRepo.Content = $fakeForge.Answers.alphaRepo.Content.Replace('"fixture-owner/alpha-patches"', '"fixture-owner/alpha-renamed"')
     Assert-Drift 'renamed' '*alpha-patches*now https://github.com/fixture-owner/alpha-renamed*' 'A source that was renamed'
     $fakeForge.Answers = New-FakeAnswers
@@ -850,9 +884,13 @@ $fakeForge = @{ Answers = (New-FakeAnswers); Requests = (New-Object System.Colle
     Assert-Drift 'license-added' '*beta-module*now has a licence (MIT*' 'An unlicensed source that gained a licence'
     $fakeForge.Answers = New-FakeAnswers
 
-    $tick = [string][char]96 * 3
-    $fakeForge.Answers.jmanCatalog.Content += "### X Delta Bundle Patch List:`n| ${tick}Hide reels${tick} | ${tick}d${tick} | ${tick}Facebook${tick} | ${tick}Any${tick} |`n"
-    Assert-Drift 'index-unresolved' "*Jman's catalog lists Facebook-family patches under 'Delta'*" 'A Jman section no repository stands behind'
+    $fakeForge.Answers.jman['com.facebook.orca'] = @(, @('https://codeberg.org/fixture-owner/delta-patches'))
+    Assert-Drift 'index-unresolved' "*Jman's catalog lists a Facebook-family bundle from 'https://codeberg.org/fixture-owner/delta-patches'*" 'A Jman bundle whose source is not on GitHub or GitLab'
+    $fakeForge.Answers = New-FakeAnswers
+
+    # Jman's pages can run short of the limit, so a source only its second page lists is still read.
+    $fakeForge.Answers.jman['com.facebook.katana'] = @(@('https://github.com/fixture-owner/alpha-patches'), @('https://github.com/newcomer/fb-patches'))
+    Assert-Drift 'addition' '*github.com/newcomer/fb-patches*Jman*' 'A source only the second page of a Jman answer lists'
     $fakeForge.Answers = New-FakeAnswers
 
     # An index still spelling a source by its old name is that source, not an addition.

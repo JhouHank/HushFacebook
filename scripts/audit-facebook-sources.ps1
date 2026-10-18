@@ -213,7 +213,15 @@ function Invoke-SourceRequest {
             if ($null -ne $answer -and $null -ne $answer.Value -and $null -ne $answer.Value.StatusCode) {
                 $status = [int]$answer.Value.StatusCode
             }
-            if ($null -eq $status) { throw "Could not reach ${Uri}: $($_.Exception.Message)" }
+            if ($null -eq $status) {
+                # A slow compare or a dropped connection gets two more tries before it's a failure.
+                if ($attempt -lt 3) {
+                    Write-Step "no answer from $([Uri]$Uri | ForEach-Object { $_.Host }), trying again ($($_.Exception.Message))"
+                    Start-Sleep -Seconds ([Math]::Min($RateLimitWaitSeconds, 15))
+                    continue
+                }
+                throw "Could not reach ${Uri}: $($_.Exception.Message)"
+            }
             $said = "$($_.ErrorDetails.Message) $($_.Exception.Message)"
             $limited = $status -eq 429 -or ($status -eq 403 -and $said -match '(?i)rate limit')
             if ($limited -and $attempt -lt 4) {
@@ -227,8 +235,12 @@ function Invoke-SourceRequest {
 }
 
 function ConvertFrom-SourceJson {
-    param([string]$Text, [string]$What)
+    # -AsHashtable is for a document whose keys differ only by case, which a plain parse refuses.
+    param([string]$Text, [string]$What, [switch]$AsHashtable)
     try {
+        if ($AsHashtable -and (Get-Command ConvertFrom-Json).Parameters.ContainsKey('AsHashtable')) {
+            return , ($Text | ConvertFrom-Json -AsHashtable)
+        }
         return , ($Text | ConvertFrom-Json)
     } catch {
         throw "$What did not answer JSON: $($_.Exception.Message)"
@@ -244,10 +256,10 @@ function Get-JsonItems {
 }
 
 function Get-SourceJson {
-    param([string]$Uri, [string]$Auth = 'plain', [string]$What = $Uri)
+    param([string]$Uri, [string]$Auth = 'plain', [string]$What = $Uri, [switch]$AsHashtable)
     $answer = Invoke-SourceRequest -Uri $Uri -Auth $Auth
     if ($answer.Status -ne 200) { throw "$What answered HTTP $($answer.Status)." }
-    return , (ConvertFrom-SourceJson -Text $answer.Content -What $What)
+    return , (ConvertFrom-SourceJson -Text $answer.Content -What $What -AsHashtable:$AsHashtable)
 }
 
 function Get-PagedItems {
@@ -317,7 +329,7 @@ foreach ($item in @(Get-SourceProperty $ledgerDocument 'outOfScope' | Where-Obje
 # The indexes' own data repositories, read below as indexes. A code search hit in one is a copy of
 # a bundle's patch list, never a source of its own.
 $indexRepositories = @('github.com/nvbangg/awesome-morphe', 'github.com/drnx64/morphe-track-patches',
-    'github.com/jman-github/revanced-patch-bundles', 'github.com/rushiforai/morphe-archive', 'github.com/rushiforai/revanced-archive')
+    'github.com/jman-github/revanced-patch-bundles', 'github.com/jman-github/patch-bundle-registry', 'github.com/rushiforai/morphe-archive', 'github.com/rushiforai/revanced-archive')
 # The two archives keep examplepatches/<owner>/<name>/patches-list.json for every bundle they
 # found, which is a pointer back to that repository.
 $archiveRepositories = @('github.com/rushiforai/morphe-archive', 'github.com/rushiforai/revanced-archive')
@@ -443,11 +455,15 @@ Invoke-Source 'Awesome Morphe' {
 }
 
 Invoke-Source 'Morphe Patch Tracker' {
-    $tracker = Get-SourceJson -Uri 'https://raw.githubusercontent.com/drnx64/morphe-track-patches/main/data/bundles.json' -What 'the Morphe Patch Tracker'
+    # The tracker keys a bundle by repository and branch, and two keys can differ only by case
+    # ('immortalzeus:dev' and 'ImmortalZeus:dev'), which a plain parse refuses.
+    $tracker = Get-SourceJson -Uri 'https://raw.githubusercontent.com/drnx64/morphe-track-patches/main/data/bundles.json' `
+        -What 'the Morphe Patch Tracker' -AsHashtable
     $seen = @{}
     $listed['morphe-patch-tracker'] = $false
-    foreach ($property in $tracker.PSObject.Properties) {
-        $bundle = $property.Value
+    $trackerBundles = if ($tracker -is [System.Collections.IDictionary]) { @($tracker.Keys | ForEach-Object { $tracker[$_] }) }
+        else { @($tracker.PSObject.Properties | ForEach-Object { $_.Value }) }
+    foreach ($bundle in $trackerBundles) {
         $key = ConvertTo-SourceKey ([string]$bundle.repo_url)
         if ($key -and $key -eq $selfKey) { $listed['morphe-patch-tracker'] = $true }
         $apps = @(Get-JsonItems $bundle.apps | Where-Object { $packages -contains $_.package })
@@ -460,47 +476,38 @@ Invoke-Source 'Morphe Patch Tracker' {
 }
 
 Invoke-Source 'Jman''s bundle index' {
-    $bundleSources = Get-SourceJson -Uri 'https://raw.githubusercontent.com/Jman-Github/ReVanced-Patch-Bundles/bundles/patch-bundles/bundle-sources.json' `
-        -What 'Jman''s bundle-sources.json'
-    $byName = @{}
+    # The registry became Patch-Bundle-Registry and serves its catalog from a read-only API. Asking
+    # it for each package's bundles names the source repository of every bundle that targets it.
+    $apiBase = 'https://patch-bundles.api.jmancentral.com'
     $listed['jman-bundles'] = $false
-    foreach ($property in $bundleSources.PSObject.Properties) {
-        $key = ConvertTo-SourceKey ([string](Get-SourceProperty $property.Value 'patches'))
-        if ($key -and $key -eq $selfKey) { $listed['jman-bundles'] = $true }
-        $name = ($property.Name -replace '-(stable|dev|latest)$', '').ToLowerInvariant()
-        if ($key -and -not $byName.ContainsKey($name)) { $byName[$name] = $key }
-    }
-    $catalog = Invoke-SourceRequest -Uri 'https://raw.githubusercontent.com/Jman-Github/ReVanced-Patch-Bundles/bundles/patch-bundles/PATCH-LIST-CATALOG.md'
-    if ($catalog.Status -ne 200) { throw "Jman's patch list catalog answered HTTP $($catalog.Status)." }
-    $appPackages = @{ 'facebook' = 'com.facebook.katana'; 'messenger' = 'com.facebook.orca'; 'facebook lite' = 'com.facebook.lite'
-        'com.facebook.katana' = 'com.facebook.katana'; 'com.facebook.orca' = 'com.facebook.orca'; 'com.facebook.lite' = 'com.facebook.lite' }
-    $section = $null
     $found = @{}
-    foreach ($line in ($catalog.Content -split "`r?`n")) {
-        if ($line.StartsWith('### ') -and $line -match 'Bundle Patch List:\s*$') {
-            $section = (($line -replace '^###\s+\S+\s+', '') -replace '\s+Bundle Patch List:\s*$', '').Trim()
-            continue
-        }
-        if ($null -eq $section -or -not $line.StartsWith('|')) { continue }
-        $cells = $line.Split('|')
-        if ($cells.Count -lt 5) { continue }
-        $name = $cells[1].Replace([string][char]96, '').Trim()
-        foreach ($app in ($cells[3].Replace([string][char]96, '').Trim() -split ',\s*')) {
-            $package = $appPackages[$app.Trim().ToLowerInvariant()]
-            if (-not $package) { continue }
-            if (-not $found.ContainsKey($section)) { $found[$section] = @{ Packages = @{}; Features = New-Object System.Collections.Generic.List[string] } }
-            $found[$section].Packages[$package] = $true
-            if ($name -and -not $found[$section].Features.Contains($name)) { $found[$section].Features.Add($name) }
+    $unresolved = @{}
+    foreach ($package in $packages) {
+        $offset = 0
+        while ($offset -le 10000) {
+            $page = Get-SourceJson -Uri "$apiBase/apps/$package/bundles?limit=100&offset=$offset" -What "Jman's catalog for $package"
+            $rows = @(Get-JsonItems $page.data)
+            foreach ($row in $rows) {
+                $url = [string](Get-SourceProperty (Get-SourceProperty $row 'source') 'url')
+                $key = ConvertTo-SourceKey $url
+                if (-not $key) {
+                    if (-not $unresolved.ContainsKey($url)) {
+                        $unresolved[$url] = $true
+                        Add-Finding -Kind 'index-unresolved' -Repository $null `
+                            -Detail "Jman's catalog lists a Facebook-family bundle from '$url', which is not a GitHub or GitLab repository" -Evidence $null
+                    }
+                    continue
+                }
+                if ($key -eq $selfKey) { $listed['jman-bundles'] = $true }
+                if (-not $found.ContainsKey($key)) { $found[$key] = @{} }
+                $found[$key][$package] = $true
+            }
+            $offset += $rows.Count
+            if ($rows.Count -eq 0 -or $offset -ge [int]$page.total) { break }
         }
     }
-    foreach ($sectionName in $found.Keys) {
-        $key = $byName[$sectionName.ToLowerInvariant()]
-        if (-not $key) {
-            Add-Finding -Kind 'index-unresolved' -Repository $null `
-                -Detail "Jman's catalog lists Facebook-family patches under '$sectionName', and bundle-sources.json names no repository for it" -Evidence $null
-            continue
-        }
-        Add-Candidate -Key $key -Source 'Jman''s bundle index' -Packages @($found[$sectionName].Packages.Keys) -Features @($found[$sectionName].Features)
+    foreach ($key in $found.Keys) {
+        Add-Candidate -Key $key -Source 'Jman''s bundle index' -Packages @($found[$key].Keys)
     }
     "$($found.Count) Facebook-family bundles; Hushfacebook " + $(if ($listed['jman-bundles']) { 'listed' } else { 'not listed' })
 }
@@ -980,8 +987,12 @@ foreach ($entry in $entries) {
             $receiptUri = [string]$adopted.fixtures.receipt
             $receipt = Get-SourceJson -Uri $receiptUri -What 'the release receipt'
             foreach ($build in @($adopted.fixtures.builds)) {
+                # "name" matches any run of that version; "name (versionCode)" only the run with that code.
+                $wanted = ConvertTo-SourceFixtureBuild $build
                 $proved = @(Get-JsonItems $receipt.targets | Where-Object {
-                    [string]$_.source.versionName -eq "$build" -and -not [bool]$_.source.forced -and
+                    [string]$_.source.versionName -eq $wanted.Name -and
+                        (-not $wanted.Code -or [string]$_.source.versionCode -eq $wanted.Code) -and
+                        -not [bool]$_.source.forced -and
                         @(Get-JsonItems $_.patches | Where-Object { -not [bool]$_.applied }).Count -eq 0 })
                 if ($proved.Count -eq 0) {
                     Add-Finding -Kind 'fixture-evidence' -Repository $repository `
