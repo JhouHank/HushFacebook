@@ -12,9 +12,13 @@ import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -24,7 +28,10 @@ import org.junit.Test
  * Clean up Reels' Open feed videos on their own hooks (#161) on every Facebook build the bundle
  * declares (arm64 and armv7): one void method holds the Warion trace and tells the extension first,
  * and the data controller's and the client-side ranking loader's fetch mores, one instance method
- * each holding its line, answer false before fetching when the extension says so. Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
+ * each holding its line, answer false before fetching when the extension says so. The Warion
+ * fragment tells it what its arguments say as it's created and when it's destroyed, and the one
+ * data source answering the loader's seed check answers yes when it says so. Reads the fixture
+ * bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class FeedVideoAloneFixtureTest {
     private fun Method.code() = implementation!!.instructions.toList()
@@ -65,7 +72,35 @@ class FeedVideoAloneFixtureTest {
                 assertTrue("$name: another method of the class passes the Warion check",
                     warionOwner.methods.filterNot { it.sameAs(warion) }.none(::isWarionStep))
 
-                val context = PatchContexts.of(listOf(warionOwner, fetchOwner, loaderOwner).distinctBy { it.type })
+                // The Warion viewer: only the fragment's onFragmentCreate, among every method loading
+                // the argument's name, reads it into a field the way the hook needs.
+                val inWarionReads = FixtureDex.classesHolding(bundle, IN_WARION)
+                    .flatMap { owner -> owner.methods.filter { warionRead(it) != null }.map { owner to it } }
+                assertEquals("$name: methods reading $IN_WARION into a field", 1, inWarionReads.size)
+                val (fragment, create) = inWarionReads.single()
+                assertEquals("$name: the reader's class", WARION_FRAGMENT, fragment.type)
+                assertEquals("$name: the reader", "onFragmentCreate", create.name)
+                val read = warionRead(create)!!
+                val destroy = fragment.methods.singleOrNull { it.name == "onDestroy" && it.parameterTypes.isEmpty() }
+                    ?: throw AssertionError("$name: $WARION_FRAGMENT has no onDestroy")
+
+                // The data source: the loader's first boolean interface call, answered by one class.
+                val check = seedCheck(loader)
+                    ?: throw AssertionError("$name: the loader's fetch more asks no boolean interface method first")
+                val sources = mutableListOf<Pair<ClassDef, Method>>()
+                FixtureDex.forEach(bundle) { dex ->
+                    for (classDef in dex.classes) {
+                        if (classDef.type.startsWith(EXTENSION_PACKAGE) || check.definingClass !in classDef.interfaces) continue
+                        val copy = ImmutableClassDef.of(classDef)
+                        copy.methods.filter { implementsSeedCheck(copy, it, check) }.mapTo(sources) { copy to it }
+                    }
+                }
+                assertEquals("$name: classes answering $check", 1, sources.size)
+                val (sourceOwner, source) = sources.single()
+
+                val context = PatchContexts.of(
+                    listOf(warionOwner, fetchOwner, loaderOwner, fragment, sourceOwner).distinctBy { it.type },
+                )
                 context.keepFeedVideosAlone()
 
                 val tapped = context.mutableClassDefBy(warionOwner.type).methods.single { it.sameAs(warion) }.code()
@@ -74,7 +109,13 @@ class FeedVideoAloneFixtureTest {
                 assertEquals("$name: the rest of the Warion step is Facebook's",
                     warion.code().map { it.opcode }, tapped.drop(1).map { it.opcode })
 
-                for ((owner, method) in listOf(fetchOwner to fetch, loaderOwner to loader)) {
+                val answers = listOf(
+                    Triple(fetchOwner to fetch, HOLDS_BACK, 0),
+                    Triple(loaderOwner to loader, HOLDS_BACK, 0),
+                    Triple(sourceOwner to source, SEED_ONLY, 1),
+                )
+                for ((at, hook, answer) in answers) {
+                    val (owner, method) = at
                     val where = "$name: ${owner.type}->${method.name}"
                     val asked = context.mutableClassDefBy(owner.type).methods.single { it.sameAs(method) }.code()
                     assertEquals("$where: six instructions added", method.code().size + 6, asked.size)
@@ -82,12 +123,32 @@ class FeedVideoAloneFixtureTest {
                         listOf(Opcode.MOVE_OBJECT_FROM16, Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IF_EQZ,
                             Opcode.CONST_4, Opcode.RETURN),
                         asked.take(6).map { it.opcode })
-                    assertEquals("$where asks the extension", HOLDS_BACK, called(asked[1]))
+                    assertEquals("$where asks the extension", hook, called(asked[1]))
+                    assertEquals("$where answers", answer, (asked[4] as NarrowLiteralInstruction).narrowLiteral)
                     assertEquals("$where: the rest is Facebook's",
                         method.code().map { it.opcode }, asked.drop(6).map { it.opcode })
                 }
-                // Positive control: two separate roads, so neither hook stands in for the other.
-                assertTrue("$name: the loader and the data controller are one class", loaderOwner.type != fetchOwner.type)
+                // Positive control: three separate roads, so no hook stands in for another.
+                assertEquals("$name: the loader, the data controller and the data source share a class",
+                    3, setOf(loaderOwner.type, fetchOwner.type, sourceOwner.type).size)
+
+                val patched = context.mutableClassDefBy(WARION_FRAGMENT)
+                val opened = patched.methods.single { it.sameAs(create) }.code()
+                assertEquals("$name: one instruction added to onFragmentCreate", create.code().size + 1, opened.size)
+                val told = opened[read.index + 1]
+                assertEquals("$name: onFragmentCreate tells the extension what it read", WARION_OPENING, called(told))
+                told as FiveRegisterInstruction
+                assertEquals("$name: the call's operands", listOf(read.fragment, read.value), listOf(told.registerC, told.registerD))
+                assertEquals("$name: Facebook still stores what it read", Opcode.IPUT_BOOLEAN, opened[read.index + 2].opcode)
+                assertEquals("$name: the rest of onFragmentCreate is Facebook's",
+                    create.code().map { it.opcode }, opened.filterIndexed { at, _ -> at != read.index + 1 }.map { it.opcode })
+                val closed = patched.methods.single { it.sameAs(destroy) }.code()
+                assertEquals("$name: two instructions added to onDestroy", destroy.code().size + 2, closed.size)
+                assertEquals("$name: onDestroy's shape", listOf(Opcode.MOVE_OBJECT_FROM16, Opcode.INVOKE_STATIC),
+                    closed.take(2).map { it.opcode })
+                assertEquals("$name: onDestroy tells the extension first", WARION_CLOSED, called(closed[1]))
+                assertEquals("$name: the rest of onDestroy is Facebook's",
+                    destroy.code().map { it.opcode }, closed.drop(2).map { it.opcode })
                 checked += version
             }
         }
@@ -95,8 +156,8 @@ class FeedVideoAloneFixtureTest {
     }
 
     @Test
-    fun `the extension has both hooks`() {
-        for (hook in listOf(FEED_VIDEO_TAPPED, HOLDS_BACK)) {
+    fun `the extension has every hook`() {
+        for (hook in listOf(FEED_VIDEO_TAPPED, HOLDS_BACK, WARION_OPENING, WARION_CLOSED, SEED_ONLY)) {
             val type = hook.substringBefore("->")
             val name = hook.substringAfter("->").substringBefore("(")
             val method = ExtensionDex.classDef(type).methods.singleOrNull { it.name == name }

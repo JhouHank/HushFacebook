@@ -33,7 +33,8 @@ import app.morphe.extension.shared.settings.PauseForTests;
 
 /**
  * Open feed videos on their own (#161): the first new reels feed to ask for more soon after a feed
- * video tap, or from the full-screen player, is that video's player and gets no, every time; a feed
+ * video tap, or from the full-screen player, is that video's player and gets no, every time; so is a
+ * feed or data source first asking while a Warion viewer is open, until that viewer closes; a feed
  * that asked before, one asking long after the tap, or one asking from the main screen keeps
  * Facebook's answer; off or paused, nothing is held back.
  */
@@ -160,6 +161,73 @@ public class FeedVideoAloneTest {
         PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
         Settings.FEED_VIDEOS_ALONE.save(true);
         assertFalse("paused", FeedVideoAlone.holdsBack(new Object()));
+    }
+
+    @Test
+    public void aWarionViewersFeedAndDataSourceKeepItsVideoAlone() {
+        Object reelsTab = new Object();
+        assertFalse("asked before any viewer opened", FeedVideoAlone.holdsBack(reelsTab));
+        Object other = new Object();
+        FeedVideoAlone.warionOpening(other, false);
+        assertFalse("a video fragment that isn't a Warion viewer arms nothing", FeedVideoAlone.seedOnly(new Object()));
+
+        Object viewer = new Object();
+        FeedVideoAlone.warionOpening(viewer, true);
+        Object source = new Object();
+        Object loader = new Object();
+        assertTrue("the viewer's data source shows the video alone", FeedVideoAlone.seedOnly(source));
+        clock.addAndGet(60_000);
+        assertTrue("its loader asks after the swipe, long after any tap", FeedVideoAlone.holdsBack(loader));
+        assertTrue(FeedVideoAlone.seedOnly(source));
+        assertFalse("the Reels tab keeps its answer", FeedVideoAlone.holdsBack(reelsTab));
+
+        String line = statusLine();
+        assertTrue("one video opened, though two of its objects asked: " + line, line.contains(FeedVideoAlone.OPENED + " 1"));
+        assertTrue(line, line.contains(FeedVideoAlone.HELD_BACK + " 3"));
+    }
+
+    @Test
+    public void closingTheViewerLetsItsObjectsBeDecidedAgain() {
+        Object viewer = new Object();
+        FeedVideoAlone.warionOpening(viewer, true);
+        Object source = new Object();
+        assertTrue(FeedVideoAlone.seedOnly(source));
+
+        FeedVideoAlone.warionClosed(new Object());
+        assertTrue("another fragment closing changes nothing", FeedVideoAlone.seedOnly(source));
+        FeedVideoAlone.warionClosed(viewer);
+        assertFalse("reused for the Reels tab after the viewer closed", FeedVideoAlone.seedOnly(source));
+        assertFalse("a new one asking with no viewer open", FeedVideoAlone.holdsBack(new Object()));
+        assertFalse("that answer sticks", FeedVideoAlone.seedOnly(source));
+
+        Object next = new Object();
+        FeedVideoAlone.warionOpening(next, true);
+        assertTrue("a second viewer gets its video alone too", FeedVideoAlone.seedOnly(new Object()));
+        assertFalse("but an object that asked from the main screen keeps its answer", FeedVideoAlone.seedOnly(source));
+        assertTrue(statusLine(), statusLine().contains(FeedVideoAlone.OPENED + " 2"));
+    }
+
+    @Test
+    public void offOrPausedAWarionViewerHoldsNothingBack() {
+        Settings.FEED_VIDEOS_ALONE.save(false);
+        FeedVideoAlone.warionOpening(new Object(), true);
+        Settings.FEED_VIDEOS_ALONE.save(true);
+        assertFalse("a viewer opened while off arms nothing", FeedVideoAlone.seedOnly(new Object()));
+
+        Object viewer = new Object();
+        FeedVideoAlone.warionOpening(viewer, true);
+        Object source = new Object();
+        assertTrue(FeedVideoAlone.seedOnly(source));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("paused", FeedVideoAlone.seedOnly(source));
+        PauseForTests.resume();
+        Settings.FEED_VIDEOS_ALONE.save(false);
+        assertFalse("off", FeedVideoAlone.seedOnly(source));
+        Settings.FEED_VIDEOS_ALONE.save(true);
+        assertTrue("on again, still that viewer's", FeedVideoAlone.seedOnly(source));
+        FeedVideoAlone.warionOpening(null, true);
+        FeedVideoAlone.warionClosed(null);
+        assertFalse("nobody asking is left alone", FeedVideoAlone.seedOnly(null));
     }
 
     @Test

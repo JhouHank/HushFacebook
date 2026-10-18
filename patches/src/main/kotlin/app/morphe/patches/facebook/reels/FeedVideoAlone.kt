@@ -6,6 +6,7 @@ package app.morphe.patches.facebook.reels
 
 import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
@@ -16,7 +17,15 @@ import app.morphe.patches.facebook.feed.holdsString
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import com.android.tools.smali.dexlib2.AccessFlags
+import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 
 /*
  * Open feed videos on their own (#161). Read from 583, 2026-10-18, arm64; the obfuscated names here
@@ -36,13 +45,36 @@ import com.android.tools.smali.dexlib2.iface.Method
  *   false for a seed video when Facebook's own data source says so, logging "onFetchMore skipped:
  *   suppressing tail load for seed video".
  *
- * The Warion step tells the extension a feed video is opening. Both fetch mores ask it first, with
- * the object asking, and answer false (nothing fetched) when the extension says so.
+ * - A reel in the feed opens the Warion viewer inside the main screen instead (S22 2026-10-18:
+ *   FbMainTabActivity's VideoHomeRootFragment with is_warion_state, holding a WatchFeedOrWarionFragment
+ *   with is_in_warion), and its loader's first fetch more comes only after the swipe, past the
+ *   reels its first page already put after the video. WatchFeedOrWarionFragment keeps its name: its
+ *   onFragmentCreate reads "is_in_warion" from its arguments into a field, and onDestroy ends it.
+ * - The loader asks its data source (LX/6hZ;->F8d()Z, one implementer, LX/5T6;) whether to show the
+ *   seed video alone, both before it puts the first page's reels after the video ("EmitResult
+ *   skipped: suppressing CSR vend for seed video") and in its fetch more. Facebook answers yes only
+ *   on a load error behind server flags.
+ *
+ * The Warion step tells the extension a feed video is opening, and the fragment tells it when a
+ * Warion viewer opens and closes. Both fetch mores ask it first, with the object asking, and answer
+ * false (nothing fetched) when the extension says so, and the data source's seed check answers yes.
  */
 
 internal const val FEED_VIDEO_ALONE = "$EXTENSION_PACKAGE/reels/FeedVideoAlone;"
 internal const val FEED_VIDEO_TAPPED = "$FEED_VIDEO_ALONE->feedVideoTapped()V"
 internal const val HOLDS_BACK = "$FEED_VIDEO_ALONE->holdsBack(Ljava/lang/Object;)Z"
+internal const val WARION_OPENING = "$FEED_VIDEO_ALONE->warionOpening(Ljava/lang/Object;Z)V"
+internal const val WARION_CLOSED = "$FEED_VIDEO_ALONE->warionClosed(Ljava/lang/Object;)V"
+internal const val SEED_ONLY = "$FEED_VIDEO_ALONE->seedOnly(Ljava/lang/Object;)Z"
+
+/** Facebook's video fragment, a Warion viewer when its arguments say so. Kept by name. */
+internal const val WARION_FRAGMENT = "Lcom/facebook/video/watch/fragment/WatchFeedOrWarionFragment;"
+
+/** The argument WARION_FRAGMENT reads to know it's a Warion viewer. */
+internal const val IN_WARION = "is_in_warion"
+
+/** What WARION_FRAGMENT reads [IN_WARION] with. */
+internal const val GET_BOOLEAN = "Landroid/os/BaseBundle;->getBoolean(Ljava/lang/String;)Z"
 
 /** The trace only Facebook's Warion step, a feed video opening its player, holds. */
 internal const val WARION_CLICK = "onWarionEligibleStoryClick"
@@ -80,11 +112,11 @@ private fun BytecodePatchContext.oneMethodHolding(anchor: String, what: String, 
 }
 
 /**
- * Answers false before the fetch runs when the extension says so. At the first instruction no local
- * holds anything yet, so v0 is free, and `this` is copied down to it for the call, which names its
- * operand in four bits.
+ * Answers [answer] before the method runs when the extension says so. At the first instruction no
+ * local holds anything yet, so v0 is free, and `this` is copied down to it for the call, which names
+ * its operand in four bits.
  */
-internal fun MutableMethod.holdBackWhen(hook: String) {
+private fun MutableMethod.askWithThis(hook: String, answer: Boolean) {
     requireLocals(PATCH, 1)
     addInstructionsWithLabels(
         0,
@@ -92,20 +124,98 @@ internal fun MutableMethod.holdBackWhen(hook: String) {
             move-object/from16 v0, p0
             invoke-static { v0 }, $hook
             move-result v0
-            if-eqz v0, :facebooks_fetch
-            const/4 v0, 0x0
+            if-eqz v0, :facebooks_answer
+            const/4 v0, ${if (answer) "0x1" else "0x0"}
             return v0
         """,
-        ExternalLabel("facebooks_fetch", getInstruction(0)),
+        ExternalLabel("facebooks_answer", getInstruction(0)),
     )
 }
 
-/** Hooks the Warion step and both reels fetch mores. Refuses unless each anchor finds one method. */
+/** Answers false (nothing fetched) before the fetch runs when the extension says so. */
+internal fun MutableMethod.holdBackWhen(hook: String) = askWithThis(hook, false)
+
+/** Where onFragmentCreate reads [IN_WARION]: its move-result, and the fragment and value registers. */
+internal data class WarionRead(val index: Int, val fragment: Int, val value: Int)
+
+/**
+ * Where [method] reads [IN_WARION]: the index of the move-result after the one getBoolean of that
+ * string, and the fragment and value registers of the field store right after it. Null unless the
+ * method reads it exactly once that way, into a field of [WARION_FRAGMENT], with both registers
+ * small enough for a four-bit call.
+ */
+internal fun warionRead(method: Method): WarionRead? {
+    val code = method.implementation?.instructions?.toList() ?: return null
+    val strings = code.indices.filter { ((code[it] as? ReferenceInstruction)?.reference as? StringReference)?.string == IN_WARION }
+    val string = strings.singleOrNull() ?: return null
+    val call = code.getOrNull(string + 1) ?: return null
+    if (call.opcode != Opcode.INVOKE_VIRTUAL) return null
+    val read = (call as ReferenceInstruction).reference as MethodReference
+    if ("${read.definingClass}->${read.name}(${read.parameterTypes.joinToString("")})${read.returnType}" != GET_BOOLEAN) {
+        return null
+    }
+    val result = string + 2
+    if (code.getOrNull(result)?.opcode != Opcode.MOVE_RESULT) return null
+    val value = (code[result] as OneRegisterInstruction).registerA
+    val store = code.getOrNull(result + 1) ?: return null
+    if (store.opcode != Opcode.IPUT_BOOLEAN) return null
+    if (((store as ReferenceInstruction).reference as FieldReference).definingClass != WARION_FRAGMENT) return null
+    store as TwoRegisterInstruction
+    if (store.registerA != value || store.registerB > 15 || value > 15) return null
+    return WarionRead(result, store.registerB, value)
+}
+
+/** The data source's seed check [loaderFetchMore] asks: its first no-argument boolean interface call. */
+internal fun seedCheck(loaderFetchMore: Method): MethodReference? =
+    loaderFetchMore.implementation?.instructions?.firstOrNull { it.opcode == Opcode.INVOKE_INTERFACE }
+        ?.let { (it as ReferenceInstruction).reference as MethodReference }
+        ?.takeIf { it.returnType == "Z" && it.parameterTypes.isEmpty() }
+
+/** Whether [method] of [classDef] is a concrete [check] of a class implementing its interface. */
+internal fun implementsSeedCheck(classDef: ClassDef, method: Method, check: MethodReference): Boolean =
+    check.definingClass in classDef.interfaces && method.name == check.name && method.returnType == "Z" &&
+        method.parameterTypes.isEmpty() && method.implementation != null
+
+/**
+ * Hooks the Warion step, the Warion viewer's opening and closing, both reels fetch mores and the
+ * data source's seed check. Refuses unless each anchor finds one method.
+ */
 internal fun BytecodePatchContext.keepFeedVideosAlone() {
     oneMethodHolding(WARION_CLICK, "Warion step answering void", ::isWarionStep)
         .addInstruction(0, "invoke-static { }, $FEED_VIDEO_TAPPED")
     oneMethodHolding(FETCH_MORE, "instance fetch more answering a boolean", ::isFetchMore)
         .holdBackWhen(HOLDS_BACK)
-    oneMethodHolding(SEED_TAIL, "instance loader fetch more answering a boolean", ::isLoaderFetchMore)
-        .holdBackWhen(HOLDS_BACK)
+    val loader = oneMethodHolding(SEED_TAIL, "instance loader fetch more answering a boolean", ::isLoaderFetchMore)
+    val check = seedCheck(loader)
+        ?: throw PatchException("$PATCH: the loader's fetch more asks no boolean interface method first")
+    loader.holdBackWhen(HOLDS_BACK)
+
+    val fragment = mutableClassDefByOrNull(WARION_FRAGMENT)
+        ?: throw PatchException("$PATCH: $WARION_FRAGMENT is missing")
+    val create = fragment.methods.singleOrNull {
+        it.name == "onFragmentCreate" && it.returnType == "V" && it.parameterTypes.map(CharSequence::toString) == listOf("Landroid/os/Bundle;")
+    } ?: throw PatchException("$PATCH: $WARION_FRAGMENT has no onFragmentCreate(Bundle)")
+    val read = warionRead(create)
+        ?: throw PatchException("$PATCH: $WARION_FRAGMENT->onFragmentCreate doesn't read \"$IN_WARION\" once into a field")
+    create.addInstruction(read.index + 1, "invoke-static { v${read.fragment}, v${read.value} }, $WARION_OPENING")
+    val destroy = fragment.methods.singleOrNull { it.name == "onDestroy" && it.returnType == "V" && it.parameterTypes.isEmpty() }
+        ?: throw PatchException("$PATCH: $WARION_FRAGMENT has no onDestroy()")
+    destroy.requireLocals(PATCH, 1)
+    destroy.addInstructions(
+        0,
+        """
+            move-object/from16 v0, p0
+            invoke-static { v0 }, $WARION_CLOSED
+        """,
+    )
+
+    val sources = mutableListOf<Pair<String, Method>>()
+    classDefForEach { classDef ->
+        if (classDef.type.startsWith(EXTENSION_PACKAGE) || check.definingClass !in classDef.interfaces) return@classDefForEach
+        classDef.methods.filter { implementsSeedCheck(classDef, it, check) }.mapTo(sources) { classDef.type to it }
+    }
+    val (owner, source) = sources.singleOrNull()
+        ?: throw PatchException("$PATCH: expected one class answering $check, found ${sources.size}")
+    mutableClassDefBy(owner).methods.single { it.name == source.name && it.returnType == "Z" && it.parameterTypes.isEmpty() }
+        .askWithThis(SEED_ONLY, true)
 }
