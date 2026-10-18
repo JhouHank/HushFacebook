@@ -287,6 +287,39 @@ public class FeedVideoAloneTest {
     }
 
     @Test
+    public void aFeedReelsViewerShowsNoLoadingPage() {
+        Object home = new Object();
+        Object reelsTab = new Object();
+        FeedVideoAlone.originForTests = params -> params == home ? origin("newsfeed::feed_story")
+                : params == reelsTab ? origin("fb_shorts_tab::fb_shorts_viewer") : null;
+        assertFalse("from the home feed", FeedVideoAlone.moreReelsComing(true, home));
+        assertFalse("asked again", FeedVideoAlone.moreReelsComing(true, home));
+        assertTrue("the Reels tab keeps its loading page", FeedVideoAlone.moreReelsComing(true, reelsTab));
+        assertTrue("params with no origin", FeedVideoAlone.moreReelsComing(true, new Object()));
+        assertTrue("no params", FeedVideoAlone.moreReelsComing(true, null));
+        assertFalse("none coming stays none", FeedVideoAlone.moreReelsComing(false, reelsTab));
+        assertTrue("one viewer, counted once: " + statusLine(), statusLine().contains(FeedVideoAlone.NO_LOADING_PAGE + " 1"));
+    }
+
+    @Test
+    public void offOrPausedEveryViewerKeepsItsLoadingPage() {
+        Object home = new Object();
+        FeedVideoAlone.originForTests = params -> origin("newsfeed::feed_story");
+        Settings.FEED_VIDEOS_ALONE.save(false);
+        assertTrue("off", FeedVideoAlone.moreReelsComing(true, home));
+        Settings.FEED_VIDEOS_ALONE.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertTrue("paused", FeedVideoAlone.moreReelsComing(true, home));
+        PauseForTests.resume();
+        FeedVideoAlone.originForTests = params -> {
+            throw new IllegalStateException("no origin field");
+        };
+        assertTrue("a failure keeps Facebook's answer", FeedVideoAlone.moreReelsComing(true, home));
+        FeedVideoAlone.originForTests = null;
+        assertTrue("unpatched, the origin reads as none", FeedVideoAlone.moreReelsComing(true, home));
+    }
+
+    @Test
     public void aFeedFirstAskingLongAfterTheTapKeepsFacebooksAnswer() {
         FeedVideoAlone.feedVideoTapped();
         clock.addAndGet(FeedVideoAlone.WINDOW_MS + 1);

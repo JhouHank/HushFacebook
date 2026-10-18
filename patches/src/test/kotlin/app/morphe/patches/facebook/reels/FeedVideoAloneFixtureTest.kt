@@ -17,10 +17,12 @@ import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -87,6 +89,35 @@ class FeedVideoAloneFixtureTest {
                 assertEquals("$name: on the register read", origin.origin, (nullCheck as OneRegisterInstruction).registerA)
                 assertTrue("$name: the entry holds Facebook's null origin message", holdsString(entry, "Expected playerOriginOverride"))
 
+                // The reels list's builder: one method among the string's holders reads whether more
+                // are coming past its null check on the same params, and the extension can read their origin.
+                val paramsType = originField.definingClass
+                val params = FixtureDex.classes(bundle, setOf(paramsType)).getValue(paramsType)
+                assertTrue("$name: $paramsType isn't public", AccessFlags.PUBLIC.isSet(params.accessFlags))
+                val originDef = params.fields.single { it.name == originField.name && it.type == PLAYER_ORIGIN }
+                assertTrue("$name: the origin field isn't public", AccessFlags.PUBLIC.isSet(originDef.accessFlags))
+                val listOwners = FixtureDex.classesHolding(bundle, LOADING_PAGE)
+                    .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+                val lists = listOwners.flatMap { owner -> owner.methods.filter { isListBuilder(it, paramsType) }.map { owner to it } }
+                assertEquals("$name: list builders holding $LOADING_PAGE", 1, lists.size)
+                val (listOwner, list) = lists.single()
+                val gate = loadingPageRead(list, paramsType)!!
+                val listCode = list.code()
+                assertEquals("$name: the answer is a boolean field read", Opcode.IGET_BOOLEAN, listCode[gate.index - 1].opcode)
+                val skip = listCode[gate.index]
+                assertEquals("$name: and decides a branch straight away",
+                    listOf(Opcode.IF_EQZ, gate.more), listOf(skip.opcode, (skip as OneRegisterInstruction).registerA))
+                // Positive control: the way on when more are coming builds an item through the class's own
+                // static helper, the loading page, before the place the branch skips to.
+                val listAddresses = listCode.runningFold(0) { at, instruction -> at + instruction.codeUnits }
+                val skipTo = listAddresses.indexOf(listAddresses[gate.index] + (skip as OffsetInstruction).codeOffset)
+                assertTrue("$name: the branch doesn't skip forward", skipTo > gate.index + 1)
+                assertTrue("$name: nothing builds the loading page when more are coming",
+                    (gate.index + 1 until skipTo).any { at ->
+                        listCode[at].opcode == Opcode.INVOKE_STATIC &&
+                            ((listCode[at] as ReferenceInstruction).reference as MethodReference).definingClass == listOwner.type
+                    })
+
                 // Positive control: the check turns down the trace's other holders of the same class, and
                 // a static or void copy of the fetch more wouldn't pass it.
                 assertTrue("$name: the fetch more is static", !AccessFlags.STATIC.isSet(fetch.accessFlags))
@@ -120,9 +151,30 @@ class FeedVideoAloneFixtureTest {
                 val (sourceOwner, source) = sources.single()
 
                 val context = PatchContexts.of(
-                    listOf(warionOwner, entryOwner, fetchOwner, loaderOwner, fragment, sourceOwner).distinctBy { it.type },
+                    listOf(warionOwner, entryOwner, fetchOwner, loaderOwner, fragment, sourceOwner, listOwner, params,
+                        ExtensionDex.classDef(FEED_VIDEO_ALONE)).distinctBy { it.type },
                 )
                 context.keepFeedVideosAlone()
+
+                val listed = context.mutableClassDefBy(listOwner.type).methods.single { it.sameAs(list) }.code()
+                assertEquals("$name: two instructions added to the list builder", listCode.size + 2, listed.size)
+                val ask = listed[gate.index]
+                assertEquals("$name: the builder asks the extension whether more are coming", MORE_REELS_COMING, called(ask))
+                ask as FiveRegisterInstruction
+                assertEquals("$name: handed the answer, then the params",
+                    listOf(2, gate.more, gate.params), listOf(ask.registerCount, ask.registerC, ask.registerD))
+                assertEquals("$name: its answer back where Facebook's was",
+                    listOf(Opcode.MOVE_RESULT, gate.more),
+                    listOf(listed[gate.index + 1].opcode, (listed[gate.index + 1] as OneRegisterInstruction).registerA))
+                assertEquals("$name: the rest of the list builder is Facebook's",
+                    listCode.map { it.opcode }, listed.filterIndexed { at, _ -> at != gate.index && at != gate.index + 1 }.map { it.opcode })
+                val stub = context.mutableClassDefBy(FEED_VIDEO_ALONE).methods.single { it.name == VIEWER_ORIGIN }.code()
+                assertEquals("$name: the origin stub's shape",
+                    listOf(Opcode.CHECK_CAST, Opcode.IGET_OBJECT, Opcode.RETURN_OBJECT), stub.take(3).map { it.opcode })
+                assertEquals("$name: the stub casts to the params", paramsType,
+                    ((stub[0] as ReferenceInstruction).reference as TypeReference).type)
+                assertEquals("$name: and reads the field the entry reads", originField.toString(),
+                    ((stub[1] as ReferenceInstruction).reference as FieldReference).toString())
 
                 val tapped = context.mutableClassDefBy(warionOwner.type).methods.single { it.sameAs(warion) }.code()
                 assertEquals("$name: one instruction added to the Warion step", warion.code().size + 1, tapped.size)
@@ -187,7 +239,13 @@ class FeedVideoAloneFixtureTest {
 
     @Test
     fun `the extension has every hook`() {
-        for (hook in listOf(FEED_VIDEO_TAPPED, VIEWER_OPENING, HOLDS_BACK, WARION_OPENING, WARION_CLOSED, SEED_ONLY)) {
+        val stub = ExtensionDex.classDef(FEED_VIDEO_ALONE).methods.singleOrNull { it.name == VIEWER_ORIGIN }
+        assertNotNull("the extension has no $VIEWER_ORIGIN stub", stub)
+        assertEquals("the stub's shape", "$FEED_VIDEO_ALONE->$VIEWER_ORIGIN(Ljava/lang/Object;)Ljava/lang/Object;",
+            "${stub!!.definingClass}->${stub.name}(${stub.parameterTypes.joinToString("")})${stub.returnType}")
+        assertTrue("the stub isn't public static",
+            AccessFlags.STATIC.isSet(stub.accessFlags) && AccessFlags.PUBLIC.isSet(stub.accessFlags))
+        for (hook in listOf(FEED_VIDEO_TAPPED, VIEWER_OPENING, HOLDS_BACK, WARION_OPENING, WARION_CLOSED, SEED_ONLY, MORE_REELS_COMING)) {
             val type = hook.substringBefore("->")
             val name = hook.substringAfter("->").substringBefore("(")
             val method = ExtensionDex.classDef(type).methods.singleOrNull { it.name == name }

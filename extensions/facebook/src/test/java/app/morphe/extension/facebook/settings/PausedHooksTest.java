@@ -134,6 +134,7 @@ import app.morphe.extension.facebook.reels.ReelGesturesForTests;
 import app.morphe.extension.facebook.reels.ReelHold;
 import app.morphe.extension.facebook.reels.ReelHoldForTests;
 import app.morphe.extension.facebook.reels.FeedVideoAlone;
+import app.morphe.extension.facebook.reels.FeedVideoAloneForTests;
 import app.morphe.extension.facebook.reels.ReelCleanMode;
 import app.morphe.extension.facebook.reels.ReelDeclutter;
 import app.morphe.extension.facebook.reels.ReelLoopForTests;
@@ -519,7 +520,9 @@ public class PausedHooksTest {
                 () -> {
                     FeedVideoAlone.reelsViewerOpening("newsfeed::feed_story");
                     return FeedVideoAlone.seedOnly(new Object());
-                }));
+                },
+                // And that viewer's list shows no loading page after the video.
+                FeedVideoAloneForTests::dropsTheLoadingPage));
         // A reel that would get the interest prompt is answered as one that doesn't.
         probes.put(PatchFamily.REEL_PROMPTS, Collections.singletonList(() -> !ReelPrompts.keep(true)));
         // The Reels batcher's send of the reels you watched never reaches its executor.

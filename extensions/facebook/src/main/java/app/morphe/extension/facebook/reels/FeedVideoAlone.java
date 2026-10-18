@@ -18,6 +18,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.function.LongSupplier;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -43,7 +44,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * feed. It gets no more reels (its seed video
  * alone, in the data source's case) then and on every later ask. One held for a Warion viewer is
  * decided again on its first ask after that viewer closes. One that first asked from the main screen
- * with no viewer open, the Reels and Video tabs' among them, keeps Facebook's answer. Off, paused, before the settings are ready, or when anything
+ * with no viewer open, the Reels and Video tabs' among them, keeps Facebook's answer. A reels viewer
+ * whose params say it opened from a feed also shows no loading page after its video. Off, paused, before the settings are ready, or when anything
  * here fails, everything gets Facebook's own answer.
  */
 public final class FeedVideoAlone {
@@ -52,6 +54,9 @@ public final class FeedVideoAlone {
 
     /** Counted each time that player asked for more reels and got none. */
     static final String HELD_BACK = "More reels held back";
+
+    /** Counted once for each reels viewer from a feed whose list was told no more reels are coming. */
+    static final String NO_LOADING_PAGE = "Reels loading page left out";
 
     /** How long after a feed video tap its player's first ask for more is still taken as that player's. */
     static final long WINDOW_MS = 5000;
@@ -297,6 +302,54 @@ public final class FeedVideoAlone {
         return alone(source, "seed video only", "reels data source");
     }
 
+    /**
+     * Injection point, in the reels viewer's list as it reads whether more reels are coming, which
+     * puts a loading page after the last one. A viewer opened from a feed gets no more reels with the
+     * switch on, so that page would spin for good after its video (S25 2026-10-18): the list is told
+     * none are coming. Every other viewer, the Reels tab's among them, keeps Facebook's answer.
+     * Never throws.
+     *
+     * @param more   Facebook's answer.
+     * @param params the viewer's params, or null.
+     */
+    public static boolean moreReelsComing(boolean more, @Nullable Object params) {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (!more || params == null || !on()) return more;
+            Function<Object, Object> forced = originForTests;
+            Object origin = forced != null ? forced.apply(params) : viewerOrigin(params);
+            if (origin == null) return more;
+            HookStatus.bound(FAMILY, "reels loading page");
+            String where = origin.toString();
+            if (!fromFeed(where)) return more;
+            if (loadingPageLogged.get() != params) {
+                loadingPageLogged = new WeakReference<>(params);
+                HookStatus.counted(FAMILY, NO_LOADING_PAGE);
+                Logger.printDebug(() -> "Feed videos on their own: the reels viewer from " + where + " shows no loading page after its video");
+            }
+            return false;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reels loading page", failure);
+            return more;
+        }
+    }
+
+    /** The viewer whose loading page was last logged as left out, so a list drawn again isn't logged again. */
+    private static volatile WeakReference<Object> loadingPageLogged = new WeakReference<>(null);
+
+    /**
+     * Filled in by the patch: the viewer params' PlayerOrigin, the field the reels viewer's entry reads.
+     * Only the viewer's params may be passed. Unpatched there's none.
+     */
+    @Nullable
+    public static Object viewerOrigin(Object params) {
+        return null;
+    }
+
+    /** Stands in for {@link #viewerOrigin} when a test sets it. */
+    @Nullable
+    static volatile Function<Object, Object> originForTests;
+
     /** Whether [asker] is a tapped feed video's player, deciding on its first ask. */
     private static boolean alone(@Nullable Object asker, String road, String what) {
         try {
@@ -380,6 +433,8 @@ public final class FeedVideoAlone {
         }
         TAPPED_AT.set(NONE);
         clockForTests = null;
+        loadingPageLogged = new WeakReference<>(null);
+        originForTests = null;
         inFront(null);
     }
 }
