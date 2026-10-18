@@ -27,7 +27,9 @@
     hasn't seen, a recorded fork or out-of-scope repository an index lists as a bundle of its own, a
     repository that's gone, renamed or archived, and a listing that changed are the other findings.
     Any finding, or a source that couldn't be read or was skipped, writes the report and exits 1
-    with the ledger untouched. A complete clean run stamps today's date on the census and every
+    with the ledger untouched. The one exception is GitLab's global code search, which GitLab.com
+    doesn't offer: a run that skips it may still stamp, and the census then names
+    gitlab-code-search under skipped. A clean run stamps today's date on the census and every
     record it checked, and exits 0. Commit that change: a local release refuses a census more than
     14 days old.
 
@@ -38,8 +40,9 @@
 
     GitHub requests use GITHUB_TOKEN or the gh CLI's token (code search needs one). GitLab requests
     use GITLAB_TOKEN, but GitLab.com does not enable global code search. A token alone does not
-    supply that coverage. A missing token or -SkipGitLabCodeSearch records an incomplete audit and
-    never refreshes the census. Tokens go in request headers only, never into the report or ledger.
+    supply that coverage. A missing token or -SkipGitLabCodeSearch records the gap in the report
+    and in census.skipped; a search that runs and is refused fails the audit. Tokens go in request
+    headers only, never into the report or ledger.
 
 .EXAMPLE
     pwsh -File scripts/audit-facebook-sources.ps1 -SkipGitLabCodeSearch
@@ -593,11 +596,13 @@ if ($searchGitLab) {
         "$hits hits in $(@($projects.Values | Where-Object { $_ } | Sort-Object -Unique).Count) projects"
     } -FailureEvidence $gitlabCoverageEvidence
 } else {
+    # GitLab.com offers no global code search, so this is the one gap a census may carry. It never
+    # counts as coverage: a stamped census names it in census.skipped, and the report keeps why.
     $reason = if ($SkipGitLabCodeSearch) { '-SkipGitLabCodeSearch' } else { 'no GITLAB_TOKEN was configured' }
-    $detail = "GitLab code search was skipped ($reason). $($gitlabCoverageEvidence.limitation) The census was not stamped."
+    $detail = "GitLab code search was skipped ($reason). $($gitlabCoverageEvidence.limitation) The census records it as skipped."
     $notes.Add('GitLab sources in the ledger were still read; those reads do not replace the global code index.')
-    $sourceStatus.Add([pscustomobject][ordered]@{ source = 'GitLab code search'; status = 'skipped'; detail = $detail })
-    Add-Finding -Kind 'source-skipped' -Repository $null -Detail $detail -Evidence $gitlabCoverageEvidence
+    $sourceStatus.Add([pscustomobject][ordered]@{ source = 'GitLab code search'; status = 'skipped'; detail = $detail
+        evidence = $gitlabCoverageEvidence })
     Write-Step $detail
 }
 
@@ -1046,7 +1051,8 @@ $counts = [ordered]@{
     requests = $requestCount
     findings = $findings.Count
 }
-$clean = $findings.Count -eq 0 -and @($sourceStatus | Where-Object { $_.status -ne 'read' }).Count -eq 0
+$clean = $findings.Count -eq 0 -and @($sourceStatus | Where-Object {
+    $_.status -ne 'read' -and -not ($_.source -eq 'GitLab code search' -and $_.status -eq 'skipped') }).Count -eq 0
 Save-Report -Clean $clean -Counts $counts -Lineages $lineages -KnownHits $knownHits
 Write-Step ("$($entries.Count) sources in $($lineageNames.Count) lineages, $($counts.mirrorsRecorded) recorded mirrors, " +
     "$($collapsed.Count) more collapsed by content, $forkCount forks; " +

@@ -663,27 +663,41 @@ $fakeForge = @{ Answers = (New-FakeAnswers); Requests = (New-Object System.Colle
     $fakeForge.Remove('TimeoutOnce')
     Reset-FixtureLedger
 
-    # Neither an explicit skip nor a missing token can certify a complete census. Its existing
-    # skip and every date survive, even with -NoStamp or a token in the environment.
-    $skippedLedger = $fixtureLedgerText | ConvertFrom-Json
-    $skippedLedger.census.skipped = @('gitlab-code-search')
-    $skippedLedgerText = $skippedLedger | ConvertTo-Json -Depth 20
-    [IO.File]::WriteAllText($fixtureLedgerPath, $skippedLedgerText)
-    foreach ($extra in @(@{ SkipGitLabCodeSearch = $true; GitLabToken = '' },
-            @{ SkipGitLabCodeSearch = $true; GitLabToken = ''; NoStamp = $true }, @{ GitLabToken = '' })) {
-        Assert-Incomplete $extra 'source-skipped' '*GitLab.com*global code search*' 'A skipped or unauthenticated global GitLab search'
-        Assert-True (@($fakeForge.Requests | Where-Object { $_.Uri -like 'https://gitlab.com/api/v4/search*' }).Count -eq 0) `
-            'GitLab code search ran although it was skipped or no token was present.'
+    # GitLab.com has no global code search, so skipping it (on purpose or for want of a token) is
+    # the one gap a census may carry. The run stamps, the census names the skip, and the report
+    # keeps the evidence for it. It never reads as coverage, and -NoStamp still changes nothing.
+    function Assert-SkippedGitLab {
+        param([hashtable]$Extra, [string]$Detail, [string]$Case)
+        $result = Invoke-Audit $Extra
+        $skip = @($result.Report.sources | Where-Object { $_.source -eq 'GitLab code search' })
+        Assert-True ($result.ExitCode -eq 0 -and $result.Report.clean -and $skip.Count -eq 1 -and $skip[0].status -eq 'skipped' -and
+            $skip[0].detail -like $Detail -and $skip[0].evidence.index -eq 'gitlab-code-search' -and
+            $skip[0].evidence.documentation -contains 'https://docs.gitlab.com/user/search/advanced_search/') `
+            "$Case wasn't stamped with its skip and evidence on record: $($result.Said)"
+        Assert-True (@($result.Report.findings).Count -eq 0 -and
+            @($fakeForge.Requests | Where-Object { $_.Uri -like 'https://gitlab.com/api/v4/search*' }).Count -eq 0 -and
+            @($result.Report.sources | Where-Object { $_.source -eq 'https://gitlab.com/fixture-group/gamma-patches' -and $_.status -eq 'read' }).Count -eq 1) `
+            "$Case ran GitLab code search, raised a finding, or stopped the GitLab ledger reads."
+        $after = [IO.File]::ReadAllText($fixtureLedgerPath) | ConvertFrom-Json
+        Assert-True ($after.census.checkedAt -eq '2026-09-25' -and (@($after.census.skipped) -join ',') -eq 'gitlab-code-search') `
+            "$Case didn't stamp the census with gitlab-code-search under skipped."
+        Reset-FixtureLedger
     }
+    Assert-SkippedGitLab @{ SkipGitLabCodeSearch = $true; GitLabToken = '' } '*-SkipGitLabCodeSearch*GitLab.com*global code search*' 'An explicit GitLab skip'
+    Assert-SkippedGitLab @{ GitLabToken = '' } '*GITLAB_TOKEN*' 'A GitLab search with no token'
     $env:GITLAB_TOKEN = 'fixture-gitlab-' + [guid]::NewGuid().ToString('N')
     try {
-        Assert-Incomplete @{ SkipGitLabCodeSearch = $true; GitLabToken = '' } 'source-skipped' '*GitLab.com*global code search*' `
-            'An explicit global GitLab skip with a token in the environment'
+        Assert-SkippedGitLab @{ SkipGitLabCodeSearch = $true; GitLabToken = '' } '*-SkipGitLabCodeSearch*' 'An explicit GitLab skip with a token in the environment'
     } finally { $env:GITLAB_TOKEN = $null }
-    Assert-True (@($fakeForge.Requests | Where-Object { $_.Uri -like 'https://gitlab.com/api/v4/search*' }).Count -eq 0) `
-        'GitLab code search ran although -SkipGitLabCodeSearch was passed.'
-    Assert-True (@(([IO.File]::ReadAllText($fixtureLedgerPath) | ConvertFrom-Json).census.skipped) -contains 'gitlab-code-search') `
-        'The census stopped recording the GitLab skip because a token was set.'
+    $unstamped = Invoke-Audit @{ SkipGitLabCodeSearch = $true; GitLabToken = ''; NoStamp = $true }
+    Assert-True ($unstamped.ExitCode -eq 0 -and [IO.File]::ReadAllText($fixtureLedgerPath) -ceq $fixtureLedgerText) `
+        'A skipping run with -NoStamp changed the ledger.'
+    # Any other gap still refuses, with the skip beside it.
+    $fakeForge.Answers.awesome = @{ Status = 500; Content = $null }
+    $both = Invoke-Audit @{ SkipGitLabCodeSearch = $true; GitLabToken = '' }
+    Assert-True ($both.ExitCode -eq 1 -and -not $both.Report.clean -and [IO.File]::ReadAllText($fixtureLedgerPath) -ceq $fixtureLedgerText) `
+        'A run that skipped GitLab and failed another source stamped the census.'
+    $fakeForge.Answers = New-FakeAnswers
     Reset-FixtureLedger
 
     $fakeForge.Answers.gitlabSearch = @{ Status = 403; Content = $null }
@@ -913,9 +927,6 @@ $fakeForge = @{ Answers = (New-FakeAnswers); Requests = (New-Object System.Colle
     Assert-Drift 'source-failed' '*Awesome Morphe could not be read*' 'An index that could not be read'
     $fakeForge.Answers = New-FakeAnswers
 
-    # A missing token is a reportable coverage gap, not a failure before the report is written.
-    $env:GITLAB_TOKEN = $null
-    Assert-Incomplete @{ GitLabToken = '' } 'source-skipped' '*GITLAB_TOKEN*' 'A global GitLab search without a token'
     Assert-Throws { Invoke-Audit @{ ReportPath = (Join-Path $fixtureRoot 'patches/report.json') } } '*under patches/*' `
         'The audit wrote its report among the patch sources.'
     Assert-True ([IO.File]::ReadAllText($fixtureLedgerPath) -ceq $fixtureLedgerText) 'A refused run changed the ledger.'
