@@ -1578,3 +1578,7 @@ Nothing of this kind yet.	Nada desse tipo ainda.
 Open comments at full height	Abrir comentários em altura total
 # context: summary of that switch; Comment is the button under a reel or video, the split view shows the video above the comments
 Comments open on a sheet that fills the screen instead of stopping part way up. On reels and videos, Comment opens that sheet in place of the split view with the video on top.	Os comentários abrem em uma folha que ocupa a tela toda, em vez de parar no meio do caminho. Em reels e vídeos, Comentar abre essa folha no lugar da tela dividida com o vídeo em cima.
+# context: switch title under Appearance; on, Android's status bar (clock, battery) is hidden on Facebook's main screen
+Hide the status bar	Ocultar a barra de status
+# context: summary of that switch; a swipe down from the top edge shows the bar briefly
+Takes the phone's status bar, with the time and battery, off Facebook's main screen, so the app gets the whole screen. Swipe down from the top edge to see it for a moment.	Tira a barra de status do celular, com a hora e a bateria, da tela principal do Facebook, para que o app use a tela inteira. Deslize para baixo a partir da borda de cima para vê-la por um momento.

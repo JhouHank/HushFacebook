@@ -287,6 +287,7 @@ public final class SettingsBackup {
             Settings.KEEP_TOP_BAR,
             Settings.PHONE_LAYOUT_ON_BIG_SCREENS,
             Settings.TRANSLUCENT_BARS,
+            Settings.HIDE_STATUS_BAR,
             Settings.HIDE_MESSENGER_BUTTON,
             Settings.HIDE_MESSENGER_COUNT,
             Settings.HIDE_FACEBOOK_LOGO,

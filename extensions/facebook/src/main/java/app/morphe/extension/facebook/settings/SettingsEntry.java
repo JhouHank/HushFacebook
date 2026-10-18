@@ -55,6 +55,7 @@ import app.morphe.extension.facebook.misc.AppIcons;
 import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.misc.ScreenTransitions;
 import app.morphe.extension.facebook.misc.TextSize;
+import app.morphe.extension.facebook.navigation.HiddenStatusBar;
 import app.morphe.extension.facebook.navigation.ReelsTab;
 import app.morphe.extension.facebook.navigation.TranslucentBars;
 import app.morphe.extension.facebook.notifications.PushDiagnostics;
@@ -154,7 +155,10 @@ public final class SettingsEntry {
             // Accent color's route five, for the colours views inflated from XML read themselves.
             if (SettingsStatus.accentColor()) AccentResources.watchActivities(context);
             // See-through bars, a switch of the tab bar patch: each main screen as it resumes.
-            if (SettingsStatus.bottomTabBar()) TranslucentBars.watch(context);
+            if (SettingsStatus.bottomTabBar()) {
+                TranslucentBars.watch(context);
+                HiddenStatusBar.watch(context);
+            }
             // Last, so nothing above waits on it. The open itself waits for the first screen to resume.
             ReopenSettingsAfterRestart.reopenIfPending(SettingsEntry::reopenOn);
         } catch (Throwable ex) {

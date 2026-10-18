@@ -137,6 +137,10 @@ final class HushfacebookPages {
             appearance.addPreference(toggle(context, Settings.TRANSLUCENT_BARS,
                     L10n.t("The top bar and the tab bar turn see-through, so the feed shows through them as you scroll. "
                             + "On Android 12 and newer the feed behind them is blurred.")));
+            // Asked as the main screen gets its focus back, so a change shows when these settings close.
+            appearance.addPreference(toggle(context, Settings.HIDE_STATUS_BAR,
+                    L10n.t("Takes the phone's status bar, with the time and battery, off Facebook's main screen, so "
+                            + "the app gets the whole screen. Swipe down from the top edge to see it for a moment.")));
             // Facebook builds the top bar as the main screen starts, so these two wait for a restart.
             appearance.addPreference(toggle(context, Settings.HIDE_MESSENGER_BUTTON,
                     L10n.t("Takes the Messenger button out of the top bar, and the buttons beside it close up the gap. "

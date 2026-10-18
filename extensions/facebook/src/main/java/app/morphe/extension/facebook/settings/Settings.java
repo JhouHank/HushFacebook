@@ -1481,6 +1481,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_translucent_bars", FALSE);
 
     /**
+     * Android's status bar goes from Facebook's main screen, a swipe down from the top edge showing
+     * it for a moment (#124, {@link app.morphe.extension.facebook.navigation.HiddenStatusBar}).
+     * Asked as the main screen resumes, gets its focus back or lays itself out, so a change shows
+     * when the settings close.
+     */
+    public static final BooleanSetting HIDE_STATUS_BAR =
+            new BooleanSetting("hushfacebook_hide_status_bar", FALSE);
+
+    /**
      * The home top bar loses its Messenger button and the buttons beside it close up (#181,
      * {@link app.morphe.extension.facebook.navigation.TopBarButtons}). Facebook builds the bar as
      * the main screen starts, so a change waits for a restart.

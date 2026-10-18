@@ -1681,3 +1681,7 @@ Nothing of this kind yet.	此类内容暂无。
 Open comments at full height	全屏打开评论
 # context: summary of that switch; Comment is the button under a reel or video, the split view shows the video above the comments
 Comments open on a sheet that fills the screen instead of stopping part way up. On reels and videos, Comment opens that sheet in place of the split view with the video on top.	评论面板会铺满整个屏幕，而不是只展开一部分。在 Reels 和视频上，“评论”按钮会打开这个面板，而不是视频在上方的分屏视图。
+# context: switch title under Appearance; on, Android's status bar (clock, battery) is hidden on Facebook's main screen
+Hide the status bar	隐藏状态栏
+# context: summary of that switch; a swipe down from the top edge shows the bar briefly
+Takes the phone's status bar, with the time and battery, off Facebook's main screen, so the app gets the whole screen. Swipe down from the top edge to see it for a moment.	在 Facebook 主界面隐藏手机的状态栏（时间和电量），让应用占满整个屏幕。从屏幕顶部边缘向下滑动可暂时查看。

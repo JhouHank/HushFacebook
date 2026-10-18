@@ -1686,3 +1686,7 @@ Nothing of this kind yet.	Bu türden henüz bir şey yok.
 Open comments at full height	Yorumları tam yükseklikte aç
 # context: summary of that switch; Comment is the button under a reel or video, the split view shows the video above the comments
 Comments open on a sheet that fills the screen instead of stopping part way up. On reels and videos, Comment opens that sheet in place of the split view with the video on top.	Yorumlar, yarıda durmak yerine tüm ekranı kaplayan bir sayfada açılır. Reels ve videolarda Yorum Yap, videonun üstte olduğu bölünmüş görünüm yerine bu sayfayı açar.
+# context: switch title under Appearance; on, Android's status bar (clock, battery) is hidden on Facebook's main screen
+Hide the status bar	Durum çubuğunu gizle
+# context: summary of that switch; a swipe down from the top edge shows the bar briefly
+Takes the phone's status bar, with the time and battery, off Facebook's main screen, so the app gets the whole screen. Swipe down from the top edge to see it for a moment.	Telefonun saat ve pil gösteren durum çubuğunu Facebook'un ana ekranından kaldırır, böylece uygulama tüm ekranı kullanır. Kısa bir süre görmek için üst kenardan aşağı kaydırın.
