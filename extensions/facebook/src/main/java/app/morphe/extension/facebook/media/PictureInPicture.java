@@ -114,6 +114,9 @@ public final class PictureInPicture {
     /** Counted each time a player whose video is off screen plays and the window stays with the reel on screen. */
     static final String OFF_SCREEN = "off-screen player left out of the window";
 
+    /** Counted each time a player on another screen plays and the window stays with the armed screen's reel. */
+    static final String OTHER_SCREEN = "player on another screen left out of the window";
+
     /** Counted each time the window is armed again because Facebook didn't after it was opened full screen. */
     static final String REARMED_AFTER_WINDOW = "armed again after the window closed";
 
@@ -236,6 +239,24 @@ public final class PictureInPicture {
             Rect visible = new Rect();
             if (!view.getGlobalVisibleRect(visible)) return true;
             return (long) visible.width() * visible.height() * 2 < (long) width * height;
+        } catch (Throwable failure) {
+            return false;
+        }
+    }
+
+    /**
+     * Whether [player]'s video is attached to a view of a screen other than the armed one. Once the
+     * reel viewer floats, Facebook opened from the launcher shows Home full screen beside it, and
+     * Home's inline videos then armed the floating window for themselves. A player with no view
+     * known, or a view whose screen can't be read, counts as the armed screen's, as before.
+     */
+    static boolean onAnotherScreen(Object player) {
+        try {
+            View view = views.of(player);
+            if (view == null) return false;
+            Activity screen = activityOf(view.getContext());
+            Activity armed = armedScreen();
+            return screen != null && armed != null && screen != armed;
         } catch (Throwable failure) {
             return false;
         }
@@ -627,11 +648,17 @@ public final class PictureInPicture {
      * the reel on screen from now on: a held auto-enter goes back on, switch or no switch, since it
      * was the extension that turned it off, and a reel other than the armed one gets the window
      * armed again for it. Unless that other player's video is off screen: Facebook getting the next
-     * reel ready plays it for a moment, and the window then opened on that reel (#126).
+     * reel ready plays it for a moment, and the window then opened on that reel (#126). Or unless it
+     * plays on another screen, such as Home beside a floating viewer ({@link #onAnotherScreen}).
      */
     public static void playerPlaying(Object player) {
         try {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || player == null) return;
+            if (anotherReel(player) && onAnotherScreen(player)) {
+                HookStatus.counted(FAMILY, OTHER_SCREEN);
+                Logger.printDebug(() -> "Picture-in-picture: player " + System.identityHashCode(player) + " plays on another screen, left out");
+                return;
+            }
             if (anotherReel(player) && offScreen(player)) {
                 HookStatus.counted(FAMILY, OFF_SCREEN);
                 Logger.printDebug(() -> "Picture-in-picture: player " + System.identityHashCode(player) + " plays off screen, left out");
