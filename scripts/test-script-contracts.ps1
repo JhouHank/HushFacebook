@@ -2764,8 +2764,11 @@ try {
         $readmePath = Join-Path $factsRoot 'README.md'
         $text = Get-Content -LiteralPath $readmePath -Raw
         $publishedCount = [regex]::Match($text, '(?i)latest (?:published )?release is (?:still )?\[v[^\]]*\]\([^)\s]*\), with (\d+) patches')
+        if (-not $publishedCount.Success) {
+            throw 'Sync-FixtureReadme found no "The latest release is [vX](link), with N patches" sentence to read the published count from.'
+        }
         $synced = $text
-        if ($publishedCount.Success -and [int]$publishedCount.Groups[1].Value -ne $count) {
+        if ([int]$publishedCount.Groups[1].Value -ne $count) {
             $synced = $synced -replace ('(?<!\d)' + $publishedCount.Groups[1].Value + ' patches\b'), "$count patches"
         }
         $synced = $synced -replace 'badge/version-\d+(?:\.\d+)+-', "badge/version-$fixtureVersion-" `

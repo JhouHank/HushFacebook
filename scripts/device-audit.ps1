@@ -291,6 +291,7 @@ function Get-AuditLauncher {
     $lines = @(Invoke-Adb shell cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.LAUNCHER $Package)
     return Select-AndroidLauncher -Lines $lines -PackageName $Package -LauncherClass $LauncherClass
 }
+
 function Start-Facebook {
     if (-not $Entry) { throw 'The launcher entry was not resolved. No app start was sent.' }
     Invoke-Adb shell am force-stop $Package | Out-Null

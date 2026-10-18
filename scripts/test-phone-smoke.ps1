@@ -98,6 +98,7 @@ function Test-LauncherRefused([string[]]$Lines) {
 Assert-That ((Get-TestLauncher @('1 activities found:', "  $pkg/.LoginActivity")) -ceq $main) 'The default launcher was not resolved.'
 Assert-That ((Get-TestLauncher @('1 activities found:', "  $pkg/$alias")) -ceq $alias) 'The enabled alternate launcher alias was not resolved.'
 Assert-That ((Get-TestLauncher @("  $pkg/.LoginActivity.fab_ic")) -ceq $alias) 'A short alias name was not expanded.'
+Assert-That ((Get-TestLauncher @("1 activities found:`r", "  $pkg/$alias`r")) -ceq $alias) 'A CRLF launcher line was not resolved.'
 Assert-That (Test-LauncherRefused @('No activities found')) 'A missing launcher passed.'
 Assert-That (Test-LauncherRefused @()) 'An empty launcher query passed.'
 Assert-That (Test-LauncherRefused @("  $pkg/com.facebook.katana.OtherActivity", '  com.other.app/.Main')) 'Unrelated activities passed as a launcher.'
