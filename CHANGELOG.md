@@ -39,6 +39,7 @@ Changes in each Hushfacebook version, newest first.
 
 * **Facebook:** **Hide the reaction preview on comments**, a new switch under Comments, stops drawing the stacked reaction icons in the corner of a comment (issue #158). The space stays, so a tap where they were still opens the list of reactions. It starts off and shows on the comments drawn after you change it. The switch for posts leaves comments alone, and this one leaves posts alone. Part of `Hide post prompts`.
 * **Facebook:** An empty `hushfacebook-safe-mode` file in `Android/media/com.facebook.katana` now pauses Hushfacebook too, like the one in `Android/data`. Android 11 doesn't let adb write in `Android/data`, and the media folder is the way around that. The settings name whichever folder the file is in, and `Resume` deletes both.
+* **Facebook:** Two new switches under Menu, **Open settings from the logo** and **Settings row in Menu**, sit next to `Settings shortcut on the app icon`, so you pick which ways into the settings stay (issue #146). Both start on. The last one still on stays on and greys out, so there's always a way back in.
 * **Facebook:** **Picture-in-picture button**, a new switch under Playback, floats a small button at the left edge of a reel or video that has the window ready. Tap it and the window opens right away, the same one the More menu row opens (issue #44). It starts off, needs Picture-in-picture on, and goes away while the window is open.
 
 ### Fixed
@@ -91,6 +92,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** #172 The Facebook wordmark disappearing: a picked app icon leaves it alone, and **Use the icon at the top of Home** under Appearance puts your icon there if you want it.
 * **Facebook:** #126 The purple button after Picture-in-picture: coming back from the window leaves the reel as it was.
 * **Facebook:** #16 Spotting new settings: a small dot marks the switches added since you last looked.
+* **Facebook:** #146 Choosing how the settings open: **Open settings from the logo** and **Settings row in Menu** under Menu join the app icon switch, and the last one on always stays.
 
 ## 0.14.0 (2026-10-16)
 
