@@ -88,6 +88,7 @@ import app.morphe.extension.facebook.feed.TypedFeedUnit;
 import app.morphe.extension.facebook.font.OwnFont;
 import app.morphe.extension.facebook.comments.DefaultCommentOrderForTests;
 import app.morphe.extension.facebook.comments.CommentSheetOptions;
+import app.morphe.extension.facebook.comments.FullHeightComments;
 import app.morphe.extension.facebook.comments.MetaAiSummaries;
 import app.morphe.extension.facebook.composer.TagSuggestionsForTests;
 import app.morphe.extension.facebook.media.HdrBrightnessForTests;
@@ -689,6 +690,11 @@ public class PausedHooksTest {
                 () -> CommentSheetOptions.hidesComment(new GraphQLComment("https://s.shopee.vn/9zKs")),
                 () -> CommentSheetOptions.hidesComment(new GraphQLComment("Big SPOILER inside")),
                 () -> CommentSheetOptions.incomingTypers(3) == 0));
+        // A reel's comment sheet asking for two thirds of the screen gets all of it, and a split-screen
+        // launcher answers that it didn't open.
+        probes.put(PatchFamily.FULL_HEIGHT_COMMENTS, Arrays.asList(
+                () -> FullHeightComments.sheetHeight(0.66f) == 1f,
+                FullHeightComments::skipSplitScreen));
         // A word without @ in a post or comment box looks nobody up, and a list of people left open
         // by an earlier @ is closed.
         probes.put(PatchFamily.TAG_SUGGESTIONS, Arrays.asList(

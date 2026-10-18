@@ -1682,3 +1682,7 @@ List cleared	Đã xóa danh sách
 Nothing here yet. With Remember what you watch on, the reels, videos and stories you watch show up here.	Chưa có gì ở đây. Khi bật Ghi nhớ những gì bạn xem, reel, video và tin bạn xem sẽ hiện ở đây.
 # context: shown in the Recently watched list when the picked chip has no entries
 Nothing of this kind yet.	Chưa có mục nào thuộc loại này.
+# context: switch title under Comments; on, the comment sheet opens at the full height of the screen
+Open comments at full height	Mở bình luận ở chiều cao tối đa
+# context: summary of that switch; Comment is the button under a reel or video, the split view shows the video above the comments
+Comments open on a sheet that fills the screen instead of stopping part way up. On reels and videos, Comment opens that sheet in place of the split view with the video on top.	Bình luận mở trên một bảng phủ kín màn hình thay vì dừng ở giữa chừng. Trên reels và video, nút Bình luận mở bảng đó thay cho chế độ chia đôi màn hình với video ở trên.

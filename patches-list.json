@@ -2486,6 +2486,44 @@
       "options": []
     },
     {
+      "name": "Open comments at full height",
+      "description": "Opens the comment sheet at the full height of the screen instead of part way up, on posts, videos, reels and stories. On reels and videos, Comment opens that sheet instead of the split view. Starts off. Turn it on in Hushfacebook settings > Comments.",
+      "category": "Comments",
+      "use": true,
+      "dependencies": [
+        "BytecodePatch",
+        "Hushfacebook settings"
+      ],
+      "compatiblePackages": {
+        "com.facebook.katana": [
+          "583.0.0.39.55"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Facebook",
+          "packageName": "com.facebook.katana",
+          "description": null,
+          "appIconColor": 550655,
+          "signatures": [
+            "911d604446084ca7f4760b775bfc160fa8702441240a7258645d7a72c4312d27",
+            "e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1"
+          ],
+          "targets": [
+            {
+              "version": "583.0.0.39.55",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 475614366,
+                "ARMEABI_V7A": 475614365
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Open comments with a gesture",
       "description": "Open a reel's comments with a double tap or a long press, on the sheet the Comment button opens, instead of liking or holding. Starts off. Turn it on in Hushfacebook settings > Reels and Watch.",
       "category": "Reels",

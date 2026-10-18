@@ -365,8 +365,8 @@ final class FeedPages {
     }
 
     /**
-     * Comments: the order they open in, Meta AI's summaries of them, and what the comment box and
-     * the Like button offer.
+     * Comments: the order they open in, Meta AI's summaries of them, what the comment box and the
+     * Like button offer, and how far up the sheet opens.
      */
     static void comments(HushfacebookPreferenceFragment page, PreferenceScreen screen, Context context,
             Set<PatchFamily> build) {
@@ -374,7 +374,8 @@ final class FeedPages {
         boolean summaries = build.contains(PatchFamily.META_AI_SUMMARIES);
         boolean options = build.contains(PatchFamily.COMMENT_SHEET_OPTIONS);
         boolean reactions = build.contains(PatchFamily.POST_PROMPTS);
-        if (!order && !summaries && !options && !reactions) return;
+        boolean fullHeight = build.contains(PatchFamily.FULL_HEIGHT_COMMENTS);
+        if (!order && !summaries && !options && !reactions && !fullHeight) return;
         PreferenceCategory comments = category(screen, L10n.t("Comments"));
         if (order) {
             comments.addPreference(toggle(context, Settings.DEFAULT_COMMENT_ORDER,
@@ -414,6 +415,11 @@ final class FeedPages {
             comments.addPreference(toggle(context, Settings.HIDE_INCOMING_COMMENT_TYPING,
                     L10n.t("Takes away the line that says someone is typing a comment. Your own typing is a separate switch under Privacy.")));
             comments.addPreference(reactionCountsRow(context));
+        }
+        if (fullHeight) {
+            comments.addPreference(toggle(context, Settings.OPEN_COMMENTS_FULL_HEIGHT,
+                    L10n.t("Comments open on a sheet that fills the screen instead of stopping part way up. On reels and "
+                            + "videos, Comment opens that sheet in place of the split view with the video on top.")));
         }
     }
 

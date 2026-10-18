@@ -6,6 +6,8 @@ Changes in each Hushfacebook version, newest first.
 
 ### Added
 
+* **Facebook:** New patch, `Open comments at full height`. With its switch under Comments on, the comment sheet opens all the way up instead of stopping part way, on posts, videos, reels and stories. On reels and videos, the Comment button opens that sheet instead of the split view with the video on top. It starts off (issue #179).
+
 * **Facebook:** The settings now come in Simplified Chinese when Facebook runs in it. Every row, switch name and description is translated, and Facebook's own feature names follow the words its Simplified Chinese app uses. Traditional Chinese still gets English for now. If a line reads oddly, a better wording is welcome on the issue tracker.
 
 * **Facebook:** Settings added since you last looked now carry a small dot, on the switch and on its section's row on the home page. A switch's dot goes once you've left its page, and a section's dot once you've opened that section. Nothing shows on a fresh install or in search results.

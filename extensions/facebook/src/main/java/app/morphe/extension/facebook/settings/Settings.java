@@ -722,6 +722,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_incoming_comment_typing", FALSE);
 
     /**
+     * The comment sheet opens at the full height of the screen instead of part way up, on posts,
+     * videos, reels and stories, and a reel's or a feed video's Comment button opens that sheet
+     * instead of the split screen with the video above
+     * ({@link app.morphe.extension.facebook.comments.FullHeightComments}, #179). Off by default.
+     */
+    public static final BooleanSetting OPEN_COMMENTS_FULL_HEIGHT =
+            new BooleanSetting("hushfacebook_open_comments_full_height", FALSE);
+
+    /**
      * Facebook's text boxes (posts, comments, captions, a story's text) look people up to tag only
      * for a word that starts with @. Off, they also look them up for a plain word Facebook takes for
      * a name, what its code calls an implicit mention

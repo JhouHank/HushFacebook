@@ -275,14 +275,15 @@ public class PatchFamilyTest {
                 PatchFamily.STORY_SEEN, PatchFamily.REEL_DECLUTTER, PatchFamily.REEL_WATCH_HISTORY,
                 PatchFamily.DOUBLE_TAP_LIKE, PatchFamily.REEL_GESTURES, PatchFamily.REEL_HOLD,
                 PatchFamily.DEFAULT_COMMENT_ORDER,
-                PatchFamily.COMMENT_SHEET_OPTIONS, PatchFamily.TAG_SUGGESTIONS, PatchFamily.TAP_TO_PLAY,
+                PatchFamily.COMMENT_SHEET_OPTIONS, PatchFamily.FULL_HEIGHT_COMMENTS, PatchFamily.TAG_SUGGESTIONS,
+                PatchFamily.TAP_TO_PLAY,
                 PatchFamily.PLAYBACK_QUALITY, PatchFamily.PICTURE_IN_PICTURE, PatchFamily.HDR_BRIGHTNESS,
                 PatchFamily.SYSTEM_FONT, PatchFamily.SYSTEM_EMOJI, PatchFamily.HAPTICS,
                 PatchFamily.SCREEN_TRANSITIONS, PatchFamily.VIDEO_DOWNLOAD, PatchFamily.START_TAB,
                 PatchFamily.REELS_TAB, PatchFamily.META_UPSELLS, PatchFamily.SHARE_SHEET_ITEMS,
                 PatchFamily.ANALYTICS_UPLOADS, PatchFamily.SCREENSHOTS, PatchFamily.SCREENSHOT_DETECTION,
                 PatchFamily.TYPING_INDICATOR, PatchFamily.READ_RECEIPTS, PatchFamily.ACCENT_COLOR);
-        assertEquals(33, joined.size());
+        assertEquals(34, joined.size());
         for (PatchFamily family : joined) {
             assertTrue(family.patchName + " isn't in the default selection",
                     PatchFamily.DEFAULT_SELECTION.contains(family));
@@ -429,8 +430,8 @@ public class PatchFamilyTest {
                         + "Hide sponsored profile posts, Hide sponsored Marketplace listings, Block Instant Games "
                         + "ads, Hide affiliate product links, Clean up Reels, Hide reel interest prompts, Don't send "
                         + "reel watch history, Turn off double tap to like, Open comments with a gesture, Keep the reel speed, Hold a reel for 2x, "
-                        + "Default comment order, Hide Meta AI comment summaries, Comment sheet options, Tag "
-                        + "suggestions only after @, Tap to play, Resume long videos, Frame step, Default playback quality, "
+                        + "Default comment order, Hide Meta AI comment summaries, Comment sheet options, Open comments "
+                        + "at full height, Tag suggestions only after @, Tap to play, Resume long videos, Frame step, Default playback quality, "
                         + "Picture-in-picture, Turn off HDR brightness, Skip silent parts, Keep the progress bar, Use the system font, "
                         + "Use the phone's emoji, Turn off haptics, Hide carrier data banners, Turn off screen transitions, Unlock app icons, Open links in "
                         + "external browser, Sanitize sharing links, Stop update prompts, Download any story, "
@@ -453,7 +454,7 @@ public class PatchFamilyTest {
                         + "Instant Games ads, Hide affiliate product links, Clean up Reels, Hide reel interest "
                         + "prompts, Don't send reel watch history, Turn off double tap to like, Open comments with a gesture, Keep the reel speed, "
                         + "Hold a reel for 2x, Default comment order, Hide Meta AI comment summaries, Comment sheet "
-                        + "options, Tag suggestions only after @, Tap to play, Resume long videos, Frame step, Default playback "
+                        + "options, Open comments at full height, Tag suggestions only after @, Tap to play, Resume long videos, Frame step, Default playback "
                         + "quality, Picture-in-picture, Turn off HDR brightness, Skip silent parts, Keep the progress bar, Use the "
                         + "system font, Use the phone's emoji, Turn off haptics, Hide carrier data banners, Turn off screen transitions, Unlock app icons, Open "
                         + "links in external browser, Sanitize sharing links, Stop update prompts, Download any "

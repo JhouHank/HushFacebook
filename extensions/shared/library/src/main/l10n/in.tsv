@@ -1682,3 +1682,7 @@ List cleared	Daftar dihapus
 Nothing here yet. With Remember what you watch on, the reels, videos and stories you watch show up here.	Belum ada apa-apa. Saat Ingat yang kamu tonton menyala, reel, video, dan cerita yang kamu tonton muncul di sini.
 # context: shown in the Recently watched list when the picked chip has no entries
 Nothing of this kind yet.	Belum ada yang jenis ini.
+# context: switch title under Comments; on, the comment sheet opens at the full height of the screen
+Open comments at full height	Buka komentar dengan tinggi penuh
+# context: summary of that switch; Comment is the button under a reel or video, the split view shows the video above the comments
+Comments open on a sheet that fills the screen instead of stopping part way up. On reels and videos, Comment opens that sheet in place of the split view with the video on top.	Komentar terbuka di lembar yang memenuhi layar, bukan berhenti di tengah. Di reel dan video, Komentari membuka lembar itu, bukan tampilan terbagi dengan video di atas.

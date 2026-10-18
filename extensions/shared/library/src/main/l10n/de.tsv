@@ -1682,3 +1682,7 @@ List cleared	Liste geleert
 Nothing here yet. With Remember what you watch on, the reels, videos and stories you watch show up here.	Hier ist noch nichts. Wenn Merken, was du ansiehst aktiv ist, erscheinen hier die Reels, Videos und Stories, die du ansiehst.
 # context: shown in the Recently watched list when the picked chip has no entries
 Nothing of this kind yet.	Davon gibt es noch nichts.
+# context: switch title under Comments; on, the comment sheet opens at the full height of the screen
+Open comments at full height	Kommentare in voller Höhe öffnen
+# context: summary of that switch; Comment is the button under a reel or video, the split view shows the video above the comments
+Comments open on a sheet that fills the screen instead of stopping part way up. On reels and videos, Comment opens that sheet in place of the split view with the video on top.	Kommentare öffnen sich auf einem Blatt, das den ganzen Bildschirm füllt, statt auf halber Höhe stehen zu bleiben. Bei Reels und Videos öffnet „Kommentieren“ dieses Blatt statt der geteilten Ansicht mit dem Video oben.
