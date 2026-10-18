@@ -1246,6 +1246,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_post_menu_download_first", FALSE);
 
     /**
+     * Open in another app, a second item in the menu of a feed or Watch video that hands the video's
+     * file to a player or casting app (issue #182). Off until you turn it on. Off, the menu is
+     * Facebook's own (and the Download item's, if that switch is on).
+     */
+    public static final BooleanSetting OPEN_IN_ANOTHER_APP =
+            new BooleanSetting("hushfacebook_open_in_another_app", FALSE);
+
+    /**
      * A start from Facebook's launcher icon opens the tab in {@link #START_TAB} instead of the one
      * Facebook would choose. Notifications, links and shortcuts keep their own destination.
      */

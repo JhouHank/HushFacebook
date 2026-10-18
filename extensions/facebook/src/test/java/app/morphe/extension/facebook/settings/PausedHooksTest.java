@@ -603,6 +603,7 @@ public class PausedHooksTest {
         // Its copied-link option reads the clipboard as a screen comes to the front.
         probes.put(PatchFamily.VIDEO_DOWNLOAD, Arrays.asList(
                 VideoMenuItemForTests::addsAnItem,
+                VideoMenuItemForTests::addsTheOpenItem,
                 PlayerSourcesForTests::recordsAVideoPlayer,
                 ClipboardLinkForTests::readsTheClipboard));
         // Every photo the viewer opens offers Save photo, and a photo post's menu gets Save photo.

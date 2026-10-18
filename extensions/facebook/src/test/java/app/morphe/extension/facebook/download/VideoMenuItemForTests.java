@@ -105,4 +105,15 @@ public final class VideoMenuItemForTests {
         VideoMenuItem.add(menu, new View(context), videoPost(), ICON, ATTACHMENTS, MEDIA, ATTACHED_STORY);
         return menu.size() > before;
     }
+
+    /** Fills a post menu for a video post and says whether the hook added Open in another app. */
+    public static boolean addsTheOpenItem() {
+        Context context = RuntimeEnvironment.getApplication();
+        Menu menu = facebooksMenu(context);
+        VideoMenuItem.add(menu, new View(context), videoPost(), ICON, ATTACHMENTS, MEDIA, ATTACHED_STORY);
+        for (int i = 0; i < menu.size(); i++) {
+            if ("Open in another app".equals(String.valueOf(menu.getItem(i).getTitle()))) return true;
+        }
+        return false;
+    }
 }

@@ -267,6 +267,10 @@ final class VideoPages {
                 downloads.addPreference(toggle(context, Settings.CLIPBOARD_DOWNLOAD,
                         L10n.t("With Download feed and Watch videos on, coming back to Facebook with a reel or video link copied offers to download it, once per link. Off, Facebook doesn't look at what you copied.")));
             }
+            if (build.contains(PatchFamily.VIDEO_DOWNLOAD)) {
+                downloads.addPreference(toggle(context, Settings.OPEN_IN_ANOTHER_APP,
+                        L10n.t("Adds Open in another app to feed and Watch video menus. It hands the video to a player or casting app, such as VLC or Web Video Caster. A video with no single file to hand over says so.")));
+            }
             if (build.contains(PatchFamily.VIDEO_DOWNLOAD) || build.contains(PatchFamily.PHOTO_DOWNLOAD)) {
                 downloads.addPreference(toggle(context, Settings.POST_MENU_DOWNLOAD_FIRST,
                         L10n.t("Puts Download to phone and Save photo at the top of a post's three-dot menu instead of the bottom. A post with nothing to save gets neither.")));

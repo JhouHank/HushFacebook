@@ -1638,3 +1638,15 @@ Long press opens comments	Mantener pulsado abre los comentarios
 A double tap on a reel opens its comments instead of liking it. Turn off double tap to like still wins when it's on. Off by default, since it hasn't been tried on a real account yet.	Tocar dos veces un reel abre sus comentarios en lugar de darle Me gusta. Si «Desactivar tocar dos veces para dar Me gusta» está activado, ese ajuste tiene prioridad. Desactivado por defecto, porque aún no se ha probado con una cuenta real.
 # context: summary of the long press switch
 Holding a reel opens its comments instead of Facebook's long-press menu or the 2x hold. The reel's more button still opens that menu. Off by default, since it hasn't been tried on a real account yet.	Mantener pulsado un reel abre sus comentarios en lugar del menú de pulsación larga de Facebook o del 2x al mantener. El botón de más opciones del reel sigue abriendo ese menú. Desactivado por defecto, porque aún no se ha probado con una cuenta real.
+# context: switch title under Downloads; the switch adds the post menu row "Open in another app" to feed and Watch videos
+Open videos in another app	Abrir videos en otra app
+# context: summary of that switch; "Open in another app" is the menu row; VLC and Web Video Caster are app names, keep them
+Adds Open in another app to feed and Watch video menus. It hands the video to a player or casting app, such as VLC or Web Video Caster. A video with no single file to hand over says so.	Añade «Abrir en otra app» a los menús de los videos del feed y de Watch. Pasa el video a una app de reproducción o de transmisión, como VLC o Web Video Caster. Si un video no tiene un solo archivo que pasar, lo avisa.
+# context: post menu row that hands the video to a player or casting app, next to the row "Download to phone"
+Open in another app	Abrir en otra app
+# context: title of Android's app chooser, shown over the apps that can play a video
+Open the video with	Abrir el video con
+# context: toast when the video has no single file to hand to another app
+Couldn't find a file for this video. Play it for a moment, then try again.	No se encontró un archivo para este video. Reprodúcelo un momento y vuelve a intentarlo.
+# context: toast when Android has no app that plays a video file
+No app on this phone can open this video	Ninguna app de este teléfono puede abrir este video

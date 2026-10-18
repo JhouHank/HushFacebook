@@ -6,6 +6,8 @@ Changes in each Hushfacebook version, newest first.
 
 ### Added
 
+* **Facebook:** **Open videos in another app**, a new switch under Downloads, adds Open in another app to the menu of a feed or Watch video, beside Download to phone. It hands the video's file to whatever player or casting app you pick, like VLC or Web Video Caster, so you can watch it elsewhere or send it to a TV. A video with no single file to hand over says so, and it starts off (issue #182).
+
 * **Facebook:** **Menu tiles to hide**, a new list under Menu, takes the tiles you tick out of the Menu's shortcut grid, Marketplace and Gaming for example. Tiles are matched by where they open, not by their name, so it works in any language. The next tile moves up, and See more and the sections above the grid stay. Pull to refresh the Menu after you change it (issue #153).
 
 * **Facebook:** **Download first in post menus**, a new switch under Downloads, moves Download to phone and Save photo to the top of a post's three-dot menu instead of the bottom. The row under a post only has room for icons and counts, so the menu is where a post's download lives. A post with nothing to save gets no row, and it starts off (issue #151).

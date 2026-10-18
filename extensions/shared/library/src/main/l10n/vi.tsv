@@ -1638,3 +1638,15 @@ Long press opens comments	Nhấn giữ mở bình luận
 A double tap on a reel opens its comments instead of liking it. Turn off double tap to like still wins when it's on. Off by default, since it hasn't been tried on a real account yet.	Nhấn đúp vào reel sẽ mở bình luận của reel thay vì thích. Nếu "Tắt nhấn đúp để thích" đang bật thì cài đặt đó được ưu tiên. Mặc định tắt, vì chưa được thử trên tài khoản thật.
 # context: summary of the long press switch
 Holding a reel opens its comments instead of Facebook's long-press menu or the 2x hold. The reel's more button still opens that menu. Off by default, since it hasn't been tried on a real account yet.	Nhấn giữ reel sẽ mở bình luận của reel thay vì menu nhấn giữ của Facebook hoặc tốc độ 2x khi giữ. Nút thêm của reel vẫn mở menu đó. Mặc định tắt, vì chưa được thử trên tài khoản thật.
+# context: switch title under Downloads; the switch adds the post menu row "Open in another app" to feed and Watch videos
+Open videos in another app	Mở video trong ứng dụng khác
+# context: summary of that switch; "Open in another app" is the menu row; VLC and Web Video Caster are app names, keep them
+Adds Open in another app to feed and Watch video menus. It hands the video to a player or casting app, such as VLC or Web Video Caster. A video with no single file to hand over says so.	Thêm Mở trong ứng dụng khác vào menu video trên bảng tin và Watch. Video được chuyển cho ứng dụng phát hoặc ứng dụng truyền, như VLC hoặc Web Video Caster. Video không có tệp đơn nào để chuyển sẽ báo lại.
+# context: post menu row that hands the video to a player or casting app, next to the row "Download to phone"
+Open in another app	Mở trong ứng dụng khác
+# context: title of Android's app chooser, shown over the apps that can play a video
+Open the video with	Mở video bằng
+# context: toast when the video has no single file to hand to another app
+Couldn't find a file for this video. Play it for a moment, then try again.	Không tìm thấy tệp cho video này. Hãy phát một lúc rồi thử lại.
+# context: toast when Android has no app that plays a video file
+No app on this phone can open this video	Không có ứng dụng nào trên điện thoại này mở được video này
