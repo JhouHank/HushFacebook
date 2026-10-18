@@ -1467,6 +1467,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_post_counts", FALSE);
 
     /**
+     * The stacked reaction faces at the end of a post's button row and the bling bar's reaction icons
+     * with their count line are left undrawn, and a tap where they were still works
+     * ({@link app.morphe.extension.facebook.feed.PostPrompts#hideReactionPreview}, #158). Off by default.
+     * A change shows on the posts drawn after it.
+     */
+    public static final BooleanSetting HIDE_POST_REACTIONS =
+            new BooleanSetting("hushfacebook_hide_post_reactions", FALSE);
+
+    /**
      * Posts you've already scrolled past stay out of the feed on later loads
      * ({@link app.morphe.extension.facebook.feed.SeenPosts}). Off by default: it remembers which
      * posts you saw, on the phone only. Posts already on screen are never touched, and a change

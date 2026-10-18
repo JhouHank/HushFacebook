@@ -134,4 +134,34 @@ public final class PostPrompts {
             return false;
         }
     }
+
+    /** Counted under the patch's name each time a reaction preview is left undrawn. */
+    static final String REACTIONS_HIDDEN = "Reaction preview kept out";
+
+    private static volatile boolean reactionsLogged;
+
+    /**
+     * The hook, at the start of the two draw methods behind the reaction preview under a post: the
+     * stacked reaction faces at the end of the button row, and the bling bar's reaction icons with
+     * their count line. True makes the draw method return before it paints anything, so the space
+     * stays and so does a tap on it (#158). False, which is the answer while the switch is off,
+     * paused, before the settings are ready or when anything here fails, draws as Facebook does.
+     * Runs every frame, so it only reads the switch and bumps two counters.
+     */
+    public static boolean hideReactionPreview() {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (!Utils.settingsReady() || !Settings.HIDE_POST_REACTIONS.get()) return false;
+            HookStatus.bound(FAMILY, "reaction preview");
+            HookStatus.counted(FAMILY, REACTIONS_HIDDEN);
+            if (!reactionsLogged) {
+                reactionsLogged = true;
+                Logger.printDebug(() -> "Post prompts: a post's reaction preview was left undrawn");
+            }
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reaction preview", failure);
+            return false;
+        }
+    }
 }

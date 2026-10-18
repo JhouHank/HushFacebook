@@ -407,7 +407,9 @@ public class PausedHooksTest {
         probes.put(PatchFamily.POST_PROMPTS, Arrays.asList(
                 () -> !PostPrompts.keep(true),
                 () -> !PostPrompts.showFollowLink(true),
-                PostPrompts::hidePostCounts));
+                PostPrompts::hidePostCounts,
+                // The reaction preview is left undrawn only while the patch runs.
+                PostPrompts::hideReactionPreview));
         // A post the store remembers is dropped by the feed guard while the switch is on.
         probes.put(PatchFamily.SEEN_POSTS, Collections.singletonList(SeenPostsForTests::hidesARememberedPost));
         // The pill socket's yes for Meta AI's questions is answered as a no, so it draws no row for

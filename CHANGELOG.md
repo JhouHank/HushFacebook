@@ -16,6 +16,8 @@ Changes in each Hushfacebook version, newest first.
 
 * **Facebook:** **Hide counts on posts**, a new switch under News feed, takes the numbers off the Like, Comment and Share buttons under posts, so each button shows just its word. **Hide counts on reels**, a new switch under Reels and Watch, takes the numbers away from under a reel's Like, Comment and Share icons, and the icons stay put. Both start off and show on what's drawn after the change. They're part of `Hide post prompts` and `Clean up Reels` (issue #180).
 
+* **Facebook:** **Hide the reaction preview on posts**, a new switch under News feed, stops drawing the stacked reaction icons at the end of the button row and the reactions count under a post (issue #158). The space stays where it was. It starts off. Part of `Hide post prompts`.
+
 ### Fixed
 
 * **Facebook:** With `View stories anonymously` on, a story you watched to the end now stays watched when Facebook restarts or reloads the story tray (issues #61 and #165). Facebook builds the tray a few times over as it starts, the last time from its servers, and only the first of those got marked, so the ring came back blue.

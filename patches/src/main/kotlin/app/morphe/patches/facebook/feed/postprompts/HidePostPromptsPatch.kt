@@ -59,7 +59,8 @@ internal const val STORY_MODEL = "Lcom/facebook/graphql/model/GraphQLStory;"
  * the same way.
  *
  * The third switch, also off by default, takes the numbers off a post's Like, Comment and Share
- * buttons by having their one text builder give its zero answer (PostCounts.kt, #180).
+ * buttons by having their one text builder give its zero answer (PostCounts.kt, #180). The fourth,
+ * also off, leaves the reaction faces and the reactions count under a post undrawn (ReactionPreview.kt, #158).
  */
 @Suppress("unused")
 val hidePostPromptsPatch = bytecodePatch(
@@ -67,8 +68,8 @@ val hidePostPromptsPatch = bytecodePatch(
     name = "Hide post prompts",
     description = "Removes the strip Facebook adds to some posts, like \"Are you interested in this post?\", " +
         "\"Show less\" or follow suggestions, so posts look less cluttered. No gap is left. On by default. Turn " +
-        "it off in Hushfacebook settings > News feed. Two more switches there, Hide the Follow link on posts and " +
-        "Hide counts on posts, start off.",
+        "it off in Hushfacebook settings > News feed. Three more switches there, Hide the Follow link on posts, " +
+        "Hide counts on posts and Hide the reaction preview on posts, start off.",
 ) {
     category("Feed")
     dependsOn(settingsPatch)
@@ -80,6 +81,7 @@ val hidePostPromptsPatch = bytecodePatch(
         val follow = findFollowLinkCheck()
         mutableClassDefBy(follow.definingClass).findMutableMethodOf(follow).filterBooleanReturns(PATCH, SHOW_FOLLOW_LINK)
         hidePostCounts()
+        hideReactionPreview()
         enableStatus("postPrompts")
     }
 }

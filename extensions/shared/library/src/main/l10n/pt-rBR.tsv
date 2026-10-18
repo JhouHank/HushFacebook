@@ -1490,3 +1490,7 @@ Takes the numbers off the Like, Comment and Share buttons under posts, so each s
 Hide counts on reels	Ocultar os números nos reels
 # context: summary of that switch; Like, Comment and Share are Facebook's own button labels, so use Facebook's wording in your language
 Takes the numbers away from under a reel's Like, Comment and Share icons. The icons stay where they are. A change shows from the next reel.	Tira os números de baixo dos ícones Curtir, Comentar e Compartilhar de um reel. Os ícones continuam no mesmo lugar. A mudança aparece a partir do próximo reel.
+# context: switch title under News feed; the reaction preview is the stack of reaction icons and the line with the number of reactions under a post
+Hide the reaction preview on posts	Ocultar a prévia de reações nas publicações
+# context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions
+Hides the stacked reaction icons and the reactions count under posts. The space stays, so a tap where they were still opens the list of reactions.	Oculta os ícones de reação empilhados e a contagem de reações abaixo das publicações. O espaço continua lá, então tocar onde eles estavam ainda abre a lista de reações.

@@ -1598,3 +1598,7 @@ Takes the numbers off the Like, Comment and Share buttons under posts, so each s
 Hide counts on reels	Ẩn số đếm trên reel
 # context: summary of that switch; Like, Comment and Share are Facebook's own button labels, so use Facebook's wording in your language
 Takes the numbers away from under a reel's Like, Comment and Share icons. The icons stay where they are. A change shows from the next reel.	Bỏ các con số bên dưới biểu tượng Thích, Bình luận và Chia sẻ của reel. Các biểu tượng vẫn ở nguyên chỗ. Thay đổi hiện từ reel tiếp theo.
+# context: switch title under News feed; the reaction preview is the stack of reaction icons and the line with the number of reactions under a post
+Hide the reaction preview on posts	Ẩn bản xem trước biểu cảm trên bài viết
+# context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions
+Hides the stacked reaction icons and the reactions count under posts. The space stays, so a tap where they were still opens the list of reactions.	Ẩn các biểu tượng cảm xúc xếp chồng và số lượt cảm xúc bên dưới bài viết. Khoảng trống vẫn còn, nên chạm vào chỗ đó vẫn mở danh sách cảm xúc.

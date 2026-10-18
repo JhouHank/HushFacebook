@@ -611,6 +611,15 @@
     },
     {
       "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/postprompts/ReactionPreview.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: the reaction preview under a post. Two draw methods paint it, the facepile drawable that the FDSInlineReactions component's static factory returns and the onDraw of PillsBlingBarView (a kept class name). The patch finds each by its shape and has it ask the extension first thing, returning before it paints while the switch is on, so the views keep their size and their taps."
+    },
+    {
+      "paths": [
         "patches/src/main/kotlin/app/morphe/patches/facebook/ads/sponsoredreels/ReelItemStory.kt"
       ],
       "origin": "original",

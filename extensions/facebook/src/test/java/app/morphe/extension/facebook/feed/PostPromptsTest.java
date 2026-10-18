@@ -44,6 +44,7 @@ public class PostPromptsTest {
         Settings.HIDE_POST_PROMPTS.resetToDefault();
         Settings.HIDE_POST_FOLLOW_LINK.resetToDefault();
         Settings.HIDE_POST_COUNTS.resetToDefault();
+        Settings.HIDE_POST_REACTIONS.resetToDefault();
         HookStatus.clear();
     }
 
@@ -170,6 +171,46 @@ public class PostPromptsTest {
         Settings.HIDE_POST_PROMPTS.save(true);
         Settings.HIDE_POST_FOLLOW_LINK.save(true);
         assertFalse("the other switches hid a count", PostPrompts.hidePostCounts());
+    }
+
+    /** The reaction preview (#158): off draws it, on leaves it undrawn, off again brings it back. */
+    @Test
+    public void theReactionPreviewIsDrawnUntilItsSwitchIsOn() {
+        assertFalse("the switch doesn't start on", Settings.HIDE_POST_REACTIONS.get());
+        assertFalse("a preview went with the switch off", PostPrompts.hideReactionPreview());
+
+        Settings.HIDE_POST_REACTIONS.save(true);
+        assertTrue("a preview stayed with the switch on", PostPrompts.hideReactionPreview());
+        assertTrue("the status line doesn't count the hidden preview",
+                statusLine().contains(PostPrompts.REACTIONS_HIDDEN + " 1"));
+
+        Settings.HIDE_POST_REACTIONS.save(false);
+        assertFalse("turning the switch off didn't bring the preview back", PostPrompts.hideReactionPreview());
+    }
+
+    @Test
+    public void pausedTheReactionPreviewIsDrawn() {
+        Settings.HIDE_POST_REACTIONS.save(true);
+        for (HushfacebookPause.Reason reason : new HushfacebookPause.Reason[] {
+                HushfacebookPause.Reason.SWITCH, HushfacebookPause.Reason.CRASH_LOOP}) {
+            PauseForTests.pause(reason);
+            assertFalse("a Hushfacebook paused by " + reason + " hid the preview", PostPrompts.hideReactionPreview());
+            PauseForTests.resume();
+        }
+        assertTrue("resumed, the preview didn't go again", PostPrompts.hideReactionPreview());
+    }
+
+    /** The reactions switch answers for nothing else, and the counts switch doesn't answer for it. */
+    @Test
+    public void theReactionSwitchSharesNoAnswer() {
+        Settings.HIDE_POST_REACTIONS.save(true);
+        Settings.HIDE_POST_PROMPTS.save(false);
+        assertTrue("the reactions switch hid a bumper", PostPrompts.keep(true));
+        assertTrue("the reactions switch hid a Follow link", PostPrompts.showFollowLink(true));
+        assertFalse("the reactions switch hid a count", PostPrompts.hidePostCounts());
+        Settings.HIDE_POST_REACTIONS.save(false);
+        Settings.HIDE_POST_COUNTS.save(true);
+        assertFalse("the counts switch hid the preview", PostPrompts.hideReactionPreview());
     }
 
     /** The patch hands Facebook's answer over as an int, since a boolean method may return one. */
