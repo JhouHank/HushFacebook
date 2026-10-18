@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "note": "Every public source found for com.facebook.katana, com.facebook.orca and com.facebook.lite, with the branches and commits it was last read at, its licence and what Hushfacebook may take from it. scripts/facebook-sources.ps1 holds it to its rules, scripts/audit-facebook-sources.ps1 refreshes it, and a local release needs a census from the last 14 days. docs/sources.md is the readable version.",
   "census": {
-    "checkedAt": "2026-10-02",
+    "checkedAt": "2026-10-18",
     "skipped": [
       "gitlab-code-search"
     ]
@@ -24,7 +24,7 @@
       "hushfacebook": {
         "status": "listed",
         "url": "https://morphe-patches.software/data/bundles.json",
-        "checked": "2026-10-02"
+        "checked": "2026-10-18"
       }
     },
     {
@@ -34,7 +34,7 @@
       "hushfacebook": {
         "status": "listed",
         "url": "https://github.com/nvbangg/awesome-morphe/blob/main/data/bundles/SysAdminDoc~Hushfacebook~main.json",
-        "checked": "2026-10-02"
+        "checked": "2026-10-18"
       }
     },
     {
@@ -44,7 +44,7 @@
       "hushfacebook": {
         "status": "listed",
         "url": "https://drnx64.github.io/morphe-track-patches/#/bundle/sysadmindoc",
-        "checked": "2026-10-02"
+        "checked": "2026-10-18"
       }
     },
     {
@@ -64,7 +64,7 @@
       "hushfacebook": {
         "status": "listed",
         "url": "https://github.com/rushiforai/morphe-archive/tree/main/examplepatches/SysAdminDoc/Hushfacebook",
-        "checked": "2026-10-02"
+        "checked": "2026-10-18"
       }
     }
   ],
@@ -212,7 +212,7 @@
         "6ad43cc9a59f0b906b51e0cfbd4dd650f83c22e0"
       ],
       "mirrors": [],
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "id": "froggo-arun",
@@ -352,7 +352,7 @@
       "forks": [],
       "contentHashes": [],
       "mirrors": [],
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "id": "froggo-anemia",
@@ -911,7 +911,7 @@
       "forks": [],
       "contentHashes": [],
       "mirrors": [],
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "id": "meridian",
@@ -963,7 +963,7 @@
         "941a9697b3629f7374a1f98c5a81c724cf95da6c"
       ],
       "mirrors": [],
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "id": "devanced",
@@ -1289,7 +1289,7 @@
         "999a5f925d66e32779b32a7592fd77756fb863f4"
       ],
       "mirrors": [],
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "id": "astronaut10",
@@ -1325,7 +1325,7 @@
       "forks": [],
       "contentHashes": [],
       "mirrors": [],
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "id": "facebookgoodies",
@@ -1644,7 +1644,7 @@
       "forks": [],
       "contentHashes": [],
       "mirrors": [],
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "id": "messengerex",
@@ -1687,7 +1687,7 @@
         "5a3b82b13b9db90538e5cb8248b9f6aa1a574fcb"
       ],
       "mirrors": [],
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "id": "messenger-cleaner",
@@ -1726,7 +1726,7 @@
       "forks": [],
       "contentHashes": [],
       "mirrors": [],
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "id": "messenger-z",
@@ -1872,7 +1872,7 @@
       ],
       "contentHashes": [],
       "mirrors": [],
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "id": "messengerpro-pedguedes",
@@ -2010,7 +2010,7 @@
       "forks": [],
       "contentHashes": [],
       "mirrors": [],
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "id": "onetapvideodownload",
@@ -2077,7 +2077,7 @@
         "e14a8cb96f828fac33b7c9a96f79549dd1bf5c2f"
       ],
       "mirrors": [],
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "id": "metaplusxposed",
@@ -2111,7 +2111,7 @@
         "161acbab4e391eba322f7913bbb9a9434793b175"
       ],
       "mirrors": [],
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "id": "xposedbase",
@@ -2147,7 +2147,7 @@
         "0a296e233b82039b948e3d0f53daac687c545220"
       ],
       "mirrors": [],
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "id": "glitchdraft",
@@ -2231,7 +2231,7 @@
         "8444abcffc0439bd3fc99e692b0d17c712c13d41"
       ],
       "mirrors": [],
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "id": "messengerpeep",
@@ -2269,7 +2269,7 @@
         "1c79a7145de83aeeb074fa5888e7d4eea6d0c8e2"
       ],
       "mirrors": [],
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "id": "tothanggtvt-fb-lite",
@@ -2338,7 +2338,7 @@
           "blobs": []
         }
       ],
-      "lastChecked": "2026-10-02",
+      "lastChecked": "2026-10-18",
       "availability": {
         "status": "unavailable",
         "reason": "The repository answered HTTP 404 on 2026-10-06 and the account lists no repository of that name. BlazeFTL/morphe-fb-lite, created 2026-10-03 and not a GitHub fork, holds the same main and dev commit d69c0d69, so it is recorded as a mirror rather than a rename.",
@@ -2350,92 +2350,92 @@
     {
       "repository": "https://github.com/ycngmn/Nobook",
       "reason": "A WebView wrapper around facebook.com, archived. It patches no Facebook package, though it shows demand for a low-data client.",
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "repository": "https://github.com/NoMore201/materialbook",
       "reason": "A WebView wrapper around facebook.com. It patches no Facebook package, and the repository is gone.",
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "repository": "https://github.com/Arc157/Virtualapp",
       "reason": "An app-virtualization project whose sample app list names Facebook's package. No Facebook patch.",
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "repository": "https://github.com/Cross2pro/VirtualApp",
       "reason": "An app-virtualization project whose sample app list names Facebook's package. No Facebook patch.",
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "repository": "https://github.com/D4vRAM369/WhatsMicFix-LSPosed",
       "reason": "An LSPosed microphone fix for WhatsApp voice notes that names Messenger's package. Nothing to do with Messenger's clutter.",
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "repository": "https://github.com/Firefds/FirefdsKit",
       "reason": "A Samsung system tweak module that names Facebook's package in a list.",
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "repository": "https://github.com/LeeHDsniper/APKAnalyserModules",
       "reason": "A captured logcat that mentions Facebook's package. No code for it.",
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "repository": "https://github.com/life2015/OPAmbientMod",
       "reason": "A OnePlus ambient display module that names Facebook and Messenger for their notifications.",
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "repository": "https://github.com/MinaMichita/MiuiEULocalizationToolsBox",
       "reason": "A MIUI localization module that names Facebook's package in a list.",
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "repository": "https://github.com/peter9811/ReVanced-APKs-output",
       "reason": "Build output that lists ReVanced's patches. No patch code.",
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "repository": "https://github.com/rhe91709-netizen/HyperOS3EULocalization",
       "reason": "A HyperOS localization module that names Facebook's package in a list.",
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "repository": "https://github.com/SodaWithoutSparkles/revanced-troubleshooting-guide",
       "reason": "A troubleshooting guide that keeps copies of ReVanced's patch lists.",
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "repository": "https://github.com/townbull/XposedExp",
       "reason": "A 2015 Samsung contacts experiment that names Facebook's package.",
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "repository": "https://github.com/TR-TECH-GUIDE/VirtualApp",
       "reason": "An app-virtualization project whose sample app list names Facebook's package. No Facebook patch.",
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "repository": "https://github.com/user2user1/rvmm-config-gen",
       "reason": "A build configuration generator that keeps a copy of ReVanced's patch list.",
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "repository": "https://github.com/xbyl1234/instagram_lite_bot",
       "reason": "An Instagram Lite account bot whose analysis hook names Facebook's packages.",
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "repository": "https://github.com/NexAlloy/NexAlloy",
       "reason": "The XES fork's upstream. Its own tree has no com.facebook.katana code, and its Morphe submodule (NexAlloy/morphe-patches, branch nexalloy) holds only Litho and Yoga stubs for its YouTube patches, not a Facebook patch.",
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "repository": "https://github.com/anxyis/anxy-patches",
       "reason": "An Alight Motion patch source. Its main/dev catalog names only com.alightcreative.motion; the com.facebook.katana search hit is an Alight Motion ProxyAuth string. Evidence: https://github.com/anxyis/anxy-patches/blob/b498ecc7199f658c8618b99346e5298b628f9605/patches-list.json.",
-      "lastChecked": "2026-10-02"
+      "lastChecked": "2026-10-18"
     },
     {
       "repository": "https://github.com/kveld9/kveld-morphe-patches",
