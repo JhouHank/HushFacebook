@@ -1213,6 +1213,22 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_settings_shortcut", TRUE);
 
     /**
+     * A long press on the Facebook logo opens the settings ({@link SettingsEntry}). On by default,
+     * as it always was. Off, the press is Facebook's again. Kept while paused, like the shortcut.
+     * Whichever of the three ways in is the last one on can't be turned off (#146).
+     */
+    public static final BooleanSetting SETTINGS_LOGO_PRESS =
+            new BooleanSetting("hushfacebook_settings_logo_press", TRUE);
+
+    /**
+     * The Hushfacebook row at the end of Settings and privacy in Facebook's Menu
+     * ({@link app.morphe.extension.facebook.menu.MenuSettingsRow}). On by default. Off, the row
+     * leaves the list. Kept while paused, and never the last way in turned off (#146).
+     */
+    public static final BooleanSetting SETTINGS_MENU_ROW =
+            new BooleanSetting("hushfacebook_settings_menu_row", TRUE);
+
+    /**
      * A cold start, and a return after {@link #APP_LOCK_AFTER}, ask for the phone's screen lock
      * before Facebook shows ({@link app.morphe.extension.facebook.misc.AppLock}). The settings
      * entry's own switch, so every build has it ({@link PatchFamily#ENTRY_SWITCHES}). Off by default.
@@ -1802,9 +1818,9 @@ public class Settings extends BaseSettings {
         // a few quick crashes can turn on. Its own switch, behind the lock, is the only way off.
         // Here, after both fields, since a static block runs in the order it's written.
         Setting.keepWhenPaused(APP_LOCK, APP_LOCK_AFTER);
-        // The launcher shortcut is a way back to the settings screen, where a pause is lifted, so a
-        // pause neither brings it back nor takes it away (#146).
-        Setting.keepWhenPaused(SETTINGS_SHORTCUT);
+        // The launcher shortcut, the logo's long press and the Menu row are ways back to the settings
+        // screen, where a pause is lifted, so a pause neither brings them back nor takes them away (#146).
+        Setting.keepWhenPaused(SETTINGS_SHORTCUT, SETTINGS_LOGO_PRESS, SETTINGS_MENU_ROW);
     }
 
     /**

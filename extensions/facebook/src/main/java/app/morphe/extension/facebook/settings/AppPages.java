@@ -32,6 +32,7 @@ import app.morphe.extension.facebook.misc.ShareSheetItems;
 import app.morphe.extension.facebook.notifications.NotificationSound;
 import app.morphe.extension.shared.L10n;
 import app.morphe.extension.shared.Utils;
+import app.morphe.extension.shared.settings.BooleanSetting;
 
 /**
  * The category pages for the rest of Facebook: Chats, Menu, Search, Marketplace, Notifications
@@ -112,19 +113,44 @@ final class AppPages {
         });
         menu.addPreference(watched);
         // The settings entry's own, so every build has it, and a pause leaves it as it is (#146).
+        // Three ways into the settings, each with a switch. The last one still on stays on and greyed out.
+        boolean rowInBuild = build.contains(PatchFamily.MENU_SETTINGS_ROW);
+        WaysIn ways = new WaysIn(rowInBuild);
         SwitchPreference settingsShortcut = toggle(context, Settings.SETTINGS_SHORTCUT,
-                build.contains(PatchFamily.MENU_SETTINGS_ROW)
-                ? L10n.t("Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves "
-                        + "that menu, and you can still open these settings from the Hushfacebook settings row in "
-                        + "Settings and privacy or with a long press on the Facebook logo.")
-                : L10n.t("Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves "
-                        + "that menu, and you can still open these settings with a long press on the Facebook logo."));
+                L10n.t("Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves "
+                        + "that menu."));
         settingsShortcut.setOnPreferenceChangeListener((preference, value) -> {
             Settings.SETTINGS_SHORTCUT.save((Boolean) value);
             SettingsEntry.shortcutSwitchChanged(context);
+            ways.refresh();
             return true;
         });
         menu.addPreference(settingsShortcut);
+        ways.add(Settings.SETTINGS_SHORTCUT, settingsShortcut);
+        SwitchPreference logoPress = toggle(context, Settings.SETTINGS_LOGO_PRESS,
+                L10n.t("A long press on the Facebook logo at the top of the home feed opens these settings. Off, "
+                        + "the long press goes back to Facebook."));
+        logoPress.setOnPreferenceChangeListener((preference, value) -> {
+            Settings.SETTINGS_LOGO_PRESS.save((Boolean) value);
+            ways.refresh();
+            return true;
+        });
+        menu.addPreference(logoPress);
+        ways.add(Settings.SETTINGS_LOGO_PRESS, logoPress);
+        if (rowInBuild) {
+            // The Menu asks for its rows each time it builds them, so no restart is needed.
+            SwitchPreference menuRow = toggle(context, Settings.SETTINGS_MENU_ROW,
+                    L10n.t("Adds a Hushfacebook settings row at the end of Settings and privacy in Facebook's Menu. "
+                            + "Off, the row leaves the Menu."));
+            menuRow.setOnPreferenceChangeListener((preference, value) -> {
+                Settings.SETTINGS_MENU_ROW.save((Boolean) value);
+                ways.refresh();
+                return true;
+            });
+            menu.addPreference(menuRow);
+            ways.add(Settings.SETTINGS_MENU_ROW, menuRow);
+        }
+        ways.refresh();
         if (build.contains(PatchFamily.MENU_PROMOTIONS)) {
             menu.addPreference(toggle(context, Settings.HIDE_MENU_UPGRADES,
                     L10n.t("The Upgrades section and its offers leave Facebook's Menu. Settings, Help and support "
@@ -530,5 +556,34 @@ final class AppPages {
                             + "can stay unread on this phone.")));
         }
         AdsMap.add(page, privacy, context, build);
+    }
+
+    /**
+     * The three switches that open these settings. Whichever is the last one on stays on and is
+     * greyed out under a line saying why, so there is always a way back in (#146).
+     */
+    private static final class WaysIn {
+        private final boolean menuRowInBuild;
+        private final java.util.Map<BooleanSetting, SwitchPreference> rows = new java.util.LinkedHashMap<>();
+        private final java.util.Map<BooleanSetting, CharSequence> plain = new java.util.HashMap<>();
+
+        WaysIn(boolean menuRowInBuild) {
+            this.menuRowInBuild = menuRowInBuild;
+        }
+
+        void add(BooleanSetting setting, SwitchPreference row) {
+            rows.put(setting, row);
+            plain.put(setting, row.getSummary());
+        }
+
+        void refresh() {
+            for (java.util.Map.Entry<BooleanSetting, SwitchPreference> entry : rows.entrySet()) {
+                boolean last = SettingsEntry.isLastWayIn(entry.getKey(), menuRowInBuild);
+                entry.getValue().setEnabled(!last);
+                entry.getValue().setSummary(last
+                        ? L10n.t("The last way into these settings stays on.")
+                        : plain.get(entry.getKey()));
+            }
+        }
     }
 }

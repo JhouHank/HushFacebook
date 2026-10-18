@@ -1539,10 +1539,18 @@ Your phone couldn't put this video together. Try another Download quality.	Telef
 The file couldn't be copied into your phone's gallery. Try again in a moment.	Dosya telefonunun galerisine kopyalanamadı. Birazdan tekrar dene.
 # context: title of a switch on the Menu settings page: whether the Hushfacebook settings shortcut shows when you hold Facebook's launcher icon
 Settings shortcut on the app icon	Uygulama simgesinde ayarlar kısayolu
-# context: summary of that switch when the build has the Hushfacebook settings row in Facebook's Settings and privacy
-Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings from the Hushfacebook settings row in Settings and privacy or with a long press on the Facebook logo.	Facebook simgesine basılı tutunca açılan menüye Hushfacebook ayarlarını koyar. Kapalıyken bu menüden çıkar. Bu ayarları yine Ayarlar ve gizlilik içindeki Hushfacebook ayarları satırından ya da Facebook logosuna basılı tutarak açabilirsin.
-# context: summary of that switch when the build has no settings row in Facebook's Menu
-Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings with a long press on the Facebook logo.	Facebook simgesine basılı tutunca açılan menüye Hushfacebook ayarlarını koyar. Kapalıyken bu menüden çıkar. Bu ayarları yine Facebook logosuna basılı tutarak açabilirsin.
+# context: title of a switch on the Menu settings page: whether a long press on the Facebook logo opens the Hushfacebook settings
+Open settings from the logo	Ayarları logodan aç
+# context: title of a switch on the Menu settings page: whether the Hushfacebook settings row shows at the end of Settings and privacy in Facebook's Menu
+Settings row in Menu	Menüde ayarlar satırı
+# context: summary of the switch for the Hushfacebook settings shortcut in the launcher icon's menu
+Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu.	Facebook simgesine basılı tutunca açılan menüye Hushfacebook ayarlarını koyar. Kapalıyken bu menüden çıkar.
+# context: summary of the switch for opening the settings with a long press on the Facebook logo
+A long press on the Facebook logo at the top of the home feed opens these settings. Off, the long press goes back to Facebook.	Ana akışın üstündeki Facebook logosuna basılı tutmak bu ayarları açar. Kapalıyken basılı tutma yeniden Facebook'a ait olur.
+# context: summary of the switch for the Hushfacebook settings row in Facebook's Menu
+Adds a Hushfacebook settings row at the end of Settings and privacy in Facebook's Menu. Off, the row leaves the Menu.	Facebook Menüsünde Ayarlar ve gizlilik bölümünün sonuna Hushfacebook ayarları satırı ekler. Kapalıyken satır Menüden çıkar.
+# context: summary shown instead of a switch's usual one while it is the only one of the three ways into the settings still on, so it is greyed out
+The last way into these settings stays on.	Bu ayarlara giden son yol açık kalır.
 # context: switch title on the Appearance settings page: hides Facebook Flex's Data mode bar under the top bar; Data mode is Facebook's own name for paid mode on Flex carriers
 Hide the Data mode banner	Veri modu bannerını gizle
 # context: switch title on the Appearance settings page: hides Facebook Flex's purple Free mode bar; Free mode is Facebook's own name for the free text-only mode

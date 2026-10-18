@@ -1534,10 +1534,18 @@ Your phone couldn't put this video together. Try another Download quality.	你�
 The file couldn't be copied into your phone's gallery. Try again in a moment.	无法把该文件复制到手机相册。请稍后重试。
 # context: title of a switch on the Menu settings page: whether the Hushfacebook settings shortcut shows when you hold Facebook's launcher icon
 Settings shortcut on the app icon	应用图标上的设置快捷方式
-# context: summary of that switch when the build has the Hushfacebook settings row in Facebook's Settings and privacy
-Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings from the Hushfacebook settings row in Settings and privacy or with a long press on the Facebook logo.	把 Hushfacebook 设置放入长按 Facebook 图标时出现的菜单。关闭后它会从该菜单中消失，你仍可通过“设置和隐私”中的 Hushfacebook 设置行，或长按 Facebook 徽标来打开这些设置。
-# context: summary of that switch when the build has no settings row in Facebook's Menu
-Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu, and you can still open these settings with a long press on the Facebook logo.	把 Hushfacebook 设置放入长按 Facebook 图标时出现的菜单。关闭后它会从该菜单中消失，你仍可通过长按 Facebook 徽标来打开这些设置。
+# context: title of a switch on the Menu settings page: whether a long press on the Facebook logo opens the Hushfacebook settings
+Open settings from the logo	从徽标打开设置
+# context: title of a switch on the Menu settings page: whether the Hushfacebook settings row shows at the end of Settings and privacy in Facebook's Menu
+Settings row in Menu	菜单中的设置行
+# context: summary of the switch for the Hushfacebook settings shortcut in the launcher icon's menu
+Puts Hushfacebook settings in the menu you get by holding Facebook's icon. Off, it leaves that menu.	把 Hushfacebook 设置放入长按 Facebook 图标时出现的菜单。关闭后它会从该菜单中消失。
+# context: summary of the switch for opening the settings with a long press on the Facebook logo
+A long press on the Facebook logo at the top of the home feed opens these settings. Off, the long press goes back to Facebook.	长按主页动态顶部的 Facebook 徽标会打开这些设置。关闭后，长按恢复为 Facebook 原有的行为。
+# context: summary of the switch for the Hushfacebook settings row in Facebook's Menu
+Adds a Hushfacebook settings row at the end of Settings and privacy in Facebook's Menu. Off, the row leaves the Menu.	在 Facebook 菜单的“设置和隐私”末尾添加一行 Hushfacebook 设置。关闭后，这一行会从菜单中消失。
+# context: summary shown instead of a switch's usual one while it is the only one of the three ways into the settings still on, so it is greyed out
+The last way into these settings stays on.	进入这些设置的最后一种方式会保持开启。
 # context: switch title on the Appearance settings page: hides Facebook Flex's Data mode bar under the top bar; Data mode is Facebook's own name for paid mode on Flex carriers
 Hide the Data mode banner	隐藏“数据模式”横幅
 # context: switch title on the Appearance settings page: hides Facebook Flex's purple Free mode bar; Free mode is Facebook's own name for the free text-only mode

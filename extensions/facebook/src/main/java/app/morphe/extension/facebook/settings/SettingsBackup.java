@@ -253,6 +253,8 @@ public final class SettingsBackup {
             Settings.SAVED_SHORTCUT,
             Settings.WATCH_HISTORY_SHORTCUT,
             Settings.SETTINGS_SHORTCUT,
+            Settings.SETTINGS_LOGO_PRESS,
+            Settings.SETTINGS_MENU_ROW,
             Settings.APP_LOCK,
             Settings.SAVE_CRASH_FILE,
             Settings.MARKETPLACE_ONLY,
