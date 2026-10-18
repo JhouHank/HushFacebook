@@ -105,6 +105,8 @@ public enum PatchFamily {
             Settings.DONT_SEND_REEL_WATCH_HISTORY),
     DOUBLE_TAP_LIKE(FamilyNames.DOUBLE_TAP_LIKE, "doubleTapLike", null,
             Settings.TURN_OFF_DOUBLE_TAP_LIKE),
+    REEL_GESTURES(FamilyNames.REEL_GESTURES, "reelGestures", null,
+            Settings.DOUBLE_TAP_OPENS_COMMENTS, Settings.LONG_PRESS_OPENS_COMMENTS),
     KEEP_REEL_SPEED(FamilyNames.KEEP_REEL_SPEED, "keepReelSpeed", null,
             Settings.KEEP_REEL_SPEED, Settings.KEEP_VIDEO_SPEED, Settings.SLOWER_REEL_SPEEDS),
     REEL_HOLD(FamilyNames.HOLD_REEL_FOR_2X, "reelHold", null,

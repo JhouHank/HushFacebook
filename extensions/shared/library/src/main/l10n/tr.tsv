@@ -1630,3 +1630,11 @@ Your list of Menu tiles to hide will be empty.	Gizlenecek Menü kutucukları lis
 Your list of Menu tiles to hide will hold %1$d tile.	Gizlenecek Menü kutucukları listen %1$d kutucuk içerecek.
 # context: import preview and toast, several Menu tiles will be in that list after the import
 Your list of Menu tiles to hide will hold %1$d tiles.	Gizlenecek Menü kutucukları listen %1$d kutucuk içerecek.
+# context: switch title under Reels and Watch; on, a double tap on a reel opens its comments
+Double tap opens comments	Çift dokunma yorumları açar
+# context: switch title under Reels and Watch; on, holding a reel opens its comments
+Long press opens comments	Basılı tutma yorumları açar
+# context: summary of the double tap switch
+A double tap on a reel opens its comments instead of liking it. Turn off double tap to like still wins when it's on. Off by default, since it hasn't been tried on a real account yet.	Bir reel'e çift dokunmak, onu beğenmek yerine yorumlarını açar. "Beğenmek için çift dokunmayı kapat" açıksa o ayar önceliklidir. Varsayılan olarak kapalıdır, çünkü henüz gerçek bir hesapta denenmedi.
+# context: summary of the long press switch
+Holding a reel opens its comments instead of Facebook's long-press menu or the 2x hold. The reel's more button still opens that menu. Off by default, since it hasn't been tried on a real account yet.	Bir reel'i basılı tutmak, Facebook'un uzun basma menüsü veya 2x tutma yerine yorumlarını açar. Reel'in daha fazla düğmesi o menüyü açmaya devam eder. Varsayılan olarak kapalıdır, çünkü henüz gerçek bir hesapta denenmedi.

@@ -102,6 +102,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean reelGestures() {
+        return false;
+    }
+
     public static boolean keepReelSpeed() {
         return false;
     }

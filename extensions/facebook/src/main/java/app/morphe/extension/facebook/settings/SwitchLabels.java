@@ -132,6 +132,8 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_READ_RECEIPTS) return L10n.t("Hide read receipts");
         if (setting == Settings.ORIGINAL_CHAT_MEDIA) return L10n.t("Send photos and videos at original quality");
         if (setting == Settings.TURN_OFF_DOUBLE_TAP_LIKE) return L10n.t("Turn off double tap to like");
+        if (setting == Settings.DOUBLE_TAP_OPENS_COMMENTS) return L10n.t("Double tap opens comments");
+        if (setting == Settings.LONG_PRESS_OPENS_COMMENTS) return L10n.t("Long press opens comments");
         if (setting == Settings.KEEP_REEL_SPEED) return L10n.t("Keep the reel speed");
         if (setting == Settings.KEEP_VIDEO_SPEED) return L10n.t("Keep the video speed");
         if (setting == Settings.SLOWER_REEL_SPEEDS) return L10n.t("Slower speeds");

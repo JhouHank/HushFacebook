@@ -1522,3 +1522,11 @@ Your list of Menu tiles to hide will be empty.	Sua lista de blocos do menu para 
 Your list of Menu tiles to hide will hold %1$d tile.	Sua lista de blocos do menu para ocultar terá %1$d bloco.
 # context: import preview and toast, several Menu tiles will be in that list after the import
 Your list of Menu tiles to hide will hold %1$d tiles.	Sua lista de blocos do menu para ocultar terá %1$d blocos.
+# context: switch title under Reels and Watch; on, a double tap on a reel opens its comments
+Double tap opens comments	Toque duplo abre os comentários
+# context: switch title under Reels and Watch; on, holding a reel opens its comments
+Long press opens comments	Pressionar e segurar abre os comentários
+# context: summary of the double tap switch
+A double tap on a reel opens its comments instead of liking it. Turn off double tap to like still wins when it's on. Off by default, since it hasn't been tried on a real account yet.	Tocar duas vezes em um reel abre os comentários dele em vez de curtir. Se "Desativar toque duplo para curtir" estiver ligado, ele tem prioridade. Desligado por padrão, porque ainda não foi testado em uma conta real.
+# context: summary of the long press switch
+Holding a reel opens its comments instead of Facebook's long-press menu or the 2x hold. The reel's more button still opens that menu. Off by default, since it hasn't been tried on a real account yet.	Pressionar e segurar um reel abre os comentários dele em vez do menu de toque longo do Facebook ou do 2x ao segurar. O botão de mais opções do reel continua abrindo esse menu. Desligado por padrão, porque ainda não foi testado em uma conta real.

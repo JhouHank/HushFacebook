@@ -1630,3 +1630,11 @@ Your list of Menu tiles to hide will be empty.	Danh sách ô Menu cần ẩn s�
 Your list of Menu tiles to hide will hold %1$d tile.	Danh sách ô Menu cần ẩn sẽ có %1$d ô.
 # context: import preview and toast, several Menu tiles will be in that list after the import
 Your list of Menu tiles to hide will hold %1$d tiles.	Danh sách ô Menu cần ẩn sẽ có %1$d ô.
+# context: switch title under Reels and Watch; on, a double tap on a reel opens its comments
+Double tap opens comments	Nhấn đúp mở bình luận
+# context: switch title under Reels and Watch; on, holding a reel opens its comments
+Long press opens comments	Nhấn giữ mở bình luận
+# context: summary of the double tap switch
+A double tap on a reel opens its comments instead of liking it. Turn off double tap to like still wins when it's on. Off by default, since it hasn't been tried on a real account yet.	Nhấn đúp vào reel sẽ mở bình luận của reel thay vì thích. Nếu "Tắt nhấn đúp để thích" đang bật thì cài đặt đó được ưu tiên. Mặc định tắt, vì chưa được thử trên tài khoản thật.
+# context: summary of the long press switch
+Holding a reel opens its comments instead of Facebook's long-press menu or the 2x hold. The reel's more button still opens that menu. Off by default, since it hasn't been tried on a real account yet.	Nhấn giữ reel sẽ mở bình luận của reel thay vì menu nhấn giữ của Facebook hoặc tốc độ 2x khi giữ. Nút thêm của reel vẫn mở menu đó. Mặc định tắt, vì chưa được thử trên tài khoản thật.

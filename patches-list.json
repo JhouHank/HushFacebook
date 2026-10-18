@@ -2486,6 +2486,45 @@
       "options": []
     },
     {
+      "name": "Open comments with a gesture",
+      "description": "Open a reel's comments with a double tap or a long press, on the sheet the Comment button opens, instead of liking or holding. Starts off. Turn it on in Hushfacebook settings > Reels and Watch.",
+      "category": "Reels",
+      "use": true,
+      "dependencies": [
+        "Hold a reel for 2x",
+        "Hushfacebook settings",
+        "Turn off double tap to like"
+      ],
+      "compatiblePackages": {
+        "com.facebook.katana": [
+          "583.0.0.39.55"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Facebook",
+          "packageName": "com.facebook.katana",
+          "description": null,
+          "appIconColor": 550655,
+          "signatures": [
+            "911d604446084ca7f4760b775bfc160fa8702441240a7258645d7a72c4312d27",
+            "e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1"
+          ],
+          "targets": [
+            {
+              "version": "583.0.0.39.55",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 475614366,
+                "ARMEABI_V7A": 475614365
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Open links in external browser",
       "description": "Opens web links in your own browser instead of Facebook's built-in one, without Facebook tracking the click. Facebook pages still open in the app. On by default. Turn it off in Hushfacebook settings > Links. A second switch, on by default under Privacy, stops Facebook's browser keeping a history of the links you open in it.",
       "category": "Interface",

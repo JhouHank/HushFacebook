@@ -1630,3 +1630,11 @@ Your list of Menu tiles to hide will be empty.	Daftar ubin Menu yang disembunyik
 Your list of Menu tiles to hide will hold %1$d tile.	Daftar ubin Menu yang disembunyikan akan berisi %1$d ubin.
 # context: import preview and toast, several Menu tiles will be in that list after the import
 Your list of Menu tiles to hide will hold %1$d tiles.	Daftar ubin Menu yang disembunyikan akan berisi %1$d ubin.
+# context: switch title under Reels and Watch; on, a double tap on a reel opens its comments
+Double tap opens comments	Ketuk dua kali membuka komentar
+# context: switch title under Reels and Watch; on, holding a reel opens its comments
+Long press opens comments	Tekan lama membuka komentar
+# context: summary of the double tap switch
+A double tap on a reel opens its comments instead of liking it. Turn off double tap to like still wins when it's on. Off by default, since it hasn't been tried on a real account yet.	Mengetuk dua kali reel membuka komentarnya, bukan menyukainya. Jika "Matikan ketuk dua kali untuk menyukai" aktif, pengaturan itu yang berlaku. Nonaktif secara bawaan, karena belum dicoba di akun sungguhan.
+# context: summary of the long press switch
+Holding a reel opens its comments instead of Facebook's long-press menu or the 2x hold. The reel's more button still opens that menu. Off by default, since it hasn't been tried on a real account yet.	Menahan reel membuka komentarnya, bukan menu tekan lama Facebook atau pemutaran 2x. Tombol lainnya pada reel tetap membuka menu itu. Nonaktif secara bawaan, karena belum dicoba di akun sungguhan.

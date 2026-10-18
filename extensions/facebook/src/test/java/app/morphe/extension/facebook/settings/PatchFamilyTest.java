@@ -273,7 +273,8 @@ public class PatchFamilyTest {
         Set<PatchFamily> joined = EnumSet.of(PatchFamily.STORIES_TRAY, PatchFamily.FEED_REELS,
                 PatchFamily.RETURN_REFRESH, PatchFamily.SEEN_POSTS, PatchFamily.STORY_AUTO_ADVANCE,
                 PatchFamily.STORY_SEEN, PatchFamily.REEL_DECLUTTER, PatchFamily.REEL_WATCH_HISTORY,
-                PatchFamily.DOUBLE_TAP_LIKE, PatchFamily.REEL_HOLD, PatchFamily.DEFAULT_COMMENT_ORDER,
+                PatchFamily.DOUBLE_TAP_LIKE, PatchFamily.REEL_GESTURES, PatchFamily.REEL_HOLD,
+                PatchFamily.DEFAULT_COMMENT_ORDER,
                 PatchFamily.COMMENT_SHEET_OPTIONS, PatchFamily.TAG_SUGGESTIONS, PatchFamily.TAP_TO_PLAY,
                 PatchFamily.PLAYBACK_QUALITY, PatchFamily.PICTURE_IN_PICTURE, PatchFamily.HDR_BRIGHTNESS,
                 PatchFamily.SYSTEM_FONT, PatchFamily.SYSTEM_EMOJI, PatchFamily.HAPTICS,
@@ -281,7 +282,7 @@ public class PatchFamilyTest {
                 PatchFamily.REELS_TAB, PatchFamily.META_UPSELLS, PatchFamily.SHARE_SHEET_ITEMS,
                 PatchFamily.ANALYTICS_UPLOADS, PatchFamily.SCREENSHOTS, PatchFamily.SCREENSHOT_DETECTION,
                 PatchFamily.TYPING_INDICATOR, PatchFamily.READ_RECEIPTS, PatchFamily.ACCENT_COLOR);
-        assertEquals(32, joined.size());
+        assertEquals(33, joined.size());
         for (PatchFamily family : joined) {
             assertTrue(family.patchName + " isn't in the default selection",
                     PatchFamily.DEFAULT_SELECTION.contains(family));
@@ -427,7 +428,7 @@ public class PatchFamilyTest {
                         + "stories, Stop Story auto-advance, View stories anonymously, Upload Stories in HD, Hide sponsored search results, "
                         + "Hide sponsored profile posts, Hide sponsored Marketplace listings, Block Instant Games "
                         + "ads, Hide affiliate product links, Clean up Reels, Hide reel interest prompts, Don't send "
-                        + "reel watch history, Turn off double tap to like, Keep the reel speed, Hold a reel for 2x, "
+                        + "reel watch history, Turn off double tap to like, Open comments with a gesture, Keep the reel speed, Hold a reel for 2x, "
                         + "Default comment order, Hide Meta AI comment summaries, Comment sheet options, Tag "
                         + "suggestions only after @, Tap to play, Resume long videos, Frame step, Default playback quality, "
                         + "Picture-in-picture, Turn off HDR brightness, Skip silent parts, Keep the progress bar, Use the system font, "
@@ -450,7 +451,7 @@ public class PatchFamilyTest {
                         + "Hide suggested stories, Stop Story auto-advance, View stories anonymously, Upload Stories in HD, Hide sponsored "
                         + "search results, Hide sponsored profile posts, Hide sponsored Marketplace listings, Block "
                         + "Instant Games ads, Hide affiliate product links, Clean up Reels, Hide reel interest "
-                        + "prompts, Don't send reel watch history, Turn off double tap to like, Keep the reel speed, "
+                        + "prompts, Don't send reel watch history, Turn off double tap to like, Open comments with a gesture, Keep the reel speed, "
                         + "Hold a reel for 2x, Default comment order, Hide Meta AI comment summaries, Comment sheet "
                         + "options, Tag suggestions only after @, Tap to play, Resume long videos, Frame step, Default playback "
                         + "quality, Picture-in-picture, Turn off HDR brightness, Skip silent parts, Keep the progress bar, Use the "

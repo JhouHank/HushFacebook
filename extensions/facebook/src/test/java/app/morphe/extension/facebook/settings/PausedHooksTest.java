@@ -128,6 +128,7 @@ import app.morphe.extension.facebook.navigation.StartTabRouteForTests;
 import app.morphe.extension.facebook.notifications.NotificationKindsForTests;
 import app.morphe.extension.facebook.reels.DoubleTapLike;
 import app.morphe.extension.facebook.reels.OriginalAudio;
+import app.morphe.extension.facebook.reels.ReelGesturesForTests;
 import app.morphe.extension.facebook.reels.ReelHold;
 import app.morphe.extension.facebook.reels.ReelHoldForTests;
 import app.morphe.extension.facebook.reels.ReelCleanMode;
@@ -513,6 +514,13 @@ public class PausedHooksTest {
                 () -> DoubleTapLike.likeKey("reel") == null,
                 () -> DoubleTapLike.holdBackLike("DOUBLE_TAP"),
                 DoubleTapLike::holdBackTap));
+        // A double tap on a reel opens its comments in place of a like, a long press does too, and neither
+        // a heart plays nor a like from a double tap is sent while the first switch is on.
+        probes.put(PatchFamily.REEL_GESTURES, Arrays.asList(
+                ReelGesturesForTests::doubleTapOpens,
+                ReelGesturesForTests::longPressOpens,
+                () -> DoubleTapLike.heart(new Object()) == null,
+                () -> DoubleTapLike.holdBackLike("DOUBLE_TAP")));
         // A long press on a reel goes to Facebook's speed-up wherever it lands, the reel gets its
         // release listener, a hold speed of normal becomes 2x, the lift of a hold puts the speed back,
         // and that lift's speed is the one the reel had before the hold.

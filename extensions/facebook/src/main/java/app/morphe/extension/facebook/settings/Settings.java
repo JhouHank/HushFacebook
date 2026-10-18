@@ -575,6 +575,23 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_turn_off_double_tap_like", FALSE);
 
     /**
+     * A double tap on a reel opens its comments, on the sheet the Comment button opens, in place of
+     * liking it ({@link app.morphe.extension.facebook.reels.ReelGestures}, #179). Turn off double
+     * tap to like stays the stronger switch: with it on, the double tap does nothing, as before.
+     * Starts off.
+     */
+    public static final BooleanSetting DOUBLE_TAP_OPENS_COMMENTS =
+            new BooleanSetting("hushfacebook_double_tap_opens_comments", FALSE);
+
+    /**
+     * A long press on a reel opens its comments in place of Facebook's hold behavior, the long-press
+     * menu or Hold a reel for 2x ({@link app.morphe.extension.facebook.reels.ReelGestures}, #179).
+     * Starts off.
+     */
+    public static final BooleanSetting LONG_PRESS_OPENS_COMMENTS =
+            new BooleanSetting("hushfacebook_long_press_opens_comments", FALSE);
+
+    /**
      * A speed picked in a reel's menu stays for the next reels where it was picked, ads and live
      * videos aside, until another is picked or Facebook restarts
      * ({@link app.morphe.extension.facebook.media.ReelSpeed}). Nothing is

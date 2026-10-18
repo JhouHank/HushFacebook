@@ -143,6 +143,15 @@ final class VideoPages {
                     L10n.t("A double tap on a reel or video no longer likes it or shows a heart. A single tap and the Like "
                             + "button work as before.")));
         }
+        if (build.contains(PatchFamily.REEL_GESTURES)) {
+            reels.addPreference(toggle(context, Settings.DOUBLE_TAP_OPENS_COMMENTS,
+                    L10n.t("A double tap on a reel opens its comments instead of liking it. Turn off double tap to like "
+                            + "still wins when it's on. Off by default, since it hasn't been tried on a real account yet.")));
+            reels.addPreference(toggle(context, Settings.LONG_PRESS_OPENS_COMMENTS,
+                    L10n.t("Holding a reel opens its comments instead of Facebook's long-press menu or the 2x hold. The "
+                            + "reel's more button still opens that menu. Off by default, since it hasn't been tried on a real "
+                            + "account yet.")));
+        }
         if (build.contains(PatchFamily.KEEP_REEL_SPEED)) {
             reels.addPreference(toggle(context, Settings.KEEP_REEL_SPEED,
                     L10n.t("A playback speed you pick in a reel's menu stays for the next reels until you pick another "

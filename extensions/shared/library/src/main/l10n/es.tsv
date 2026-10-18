@@ -1630,3 +1630,11 @@ Your list of Menu tiles to hide will be empty.	Tu lista de mosaicos del menú qu
 Your list of Menu tiles to hide will hold %1$d tile.	Tu lista de mosaicos del menú que ocultar tendrá %1$d mosaico.
 # context: import preview and toast, several Menu tiles will be in that list after the import
 Your list of Menu tiles to hide will hold %1$d tiles.	Tu lista de mosaicos del menú que ocultar tendrá %1$d mosaicos.
+# context: switch title under Reels and Watch; on, a double tap on a reel opens its comments
+Double tap opens comments	Tocar dos veces abre los comentarios
+# context: switch title under Reels and Watch; on, holding a reel opens its comments
+Long press opens comments	Mantener pulsado abre los comentarios
+# context: summary of the double tap switch
+A double tap on a reel opens its comments instead of liking it. Turn off double tap to like still wins when it's on. Off by default, since it hasn't been tried on a real account yet.	Tocar dos veces un reel abre sus comentarios en lugar de darle Me gusta. Si «Desactivar tocar dos veces para dar Me gusta» está activado, ese ajuste tiene prioridad. Desactivado por defecto, porque aún no se ha probado con una cuenta real.
+# context: summary of the long press switch
+Holding a reel opens its comments instead of Facebook's long-press menu or the 2x hold. The reel's more button still opens that menu. Off by default, since it hasn't been tried on a real account yet.	Mantener pulsado un reel abre sus comentarios en lugar del menú de pulsación larga de Facebook o del 2x al mantener. El botón de más opciones del reel sigue abriendo ese menú. Desactivado por defecto, porque aún no se ha probado con una cuenta real.

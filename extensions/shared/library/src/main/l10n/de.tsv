@@ -1630,3 +1630,11 @@ Your list of Menu tiles to hide will be empty.	Deine Liste der auszublendenden M
 Your list of Menu tiles to hide will hold %1$d tile.	Deine Liste der auszublendenden Menükacheln enthält %1$d Kachel.
 # context: import preview and toast, several Menu tiles will be in that list after the import
 Your list of Menu tiles to hide will hold %1$d tiles.	Deine Liste der auszublendenden Menükacheln enthält %1$d Kacheln.
+# context: switch title under Reels and Watch; on, a double tap on a reel opens its comments
+Double tap opens comments	Doppeltippen öffnet Kommentare
+# context: switch title under Reels and Watch; on, holding a reel opens its comments
+Long press opens comments	Gedrückthalten öffnet Kommentare
+# context: summary of the double tap switch
+A double tap on a reel opens its comments instead of liking it. Turn off double tap to like still wins when it's on. Off by default, since it hasn't been tried on a real account yet.	Doppeltippen auf ein Reel öffnet dessen Kommentare, statt es zu liken. „Doppeltippen zum Liken ausschalten“ hat Vorrang, wenn es an ist. Standardmäßig aus, weil es noch nicht mit einem echten Konto getestet wurde.
+# context: summary of the long press switch
+Holding a reel opens its comments instead of Facebook's long-press menu or the 2x hold. The reel's more button still opens that menu. Off by default, since it hasn't been tried on a real account yet.	Ein Reel gedrückt zu halten öffnet dessen Kommentare, statt Facebooks Long-Press-Menü oder das 2x-Halten. Der Mehr-Button des Reels öffnet das Menü weiterhin. Standardmäßig aus, weil es noch nicht mit einem echten Konto getestet wurde.
