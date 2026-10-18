@@ -171,6 +171,28 @@ public class VideoMenuItemTest {
         assertEquals("Download to phone", String.valueOf(filled(VideoMenuItemForTests.videoPost()).getItem(2).getTitle()));
     }
 
+    /**
+     * Facebook's own post menu sorts rows by their plain order number, where Android's top category
+     * is a big number that sinks the row to the bottom (S22, 583, 2026-10-18). The row still goes on
+     * top there, and below Facebook's rows with the switch off.
+     */
+    @Test
+    public void downloadFirstTopsFacebooksOwnSortedMenu() {
+        Settings.POST_MENU_DOWNLOAD_FIRST.save(true);
+        Menu menu = VideoMenuItemForTests.facebooksSortedMenu();
+        VideoMenuItem.add(menu, new View(context), VideoMenuItemForTests.videoPost(), ICON, ATTACHMENTS, MEDIA, ATTACHED_STORY);
+
+        assertEquals(3, menu.size());
+        assertEquals("Download to phone", String.valueOf(menu.getItem(0).getTitle()));
+        assertEquals("Save video", String.valueOf(menu.getItem(1).getTitle()));
+        assertEquals("Download video", String.valueOf(menu.getItem(2).getTitle()));
+
+        Settings.POST_MENU_DOWNLOAD_FIRST.save(false);
+        Menu below = VideoMenuItemForTests.facebooksSortedMenu();
+        VideoMenuItem.add(below, new View(context), VideoMenuItemForTests.videoPost(), ICON, ATTACHMENTS, MEDIA, ATTACHED_STORY);
+        assertEquals("Download to phone", String.valueOf(below.getItem(2).getTitle()));
+    }
+
     /** A post with nothing to save gets no row on top either, and a pause keeps the menu Facebook's. */
     @Test
     public void downloadFirstAddsNothingWithNothingToSaveOrWhenPaused() {

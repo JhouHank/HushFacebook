@@ -6,6 +6,7 @@ package app.morphe.extension.facebook.download;
 
 import android.content.Context;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.PopupMenu;
 
@@ -14,6 +15,10 @@ import com.facebook.graphql.model.GraphQLStory;
 import com.facebook.graphql.model.GraphQLStoryAttachment;
 
 import org.robolectric.RuntimeEnvironment;
+
+import java.lang.reflect.Proxy;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The video menu hook, for a test outside this package: one post menu Facebook has filled, handed
@@ -37,6 +42,51 @@ public final class VideoMenuItemForTests {
         menu.add(Menu.NONE, 1, Menu.NONE, "Save video");
         menu.add(Menu.NONE, 2, Menu.NONE, "Download video");
         return menu;
+    }
+
+    /**
+     * The same rows in a menu that sorts the way Facebook's post menu does (583, X.5WE's insert):
+     * a new row goes in front of the first row whose order number is larger, else at the end, so
+     * the numbers sort plainly and Android's categories mean nothing.
+     */
+    static Menu facebooksSortedMenu() {
+        List<MenuItem> rows = new ArrayList<>();
+        Menu menu = (Menu) Proxy.newProxyInstance(Menu.class.getClassLoader(), new Class<?>[] {Menu.class},
+                (proxy, method, args) -> {
+                    switch (method.getName()) {
+                        case "add":
+                            MenuItem row = args.length == 1 ? row(proxy, 0, 0, (CharSequence) args[0])
+                                    : row(proxy, (int) args[1], (int) args[2], (CharSequence) args[3]);
+                            int at = 0;
+                            while (at < rows.size() && rows.get(at).getOrder() <= row.getOrder()) at++;
+                            rows.add(at, row);
+                            return row;
+                        case "size":
+                            return rows.size();
+                        case "getItem":
+                            return rows.get((int) args[0]);
+                        default:
+                            return method.getReturnType() == boolean.class ? false : null;
+                    }
+                });
+        menu.add(Menu.NONE, 1, Menu.NONE, "Save video");
+        menu.add(Menu.NONE, 2, Menu.NONE, "Download video");
+        return menu;
+    }
+
+    /** A row of [facebooksSortedMenu]: its id, order and title. Setters hand the row back. */
+    private static MenuItem row(Object menu, int id, int order, CharSequence title) {
+        return (MenuItem) Proxy.newProxyInstance(MenuItem.class.getClassLoader(), new Class<?>[] {MenuItem.class},
+                (proxy, method, args) -> {
+                    switch (method.getName()) {
+                        case "getItemId": return id;
+                        case "getOrder": return order;
+                        case "getTitle": return title;
+                        default:
+                            if (method.getReturnType() == MenuItem.class) return proxy;
+                            return method.getReturnType() == boolean.class ? false : null;
+                    }
+                });
     }
 
     /** A post holding one video whose post names its single file. */
