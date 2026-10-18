@@ -1406,6 +1406,25 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_translucent_bars", FALSE);
 
     /**
+     * The home top bar loses its Messenger button and the buttons beside it close up (#181,
+     * {@link app.morphe.extension.facebook.navigation.TopBarButtons}). Facebook builds the bar as
+     * the main screen starts, so a change waits for a restart.
+     */
+    public static final BooleanSetting HIDE_MESSENGER_BUTTON =
+            new BooleanSetting("hushfacebook_hide_messenger_button", FALSE, true);
+
+    /** The Messenger button keeps its place and loses only its unread count (#181). Shows with the next count. */
+    public static final BooleanSetting HIDE_MESSENGER_COUNT =
+            new BooleanSetting("hushfacebook_hide_messenger_count", FALSE);
+
+    /**
+     * The Facebook logo in the home top bar goes invisible but keeps its size, so the empty spot
+     * still opens Hushfacebook settings on a long press (#181). A change waits for a restart.
+     */
+    public static final BooleanSetting HIDE_FACEBOOK_LOGO =
+            new BooleanSetting("hushfacebook_hide_facebook_logo", FALSE, true);
+
+    /**
      * Facebook's dark mode controller answers dark whatever its own setting says
      * ({@link app.morphe.extension.facebook.theme.ForceDarkMode}), for tablets whose Facebook
      * settings have no Dark mode row. Facebook asks as each screen applies its theme, so a change

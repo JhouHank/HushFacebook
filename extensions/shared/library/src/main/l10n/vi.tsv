@@ -1578,3 +1578,15 @@ Hide who is typing in comments	Ẩn ai đang nhập trong bình luận
 Takes away the line that says someone is typing a comment. Your own typing is a separate switch under Privacy.	Gỡ dòng cho biết ai đó đang nhập bình luận. Việc bạn đang nhập có công tắc riêng trong Quyền riêng tư.
 Hide the search pill on reels	Ẩn gợi ý tìm kiếm trên reel
 Hides the search suggestion under a reel's caption, the magnifier with a question to look up. Off by default, since it hasn't been tried on a real account yet.	Ẩn gợi ý tìm kiếm bên dưới chú thích của reel, biểu tượng kính lúp kèm câu hỏi để tra cứu. Mặc định tắt, vì chưa được thử trên tài khoản thật.
+# context: switch title under Appearance; the button is Facebook's Messenger icon in the top bar of Home
+Hide the Messenger button	Ẩn nút Messenger
+# context: summary of that switch; the other top bar buttons move over to fill the space; Hushfacebook is the app's name
+Takes the Messenger button out of the top bar, and the buttons beside it close up the gap. Restart Facebook to see the change.	Gỡ nút Messenger khỏi thanh trên cùng, các nút bên cạnh sẽ dịch lại để lấp khoảng trống. Hãy khởi động lại Facebook để thấy thay đổi.
+# context: switch title under Appearance; the count is the unread number badge on the Messenger icon
+Hide the Messenger count	Ẩn số đếm Messenger
+# context: summary of that switch; the Messenger icon stays in the top bar
+Keeps the Messenger button but drops the unread count on it.	Giữ nút Messenger nhưng bỏ số tin nhắn chưa đọc trên nút.
+# context: switch title under Appearance; the logo is the Facebook wordmark or icon at the left of the top bar
+Hide the Facebook logo	Ẩn logo Facebook
+# context: summary of that switch; Hushfacebook is the app's name and stays as it is; press and hold is a long press
+Hides the Facebook logo in the top bar. The empty spot is the same size and still opens Hushfacebook settings when you press and hold it. Restart Facebook to see the change.	Ẩn logo Facebook trên thanh trên cùng. Chỗ trống có cùng kích thước và vẫn mở phần cài đặt Hushfacebook khi nhấn giữ. Hãy khởi động lại Facebook để thấy thay đổi.

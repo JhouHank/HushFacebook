@@ -67,12 +67,13 @@ val bottomTabBarPatch = bytecodePatch(
         "where it's easier to reach. A second switch puts it at the top instead, as older Facebook had it. Another " +
         "lets it slide away as you scroll, and two more keep the tab bar or the top bar on screen instead. One gives " +
         "tablets and unfolded phones the phone layout so the bar can move there too, and one makes the top bar and " +
-        "the tab bar see-through. Starts off. Turn it on in " +
+        "the tab bar see-through. Three more take the Messenger button, its unread count or the Facebook logo out " +
+        "of the top bar. Starts off. Turn it on in " +
         "Hushfacebook settings > Appearance, then restart Facebook.",
 ) {
     category("Navigation")
     // The other switches: Facebook's own scroll-away for both bars, in TabBarScrollAwayPatch.kt.
-    dependsOn(settingsPatch, tabBarScrollAwayPatch)
+    dependsOn(settingsPatch, tabBarScrollAwayPatch, topBarButtonsPatch)
     compatibleWith(*AppCompatibilities.facebook())
 
     execute {

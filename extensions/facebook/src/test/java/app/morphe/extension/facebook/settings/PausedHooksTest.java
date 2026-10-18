@@ -15,6 +15,7 @@ import android.content.Intent;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.SystemClock;
+import android.view.View;
 import android.widget.FrameLayout;
 
 import com.facebook.common.util.TriState;
@@ -115,6 +116,7 @@ import app.morphe.extension.facebook.misc.OwnPostLink;
 import app.morphe.extension.facebook.misc.ShareSheetGroups;
 import app.morphe.extension.facebook.misc.ShareSheetPeople;
 import app.morphe.extension.facebook.navigation.BottomTabBar;
+import app.morphe.extension.facebook.navigation.TopBarButtons;
 import app.morphe.extension.facebook.navigation.TabBarScrollAway;
 import app.morphe.extension.facebook.navigation.TranslucentBarsForTests;
 import app.morphe.extension.facebook.navigation.MarketplaceOnlyForTests;
@@ -629,7 +631,18 @@ public class PausedHooksTest {
                 TabBarScrollAway::slidesAway,
                 () -> TabBarScrollAway.topBarOffset("app_header_container", -120) == 0,
                 () -> TabBarScrollAway.topBarFade("app_header_container", 1f) == 0f,
-                TranslucentBarsForTests::makesABarSeeThrough));
+                TranslucentBarsForTests::makesABarSeeThrough,
+                () -> {
+                    View button = new View(RuntimeEnvironment.getApplication());
+                    TopBarButtons.messengerButton(button);
+                    return button.getVisibility() == View.GONE;
+                },
+                () -> TopBarButtons.messengerCount(3) == 0,
+                () -> {
+                    View logo = new View(RuntimeEnvironment.getApplication());
+                    TopBarButtons.facebookLogo(logo);
+                    return logo.getAlpha() == 0f;
+                }));
         // Facebook's dark mode controller answers dark where it answered light.
         probes.put(PatchFamily.FORCE_DARK_MODE, Collections.singletonList(ForceDarkModeForTests::forcesDark));
         // A request for a post's comments that names no order asks for the chosen one, and with

@@ -212,6 +212,9 @@ final class SwitchLabels {
         if (setting == Settings.KEEP_TOP_BAR) return L10n.t("Keep the top bar on screen");
         if (setting == Settings.PHONE_LAYOUT_ON_BIG_SCREENS) return L10n.t("Phone layout on big screens");
         if (setting == Settings.TRANSLUCENT_BARS) return L10n.t("See-through bars");
+        if (setting == Settings.HIDE_MESSENGER_BUTTON) return L10n.t("Hide the Messenger button");
+        if (setting == Settings.HIDE_MESSENGER_COUNT) return L10n.t("Hide the Messenger count");
+        if (setting == Settings.HIDE_FACEBOOK_LOGO) return L10n.t("Hide the Facebook logo");
         if (setting == Settings.FORCE_DARK_MODE) return L10n.t("Force dark mode");
         throw new IllegalArgumentException("No individual switch label: " + setting.key);
     }

@@ -1578,3 +1578,15 @@ Hide who is typing in comments	Yorumlarda kimin yazdığını gizle
 Takes away the line that says someone is typing a comment. Your own typing is a separate switch under Privacy.	Birinin yorum yazdığını gösteren satırı kaldırır. Senin yazman için Gizlilik altında ayrı bir anahtar var.
 Hide the search pill on reels	Reels'te arama önerisini gizle
 Hides the search suggestion under a reel's caption, the magnifier with a question to look up. Off by default, since it hasn't been tried on a real account yet.	Bir reel'in açıklamasının altındaki arama önerisini, yani aranacak bir soru içeren büyüteci gizler. Henüz gerçek bir hesapta denenmediği için varsayılan olarak kapalıdır.
+# context: switch title under Appearance; the button is Facebook's Messenger icon in the top bar of Home
+Hide the Messenger button	Messenger düğmesini gizle
+# context: summary of that switch; the other top bar buttons move over to fill the space; Hushfacebook is the app's name
+Takes the Messenger button out of the top bar, and the buttons beside it close up the gap. Restart Facebook to see the change.	Messenger düğmesini üst çubuktan kaldırır, yanındaki düğmeler boşluğu kapatacak şekilde yaklaşır. Değişikliği görmek için Facebook'u yeniden başlatın.
+# context: switch title under Appearance; the count is the unread number badge on the Messenger icon
+Hide the Messenger count	Messenger sayacını gizle
+# context: summary of that switch; the Messenger icon stays in the top bar
+Keeps the Messenger button but drops the unread count on it.	Messenger düğmesi yerinde kalır, ancak üzerindeki okunmamış mesaj sayısı kaldırılır.
+# context: switch title under Appearance; the logo is the Facebook wordmark or icon at the left of the top bar
+Hide the Facebook logo	Facebook logosunu gizle
+# context: summary of that switch; Hushfacebook is the app's name and stays as it is; press and hold is a long press
+Hides the Facebook logo in the top bar. The empty spot is the same size and still opens Hushfacebook settings when you press and hold it. Restart Facebook to see the change.	Üst çubuktaki Facebook logosunu gizler. Boş alan aynı boyuttadır ve uzun basıldığında yine Hushfacebook ayarlarını açar. Değişikliği görmek için Facebook'u yeniden başlatın.

@@ -6,6 +6,8 @@ Changes in each Hushfacebook version, newest first.
 
 ### Added
 
+* **Facebook:** Three new switches under Appearance clean up the top bar on Home: **Hide the Messenger button** takes the button out and the buttons beside it close up, **Hide the Messenger count** keeps the button but drops its unread count, and **Hide the Facebook logo** leaves an empty spot of the same size that still opens Hushfacebook settings when you press and hold it. They start off, and the button and logo need a restart. Part of `Tab bar at the bottom` (issue #181)
+
 * **Facebook:** **Hide people to send to in the share sheet**, a new switch under Share sheet items, takes the row of profile pictures off the share sheet, so it doesn't keep showing people you've lost touch with (issue #169). The search box and the other ways to share stay. It starts off.
 
 * **Facebook:** **Hide who is typing in comments**, a new switch under Comment sheet options, takes away the line that says someone is typing a comment (issue #170). Your own typing stays a separate switch under Privacy. It starts off.

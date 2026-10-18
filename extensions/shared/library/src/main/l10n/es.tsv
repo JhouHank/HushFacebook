@@ -1578,3 +1578,15 @@ Hide who is typing in comments	Ocultar quién está escribiendo en comentarios
 Takes away the line that says someone is typing a comment. Your own typing is a separate switch under Privacy.	Quita la línea que indica que alguien está escribiendo un comentario. Que tú escribas tiene su propio interruptor en Privacidad.
 Hide the search pill on reels	Ocultar la sugerencia de búsqueda en los reels
 Hides the search suggestion under a reel's caption, the magnifier with a question to look up. Off by default, since it hasn't been tried on a real account yet.	Oculta la sugerencia de búsqueda bajo la descripción de un reel, la lupa con una pregunta para consultar. Desactivado por defecto, porque aún no se ha probado con una cuenta real.
+# context: switch title under Appearance; the button is Facebook's Messenger icon in the top bar of Home
+Hide the Messenger button	Ocultar el botón de Messenger
+# context: summary of that switch; the other top bar buttons move over to fill the space; Hushfacebook is the app's name
+Takes the Messenger button out of the top bar, and the buttons beside it close up the gap. Restart Facebook to see the change.	Quita el botón de Messenger de la barra superior, y los botones de al lado se juntan para cerrar el hueco. Reinicia Facebook para ver el cambio.
+# context: switch title under Appearance; the count is the unread number badge on the Messenger icon
+Hide the Messenger count	Ocultar el contador de Messenger
+# context: summary of that switch; the Messenger icon stays in the top bar
+Keeps the Messenger button but drops the unread count on it.	Mantiene el botón de Messenger, pero quita el número de mensajes sin leer que aparece en él.
+# context: switch title under Appearance; the logo is the Facebook wordmark or icon at the left of the top bar
+Hide the Facebook logo	Ocultar el logotipo de Facebook
+# context: summary of that switch; Hushfacebook is the app's name and stays as it is; press and hold is a long press
+Hides the Facebook logo in the top bar. The empty spot is the same size and still opens Hushfacebook settings when you press and hold it. Restart Facebook to see the change.	Oculta el logotipo de Facebook en la barra superior. El hueco tiene el mismo tamaño y, al mantenerlo pulsado, sigue abriendo los ajustes de Hushfacebook. Reinicia Facebook para ver el cambio.
