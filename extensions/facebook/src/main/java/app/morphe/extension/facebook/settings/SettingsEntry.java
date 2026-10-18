@@ -687,6 +687,7 @@ public final class SettingsEntry {
             ClipboardLink.onPaused(activity);
             StorySeenButton.activityPaused(activity);
             ScreenTransitions.activityPaused(activity);
+            ScreenLog.paused(activity);
             if (resumed != null && resumed.get() == activity) resumed = null;
             LastScreen.read(activity);
         }
