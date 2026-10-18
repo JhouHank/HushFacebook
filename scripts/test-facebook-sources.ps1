@@ -499,6 +499,13 @@ $fakeForge = @{ Answers = (New-FakeAnswers); Requests = (New-Object System.Colle
             [void]$fakeForge.TimeoutOnce.Remove($url)
             throw (New-Object System.Exception 'The request was canceled due to the configured HttpClient.Timeout of 120 seconds elapsing.')
         }
+        if ($fakeForge.ContainsKey('Limited') -and $fakeForge.Limited.ContainsKey($url) -and $fakeForge.Limited[$url] -gt 0) {
+            $fakeForge.Limited[$url]--
+            $limitedFailure = New-Object System.Exception 'Response status code does not indicate success: 429 (Too Many Requests).'
+            Add-Member -InputObject $limitedFailure -NotePropertyName Response -NotePropertyValue ([pscustomobject]@{ StatusCode = 429
+                Headers = @{ 'Retry-After' = [string]$fakeForge.RetryAfter } })
+            throw $limitedFailure
+        }
         $a = $fakeForge.Answers
         $answer = $null
         switch -Regex ($url) {
@@ -665,6 +672,37 @@ $fakeForge = @{ Answers = (New-FakeAnswers); Requests = (New-Object System.Colle
         @($fakeForge.Requests | Where-Object { $_.Uri -eq $receiptUrl }).Count -eq 2) `
         "A request that timed out once was not tried again: $($retried.Said)"
     $fakeForge.Remove('TimeoutOnce')
+    Reset-FixtureLedger
+
+    # A 429 is waited out six times and the seventh try's answer reads clean; a seventh 429 is a
+    # failure that leaves the ledger alone. The cases wait nothing, so Retry-After gets its own.
+    $gammaProjectUrl = 'https://gitlab.com/api/v4/projects/fixture-group%2Fgamma-patches'
+    $plainRun = Invoke-Audit
+    $plainAsks = @($fakeForge.Requests | Where-Object { $_.Uri -eq $gammaProjectUrl }).Count
+    Assert-True ($plainRun.ExitCode -eq 0 -and $plainAsks -ge 1) `
+        "The rate-limit cases' control run didn't read $gammaProjectUrl cleanly (exit $($plainRun.ExitCode), $plainAsks requests): $($plainRun.Said)"
+    Reset-FixtureLedger
+    foreach ($limitedTimes in @(6, 7)) {
+        $fakeForge.Limited = @{ $gammaProjectUrl = $limitedTimes }
+        $limitedRun = Invoke-Audit
+        $asks = @($fakeForge.Requests | Where-Object { $_.Uri -eq $gammaProjectUrl }).Count
+        if ($limitedTimes -eq 6) {
+            Assert-True ($limitedRun.ExitCode -eq 0 -and $limitedRun.Report.clean -and $asks -eq $plainAsks + 6) `
+                "A request rate limited six times wasn't read on its seventh try ($asks requests): $($limitedRun.Said)"
+        } else {
+            Assert-True ($limitedRun.ExitCode -eq 1 -and -not $limitedRun.Report.clean -and $asks -ge 7 -and $limitedRun.Said -like '*HTTP 429*' -and
+                [IO.File]::ReadAllText($fixtureLedgerPath) -ceq $fixtureLedgerText) `
+                "A request rate limited seven times wasn't a failure that left the ledger alone ($asks requests): $($limitedRun.Said)"
+        }
+        Reset-FixtureLedger
+    }
+    $fakeForge.Limited = @{ $gammaProjectUrl = 1 }
+    $fakeForge.RetryAfter = 2
+    $stretched = Invoke-Audit @{ RateLimitWaitSeconds = 1 }
+    Assert-True ($stretched.ExitCode -eq 0 -and $stretched.Said -like '*rate limited on gitlab.com, waiting 2 s*') `
+        "A 429's Retry-After didn't set the wait: $($stretched.Said)"
+    $fakeForge.Remove('Limited')
+    $fakeForge.Remove('RetryAfter')
     Reset-FixtureLedger
 
     # GitLab.com has no global code search, so skipping it (on purpose or for want of a token) is

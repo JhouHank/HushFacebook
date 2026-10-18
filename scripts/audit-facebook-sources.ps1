@@ -186,11 +186,26 @@ $gitlabCoverageEvidence = [ordered]@{
 
 # --- requests --------------------------------------------------------------------------------
 
+function Get-RetryAfterSeconds {
+    # The wait a 429 asks for, in seconds, or 0 when it names none. PowerShell 7 hands over typed
+    # headers (RetryAfter.Delta), Windows PowerShell a collection of strings.
+    param($Response)
+    if ($null -eq $Response -or $null -eq $Response.PSObject.Properties['Headers'] -or $null -eq $Response.Headers) { return 0 }
+    $typed = $Response.Headers.PSObject.Properties['RetryAfter']
+    if ($null -ne $typed) {
+        if ($null -ne $typed.Value -and $null -ne $typed.Value.Delta) { return [int][Math]::Ceiling($typed.Value.Delta.TotalSeconds) }
+        return 0
+    }
+    $seconds = 0
+    if ([int]::TryParse([string]$Response.Headers['Retry-After'], [ref]$seconds) -and $seconds -gt 0) { return $seconds }
+    return 0
+}
+
 function Invoke-SourceRequest {
     <#
         One GET, answering Status and Content. A 4xx or 5xx answer comes back as its status with no
         content, since a repository that's gone is a finding and not a crash; only a request that
-        never got an answer throws. A rate limit is waited out, three times at most.
+        never got an answer throws. A rate limit is waited out, six times at most.
     #>
     param([Parameter(Mandatory = $true)][string]$Uri, [string]$Auth = 'plain')
 
@@ -228,9 +243,14 @@ function Invoke-SourceRequest {
             }
             $said = "$($_.ErrorDetails.Message) $($_.Exception.Message)"
             $limited = $status -eq 429 -or ($status -eq 403 -and $said -match '(?i)rate limit')
-            if ($limited -and $attempt -lt 4) {
-                Write-Step "rate limited on $([Uri]$Uri | ForEach-Object { $_.Host }), waiting $RateLimitWaitSeconds s"
-                Start-Sleep -Seconds $RateLimitWaitSeconds
+            if ($limited -and $attempt -lt 7) {
+                # Each wait is longer than the last, and as long as the server's Retry-After asks
+                # (15 minutes at most): gitlab.com held one 429 through three flat 61 s waits.
+                $wait = $RateLimitWaitSeconds * $attempt
+                $asked = Get-RetryAfterSeconds $answer.Value
+                if ($RateLimitWaitSeconds -gt 0 -and $asked -gt $wait) { $wait = [Math]::Min($asked, 900) }
+                Write-Step "rate limited on $([Uri]$Uri | ForEach-Object { $_.Host }), waiting $wait s"
+                Start-Sleep -Seconds $wait
                 continue
             }
             return [pscustomobject]@{ Status = $status; Content = $null }
