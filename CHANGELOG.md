@@ -42,6 +42,8 @@ Changes in each Hushfacebook version, newest first.
 
 * **Facebook:** The diagnostics report keeps every Picture-in-picture count again. It had room for 16 named counts per feature, and Picture-in-picture has more than that, so whichever came last in a session were left out. It keeps 24 now.
 
+* **Facebook:** A saved video whose sample description gives its size as 0 now gets the description's real size. Read on its own, 0 means "to the end", but players reading the box it sits in take it as no size and refuse the whole file. The parser fuzzer found this on its third MP4 hour.
+
 * **Facebook:** Picking an app icon no longer replaces the Facebook wordmark at the top of Home (issue #172). **Use the icon at the top of Home**, a new switch under Appearance, puts your picked icon there instead. It starts off and needs a restart.
 
 * **Tooling:** The device audit now checks its device lease and input window before sending input. Failed imports, missing pages and unproved destinations fail the run. Settings, language and theme restore independently, with recovery files kept if anything fails. A baseline is replaced only after the full run and recovery pass.
