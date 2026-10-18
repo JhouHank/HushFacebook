@@ -192,6 +192,20 @@ try {
         $foreign = @($destinations[$route] | ForEach-Object { New-TestNode $_.text $_.class 'com.other.app' })
         Assert-That (-not (Test-AuditDestination $route $foreign)) "Foreign package passed as $route."
     }
+    # The pages the links open on an account with no profile picture and a warm app.
+    $linkedPages = @{
+        'fb://notifications' = @((New-TestNode "Manage the notification$([char]0x2019)s settings" 'android.widget.Button'))
+        'fb://profile' = @((New-TestNode 'Edit profile'), (New-TestNode 'Add profile picture'))
+        'fb://bookmarks' = @((New-TestNode 'Settings'), (New-TestNode 'Settings and privacy'))
+    }
+    foreach ($route in $linkedPages.Keys) {
+        Assert-That (Test-AuditDestination $route $linkedPages[$route]) "Proved linked page rejected: $route."
+        if ($linkedPages[$route].Count -gt 1) {
+            Assert-That (-not (Test-AuditDestination $route @($linkedPages[$route][0]))) "Half a linked page passed as $route."
+        }
+        $foreign = @($linkedPages[$route] | ForEach-Object { New-TestNode $_.text $_.class 'com.other.app' })
+        Assert-That (-not (Test-AuditDestination $route $foreign)) "Foreign package passed as linked $route."
+    }
     Write-TestLease -Owner 'replacement'
     Assert-Throws { Invoke-Adb shell input tap 10 10 } 'Ownership loss during the walk permitted input.'
 

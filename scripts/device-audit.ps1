@@ -265,15 +265,25 @@ function Test-AuditDestination([string]$Route, [object[]]$Nodes) {
         'fb://watch' { return $labels -ccontains 'Reels tab details' -or $labels -ccontains 'Reel details' }
         'fb://fb_shorts/viewer' { return $labels -ccontains 'Reel details' }
         'fb://notifications' {
-            return @($own | Where-Object { $_.text -ceq 'Notifications' -and $_.'content-desc' -ceq 'Notifications' }).Count -gt 0
+            # The link opens a page whose title isn't a node and which a warm app restores scrolled
+            # down, so a row's own settings button counts too.
+            return @($own | Where-Object { $_.text -ceq 'Notifications' -and $_.'content-desc' -ceq 'Notifications' }).Count -gt 0 -or
+                $labels -ccontains "Manage the notification$([char]0x2019)s settings"
         }
         'fb://marketplace' { return $labels -ccontains 'Marketplace' -and $labels -ccontains 'Search Marketplace' }
-        'fb://profile' { return $labels -ccontains 'Edit profile' -and $labels -ccontains 'Edit profile picture' }
+        # An account with no profile picture offers to add one instead.
+        'fb://profile' {
+            return $labels -ccontains 'Edit profile' -and
+                ($labels -ccontains 'Edit profile picture' -or $labels -ccontains 'Add profile picture')
+        }
         'fb://search' {
             return @($own | Where-Object { $_.class -ceq 'android.widget.EditText' -and
                 ($_.text -cmatch '^Search(?:\s|$)' -or $_.'content-desc' -cmatch '^Search(?:\s|$)') }).Count -gt 0
         }
-        'fb://bookmarks' { return $labels -ccontains 'Menu' -and $labels -ccontains 'Settings and privacy' }
+        # The link opens the menu as a page with a Settings button and no Menu title.
+        'fb://bookmarks' {
+            return $labels -ccontains 'Settings and privacy' -and ($labels -ccontains 'Menu' -or $labels -ccontains 'Settings')
+        }
     }
     return $false
 }
