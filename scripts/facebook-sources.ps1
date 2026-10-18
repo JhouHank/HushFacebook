@@ -466,6 +466,17 @@ function Test-SourceLedger {
         if ([string]::IsNullOrWhiteSpace([string](Get-SourceProperty $item 'reason'))) {
             $problems.Add("outOfScope $repository gives no reason.")
         }
+        # The packages an index lists it under, checked and found to hold no Facebook-family patch.
+        # Asked of the property itself: an empty list comes back from a function as nothing at all.
+        if ($null -ne $item.PSObject.Properties['listedFor']) {
+            $listedFor = @(Get-SourceProperty $item 'listedFor' | Where-Object { $null -ne $_ } | ForEach-Object { "$_" })
+            if ($listedFor.Count -eq 0) { $problems.Add("outOfScope $repository has an empty listedFor.") }
+            foreach ($package in $listedFor) {
+                if ($packages -notcontains $package) {
+                    $problems.Add("outOfScope $repository listedFor names '$package', which is not a Facebook-family package.")
+                }
+            }
+        }
         Add-DateProblem (Get-SourceProperty $item 'lastChecked') "outOfScope $repository lastChecked"
     }
 

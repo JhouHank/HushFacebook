@@ -24,8 +24,9 @@
     is byte for byte a file the ledger already holds (the same git blob id), which makes it a copy
     of that lineage: it's reported under that lineage and not counted again. A removed or changed
     licence, a branch head that moved or a new branch with Facebook-family work, a fork the ledger
-    hasn't seen, a recorded fork or out-of-scope repository an index lists as a bundle of its own, a
-    repository that's gone, renamed or archived, and a listing that changed are the other findings.
+    hasn't seen, a recorded fork or out-of-scope repository an index lists as a bundle of its own
+    (for an out-of-scope one, under a package its listedFor doesn't name), a repository that's
+    gone, renamed or archived, and a listing that changed are the other findings.
     Any finding, or a source that couldn't be read or was skipped, writes the report and exits 1
     with the ledger untouched. The one exception is GitLab's global code search, which GitLab.com
     doesn't offer: a run that skips it may still stamp, and the census then names
@@ -648,9 +649,15 @@ function Test-KnownRepository {
                         (@($Candidate.Packages) -join ', ') + '; give it an entry of its own') -Evidence $evidence
             }
         } else {
-            Add-Finding -Kind 'listed-as-bundle' -Repository ([string]$Record.Record.repository) `
-                -Detail ("out of scope in the ledger, but $listers lists it as a bundle for " + (@($Candidate.Packages) -join ', ') +
-                    '; record it as an entry') -Evidence $evidence
+            # An index that files a bundle under a package it doesn't patch stays settled once the
+            # record's listedFor names that package, and only until the listing names another.
+            $reviewed = @(Get-SourceProperty $Record.Record 'listedFor' | Where-Object { $null -ne $_ } | ForEach-Object { "$_" })
+            $unreviewed = @($Candidate.Packages | Where-Object { $reviewed -notcontains $_ })
+            if ($unreviewed.Count -gt 0) {
+                Add-Finding -Kind 'listed-as-bundle' -Repository ([string]$Record.Record.repository) `
+                    -Detail ("out of scope in the ledger, but $listers lists it as a bundle for " + ($unreviewed -join ', ') +
+                        '; record it as an entry, or name the package in its listedFor once its patches are checked') -Evidence $evidence
+            }
         }
     }
 }

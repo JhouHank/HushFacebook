@@ -2450,16 +2450,26 @@
     {
       "repository": "https://github.com/debakarr/morphe-patches",
       "reason": "Jman's registry lists its bundle under a Facebook package, but the current patch list names no Facebook-family package, only generic patches such as Install alongside original. Nothing to read.",
+      "listedFor": [
+        "com.facebook.orca"
+      ],
       "lastChecked": "2026-10-18"
     },
     {
       "repository": "https://github.com/joristdh/platypatch",
       "reason": "Jman's registry lists its bundle under a Facebook package, but the current patch list names no Facebook-family package. Its one patch is Predictive back gesture, and the only Facebook string is a package constant in AppCompatibilities.kt.",
+      "listedFor": [
+        "com.facebook.katana",
+        "com.facebook.orca"
+      ],
       "lastChecked": "2026-10-18"
     },
     {
       "repository": "https://github.com/slenderman00/revanced-patches-grindr",
       "reason": "A GPL-3.0 fork of the ReVanced patches template for Grindr. Jman's registry lists it under Messenger, but its tree is a Node package and holds no Facebook or Messenger patch.",
+      "listedFor": [
+        "com.facebook.orca"
+      ],
       "lastChecked": "2026-10-18"
     }
   ]

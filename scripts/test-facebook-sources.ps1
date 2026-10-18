@@ -264,6 +264,10 @@ Test-Broken { param($c) $c.entries[0].packages = @('com.instagram.android') } '*
 Test-Broken { param($c) $c.entries[0].license = [pscustomobject]@{ spdx = 'GPL-3.0'; url = 'https://example.com/LICENSE'; sha256 = 'abc' } } `
     '*licence has no sha256*' 'A licence with no hash'
 Test-Broken { param($c) $c.entries[0].lineage = '' } '*names no lineage*' 'A source with no lineage'
+Test-Broken { param($c) $c.outOfScope[0] | Add-Member -NotePropertyName listedFor -NotePropertyValue @('com.instagram.android') -Force } `
+    '*listedFor names ''com.instagram.android'', which is not a Facebook-family package*' 'An out-of-scope listing filed under another app'
+Test-Broken { param($c) $c.outOfScope[0] | Add-Member -NotePropertyName listedFor -NotePropertyValue @() -Force } `
+    '*has an empty listedFor*' 'An out-of-scope record with an empty listedFor'
 Test-Broken { param($c) (Get-Entry $c 'froggo-mben').availability.status = 'deleted' } '*availability must be active, retired or unavailable*' `
     'An unknown availability status'
 Test-Broken { param($c) (Get-Entry $c 'froggo-mben').availability.reason = '' } '*retired availability gives no reason*' `
@@ -880,6 +884,26 @@ $fakeForge = @{ Answers = (New-FakeAnswers); Requests = (New-Object System.Colle
         $expected = if ($listed -like 'someone/*') { "*github.com/$listed*recorded fork of alpha*Morphe directory*" } else { "*$listed*out of scope*Morphe directory*" }
         Assert-Drift 'listed-as-bundle' $expected "The directory listing $listed as a bundle"
         $fakeForge.Answers = New-FakeAnswers
+    }
+    # An out-of-scope listing whose package listedFor names was checked already and stays quiet. The
+    # same listing against a listedFor that names another package is the control.
+    foreach ($reviewedPackage in @('com.facebook.katana', 'com.facebook.orca')) {
+        $reviewedLedger = $fixtureLedgerText | ConvertFrom-Json
+        $reviewedLedger.outOfScope[0] | Add-Member -NotePropertyName listedFor -NotePropertyValue @($reviewedPackage) -Force
+        [IO.File]::WriteAllText($fixtureLedgerPath, ($reviewedLedger | ConvertTo-Json -Depth 20), (New-Object Text.UTF8Encoding $false))
+        $fakeForge.Answers.directory.Content = $fakeForge.Answers.directory.Content.Replace('"repo":  "fixture-owner/alpha-patches"', '"repo":  "noise/mentions-facebook"').Replace(
+            '"repo": "fixture-owner/alpha-patches"', '"repo": "noise/mentions-facebook"')
+        Assert-True ($fakeForge.Answers.directory.Content -like '*noise/mentions-facebook*') 'The directory answer was not edited, so the listedFor case would prove nothing.'
+        if ($reviewedPackage -eq 'com.facebook.katana') {
+            $quiet = Invoke-Audit
+            Assert-True ($null -ne $quiet.Report -and @($quiet.Report.findings | Where-Object { $_.kind -eq 'listed-as-bundle' }).Count -eq 0) `
+                "An out-of-scope listing its listedFor names was a finding again: $($quiet.Said)"
+        } else {
+            Assert-Drift 'listed-as-bundle' '*mentions-facebook*bundle for com.facebook.katana;*listedFor*' `
+                'An out-of-scope listing under a package its listedFor doesn''t name'
+        }
+        $fakeForge.Answers = New-FakeAnswers
+        Reset-FixtureLedger
     }
     $fakeForge.Answers.orcaListHits = @(@{ repository = @{ full_name = 'rushiforai/morphe-archive' }
         path = 'examplepatches/someone/alpha-patches/patches-list.json'; sha = ('7c' * 20) })
