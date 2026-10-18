@@ -763,7 +763,8 @@ public class PausedHooksTest {
         probes.put(PatchFamily.PICTURE_IN_PICTURE, Arrays.asList(
                 PictureInPictureForTests::allowsWithTheFeature, PictureInPictureForTests::surfaceAllows,
                 PictureInPictureForTests::immersiveAllows, PictureInPictureForTests::homeGateAllows,
-                PictureInPictureForTests::homeFlagAllows, PictureInPictureForTests::offersTheMenuRow));
+                PictureInPictureForTests::homeFlagAllows, PictureInPictureForTests::offersTheMenuRow,
+                PictureInPictureForTests::offersTheButton));
         // An HDR window comes out in the default colour mode, a headroom as none, the screen
         // answers as one that shows no HDR, and a manifest loses the HDR twin of an SDR rendition.
         probes.put(PatchFamily.HDR_BRIGHTNESS, Arrays.asList(

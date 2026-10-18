@@ -217,6 +217,7 @@ public final class SettingsBackup {
             Settings.DEFAULT_PLAYBACK_QUALITY,
             Settings.PICTURE_IN_PICTURE,
             Settings.PICTURE_IN_PICTURE_FROM_MENU,
+            Settings.PICTURE_IN_PICTURE_BUTTON,
             Settings.TURN_OFF_HDR_BRIGHTNESS,
             Settings.PREFER_SDR_RENDITIONS,
             Settings.SKIP_SILENT_PARTS,

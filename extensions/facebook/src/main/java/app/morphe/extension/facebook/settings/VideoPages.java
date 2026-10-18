@@ -219,6 +219,10 @@ final class VideoPages {
                 playback.addPreference(toggle(context, Settings.PICTURE_IN_PICTURE_FROM_MENU,
                         L10n.t("Leaving Facebook doesn't open the window. Tap Picture-in-picture in a reel's More menu "
                                 + "(the three dots) when you want one. That row is there whenever Picture-in-picture is on.")));
+                // Asked as each screen is armed and as the screen changes, so a change shows within a moment.
+                playback.addPreference(toggle(context, Settings.PICTURE_IN_PICTURE_BUTTON,
+                        L10n.t("Shows a small button at the left edge of a reel or video that has the window ready. Tap it to open "
+                                + "the window right away. Works with Picture-in-picture on.")));
             }
             if (build.contains(PatchFamily.HDR_BRIGHTNESS)) {
                 // Asked as each screen comes to the front, so a change shows from the next one.

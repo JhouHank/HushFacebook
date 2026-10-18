@@ -795,6 +795,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_picture_in_picture_from_menu", FALSE);
 
     /**
+     * With Picture-in-picture on, a small button floats over the screen the window is armed on, and
+     * its tap opens the window right away (#44,
+     * {@link app.morphe.extension.facebook.media.PictureInPictureButton}). Starts off. Off, paused
+     * or with Picture-in-picture off, no button is drawn.
+     */
+    public static final BooleanSetting PICTURE_IN_PICTURE_BUTTON =
+            new BooleanSetting("hushfacebook_pip_button", FALSE);
+
+    /**
      * HDR videos and photos stay in the screen's usual range instead of turning it up to full
      * brightness ({@link app.morphe.extension.facebook.media.HdrBrightness}). Starts off. Off
      * or paused, Facebook asks for its HDR window again.
