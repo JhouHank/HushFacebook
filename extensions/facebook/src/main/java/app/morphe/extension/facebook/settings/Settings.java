@@ -992,6 +992,13 @@ public class Settings extends BaseSettings {
             new StringSetting("hushfacebook_seen_share_items", "");
 
     /**
+     * The Menu tiles kept out of the shortcut list (#153), as the first word of each tile's deep link
+     * ({@code marketplace}, {@code gaming}), separated by commas. Empty, the Menu is Facebook's own.
+     */
+    public static final StringSetting HIDDEN_MENU_TILES =
+            new StringSetting("hushfacebook_hidden_menu_tiles", "");
+
+    /**
      * The share sheet's Send to group button, which makes a new group chat of the people picked,
      * and its new-group row, header icon and search button. Send separately stays. Off until it's
      * turned on.

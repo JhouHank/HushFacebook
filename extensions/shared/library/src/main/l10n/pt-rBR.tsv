@@ -1498,3 +1498,27 @@ Hides the stacked reaction icons and the reactions count under posts. The space 
 Download first in post menus	Baixar primeiro nos menus de publicações
 # context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere
 Puts Download to phone and Save photo at the top of a post's three-dot menu instead of the bottom. A post with nothing to save gets neither.	Coloca Baixar no celular e Salvar foto no topo do menu de três pontos de uma publicação, em vez de no final. Uma publicação sem nada para salvar não recebe nenhum dos dois.
+# context: row title under Menu; opens a list of the Menu's tiles to hide, such as Marketplace and Gaming
+Menu tiles to hide	Blocos do menu para ocultar
+# context: title of the list of Menu tiles to hide
+Hide from the Menu	Ocultar do menu
+# context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; Facebook's short videos
+Reels	Reels
+# context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; the games section
+Gaming	Jogos
+# context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; the look-back posts from past years
+Memories	Lembranças
+# context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; the friends' birthdays page
+Birthdays	Aniversários
+# context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; the charity fundraisers page
+Fundraisers	Arrecadações
+# context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; job listings
+Jobs	Empregos
+# context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; Facebook's dating feature
+Dating	Encontros
+# context: import preview and toast, no Menu tile will be in that list after the import
+Your list of Menu tiles to hide will be empty.	Sua lista de blocos do menu para ocultar ficará vazia.
+# context: import preview and toast, one Menu tile will be in that list after the import
+Your list of Menu tiles to hide will hold %1$d tile.	Sua lista de blocos do menu para ocultar terá %1$d bloco.
+# context: import preview and toast, several Menu tiles will be in that list after the import
+Your list of Menu tiles to hide will hold %1$d tiles.	Sua lista de blocos do menu para ocultar terá %1$d blocos.

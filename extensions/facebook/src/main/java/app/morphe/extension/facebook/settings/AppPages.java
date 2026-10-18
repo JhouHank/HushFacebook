@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import app.morphe.extension.facebook.menu.MenuTiles;
 import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.misc.ShareSheetItems;
 import app.morphe.extension.facebook.notifications.NotificationSound;
@@ -136,6 +137,7 @@ final class AppPages {
             menu.addPreference(toggle(context, Settings.HIDE_MENU_META_AI,
                     L10n.t("The Meta AI shortcut leaves the Menu's list with Feeds, Marketplace, Reels and Groups, "
                             + "and the next shortcut moves up into its place.")));
+            menu.addPreference(menuTilesRow(page, context));
         }
         if (build.contains(PatchFamily.GAME_ADS)) {
             menu.addPreference(toggle(context, Settings.BLOCK_GAME_ADS,
@@ -397,6 +399,70 @@ final class AppPages {
                 return;
             }
             row.setSummary(shareItemsSummary(ShareSheetItems.hidden()));
+            list.dismiss();
+        });
+    }
+
+    /** Menu tiles' row: the tiles it keeps out of Facebook's Menu, picked from a list of checkboxes. */
+    static Preference menuTilesRow(HushfacebookPreferenceFragment page, Context context) {
+        SettingsRows.Row row = new SettingsRows.Row(context);
+        row.setKey(MENU_TILES_ROW);
+        row.setTitle(L10n.t("Menu tiles to hide"));
+        row.setPersistent(false);
+        row.setSummary(menuTilesSummary(MenuTiles.hidden()));
+        row.setOnPreferenceClickListener(p -> {
+            showMenuTiles(page, context, row);
+            return true;
+        });
+        return row;
+    }
+
+    /** The row's key, for the settings search. No setting is behind it. */
+    static final String MENU_TILES_ROW = "action_menu_tiles";
+
+    /** The row's summary: the tiles kept out, by the names the list gives them, or none. */
+    static String menuTilesSummary(Set<String> hidden) {
+        if (hidden.isEmpty()) return L10n.t("None picked yet.");
+        List<String> names = new ArrayList<>();
+        for (String key : hidden) names.add(MenuTiles.label(key));
+        return L10n.f("Hidden: %s", L10n.join(names));
+    }
+
+    /**
+     * The list: every tile it knows, ticked when it's kept out. Save keeps the ticks, or, when they
+     * need more room than the setting has or the phone doesn't keep the write, keeps the list open
+     * with its ticks, so Save can be tried again.
+     */
+    private static void showMenuTiles(HushfacebookPreferenceFragment page, Context context, Preference row) {
+        List<String> keys = MenuTiles.choices();
+        Set<String> hidden = MenuTiles.hidden();
+        String[] names = new String[keys.size()];
+        boolean[] ticked = new boolean[keys.size()];
+        for (int i = 0; i < names.length; i++) {
+            names[i] = MenuTiles.label(keys.get(i));
+            ticked[i] = hidden.contains(keys.get(i));
+        }
+        AlertDialog list = page.show(new AlertDialog.Builder(context)
+                .setTitle(L10n.t("Hide from the Menu"))
+                .setMultiChoiceItems(names, ticked, (shown, which, isTicked) -> ticked[which] = isTicked)
+                .setPositiveButton(L10n.t("Save"), null)
+                .setNegativeButton(L10n.t("Cancel"), null));
+        if (list == null) return;
+        list.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(button -> {
+            List<String> picked = new ArrayList<>();
+            for (int i = 0; i < ticked.length; i++) {
+                if (ticked[i]) picked.add(keys.get(i));
+            }
+            MenuTiles.Hidden saved = MenuTiles.hide(picked);
+            if (saved == MenuTiles.Hidden.NO_ROOM) {
+                Utils.showToastLong(L10n.t("This list needs more room than it has. Shorten it, then save again."));
+                return;
+            }
+            if (saved == MenuTiles.Hidden.NOT_STORED) {
+                Utils.showToastLong(L10n.t("Couldn't save the change. Try again."));
+                return;
+            }
+            row.setSummary(menuTilesSummary(MenuTiles.hidden()));
             list.dismiss();
         });
     }

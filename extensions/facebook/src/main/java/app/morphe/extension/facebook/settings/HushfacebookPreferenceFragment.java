@@ -57,6 +57,7 @@ import app.morphe.extension.facebook.feed.SeenPosts;
 import app.morphe.extension.facebook.media.PlaybackQuality;
 import app.morphe.extension.facebook.media.SurfaceQuality;
 import app.morphe.extension.facebook.misc.AppLock;
+import app.morphe.extension.facebook.menu.MenuTiles;
 import app.morphe.extension.facebook.misc.ShareSheetItems;
 import app.morphe.extension.facebook.misc.TextSize;
 import app.morphe.extension.facebook.theme.AccentColor;
@@ -815,6 +816,14 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         showMarketplaceSettings();
         showSaveFolder();
         showShareItemsSummary();
+        showMenuTilesSummary();
+    }
+
+    /** No setting is behind the Menu tiles row's key, so its summary is redone here after an import. */
+    private void showMenuTilesSummary() {
+        if (getPreferenceScreen() == null) return;
+        Preference row = findPreference(AppPages.MENU_TILES_ROW);
+        if (row != null) row.setSummary(AppPages.menuTilesSummary(MenuTiles.hidden()));
     }
 
     /** No setting is behind the share sheet row's key, so its summary is redone here after an import. */

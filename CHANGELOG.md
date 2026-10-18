@@ -6,6 +6,8 @@ Changes in each Hushfacebook version, newest first.
 
 ### Added
 
+* **Facebook:** **Menu tiles to hide**, a new list under Menu, takes the tiles you tick out of the Menu's shortcut grid, Marketplace and Gaming for example. Tiles are matched by where they open, not by their name, so it works in any language. The next tile moves up, and See more and the sections above the grid stay. Pull to refresh the Menu after you change it. (issue #153)
+
 * **Facebook:** **Download first in post menus**, a new switch under Downloads, moves Download to phone and Save photo to the top of a post's three-dot menu instead of the bottom. The row under a post only has room for icons and counts, so the menu is where a post's download lives. A post with nothing to save gets no row, and it starts off. (issue #151)
 
 * **Facebook:** Three new switches under Appearance clean up the top bar on Home: **Hide the Messenger button** takes the button out and the buttons beside it close up, **Hide the Messenger count** keeps the button but drops its unread count, and **Hide the Facebook logo** leaves an empty spot of the same size that still opens Hushfacebook settings when you press and hold it. They start off, and the button and logo need a restart. Part of `Tab bar at the bottom` (issue #181)

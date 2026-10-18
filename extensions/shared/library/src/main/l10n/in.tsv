@@ -1606,3 +1606,27 @@ Hides the stacked reaction icons and the reactions count under posts. The space 
 Download first in post menus	Unduh di urutan pertama menu kiriman
 # context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere
 Puts Download to phone and Save photo at the top of a post's three-dot menu instead of the bottom. A post with nothing to save gets neither.	Menaruh Unduh ke ponsel dan Simpan foto di bagian atas menu tiga titik sebuah kiriman, bukan di bawah. Kiriman tanpa sesuatu untuk disimpan tidak mendapat keduanya.
+# context: row title under Menu; opens a list of the Menu's tiles to hide, such as Marketplace and Gaming
+Menu tiles to hide	Ubin Menu yang disembunyikan
+# context: title of the list of Menu tiles to hide
+Hide from the Menu	Sembunyikan dari Menu
+# context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; Facebook's short videos
+Reels	Reels
+# context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; the games section
+Gaming	Game
+# context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; the look-back posts from past years
+Memories	Kenangan
+# context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; the friends' birthdays page
+Birthdays	Ulang tahun
+# context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; the charity fundraisers page
+Fundraisers	Penggalangan dana
+# context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; job listings
+Jobs	Lowongan kerja
+# context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; Facebook's dating feature
+Dating	Kencan
+# context: import preview and toast, no Menu tile will be in that list after the import
+Your list of Menu tiles to hide will be empty.	Daftar ubin Menu yang disembunyikan akan kosong.
+# context: import preview and toast, one Menu tile will be in that list after the import
+Your list of Menu tiles to hide will hold %1$d tile.	Daftar ubin Menu yang disembunyikan akan berisi %1$d ubin.
+# context: import preview and toast, several Menu tiles will be in that list after the import
+Your list of Menu tiles to hide will hold %1$d tiles.	Daftar ubin Menu yang disembunyikan akan berisi %1$d ubin.

@@ -39,6 +39,7 @@ import app.morphe.extension.facebook.download.SaveTo;
 import app.morphe.extension.facebook.download.SendLink;
 import app.morphe.extension.facebook.feed.PostSources;
 import app.morphe.extension.facebook.feed.PostWords;
+import app.morphe.extension.facebook.menu.MenuTiles;
 import app.morphe.extension.facebook.media.PlaybackQuality;
 import app.morphe.extension.facebook.media.SurfaceQuality;
 import app.morphe.extension.facebook.misc.AppLock;
@@ -473,9 +474,16 @@ public final class SettingsBackup {
      */
     static final StringSetting SHARE_ITEMS = Settings.HIDDEN_SHARE_ITEMS;
 
+    /**
+     * The Menu tiles to hide, held in a file exactly as their row stores them: the first word of each
+     * tile's deep link, commas between. A key this build doesn't list is carried like any other. A list
+     * {@link MenuTiles#clean} would change refuses the whole file, as a share items list does.
+     */
+    static final StringSetting MENU_TILES = Settings.HIDDEN_MENU_TILES;
+
     /** The settings a file carries that aren't switches, in the order Settings declares them. */
     static final List<Setting<?>> VALUES = Collections.unmodifiableList(
-            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, CEILING, SHARE_ITEMS, HOME_FEED, SEEN_KEEP, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
+            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, CEILING, SHARE_ITEMS, MENU_TILES, HOME_FEED, SEEN_KEEP, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
                     FILE_NAME, PHOTO_NAME, ACTION, APP, START, SUBTAB, ORDER, PLAYBACK, REELS_QUALITY, STORIES_QUALITY,
                     QUIET_FROM, QUIET_UNTIL, LOCK_AFTER, TEXT_SIZE, ACCENT));
 
@@ -582,6 +590,7 @@ public final class SettingsBackup {
         private static final String ACCENT_NAME = "accent_color";
         private static final String CEILING_NAME = "hide_posts_over_reactions";
         private static final String SHARE_ITEMS_NAME = "hidden_share_items";
+        private static final String MENU_TILES_NAME = "hidden_menu_tiles";
         private static final String HOME_FEED_NAME = "home_feed";
 
         /** In {@link #ALLOWLIST} order, and only the switches the file named. */
@@ -664,6 +673,9 @@ public final class SettingsBackup {
         /** The clean list of share sheet items to hide the file holds, or null when it names none. Set once, as it's read. */
         @Nullable
         String shareItems;
+        /** The clean list of Menu tiles to hide the file holds, or null when it names none. Set once, as it's read. */
+        @Nullable
+        String menuTiles;
         /** The feed the file says Home shows, or null when it names none. Set once, as it's read. */
         @Nullable
         FeedsSubtab homeFeed;
@@ -878,6 +890,8 @@ public final class SettingsBackup {
             if (ceilingChange != null) changes.put(CEILING, ceilingChange);
             String shareItemsChange = shareItemsChange();
             if (shareItemsChange != null) changes.put(SHARE_ITEMS, shareItemsChange);
+            String menuTilesChange = menuTilesChange();
+            if (menuTilesChange != null) changes.put(MENU_TILES, menuTilesChange);
             if (seenKeep != null && seenKeep != SEEN_KEEP.savedValue()) changes.put(SEEN_KEEP, seenKeep);
             FeedsSubtab homeFeedChange = homeFeedChange();
             if (homeFeedChange != null) changes.put(HOME_FEED, homeFeedChange);
@@ -1068,6 +1082,13 @@ public final class SettingsBackup {
             return shareItems.equals(ShareSheetItems.clean(SHARE_ITEMS.savedValue())) ? null : shareItems;
         }
 
+        /** The Menu tiles to hide this file sets, or null when it names none or the ones already set. */
+        @Nullable
+        String menuTilesChange() {
+            if (menuTiles == null) return null;
+            return menuTiles.equals(MenuTiles.clean(MENU_TILES.savedValue())) ? null : menuTiles;
+        }
+
         /** The feed Home shows after this file, or null when it names none or the one already set. */
         @Nullable
         FeedsSubtab homeFeedChange() {
@@ -1114,6 +1135,7 @@ public final class SettingsBackup {
             if (ceiling != null) state.putString(CEILING_NAME, ceiling.fileValue);
             if (seenKeep != null) state.putString(SEEN_KEEP_NAME, seenKeep.fileValue);
             if (shareItems != null) state.putString(SHARE_ITEMS_NAME, shareItems);
+            if (menuTiles != null) state.putString(MENU_TILES_NAME, menuTiles);
             if (homeFeed != null) state.putString(HOME_FEED_NAME, homeFeed.fileValue);
             state.putInt(UNKNOWN, unknown);
             return state;
@@ -1171,6 +1193,9 @@ public final class SettingsBackup {
             Object shareItems = state.get(SHARE_ITEMS_NAME);
             read.shareItems = shareItems instanceof String && ShareSheetItems.isClean((String) shareItems)
                     ? (String) shareItems : null;
+            Object menuTiles = state.get(MENU_TILES_NAME);
+            read.menuTiles = menuTiles instanceof String && MenuTiles.isClean((String) menuTiles)
+                    ? (String) menuTiles : null;
             read.homeFeed = FeedsSubtab.fromFile(state.get(HOME_FEED_NAME));
             return read;
         }
@@ -1237,6 +1262,7 @@ public final class SettingsBackup {
             switches.put(KEPT.key, PostWords.clean(of(KEPT)));
             switches.put(SOURCES.key, PostSources.clean(of(SOURCES)));
             switches.put(SHARE_ITEMS.key, ShareSheetItems.clean(of(SHARE_ITEMS)));
+            switches.put(MENU_TILES.key, MenuTiles.clean(of(MENU_TILES)));
             return new JSONObject()
                     .put(FORMAT_NAME, FORMAT)
                     .put(SCHEMA_NAME, SCHEMA)
@@ -1359,6 +1385,7 @@ public final class SettingsBackup {
         AccentColor.Preset accent = null;
         ReactionCeiling ceiling = null;
         String shareItems = null;
+        String menuTiles = null;
         FeedsSubtab homeFeed = null;
         JSONObject values = (JSONObject) settings;
         for (Iterator<String> names = values.keys(); names.hasNext(); ) {
@@ -1524,6 +1551,14 @@ public final class SettingsBackup {
                 shareItems = (String) value;
                 continue;
             }
+            if (MENU_TILES.key.equals(name)) {
+                Object value = values.opt(name);
+                if (!(value instanceof String) || !MenuTiles.isClean((String) value)) {
+                    throw new Rejected(Reason.VALUE, "Not one clean list of Menu tiles: " + name);
+                }
+                menuTiles = (String) value;
+                continue;
+            }
             BooleanSetting setting = known.get(name);
             if (setting == null) {
                 // A name this build doesn't know, Pause and the debug settings included: left
@@ -1559,6 +1594,7 @@ public final class SettingsBackup {
                 quietUntil, lockAfter, textSize, accent, ceiling, unknown);
         read.seenKeep = seenKeep;
         read.shareItems = shareItems;
+        read.menuTiles = menuTiles;
         read.homeFeed = homeFeed;
         return read;
     }
