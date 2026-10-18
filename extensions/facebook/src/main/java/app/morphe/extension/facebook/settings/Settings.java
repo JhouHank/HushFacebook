@@ -731,6 +731,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_incoming_comment_typing", FALSE);
 
     /**
+     * The "3 new comments" pill that shows while a comment list is open never shows: its text is
+     * answered empty, and Facebook skips a pill with no text
+     * ({@link app.morphe.extension.facebook.comments.CommentSheetOptions}, #185). New comments still
+     * arrive in the list. Off by default.
+     */
+    public static final BooleanSetting HIDE_NEW_COMMENTS_PILL =
+            new BooleanSetting("hushfacebook_hide_new_comments_pill", FALSE);
+
+    /**
      * The comment sheet opens at the full height of the screen instead of part way up, on posts,
      * videos, reels and stories, and a reel's or a feed video's Comment button opens that sheet
      * instead of the split screen with the video above

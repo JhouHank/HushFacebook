@@ -210,6 +210,7 @@ public final class SettingsBackup {
             Settings.HIDE_SHOP_LINK_COMMENTS,
             Settings.HIDE_COMMENTS_WITH_WORDS,
             Settings.HIDE_INCOMING_COMMENT_TYPING,
+            Settings.HIDE_NEW_COMMENTS_PILL,
             Settings.OPEN_COMMENTS_FULL_HEIGHT,
             Settings.TAG_SUGGESTIONS_ONLY_AFTER_AT,
             Settings.TAP_TO_PLAY,

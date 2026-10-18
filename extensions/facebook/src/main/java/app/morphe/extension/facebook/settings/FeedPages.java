@@ -414,6 +414,8 @@ final class FeedPages {
             }
             comments.addPreference(toggle(context, Settings.HIDE_INCOMING_COMMENT_TYPING,
                     L10n.t("Takes away the line that says someone is typing a comment. Your own typing is a separate switch under Privacy.")));
+            comments.addPreference(toggle(context, Settings.HIDE_NEW_COMMENTS_PILL,
+                    L10n.t("The \"new comments\" bubble no longer pops up while you read comments. New comments still show in the list.")));
             comments.addPreference(reactionCountsRow(context));
         }
         if (fullHeight) {

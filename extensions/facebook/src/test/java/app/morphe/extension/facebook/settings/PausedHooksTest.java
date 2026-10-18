@@ -695,7 +695,8 @@ public class PausedHooksTest {
                 () -> CommentSheetOptions.holdsBottomContent(CommentSheetOptions.RELATED_GROUPS),
                 () -> CommentSheetOptions.hidesComment(new GraphQLComment("https://s.shopee.vn/9zKs")),
                 () -> CommentSheetOptions.hidesComment(new GraphQLComment("Big SPOILER inside")),
-                () -> CommentSheetOptions.incomingTypers(3) == 0));
+                () -> CommentSheetOptions.incomingTypers(3) == 0,
+                () -> CommentSheetOptions.newCommentsPill("3 new comments").isEmpty()));
         // A reel's comment sheet asking for two thirds of the screen gets all of it, a split-screen
         // launcher answers that it didn't open, a full-height sheet fills the screen, and the reel
         // drawn above the comments is hidden.

@@ -81,6 +81,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_SHOP_LINK_COMMENTS) return L10n.t("Hide comments with shop links");
         if (setting == Settings.HIDE_COMMENTS_WITH_WORDS) return L10n.t("Hide comments with your words");
         if (setting == Settings.HIDE_INCOMING_COMMENT_TYPING) return L10n.t("Hide who is typing in comments");
+        if (setting == Settings.HIDE_NEW_COMMENTS_PILL) return L10n.t("Hide the new comments pop-up");
         if (setting == Settings.OPEN_COMMENTS_FULL_HEIGHT) return L10n.t("Open comments at full height");
         if (setting == Settings.TAG_SUGGESTIONS_ONLY_AFTER_AT) return L10n.t("Tag suggestions only after @");
         if (setting == Settings.HIDE_REELS_TAB) return L10n.t("Hide the Reels tab");
