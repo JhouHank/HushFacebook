@@ -35,9 +35,12 @@
     14 days old.
 
     The audit never imports code. It reads metadata through the forges' APIs; a licence is hashed
-    in memory and a patch list is read for its names. Nothing is cloned, downloaded to disk or
-    written anywhere but the report and the ledger's dates. The report can't go under patches/ or
-    extensions/.
+    in memory and a patch list is read for its names. A GitLab source's branches are read from a
+    blobless git mirror under -MirrorRoot, which holds commits and folder listings and never a
+    file's contents, so a census asks gitlab.com for one fetch instead of a request per branch and
+    path. No file contents are downloaded to disk, and nothing is written but those mirrors, the
+    report and the ledger's dates. The report can't go under patches/ or extensions/, and the
+    mirrors can't go anywhere under the repository.
 
     GitHub requests use GITHUB_TOKEN or the gh CLI's token (code search needs one). GitLab requests
     use GITLAB_TOKEN, but GitLab.com does not enable global code search. A token alone does not
@@ -69,7 +72,10 @@ param(
     # GitHub allows ten code searches a minute.
     [double]$SearchDelaySeconds = 7,
     # How long to wait out a rate limit before trying again.
-    [int]$RateLimitWaitSeconds = 61
+    [int]$RateLimitWaitSeconds = 61,
+    # Where the blobless GitLab mirrors are kept between runs. Hushfacebook\source-mirrors under the
+    # local app data folder by default.
+    [string]$MirrorRoot
 )
 
 $ErrorActionPreference = 'Stop'
@@ -101,6 +107,13 @@ foreach ($guarded in @('patches', 'extensions')) {
 }
 if ($ReportPath -match '(?i)\.(kt|kts|java|smali)$') {
     throw "The audit report is JSON, not source code: $ReportPath"
+}
+$mirrorRootPath = if ($MirrorRoot) { $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($MirrorRoot) } else {
+    Join-Path $(if ($env:LOCALAPPDATA) { $env:LOCALAPPDATA } else { [IO.Path]::GetTempPath() }) 'Hushfacebook\source-mirrors'
+}
+$repositoryPrefix = [IO.Path]::GetFullPath($rootPath).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
+if (([IO.Path]::GetFullPath($mirrorRootPath).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar).StartsWith($repositoryPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+    throw "The GitLab mirrors can't go inside the repository: $mirrorRootPath"
 }
 
 $findings = New-Object System.Collections.Generic.List[object]
@@ -762,7 +775,77 @@ function Test-GitHubSourcePath {
     return $false
 }
 
+function Invoke-SourceGit {
+    <#
+        The one place the audit runs git: it keeps a blobless mirror of a GitLab source and reads
+        commits and folder listings from it. Clone and fetch must carry --filter=blob:none, and
+        GIT_NO_LAZY_FETCH stops any other command from fetching a file it finds missing, so no file
+        contents reach the disk. Credentials are never asked for or handed over. Answers ExitCode,
+        Lines (standard output) and Errors.
+    #>
+    param([string]$Directory, [Parameter(Mandatory = $true)][string[]]$Arguments)
+    $allowed = @('clone', 'fetch', 'for-each-ref', 'ls-tree', 'log', 'merge-base')
+    if ($allowed -cnotcontains $Arguments[0]) { throw "The audit doesn't run git $($Arguments[0])." }
+    if ($Arguments[0] -in @('clone', 'fetch') -and $Arguments -notcontains '--filter=blob:none') {
+        throw "git $($Arguments[0]) without --filter=blob:none would download file contents."
+    }
+    $options = @('--literal-pathspecs', '-c', 'core.ignorecase=false', '-c', 'credential.helper=')
+    if ($Directory) { $options += @('-C', $Directory) }
+    # An empty value removes the variable, so no askpass helper inherited from an editor can prompt.
+    $settings = [ordered]@{ GIT_TERMINAL_PROMPT = '0'; GCM_INTERACTIVE = 'never'; GIT_NO_LAZY_FETCH = '1'; GIT_ASKPASS = ''; SSH_ASKPASS = '' }
+    $saved = @{}
+    foreach ($name in $settings.Keys) {
+        $saved[$name] = [Environment]::GetEnvironmentVariable($name)
+        [Environment]::SetEnvironmentVariable($name, $settings[$name])
+    }
+    $preference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $said = @(& git @options @Arguments 2>&1)
+        $code = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $preference
+        foreach ($name in $saved.Keys) { [Environment]::SetEnvironmentVariable($name, $saved[$name]) }
+    }
+    return [pscustomobject]@{ ExitCode = $code
+        Lines = @($said | Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] } | ForEach-Object { "$_" })
+        Errors = @($said | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] } | ForEach-Object { "$_" }) }
+}
+
+$sourceMirrors = @{}
+function Get-GitLabMirror {
+    # A bare, blobless mirror of a GitLab source's branches, cloned once and fetched on each run
+    # after. One that won't fetch is cloned again; one that won't clone fails the source.
+    param([string]$Path)
+    if ($sourceMirrors.ContainsKey($Path)) { return $sourceMirrors[$Path] }
+    if ($Path -notmatch '^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)+$' -or $Path -match '(^|/)\.{1,2}(/|$)') { throw "$Path is no GitLab project path." }
+    $directory = Join-Path $mirrorRootPath ('gitlab.com\' + $Path.Replace('/', '\') + '.git')
+    $synced = $null
+    if (Test-Path -LiteralPath (Join-Path $directory 'HEAD')) {
+        $synced = Invoke-SourceGit -Directory $directory -Arguments @('fetch', '--quiet', '--prune', '--no-tags', '--filter=blob:none', 'origin',
+            '+refs/heads/*:refs/heads/*')
+    }
+    if ($null -eq $synced -or $synced.ExitCode -ne 0) {
+        if (Test-Path -LiteralPath $directory) { Remove-Item -LiteralPath $directory -Recurse -Force }
+        New-Item -ItemType Directory -Path (Split-Path -Parent $directory) -Force | Out-Null
+        $synced = Invoke-SourceGit -Arguments @('clone', '--quiet', '--bare', '--no-tags', '--filter=blob:none', "https://gitlab.com/$Path.git", $directory)
+        if ($synced.ExitCode -ne 0) { throw "the mirror of $Path could not be fetched: $(@($synced.Errors) -join ' ')" }
+    }
+    $sourceMirrors[$Path] = $directory
+    return $directory
+}
+
+function Test-GitLabMirrorPath {
+    # Whether $Watch is in the folder listing at $Ref, letter case and all.
+    param([string]$Mirror, [string]$Ref, [string]$Watch)
+    $listing = Invoke-SourceGit -Directory $Mirror -Arguments @('ls-tree', $Ref, '--', $Watch)
+    if ($listing.ExitCode -ne 0) { throw "the folder listing at $Ref could not be read from the mirror: $(@($listing.Errors) -join ' ')" }
+    return @($listing.Lines | Where-Object { ($_ -split "`t", 2)[-1] -ceq $Watch }).Count -gt 0
+}
+
 function Test-GitLabSourcePath {
+    # Through the API, for the pins of a retired or unavailable source: GitLab keeps answering for a
+    # commit a force push left behind, which a fresh mirror never holds.
     param([string]$Project, [string]$Ref, [string]$Watch)
     $at = $Watch.LastIndexOf('/')
     $parent = if ($at -ge 0) { $Watch.Substring(0, $at) } else { '' }
@@ -819,18 +902,18 @@ function Get-GitHubFacebookHead {
 }
 
 function Get-GitLabFacebookHead {
-    param([string]$Project, [string]$Branch, [string[]]$WatchPaths, [string]$Head)
+    param([string]$Mirror, [string]$Branch, [string[]]$WatchPaths, [string]$Head)
     if (@($WatchPaths).Count -eq 0) { return $Head }
     $newest = $null
     foreach ($watch in $WatchPaths) {
-        if (-not (Test-GitLabSourcePath -Project $Project -Ref $Head -Watch $watch)) { continue }
-        $answer = Invoke-SourceRequest -Uri ("https://gitlab.com/api/v4/projects/$Project/repository/commits?ref_name=" +
-            [Uri]::EscapeDataString($Branch) + '&path=' + [Uri]::EscapeDataString($watch) + '&per_page=1') -Auth gitlab
-        if ($answer.Status -ne 200) { throw "the commits of $Branch under $watch answered HTTP $($answer.Status)" }
-        foreach ($commit in (Get-JsonItems (ConvertFrom-SourceJson -Text $answer.Content -What "$Project commits"))) {
-            $date = [datetime]::Parse("$($commit.committed_date)", [Globalization.CultureInfo]::InvariantCulture,
-                [Globalization.DateTimeStyles]::AdjustToUniversal)
-            if ($null -eq $newest -or $date -gt $newest.Date) { $newest = [pscustomobject]@{ Sha = [string]$commit.id; Date = $date } }
+        if (-not (Test-GitLabMirrorPath -Mirror $Mirror -Ref $Head -Watch $watch)) { continue }
+        $history = Invoke-SourceGit -Directory $Mirror -Arguments @('log', '-1', '--format=%H%x09%cI', $Head, '--', $watch)
+        if ($history.ExitCode -ne 0) { throw "the commits of $Branch under $watch could not be read from the mirror: $(@($history.Errors) -join ' ')" }
+        foreach ($line in $history.Lines) {
+            $sha, $when = $line -split "`t", 2
+            if ($sha -notmatch '^[0-9a-f]{40}$') { throw "the commits of $Branch under $watch came back as '$line'" }
+            $date = [datetimeoffset]::Parse($when, [Globalization.CultureInfo]::InvariantCulture).UtcDateTime
+            if ($null -eq $newest -or $date -gt $newest.Date) { $newest = [pscustomobject]@{ Sha = $sha; Date = $date } }
         }
     }
     if ($null -eq $newest) { return $null }
@@ -848,10 +931,9 @@ function Test-CommitContained {
         $status = [string](ConvertFrom-SourceJson -Text $answer.Content -What "$($Where.Path) comparison").status
         return $status -eq 'identical' -or $status -eq 'behind'
     }
-    $answer = Invoke-SourceRequest -Uri ("https://gitlab.com/api/v4/projects/$([Uri]::EscapeDataString($Where.Path))/repository/compare?from=" +
-        "$Within&to=$Commit") -Auth gitlab
-    if ($answer.Status -ne 200) { return $false }
-    return @(Get-JsonItems (ConvertFrom-SourceJson -Text $answer.Content -What "$($Where.Path) comparison").commits).Count -eq 0
+    # The mirror answers 1 for "not an ancestor" and 128 for a commit it doesn't hold.
+    $answer = Invoke-SourceGit -Directory (Get-GitLabMirror -Path $Where.Path) -Arguments @('merge-base', '--is-ancestor', $Commit, $Within)
+    return $answer.ExitCode -eq 0
 }
 
 function Read-GitHubSource {
@@ -899,15 +981,18 @@ function Read-GitLabSource {
         $license = [pscustomobject]@{ Spdx = $null; Path = [string]$licenseFile[0].path
             Sha256 = Get-Sha256Hex ([Convert]::FromBase64String((([string]$file.content) -replace '\s', ''))) }
     }
-    $branchList = Get-PagedItems -Uri "https://gitlab.com/api/v4/projects/$project/repository/branches" -Auth gitlab
-    if ($branchList.Status -ne 200) { throw "the branches of $Path answered HTTP $($branchList.Status)" }
     $forkList = Get-PagedItems -Uri "https://gitlab.com/api/v4/projects/$project/forks" -Auth gitlab
     if ($forkList.Status -ne 200) { throw "the forks of $Path answered HTTP $($forkList.Status)" }
+    $mirror = Get-GitLabMirror -Path $Path
+    $heads = Invoke-SourceGit -Directory $mirror -Arguments @('for-each-ref', '--format=%(refname:strip=2)%09%(objectname)', 'refs/heads')
+    if ($heads.ExitCode -ne 0) { throw "the branches of $Path could not be read from its mirror: $(@($heads.Errors) -join ' ')" }
     $watch = @(Get-SourceProperty $Entry 'watchPaths' | Where-Object { $_ })
     $branches = [ordered]@{}
-    foreach ($branch in $branchList.Items) {
-        $branches[[string]$branch.name] = [pscustomobject]@{ Head = [string]$branch.commit.id
-            Facebook = (Get-GitLabFacebookHead -Project $project -Branch ([string]$branch.name) -WatchPaths $watch -Head ([string]$branch.commit.id)) }
+    foreach ($line in $heads.Lines) {
+        $name, $head = $line -split "`t", 2
+        if ($head -notmatch '^[0-9a-f]{40}$') { throw "a branch of $Path came back from its mirror as '$line'" }
+        $branches[$name] = [pscustomobject]@{ Head = $head
+            Facebook = (Get-GitLabFacebookHead -Mirror $mirror -Branch $name -WatchPaths $watch -Head $head) }
     }
     return [pscustomobject]@{ Status = 200; FullName = "gitlab.com/$($repo.path_with_namespace)".ToLowerInvariant(); Archived = [bool]$repo.archived
         License = $license; Branches = $branches; Forks = @($forkList.Items | ForEach-Object { [string]$_.path_with_namespace }) }
