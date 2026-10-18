@@ -1602,3 +1602,7 @@ Takes the numbers away from under a reel's Like, Comment and Share icons. The ic
 Hide the reaction preview on posts	Gönderilerdeki tepki önizlemesini gizle
 # context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions
 Hides the stacked reaction icons and the reactions count under posts. The space stays, so a tap where they were still opens the list of reactions.	Gönderilerin altındaki üst üste dizilmiş tepki simgelerini ve tepki sayısını gizler. Boşluk yerinde kalır, bu yüzden eskiden oldukları yere dokunmak yine tepki listesini açar.
+# context: switch title under Downloads; "Download" is the post menu row "Download to phone" and "post menus" are the three-dot menus under posts
+Download first in post menus	Gönderi menülerinde önce İndir
+# context: summary of that switch; "Download to phone" and "Save photo" are the menu rows, translate them as elsewhere
+Puts Download to phone and Save photo at the top of a post's three-dot menu instead of the bottom. A post with nothing to save gets neither.	Telefona indir ve Fotoğrafı kaydet satırlarını bir gönderinin üç nokta menüsünün altı yerine en üstüne koyar. Kaydedilecek bir şey olmayan gönderide ikisi de görünmez.

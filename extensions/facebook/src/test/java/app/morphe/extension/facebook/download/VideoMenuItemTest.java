@@ -97,6 +97,7 @@ public class VideoMenuItemTest {
         MediaDownload.detailsForTests = null;
         PauseForTests.resume();
         Settings.DOWNLOAD_VIDEOS.resetToDefault();
+        Settings.POST_MENU_DOWNLOAD_FIRST.resetToDefault();
         LogBufferManager.clearLogBuffer();
         HookStatus.clear();
     }
@@ -153,6 +154,30 @@ public class VideoMenuItemTest {
         assertEquals("Download to phone", String.valueOf(menu.getItem(2).getTitle()));
         assertTrue(String.join("\n", HookStatus.report()),
                 HookStatus.report().contains("Download any video: invoked 1, 1 found, 0 missing"));
+    }
+
+    /** Download first (#151): the item rides above Facebook's rows, which keep their order and ids. */
+    @Test
+    public void downloadFirstPutsTheItemOnTop() {
+        Settings.POST_MENU_DOWNLOAD_FIRST.save(true);
+        Menu menu = filled(VideoMenuItemForTests.videoPost());
+
+        assertEquals(3, menu.size());
+        assertEquals("Download to phone", String.valueOf(menu.getItem(0).getTitle()));
+        assertEquals("Save video", String.valueOf(menu.getItem(1).getTitle()));
+        assertEquals("Download video", String.valueOf(menu.getItem(2).getTitle()));
+
+        Settings.POST_MENU_DOWNLOAD_FIRST.save(false);
+        assertEquals("Download to phone", String.valueOf(filled(VideoMenuItemForTests.videoPost()).getItem(2).getTitle()));
+    }
+
+    /** A post with nothing to save gets no row on top either, and a pause keeps the menu Facebook's. */
+    @Test
+    public void downloadFirstAddsNothingWithNothingToSaveOrWhenPaused() {
+        Settings.POST_MENU_DOWNLOAD_FIRST.save(true);
+        assertEquals(2, filled(new GraphQLStory(null)).size());
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertEquals(2, filled(VideoMenuItemForTests.videoPost()).size());
     }
 
     @Test

@@ -1214,6 +1214,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_post_menu_photo_save", FALSE);
 
     /**
+     * Puts Download to phone and Save photo at the top of a post's three-dot menu instead of the
+     * bottom (issue #151). The row under a post has no room for a button, so the menu is where a
+     * post's download lives. Off until you turn it on.
+     */
+    public static final BooleanSetting POST_MENU_DOWNLOAD_FIRST =
+            new BooleanSetting("hushfacebook_post_menu_download_first", FALSE);
+
+    /**
      * A start from Facebook's launcher icon opens the tab in {@link #START_TAB} instead of the one
      * Facebook would choose. Notifications, links and shortcuts keep their own destination.
      */

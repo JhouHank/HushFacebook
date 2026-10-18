@@ -81,7 +81,7 @@ public final class VideoMenuItem {
             Video video = Video.of(media, postOf(item, attachedStoryGetter));
             if (!video.offered()) return;
 
-            MenuItem entry = menu.add(SendLink.sending() ? L10n.t("Send to app") : L10n.t("Download to phone"));
+            MenuItem entry = MenuTop.add(menu, SendLink.sending() ? L10n.t("Send to app") : L10n.t("Download to phone"));
             if (entry == null) return;
             if (icon != 0) entry.setIcon(icon);
             Context context = anchor == null ? null : anchor.getContext();
