@@ -17,6 +17,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* **Facebook:** `Leave calls and chats to Messenger` works with a Messenger installed under another name beside Meta's apps, the way HushMessenger's "install beside" option makes one (issue #193). Facebook only counted Meta's own Messenger package, so with a renamed copy it kept ringing and posting the same chat notification Messenger posted. The Messenger icon at the top and the Get Messenger card already counted such a copy.
 * **Facebook:** `Hide the notes and active now row` takes the whole row away now. Your own "Your note" tile used to stay behind and keep the row at full height.
 * **Facebook:** With `Save videos other apps can open` on, a long video Facebook only has as VP9 or AV1 keeps its full size when it's made H.264. A thin four minute 1080p reel used to run out of the room set aside for the conversion and save at 720p instead (issue #189).
 * **Facebook:** With `Save videos other apps can open` on, a video over 10 minutes that Facebook only has as VP9 or AV1 goes straight to its smaller H.264 file. Before, it downloaded the full size first, gave up on converting it and showed two error messages on the way.
