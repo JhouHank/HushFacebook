@@ -2,7 +2,9 @@
 
 Changes in each Hushfacebook version, newest first.
 
-## Unreleased
+## 0.15.0 (2026-10-18)
+
+* **Facebook:** Most of this release comes from your requests. A video you tap in the feed can open on its own now, so a swipe up doesn't drop you into an endless reels feed, and the comment sheet can open at full height or from a double tap on a reel. There are new switches to hide the status bar, the Messenger button, the counts under posts and reels, reaction previews and the people row in the share sheet. Settings come in Simplified Chinese, new ones carry a small dot, and Remember what you watch keeps a list so a reel that vanished on refresh is easy to find again. On the fix side, Tap the bar to seek works on 583 again and stories you finish stay watched with View stories anonymously on.
 
 ### Added
 
