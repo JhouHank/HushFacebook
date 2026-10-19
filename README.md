@@ -22,7 +22,7 @@ Each row in the [patch table](#patches) says how its switch starts. The ad filte
 
 This project has no connection to Meta or to the Morphe project. Neither endorses it, and neither wrote it.
 
-The latest release is [v0.14.0](https://github.com/SysAdminDoc/Hushfacebook/releases/tag/v0.14.0), with 91 patches. It includes all changes since v0.13.0, among them support for Facebook 583, new patches that skip silent parts and post Stories in HD, switches for a tab bar at the top, a reel's original audio and the phone layout on big screens, settings in Vietnamese and fixes for picture-in-picture and the reel progress bar, as the [changelog](CHANGELOG.md) describes.
+The latest release is [v0.15.0](https://github.com/SysAdminDoc/Hushfacebook/releases/tag/v0.15.0), with 93 patches. It includes all changes since v0.14.0, among them feed videos that open on their own, comments at full height or from a double tap, switches that hide the status bar, the Messenger button and the counts under posts and reels, settings in Simplified Chinese and a working Tap the bar to seek on 583, as the [changelog](CHANGELOG.md) describes.
 
 [Add to Morphe](https://morphe.software/add-source?github=SysAdminDoc%2FHushfacebook) | [Download a release](https://github.com/SysAdminDoc/Hushfacebook/releases/latest) | [Browse the patches](#patches)
 
