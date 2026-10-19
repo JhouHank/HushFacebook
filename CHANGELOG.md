@@ -12,6 +12,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* **Facebook:** `Hide the notes and active now row` takes the whole row away now. Your own "Your note" tile used to stay behind and keep the row at full height.
 * **Facebook:** With `Save videos other apps can open` on, a long video Facebook only has as VP9 or AV1 keeps its full size when it's made H.264. A thin four minute 1080p reel used to run out of the room set aside for the conversion and save at 720p instead (issue #189).
 * **Facebook:** `See-through bars` keeps its blur on Home after you've been to Reels. Before, a trip to Reels could leave the bars plain see-through until Facebook restarted (issue #188).
 * **Facebook:** `Menu tiles to hide` now hides Feeds, Reels, Memories, Birthdays, Dating and Pages, which it missed on 583, and tiles you ticked before carry over. The list shows the tiles your own Menu has, by the names Facebook gives them, so Crisis response, Community Notes, Pokes and the rest can go too (issue #153).
