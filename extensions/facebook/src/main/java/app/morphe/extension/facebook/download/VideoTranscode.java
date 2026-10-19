@@ -62,6 +62,12 @@ final class VideoTranscode {
      */
     static final double MIN_FRAMES_KEPT = 0.9;
 
+    /** The least room a converted picture is given, as before it was worked out from the picture's length. */
+    static final long LEAST_ROOM = 32L << 20;
+
+    /** The most frames a second the tables are counted for, whatever a file states. */
+    private static final int MOST_FRAMES_A_SECOND = 240;
+
     private VideoTranscode() {
     }
 
@@ -101,6 +107,54 @@ final class VideoTranscode {
         long forSize = (long) width * height * Math.max(1, frameRate) / 25;
         long wanted = Math.max(sourceBitRate * 3, forSize);
         return (int) Math.max(MIN_BIT_RATE, Math.min(MAX_BIT_RATE, wanted));
+    }
+
+    /**
+     * The room the converted picture needs ({@link DashSave#reserve}): as long as [in]'s picture
+     * runs, at the {@link #bitRate} it's made at and half again for an encoder that runs over it,
+     * with the tables and boxes on top. A 1080p picture is made at 2.5 Mbps however little its
+     * source took, so six times the file, the room it used to get, ran out on a four minute 1080p
+     * reel that came at 467 kbps, and the save fell back to Facebook's 720p file.
+     */
+    static long room(File in, long sourceBitRate) {
+        long durationUs = -1;
+        int width = 0;
+        int height = 0;
+        int frameRate = DEFAULT_FRAME_RATE;
+        MediaExtractor source = null;
+        try {
+            source = new MediaExtractor();
+            source.setDataSource(in.getPath());
+            MediaFormat format = pictureTrack(source);
+            if (format != null) {
+                if (format.containsKey(MediaFormat.KEY_DURATION)) durationUs = format.getLong(MediaFormat.KEY_DURATION);
+                width = format.getInteger(MediaFormat.KEY_WIDTH);
+                height = format.getInteger(MediaFormat.KEY_HEIGHT);
+                if (format.containsKey(MediaFormat.KEY_FRAME_RATE)) {
+                    frameRate = Math.max(1, format.getInteger(MediaFormat.KEY_FRAME_RATE));
+                }
+            }
+        } catch (Throwable unreadable) {
+            // The file's size stands in for the length and size it doesn't give.
+        } finally {
+            if (source != null) attempt(null, source::release);
+        }
+        return roomFor(durationUs, width, height, frameRate, sourceBitRate, in.length());
+    }
+
+    /**
+     * {@link #room} from what the picture says: it runs [durationUs] at [width] by [height] and
+     * [frameRate], from a source at [sourceBitRate]. Never below six times [bytes] or
+     * {@link #LEAST_ROOM}, the room every picture got before, which is all a picture that doesn't
+     * say how long it runs or how large it is gets.
+     */
+    static long roomFor(long durationUs, int width, int height, int frameRate, long sourceBitRate, long bytes) {
+        long floor = Math.max(LEAST_ROOM, Math.max(0L, bytes) * 6);
+        if (durationUs <= 0 || width <= 0 || height <= 0) return floor;
+        long ms = durationUs / 1000;
+        long picture = ms * (bitRate(width, height, frameRate, sourceBitRate) / 8) / 1000 * 3 / 2;
+        long frames = ms * Math.max(1, Math.min(frameRate, MOST_FRAMES_A_SECOND)) / 1000 + 1;
+        return Math.max(floor, OutputAllowance.BOXES + picture + frames * OutputAllowance.PER_SAMPLE);
     }
 
     /** The color description a source can state, carried to the encoder by {@link #keepColors}. */

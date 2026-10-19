@@ -178,6 +178,29 @@ public class CompatibleTracksTest {
         assertEquals(VideoTranscode.MIN_BIT_RATE, VideoTranscode.bitRate(720, 1280, 0, 0));
     }
 
+    /**
+     * A long, thin picture gets room for what the encoder makes of it. The S22's four minute 1080p
+     * reel came at 467 kbps in 14.9 MB, so six times the file, the room it used to get, was 89 MB,
+     * and the H.264 at 2.5 Mbps outgrew it and the save fell back to the 720p file. A picture that
+     * doesn't say how long it runs keeps the old room.
+     */
+    @Test
+    public void aLongThinPictureGetsRoomForWhatItBecomes() {
+        long durationUs = 254_505_375L;
+        long bytes = 14_881_053L;
+        long made = (long) VideoTranscode.bitRate(1920, 1080, 30, 467_000) / 8 * durationUs / 1_000_000;
+        assertTrue("the old room gave the encoder a fifth over its rate", bytes * 6 < made * 6 / 5);
+        long room = VideoTranscode.roomFor(durationUs, 1920, 1080, 30, 467_000, bytes);
+        assertTrue("no room for the encoder running over", room > made * 3 / 2 + OutputAllowance.BOXES);
+        assertEquals("a picture that says nothing keeps the old room", bytes * 6,
+            VideoTranscode.roomFor(-1, 1920, 1080, 30, 467_000, bytes));
+        assertEquals("a short clip keeps the old floor", VideoTranscode.LEAST_ROOM,
+            VideoTranscode.roomFor(5_000_000L, 1920, 1080, 30, 467_000, 300_000));
+        long rich = 200_000_000L;
+        assertEquals("a large file keeps six times itself", rich * 6,
+            VideoTranscode.roomFor(durationUs, 1920, 1080, 30, 467_000, rich));
+    }
+
     /** Safer sound must not cost the requested picture resolution (silent Gallery report #14). */
     @Test
     public void ordinarySavesPreferWidelySupportedAudioWithoutLoweringTheVideo() {
