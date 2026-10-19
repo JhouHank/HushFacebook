@@ -43,6 +43,8 @@ import app.morphe.extension.shared.settings.BaseSettings;
  *   <li>Each button down a reel's right side is one vertical button component whose constructor
  *       takes the text under the icon. {@link #countText} is handed that text first thing in the
  *       constructor and answers what the button keeps (#180).
+ *   <li>The sidebar builds those buttons by walking a list of types, one icon constant each.
+ *       {@link #hideSidebarButton} is handed each type as it's read, and true skips Save (#190).
  * </ul>
  *
  * <p>Every hook fails open: until the settings are ready, while Hushfacebook is paused, with a
@@ -79,6 +81,17 @@ public final class ReelDeclutter {
     /** Counted under its own name each time a sidebar button's number is taken away. */
     static final String COUNTS_ROUTE = "Reel counts";
     static final String COUNT = "button count";
+
+    /** Counted under its own name each time the sidebar skips its Save button. */
+    static final String SIDEBAR_ROUTE = "Reel sidebar buttons";
+    static final String SAVE_BUTTON = "Save button";
+
+    /**
+     * The constant of Facebook's icon enum the reel sidebar builds its Save button for (#190). The
+     * sidebar walks one constant per button, and the enum's names are kept as strings in the app,
+     * so {@code name()} reads this on any build. Like, Comment and Share are LIKE, COMMENT and SHARE.
+     */
+    static final String SAVE_TYPE = "BOOKMARK";
 
     /**
      * What a hidden count becomes: one zero-width space. The button still has a text row, so it
@@ -265,6 +278,31 @@ public final class ReelDeclutter {
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.REEL_DECLUTTER, COUNT, failure);
             return text;
+        }
+    }
+
+    /**
+     * Injection point, in the reel sidebar's builder, handed each button type as it's read and before
+     * anything is built for it (#190). True skips that type, so the button isn't built, marked or
+     * named, and the ones after it move up. Only Save goes, and only while its switch is on. Never
+     * throws: off, paused, before the settings are ready, for any other type or on a failure the
+     * button is built as before.
+     *
+     * @param type the constant of Facebook's icon enum the sidebar is about to build a button for.
+     */
+    public static boolean hideSidebarButton(Object type) {
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            if (!(type instanceof Enum) || !SAVE_TYPE.equals(((Enum<?>) type).name())) return false;
+            if (!Utils.settingsReady() || !Settings.HIDE_REEL_SAVE_BUTTON.get()) return false;
+            FeedFilterCounters.sawList(SIDEBAR_ROUTE, 1);
+            FeedFilterCounters.sawKind(SIDEBAR_ROUTE, SAVE_BUTTON);
+            FeedFilterCounters.removed(SIDEBAR_ROUTE, 1, SAVE_BUTTON);
+            logOnce(SAVE_BUTTON, () -> "Reel sidebar: skipped the Save button");
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, SAVE_BUTTON, failure);
+            return false;
         }
     }
 

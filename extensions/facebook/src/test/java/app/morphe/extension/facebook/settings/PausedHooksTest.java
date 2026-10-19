@@ -244,6 +244,9 @@ public class PausedHooksTest {
     /** Stands in for Facebook's enum of share sheet items, named the same way. */
     private enum ShareItem { SHARE_NOW, SHARE_TO_HATCH, SHARE_TO_THREADS }
 
+    /** Stands in for Facebook's icon enum, whose constants the reel sidebar walks one button each. */
+    private enum SidebarIcon { LIKE, BOOKMARK }
+
     @After
     public void restore() {
         PauseForTests.resume();
@@ -516,6 +519,8 @@ public class PausedHooksTest {
                 ReelDeclutter::hideSearchPill,
                 // A sidebar button's count loses its number only while the patch runs.
                 () -> !"12".equals(ReelDeclutter.countText("12")),
+                // The sidebar's Save button is skipped only while the patch runs.
+                () -> ReelDeclutter.hideSidebarButton(SidebarIcon.BOOKMARK),
                 // A feed video's player asking for more right after the tap gets none.
                 () -> {
                     FeedVideoAlone.feedVideoTapped();

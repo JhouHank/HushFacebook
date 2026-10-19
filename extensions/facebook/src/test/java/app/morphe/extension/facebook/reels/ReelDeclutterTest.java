@@ -66,6 +66,7 @@ public class ReelDeclutterTest {
         Settings.HIDE_REEL_FOLLOW_BUTTON.resetToDefault();
         Settings.HIDE_REEL_SOCIAL_FOOTER.resetToDefault();
         Settings.HIDE_REEL_COUNTS.resetToDefault();
+        Settings.HIDE_REEL_SAVE_BUTTON.resetToDefault();
         BaseSettings.DEBUG.resetToDefault();
         FeedFilterCounters.clear();
         HookStatus.clear();
@@ -310,6 +311,82 @@ public class ReelDeclutterTest {
         }
         assertEquals(Arrays.asList("a working '" + ReelDeclutter.COUNT + "' hook (it threw "
                 + NullPointerException.class.getName() + ")"), HookStatus.missing(FamilyNames.REEL_DECLUTTER));
+    }
+
+    /** Stands in for Facebook's icon enum: the sidebar walks one constant per button. */
+    private enum SidebarIcon { LIKE, COMMENT, SHARE, BOOKMARK }
+
+    /** Not an enum, though its text is Save's name. */
+    private static final String SAVE_AS_TEXT = "BOOKMARK";
+
+    /**
+     * The sidebar's Save button (#190): the switch starts off, so every button is built. On, only
+     * the BOOKMARK constant is skipped. Like, Comment, Share, a missing type and a string that only
+     * spells Save's name are built as before. Off again, Save is back.
+     */
+    @Test
+    public void onlySaveIsSkippedAndOnlyWhileItsSwitchIsOn() {
+        assertFalse(Settings.HIDE_REEL_SAVE_BUTTON.defaultValue);
+        assertFalse("Save went with its switch off", ReelDeclutter.hideSidebarButton(SidebarIcon.BOOKMARK));
+
+        Settings.HIDE_REEL_SAVE_BUTTON.save(true);
+        assertTrue("Save was built", ReelDeclutter.hideSidebarButton(SidebarIcon.BOOKMARK));
+        assertFalse("Like went", ReelDeclutter.hideSidebarButton(SidebarIcon.LIKE));
+        assertFalse("Comment went", ReelDeclutter.hideSidebarButton(SidebarIcon.COMMENT));
+        assertFalse("Share went", ReelDeclutter.hideSidebarButton(SidebarIcon.SHARE));
+        assertFalse("a missing type was skipped", ReelDeclutter.hideSidebarButton(null));
+        assertFalse("a string was taken for the enum", ReelDeclutter.hideSidebarButton(SAVE_AS_TEXT));
+        assertTrue(ReelDeclutter.hideSidebarButton(SidebarIcon.BOOKMARK));
+        assertEquals(ReelDeclutter.SIDEBAR_ROUTE + ": 2 lists, 2 items, 2 removed. Last reason: " + ReelDeclutter.SAVE_BUTTON
+                + ". Removed: " + ReelDeclutter.SAVE_BUTTON + " 2. Kinds: " + ReelDeclutter.SAVE_BUTTON + " 2",
+                line(ReelDeclutter.SIDEBAR_ROUTE));
+
+        Settings.HIDE_REEL_SAVE_BUTTON.save(false);
+        assertFalse("turning the switch off didn't bring Save back", ReelDeclutter.hideSidebarButton(SidebarIcon.BOOKMARK));
+    }
+
+    @Test
+    public void pausedOrNotReadySaveIsBuilt() {
+        Settings.HIDE_REEL_SAVE_BUTTON.save(true);
+        for (HushfacebookPause.Reason why : new HushfacebookPause.Reason[]{
+                HushfacebookPause.Reason.SWITCH, HushfacebookPause.Reason.CRASH_LOOP,
+                HushfacebookPause.Reason.MARKER_FILE}) {
+            PauseForTests.pause(why);
+            assertFalse(why + " skipped Save", ReelDeclutter.hideSidebarButton(SidebarIcon.BOOKMARK));
+            PauseForTests.resume();
+        }
+        SettingsContextRule.withoutContext(() -> assertFalse(ReelDeclutter.hideSidebarButton(SidebarIcon.BOOKMARK)));
+        assertTrue("Save wasn't skipped again after the pause", ReelDeclutter.hideSidebarButton(SidebarIcon.BOOKMARK));
+    }
+
+    /** A Save switch that can't be read builds the button, and the report names the hook that threw. */
+    @Test
+    public void aSaveSwitchThatCantBeReadBuildsTheButton() {
+        SettingReadsForTests.breakReads(Settings.HIDE_REEL_SAVE_BUTTON);
+        try {
+            assertFalse(ReelDeclutter.hideSidebarButton(SidebarIcon.BOOKMARK));
+        } finally {
+            SettingReadsForTests.mend(Settings.HIDE_REEL_SAVE_BUTTON);
+        }
+        assertEquals(Arrays.asList("a working '" + ReelDeclutter.SAVE_BUTTON + "' hook (it threw "
+                + NullPointerException.class.getName() + ")"), HookStatus.missing(FamilyNames.REEL_DECLUTTER));
+    }
+
+    /** The Save switch answers for nothing else, and the other switches don't skip Save. */
+    @Test
+    public void theSaveSwitchRunsOnlyItsOwnHook() {
+        Settings.HIDE_REEL_COUNTS.save(true);
+        assertFalse("the other switches skipped Save", ReelDeclutter.hideSidebarButton(SidebarIcon.BOOKMARK));
+        Settings.HIDE_REEL_CHIPS.save(false);
+        Settings.HIDE_REEL_FOLLOW_BUTTON.save(false);
+        Settings.HIDE_REEL_SOCIAL_FOOTER.save(false);
+        Settings.HIDE_REEL_COUNTS.save(false);
+        Settings.HIDE_REEL_SAVE_BUTTON.save(true);
+        assertFalse("the Save switch hid the Follow button", ReelDeclutter.hideFollowButton());
+        assertFalse("the Save switch skipped a footer query", ReelDeclutter.skipHotComment());
+        assertFalse("the Save switch hid the search pill", ReelDeclutter.hideSearchPill());
+        assertEquals("the Save switch hid a count", "9", ReelDeclutter.countText("9"));
+        assertTrue(ReelDeclutter.hideSidebarButton(SidebarIcon.BOOKMARK));
     }
 
     /** The counts switch answers for nothing else, and the other switches don't answer for it. */

@@ -467,6 +467,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_reel_counts", FALSE);
 
     /**
+     * The Save button down a reel's right side isn't built, and the buttons under it move up
+     * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#hideSidebarButton}, #190). Off by
+     * default. A change shows from the next reel.
+     */
+    public static final BooleanSetting HIDE_REEL_SAVE_BUTTON =
+            new BooleanSetting("hushfacebook_hide_reel_save_button", FALSE);
+
+    /**
      * A video tapped in the feed opens in the full-screen player on its own, with no reels to swipe
      * to after it ({@link app.morphe.extension.facebook.reels.FeedVideoAlone}, #161). The player's
      * reels feed is told nothing more came. The Reels tab keeps scrolling. Off until it's turned on,
