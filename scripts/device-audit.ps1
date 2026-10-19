@@ -17,6 +17,8 @@
     5. Asks for the full diagnostic report over an intent and pulls it, then reads [HOOK STATUS]
        with phone-smoke's Read-SmokeReport and compares it to -Expectations: a family that ran in
        the baseline and didn't run now fails, as does anything missing, ambiguous or a crash.
+       A -MayIdle family (or one the baseline lists under mayIdle) waits on what Facebook serves,
+       so it gets a note either way and is never written into the baseline's ranOnWalk.
     6. Opens every settings page named in SettingsNavigation.java, scrolls it to the end and
        screenshots each screenful, in dark and light, plus one dark pass per -Locales entry.
        The text of each page goes next to its screenshots, and index.html shows them all.
@@ -59,6 +61,9 @@ param(
     [string[]]$On = @(),
     [string[]]$Off = @(),
     [string]$Expectations = (Join-Path $PSScriptRoot 'device-audit-expectations.json'),
+    # Families that run only when Facebook serves something the walk can't make appear: a
+    # sponsored post on the profile, a new-reels badge on the Reels tab.
+    [string[]]$MayIdle = @('Hide sponsored profile posts', 'Hide the Reels tab dot'),
     [switch]$WriteBaseline,
     [switch]$SkipWalk,
     [switch]$SkipPages,
@@ -451,8 +456,23 @@ function New-AuditBaseline([string]$Report, [string[]]$Ran, [string[]]$Idle) {
         profile = [ordered]@{ name = 'all-on'; on = @($On | Sort-Object -Unique); off = @($Off | Sort-Object -Unique)
             visit = @($Visit); optionalVisit = @($OptionalVisit | Sort-Object -Unique); swipes = $Swipes
             locales = @($Locales); maxScrolls = $MaxScrolls }
-        visit = @($Visit); ranOnWalk = @($Ran | Sort-Object); notOnWalk = @($Idle | Sort-Object)
+        visit = @($Visit); ranOnWalk = @($Ran | Where-Object { @($MayIdle) -notcontains $_ } | Sort-Object)
+        notOnWalk = @($Idle | Sort-Object); mayIdle = @($MayIdle | Where-Object { $_ } | Sort-Object -Unique)
     }
+}
+
+function Compare-AuditWalk($Expected, [string[]]$Ran) {
+    $waits = @(@($MayIdle) + @($Expected.mayIdle) | Where-Object { $_ } | Sort-Object -Unique)
+    $failures = @(@($Expected.ranOnWalk) | Where-Object { $Ran -notcontains $_ -and $waits -notcontains $_ } |
+        ForEach-Object { "$_ ran on the baseline's walk ($($Expected.facebook)) and didn't now." })
+    $notes = [Collections.Generic.List[string]]::new()
+    $new = @($Ran | Where-Object { @($Expected.ranOnWalk) -notcontains $_ -and $waits -notcontains $_ })
+    if ($new) { $notes.Add("Ran now and not in the baseline: $($new -join ', ')") }
+    if ($waits) {
+        $notes.Add('Wait on what Facebook serves: ' + (@($waits | ForEach-Object {
+            if ($Ran -contains $_) { "$_ ran" } else { "$_ didn't run" } }) -join ', '))
+    }
+    return [pscustomobject]@{ Failures = $failures; Notes = @($notes) }
 }
 
 function Test-AuditBaseline($Expected, $Actual) {
@@ -464,6 +484,8 @@ function Test-AuditBaseline($Expected, $Actual) {
     if (($Expected.profile -isnot [Collections.IDictionary] -and $Expected.profile -isnot [pscustomobject]) -or
             $Expected.ranOnWalk -isnot [Array] -or $Expected.ranOnWalk.Count -eq 0 -or
             @($Expected.ranOnWalk | Where-Object { $_ -isnot [string] -or [string]::IsNullOrWhiteSpace($_) }).Count -gt 0) { return $false }
+    if ($null -ne $Expected.mayIdle -and ($Expected.mayIdle -isnot [Array] -or @($Expected.mayIdle | Where-Object {
+            $_ -isnot [string] -or [string]::IsNullOrWhiteSpace($_) -or @($Expected.ranOnWalk) -contains $_ }).Count -gt 0)) { return $false }
     return (ConvertTo-Json -InputObject $Expected.profile -Depth 5 -Compress) -ceq
         (ConvertTo-Json -InputObject $Actual.profile -Depth 5 -Compress)
 }
@@ -897,11 +919,9 @@ try {
             if (-not $WriteBaseline -and -not (Test-AuditBaseline $expected $baseline)) {
                 $problems.Add('The baseline identifies a different build, device or audit profile. A reviewed full baseline run is required.')
             }
-            foreach ($name in @($expected.ranOnWalk)) {
-                if ($ran -notcontains $name) { $problems.Add("$name ran on the baseline's walk ($($expected.facebook)) and didn't now.") }
-            }
-            $new = @($ran | Where-Object { @($expected.ranOnWalk) -notcontains $_ })
-            if ($new) { $summary.Add("Ran now and not in the baseline: $($new -join ', ')") }
+            $walk = Compare-AuditWalk $expected $ran
+            foreach ($failure in $walk.Failures) { $problems.Add($failure) }
+            foreach ($note in $walk.Notes) { $summary.Add($note) }
         } elseif (-not $WriteBaseline) {
             $problems.Add("No baseline at $Expectations. Run once with -WriteBaseline on a build you trust.")
         }

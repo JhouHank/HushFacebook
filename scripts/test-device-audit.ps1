@@ -6,7 +6,7 @@ $auditAst = [System.Management.Automation.Language.Parser]::ParseFile($auditPath
 if ($parseErrors.Count) { throw ($parseErrors -join "`n") }
 $testFunctions = @('Assert-AuditLease', 'Assert-AuditSteps', 'Assert-AuditForeground', 'Invoke-Adb',
     'Get-AuditLocales', 'Get-AuditNightMode', 'Restore-AuditState', 'Format-Shell',
-    'New-AuditBaseline', 'Test-AuditBaseline', 'Publish-AuditBaseline', 'Save-SettingsPages', 'Write-Step', 'Test-AuditDestination', 'Select-AuditTapNode', 'Get-UiNodes', 'Send-Profile', 'Test-AuditLocaleList', 'Get-AuditLauncher', 'Get-Report',
+    'New-AuditBaseline', 'Compare-AuditWalk', 'Test-AuditBaseline', 'Publish-AuditBaseline', 'Save-SettingsPages', 'Write-Step', 'Test-AuditDestination', 'Select-AuditTapNode', 'Get-UiNodes', 'Send-Profile', 'Test-AuditLocaleList', 'Get-AuditLauncher', 'Get-Report',
     'Test-AuditReelViewer', 'Get-AuditReelProof', 'Test-AuditKeyboard')
 foreach ($functionName in $testFunctions) {
     $definition = $auditAst.Find({ param($node)
@@ -431,6 +431,34 @@ try {
         Assert-That (-not (Test-AuditBaseline $different $candidate)) 'An absent or malformed baseline family list passed.'
     }
     Assert-Throws { New-AuditBaseline ($report -replace 'sha256=', 'unknown=') @() @() } 'Unknown patch build was accepted.'
+
+    $MayIdle = @('waits', 'waits')
+    $served = New-AuditBaseline $report @('family', 'waits') @('other')
+    Assert-That (@($served.ranOnWalk) -join ',' -ceq 'family') 'A family that waits on served content went into ranOnWalk.'
+    Assert-That (@($served.mayIdle) -join ',' -ceq 'waits') 'The baseline did not record its mayIdle families once each.'
+    $expected = $served | ConvertTo-Json -Depth 6 | ConvertFrom-Json
+    Assert-That (Test-AuditBaseline $expected $served) 'A baseline with mayIdle families was rejected.'
+    foreach ($badIdle in @('waits', @(1), @(''), @('family'))) {
+        $different = $served | ConvertTo-Json -Depth 6 | ConvertFrom-Json
+        $different.mayIdle = $badIdle
+        Assert-That (-not (Test-AuditBaseline $different $served)) 'A malformed mayIdle list, or one naming a ranOnWalk family, passed.'
+    }
+    $different = $served | ConvertTo-Json -Depth 6 | ConvertFrom-Json
+    $different.PSObject.Properties.Remove('mayIdle')
+    Assert-That (Test-AuditBaseline $different $served) 'A baseline from before mayIdle was rejected.'
+    $walk = Compare-AuditWalk $expected @()
+    Assert-That (@($walk.Failures).Count -eq 1 -and $walk.Failures[0] -like 'family ran on*') 'An idle family outside mayIdle did not fail, or a mayIdle one did.'
+    Assert-That (@($walk.Notes) -contains "Wait on what Facebook serves: waits didn't run") 'An idle mayIdle family got no note.'
+    $walk = Compare-AuditWalk $expected @('family', 'waits', 'fresh')
+    Assert-That (@($walk.Failures).Count -eq 0) 'A walk that ran every baseline family failed.'
+    Assert-That (@($walk.Notes) -contains 'Wait on what Facebook serves: waits ran') 'A mayIdle family that ran got no note.'
+    Assert-That (@($walk.Notes) -contains 'Ran now and not in the baseline: fresh') 'A new family was not reported, or a mayIdle one was reported as new.'
+    $older = $candidate | ConvertTo-Json -Depth 6 | ConvertFrom-Json
+    $older.ranOnWalk = @('family', 'waits')
+    Assert-That (@((Compare-AuditWalk $older @('family')).Failures).Count -eq 0) 'A baseline from before -MayIdle failed a family that waits on served content.'
+    $MayIdle = @()
+    Assert-That (@((Compare-AuditWalk $expected @('family')).Failures).Count -eq 0) "The baseline's own mayIdle list was ignored."
+    Assert-That (@((Compare-AuditWalk $older @('family')).Failures).Count -eq 1) 'A ranOnWalk family idled without failing while nothing marks it as waiting.'
 
     $Expectations = Join-Path $testRoot 'baseline.json'
     $original = '{"original":true}'

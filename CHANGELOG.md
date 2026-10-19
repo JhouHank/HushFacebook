@@ -10,6 +10,10 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** New switch under Downloads, `Convert to keep the full size`. With `Save videos other apps can open` on, a full size video Facebook only has as VP9 or AV1 gets converted to H.264 on your phone, so it isn't saved at a smaller size any more. It's slower, videos over 10 minutes still save smaller, and it starts off (issue #189).
 * **Facebook:** New switch under Reels and Watch, `Hide Save on reels`. It takes the Save button off the side of reels, and the buttons above it move down. It's part of `Clean up Reels` and starts off (issue #190).
 
+### Changed
+
+* **Tooling:** The device audit no longer fails a run just because Facebook didn't serve a sponsored post on the profile or a new-reels badge that day. Families that wait on what Facebook serves are named by `-MayIdle` and recorded in the baseline under `mayIdle`. A walk notes whether each one ran, and a new baseline never lists them among the families that must run.
+
 ### Fixed
 
 * **Facebook:** `Hide the notes and active now row` takes the whole row away now. Your own "Your note" tile used to stay behind and keep the row at full height.
