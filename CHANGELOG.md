@@ -7,6 +7,7 @@ Changes in each Hushfacebook version, newest first.
 ### Fixed
 
 * **Facebook:** `See-through bars` keeps its blur on Home after you've been to Reels. Before, a trip to Reels could leave the bars plain see-through until Facebook restarted (issue #188).
+* **Facebook:** `Menu tiles to hide` now hides Feeds, Reels, Memories, Birthdays, Dating and Pages, which it missed on 583, and tiles you ticked before carry over. The list shows the tiles your own Menu has, by the names Facebook gives them, so Crisis response, Community Notes, Pokes and the rest can go too (issue #153).
 
 ## 0.15.0 (2026-10-18)
 

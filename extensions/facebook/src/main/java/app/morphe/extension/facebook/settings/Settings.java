@@ -1063,6 +1063,14 @@ public class Settings extends BaseSettings {
             new StringSetting("hushfacebook_hidden_menu_tiles", "");
 
     /**
+     * The Menu tiles Facebook has shown on this install, a {@code key=name} line each in the Menu's
+     * order, so the list of tiles to hide shows this Menu's own in its words. Written by the hook,
+     * never by a person.
+     */
+    public static final StringSetting SEEN_MENU_TILES =
+            new StringSetting("hushfacebook_seen_menu_tiles", "");
+
+    /**
      * The share sheet's Send to group button, which makes a new group chat of the people picked,
      * and its new-group row, header icon and search button. Send separately stays. Off until it's
      * turned on.
