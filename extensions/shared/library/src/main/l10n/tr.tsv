@@ -514,6 +514,8 @@ Hides friend requests shown between posts. Your requests stay under Friends.	Gö
 Hides the card between posts that shows where your friends are.	Gönderilerin arasında arkadaşlarınızın nerede olduğunu gösteren kartı gizler.
 # context: summary of that switch; "More from your friends" is the heading Facebook shows over that list
 A post you open from a notification ends without the "More from your friends" list Facebook adds under it, which can carry ads.	Bir bildirimden açtığınız gönderi, Facebook'un altına eklediği ve reklam içerebilen "Arkadaşlarınızdan daha fazlası" listesi olmadan biter.
+Hide the Find friends card	Arkadaşları bul kartını gizle
+Hides the "Want to see more posts from friends?" card with its Find friends button where your friends' posts run out.	Arkadaşlarınızın gönderileri bittiğinde çıkan, Arkadaşları bul düğmeli "Arkadaşlarınızdan daha fazla gönderi görmek ister misiniz?" kartını gizler.
 # context: summary of that switch; the Stories tray is the row of Stories at the top of the feed
 Hides the row of Stories from people you aren't connected to, between posts. Your friends' Stories and the Stories tray stay.	Gönderilerin arasında, bağlantınız olmayan kişilerin Hikayeler satırını gizler. Arkadaşlarınızın hikayeleri ve Hikayeler çubuğu kalır.
 # context: switch title under Notifications; trending videos Facebook sends as push notifications

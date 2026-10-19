@@ -514,6 +514,8 @@ Hides friend requests shown between posts. Your requests stay under Friends.	Men
 Hides the card between posts that shows where your friends are.	Menyembunyikan kartu di antara postingan yang menunjukkan di mana teman-temanmu berada.
 # context: summary of that switch; "More from your friends" is the heading Facebook shows over that list
 A post you open from a notification ends without the "More from your friends" list Facebook adds under it, which can carry ads.	Postingan yang kamu buka dari notifikasi berakhir tanpa daftar "Lainnya dari temanmu" yang ditambahkan Facebook di bawahnya, yang bisa berisi iklan.
+Hide the Find friends card	Sembunyikan kartu Cari teman
+Hides the "Want to see more posts from friends?" card with its Find friends button where your friends' posts run out.	Menyembunyikan kartu "Ingin melihat lebih banyak postingan dari teman?" dengan tombol Cari teman di tempat postingan temanmu habis.
 # context: summary of that switch; the Stories tray is the row of Stories at the top of the feed
 Hides the row of Stories from people you aren't connected to, between posts. Your friends' Stories and the Stories tray stay.	Menyembunyikan baris Cerita dari orang yang tidak terhubung denganmu, di antara postingan. Cerita teman dan baris Cerita tetap ada.
 # context: switch title under Notifications; trending videos Facebook sends as push notifications

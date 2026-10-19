@@ -514,6 +514,8 @@ Hides friend requests shown between posts. Your requests stay under Friends.	Ẩ
 Hides the card between posts that shows where your friends are.	Ẩn thẻ giữa các bài viết cho biết bạn bè đang ở đâu.
 # context: summary of that switch; "More from your friends" is the heading Facebook shows over that list
 A post you open from a notification ends without the "More from your friends" list Facebook adds under it, which can carry ads.	Bài viết bạn mở từ thông báo sẽ kết thúc mà không có danh sách "Thêm từ bạn bè" mà Facebook thêm bên dưới, vốn có thể chứa quảng cáo.
+Hide the Find friends card	Ẩn thẻ Tìm bạn bè
+Hides the "Want to see more posts from friends?" card with its Find friends button where your friends' posts run out.	Ẩn thẻ "Bạn muốn xem thêm bài viết từ bạn bè?" cùng nút Tìm bạn bè ở chỗ bài viết của bạn bè đã hết.
 # context: summary of that switch; the Stories tray is the row of Stories at the top of the feed
 Hides the row of Stories from people you aren't connected to, between posts. Your friends' Stories and the Stories tray stay.	Ẩn hàng tin của những người bạn chưa kết nối, hiện giữa các bài viết. Tin của bạn bè và khay tin vẫn giữ nguyên.
 # context: switch title under Notifications; trending videos Facebook sends as push notifications

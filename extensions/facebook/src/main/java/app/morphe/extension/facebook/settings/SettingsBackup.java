@@ -121,6 +121,7 @@ public final class SettingsBackup {
             Settings.HIDE_FEED_FRIEND_REQUESTS,
             Settings.HIDE_FRIENDS_LOCATIONS,
             Settings.HIDE_NOTIFICATION_POST_FOOTER,
+            Settings.HIDE_FIND_FRIENDS_CARD,
             Settings.HIDE_TOP_STORIES_TRAY,
             Settings.HIDE_STORIES_BETWEEN_POSTS,
             Settings.HIDE_HOME_COMPOSER,

@@ -514,6 +514,8 @@ Hides friend requests shown between posts. Your requests stay under Friends.	Ocu
 Hides the card between posts that shows where your friends are.	Oculta la tarjeta entre publicaciones que muestra dónde están tus amigos.
 # context: summary of that switch; "More from your friends" is the heading Facebook shows over that list
 A post you open from a notification ends without the "More from your friends" list Facebook adds under it, which can carry ads.	Una publicación que abres desde una notificación termina sin la lista «Más de tus amigos» que Facebook añade debajo, que puede incluir anuncios.
+Hide the Find friends card	Ocultar la tarjeta Buscar amigos
+Hides the "Want to see more posts from friends?" card with its Find friends button where your friends' posts run out.	Oculta la tarjeta «¿Quieres ver más publicaciones de amigos?» con su botón Buscar amigos donde se acaban las publicaciones de tus amigos.
 # context: summary of that switch; the Stories tray is the row of Stories at the top of the feed
 Hides the row of Stories from people you aren't connected to, between posts. Your friends' Stories and the Stories tray stay.	Oculta la fila de historias de personas con las que no tienes relación, entre publicaciones. Las historias de tus amigos y la bandeja de historias se quedan.
 # context: switch title under Notifications; trending videos Facebook sends as push notifications

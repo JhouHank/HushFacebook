@@ -514,6 +514,8 @@ Hides friend requests shown between posts. Your requests stay under Friends.	隐
 Hides the card between posts that shows where your friends are.	隐藏帖子之间显示好友所在位置的卡片。
 # context: summary of that switch; "More from your friends" is the heading Facebook shows over that list
 A post you open from a notification ends without the "More from your friends" list Facebook adds under it, which can carry ads.	从通知打开的帖子末尾不再出现 Facebook 添加的“来自好友的更多内容”列表，它可能带有广告。
+Hide the Find friends card	隐藏“查找好友”卡片
+Hides the "Want to see more posts from friends?" card with its Find friends button where your friends' posts run out.	隐藏好友帖子结束处带有“查找好友”按钮的“想看更多好友的帖子吗？”卡片。
 # context: summary of that switch; the Stories tray is the row of Stories at the top of the feed
 Hides the row of Stories from people you aren't connected to, between posts. Your friends' Stories and the Stories tray stay.	隐藏帖子之间来自与你没有关联的人的快拍行。你好友的快拍和快拍栏保留。
 # context: switch title under Notifications; trending videos Facebook sends as push notifications

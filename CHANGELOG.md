@@ -4,6 +4,10 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+### Added
+
+* **Facebook:** New switch under News feed, `Hide the Find friends card`. The "Want to see more posts from friends?" card with its Find friends button stops showing where your friends' posts run out, and the "You're all caught up with friends" line above it goes too, since Facebook builds them as one block. It starts off (issue #187).
+
 ### Fixed
 
 * **Facebook:** `See-through bars` keeps its blur on Home after you've been to Reels. Before, a trip to Reels could leave the bars plain see-through until Facebook restarted (issue #188).

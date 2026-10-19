@@ -116,6 +116,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_notification_post_footer", FALSE);
 
     /**
+     * The "Want to see more posts from friends? Find friends" card where the feed runs out of friends'
+     * posts (#187). It's a part of the end of feed section, never a feed unit, so the section is told
+     * it has no card ({@link app.morphe.extension.facebook.feed.FindFriendsCard}).
+     */
+    public static final BooleanSetting HIDE_FIND_FRIENDS_CARD =
+            new BooleanSetting("hushfacebook_hide_find_friends_card", FALSE);
+
+    /**
      * The row of stories at the top of the feed. The feed's adapter list builds it as an adapter of
      * its own, and the patch has both tray adapters count no rows while this is on.
      */

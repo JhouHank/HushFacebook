@@ -514,6 +514,8 @@ Hides friend requests shown between posts. Your requests stay under Friends.	Ble
 Hides the card between posts that shows where your friends are.	Blendet die Karte zwischen Beiträgen aus, die zeigt, wo deine Freunde sind.
 # context: summary of that switch; "More from your friends" is the heading Facebook shows over that list
 A post you open from a notification ends without the "More from your friends" list Facebook adds under it, which can carry ads.	Ein Beitrag, den du über eine Benachrichtigung öffnest, endet ohne die Liste „Mehr von deinen Freunden“, die Facebook darunter anhängt und die Werbung enthalten kann.
+Hide the Find friends card	Karte „Freunde finden“ ausblenden
+Hides the "Want to see more posts from friends?" card with its Find friends button where your friends' posts run out.	Blendet die Karte „Möchtest du mehr Beiträge von Freunden sehen?“ mit der Schaltfläche „Freunde finden“ aus, wo die Beiträge deiner Freunde enden.
 # context: summary of that switch; the Stories tray is the row of Stories at the top of the feed
 Hides the row of Stories from people you aren't connected to, between posts. Your friends' Stories and the Stories tray stay.	Blendet die Reihe mit Stories von Personen aus, mit denen du nicht verbunden bist, zwischen Beiträgen. Die Stories deiner Freunde und die Stories-Leiste bleiben.
 # context: switch title under Notifications; trending videos Facebook sends as push notifications
