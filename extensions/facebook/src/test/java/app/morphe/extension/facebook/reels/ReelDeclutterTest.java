@@ -8,6 +8,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.After;
@@ -67,6 +68,7 @@ public class ReelDeclutterTest {
         Settings.HIDE_REEL_SOCIAL_FOOTER.resetToDefault();
         Settings.HIDE_REEL_COUNTS.resetToDefault();
         Settings.HIDE_REEL_SAVE_BUTTON.resetToDefault();
+        Settings.HIDE_REEL_SOUND_BUTTON.resetToDefault();
         BaseSettings.DEBUG.resetToDefault();
         FeedFilterCounters.clear();
         HookStatus.clear();
@@ -386,7 +388,103 @@ public class ReelDeclutterTest {
         assertFalse("the Save switch skipped a footer query", ReelDeclutter.skipHotComment());
         assertFalse("the Save switch hid the search pill", ReelDeclutter.hideSearchPill());
         assertEquals("the Save switch hid a count", "9", ReelDeclutter.countText("9"));
+        assertTrue("the Save switch hid the speaker", ReelDeclutter.showsSoundButton(true));
         assertTrue(ReelDeclutter.hideSidebarButton(SidebarIcon.BOOKMARK));
+    }
+
+    /**
+     * The speaker button (#190): the switch starts off, so Facebook's answer stands. On, a yes
+     * becomes no and is counted, and a no stays no without being counted. Off again, the speaker is
+     * back.
+     */
+    @Test
+    public void theSpeakerGoesOnlyWhileItsSwitchIsOn() {
+        assertFalse(Settings.HIDE_REEL_SOUND_BUTTON.defaultValue);
+        assertTrue("the speaker went with its switch off", ReelDeclutter.showsSoundButton(true));
+        assertFalse("a reel Facebook builds without the speaker got one", ReelDeclutter.showsSoundButton(false));
+
+        Settings.HIDE_REEL_SOUND_BUTTON.save(true);
+        assertFalse("the speaker was built", ReelDeclutter.showsSoundButton(true));
+        assertFalse("a reel Facebook builds without the speaker got one", ReelDeclutter.showsSoundButton(false));
+        assertFalse(ReelDeclutter.showsSoundButton(true));
+        assertEquals(ReelDeclutter.SIDEBAR_ROUTE + ": 2 lists, 2 items, 2 removed. Last reason: " + ReelDeclutter.SOUND_BUTTON
+                + ". Removed: " + ReelDeclutter.SOUND_BUTTON + " 2. Kinds: " + ReelDeclutter.SOUND_BUTTON + " 2",
+                line(ReelDeclutter.SIDEBAR_ROUTE));
+
+        Settings.HIDE_REEL_SOUND_BUTTON.save(false);
+        assertTrue("turning the switch off didn't bring the speaker back", ReelDeclutter.showsSoundButton(true));
+    }
+
+    /**
+     * The footer's speaker (#190): what Facebook built comes back with the switch off and becomes
+     * null with it on, counted like the controls' speaker. A footer that built nothing stays null
+     * and isn't counted.
+     */
+    @Test
+    public void theFootersSpeakerGoesOnlyWhileItsSwitchIsOn() {
+        Object button = new Object();
+        assertSame("the footer's speaker went with its switch off", button, ReelDeclutter.soundButton(button));
+        assertNull(ReelDeclutter.soundButton(null));
+
+        Settings.HIDE_REEL_SOUND_BUTTON.save(true);
+        assertNull("the footer's speaker was built", ReelDeclutter.soundButton(button));
+        assertNull("a footer without the speaker got one", ReelDeclutter.soundButton(null));
+        assertEquals(ReelDeclutter.SIDEBAR_ROUTE + ": 1 lists, 1 items, 1 removed. Last reason: " + ReelDeclutter.SOUND_BUTTON
+                + ". Removed: " + ReelDeclutter.SOUND_BUTTON + " 1. Kinds: " + ReelDeclutter.SOUND_BUTTON + " 1",
+                line(ReelDeclutter.SIDEBAR_ROUTE));
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertSame("the footer's speaker went while paused", button, ReelDeclutter.soundButton(button));
+        PauseForTests.resume();
+        Settings.HIDE_REEL_SOUND_BUTTON.save(false);
+        assertSame("turning the switch off didn't bring the footer's speaker back", button, ReelDeclutter.soundButton(button));
+    }
+
+    @Test
+    public void pausedOrNotReadyTheSpeakerIsBuilt() {
+        Settings.HIDE_REEL_SOUND_BUTTON.save(true);
+        for (HushfacebookPause.Reason why : new HushfacebookPause.Reason[]{
+                HushfacebookPause.Reason.SWITCH, HushfacebookPause.Reason.CRASH_LOOP,
+                HushfacebookPause.Reason.MARKER_FILE}) {
+            PauseForTests.pause(why);
+            assertTrue(why + " hid the speaker", ReelDeclutter.showsSoundButton(true));
+            PauseForTests.resume();
+        }
+        SettingsContextRule.withoutContext(() -> assertTrue(ReelDeclutter.showsSoundButton(true)));
+        assertFalse("the speaker wasn't hidden again after the pause", ReelDeclutter.showsSoundButton(true));
+    }
+
+    /** A speaker switch that can't be read keeps Facebook's answer, and the report names the hook that threw. */
+    @Test
+    public void aSpeakerSwitchThatCantBeReadKeepsFacebooksAnswer() {
+        SettingReadsForTests.breakReads(Settings.HIDE_REEL_SOUND_BUTTON);
+        try {
+            assertTrue(ReelDeclutter.showsSoundButton(true));
+        } finally {
+            SettingReadsForTests.mend(Settings.HIDE_REEL_SOUND_BUTTON);
+        }
+        assertEquals(Arrays.asList("a working '" + ReelDeclutter.SOUND_BUTTON + "' hook (it threw "
+                + NullPointerException.class.getName() + ")"), HookStatus.missing(FamilyNames.REEL_DECLUTTER));
+    }
+
+    /** The speaker switch answers for nothing else, and the other switches don't hide the speaker. */
+    @Test
+    public void theSpeakerSwitchRunsOnlyItsOwnHook() {
+        Settings.HIDE_REEL_COUNTS.save(true);
+        Settings.HIDE_REEL_SAVE_BUTTON.save(true);
+        assertTrue("the other switches hid the speaker", ReelDeclutter.showsSoundButton(true));
+        Settings.HIDE_REEL_CHIPS.save(false);
+        Settings.HIDE_REEL_FOLLOW_BUTTON.save(false);
+        Settings.HIDE_REEL_SOCIAL_FOOTER.save(false);
+        Settings.HIDE_REEL_COUNTS.save(false);
+        Settings.HIDE_REEL_SAVE_BUTTON.save(false);
+        Settings.HIDE_REEL_SOUND_BUTTON.save(true);
+        assertFalse("the speaker switch hid the Follow button", ReelDeclutter.hideFollowButton());
+        assertFalse("the speaker switch skipped a footer query", ReelDeclutter.skipHotComment());
+        assertFalse("the speaker switch hid the search pill", ReelDeclutter.hideSearchPill());
+        assertEquals("the speaker switch hid a count", "9", ReelDeclutter.countText("9"));
+        assertFalse("the speaker switch skipped Save", ReelDeclutter.hideSidebarButton(SidebarIcon.BOOKMARK));
+        assertFalse(ReelDeclutter.showsSoundButton(true));
     }
 
     /** The counts switch answers for nothing else, and the other switches don't answer for it. */

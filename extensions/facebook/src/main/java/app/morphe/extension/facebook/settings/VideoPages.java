@@ -134,6 +134,9 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.HIDE_REEL_SAVE_BUTTON,
                     L10n.t("Takes the Save button off the side of reels. The buttons above it move down. "
                             + "A change shows from the next reel.")));
+            reels.addPreference(toggle(context, Settings.HIDE_REEL_SOUND_BUTTON,
+                    L10n.t("Takes the speaker button off the bottom of the side of reels. "
+                            + "A change shows from the next reel.")));
             // Asked as a feed video's player asks for more, so a change shows from the next feed video.
             reels.addPreference(toggle(context, Settings.FEED_VIDEOS_ALONE,
                     L10n.t("A video you tap in the feed opens full screen by itself, with no reels to swipe to after it. "

@@ -178,6 +178,7 @@ public final class SettingsBackup {
             Settings.HIDE_REEL_SEARCH_PILL,
             Settings.HIDE_REEL_COUNTS,
             Settings.HIDE_REEL_SAVE_BUTTON,
+            Settings.HIDE_REEL_SOUND_BUTTON,
             Settings.FEED_VIDEOS_ALONE,
             Settings.DONT_SEND_REEL_WATCH_HISTORY,
             Settings.HOLD_ANALYTICS_UPLOADS,

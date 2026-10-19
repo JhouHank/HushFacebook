@@ -45,6 +45,11 @@ import app.morphe.extension.shared.settings.BaseSettings;
  *       constructor and answers what the button keeps (#180).
  *   <li>The sidebar builds those buttons by walking a list of types, one icon constant each.
  *       {@link #hideSidebarButton} is handed each type as it's read, and true skips Save (#190).
+ *   <li>The speaker button under them comes from one of two places, picked by a server flag: the
+ *       video controls build it only when one check of Facebook's answers yes, and
+ *       {@link #showsSoundButton} is handed that answer before they branch on it. Otherwise the
+ *       footer builds it, and {@link #soundButton} is handed what was built before the footer's
+ *       null check. Either way the button stays out while the switch is on (#190).
  * </ul>
  *
  * <p>Every hook fails open: until the settings are ready, while Hushfacebook is paused, with a
@@ -82,9 +87,10 @@ public final class ReelDeclutter {
     static final String COUNTS_ROUTE = "Reel counts";
     static final String COUNT = "button count";
 
-    /** Counted under its own name each time the sidebar skips its Save button. */
+    /** Counted under its own name each time the sidebar skips its Save or speaker button. */
     static final String SIDEBAR_ROUTE = "Reel sidebar buttons";
     static final String SAVE_BUTTON = "Save button";
+    static final String SOUND_BUTTON = "speaker button";
 
     /**
      * The constant of Facebook's icon enum the reel sidebar builds its Save button for (#190). The
@@ -304,6 +310,42 @@ public final class ReelDeclutter {
             HookStatus.threw(FamilyNames.REEL_DECLUTTER, SAVE_BUTTON, failure);
             return false;
         }
+    }
+
+    /**
+     * Injection point, in the reel viewer, handed Facebook's answer to whether the speaker button
+     * at the bottom of the sidebar is built (#190). Answers false while the switch is on, so the
+     * viewer takes its own branch for a reel without the button. Never throws: off, paused, before
+     * the settings are ready, when Facebook already said no or on a failure, Facebook's answer
+     * stands.
+     *
+     * @param shows whether Facebook would build the speaker button.
+     */
+    public static boolean showsSoundButton(boolean shows) {
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            if (!shows || !Utils.settingsReady() || !Settings.HIDE_REEL_SOUND_BUTTON.get()) return shows;
+            FeedFilterCounters.sawList(SIDEBAR_ROUTE, 1);
+            FeedFilterCounters.sawKind(SIDEBAR_ROUTE, SOUND_BUTTON);
+            FeedFilterCounters.removed(SIDEBAR_ROUTE, 1, SOUND_BUTTON);
+            logOnce(SOUND_BUTTON, () -> "Reel sidebar: left out the speaker button");
+            return false;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, SOUND_BUTTON, failure);
+            return shows;
+        }
+    }
+
+    /**
+     * Injection point, in the reel footer, handed the speaker button Facebook just built, or null
+     * when it built none (#190). Answers null while the switch is on, so the footer's own null check
+     * leaves the button out. Asks {@link #showsSoundButton}, so both places the speaker can come
+     * from answer to one switch and count the same way.
+     *
+     * @param button the speaker button's component, or null.
+     */
+    public static Object soundButton(Object button) {
+        return button == null || showsSoundButton(true) ? button : null;
     }
 
     /** Whether the text has a digit in any script, which a count always has and a word doesn't. */

@@ -1620,6 +1620,10 @@ Takes the numbers away from under a reel's Like, Comment and Share icons. The ic
 Hide Save on reels	Reels'te Kaydet'i gizle
 # context: summary of that switch; the buttons under it are Download and More
 Takes the Save button off the side of reels. The buttons above it move down. A change shows from the next reel.	Reels'in yanındaki Kaydet düğmesini kaldırır. Üstündeki düğmeler aşağı kayar. Değişiklik bir sonraki reel'den itibaren görünür.
+# context: switch title under Reels and Watch; the speaker is the sound on and off button at the bottom of the row of buttons down a reel's right side
+Hide the speaker button on reels	Reels'te hoparlör düğmesini gizle
+# context: summary of that switch
+Takes the speaker button off the bottom of the side of reels. A change shows from the next reel.	Reels'in yanının altındaki hoparlör düğmesini kaldırır. Değişiklik bir sonraki reel'den itibaren görünür.
 # context: switch title under News feed; the reaction preview is the stack of reaction icons and the line with the number of reactions under a post
 Hide the reaction preview on posts	Gönderilerdeki tepki önizlemesini gizle
 # context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions

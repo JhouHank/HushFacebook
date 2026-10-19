@@ -475,6 +475,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_reel_save_button", FALSE);
 
     /**
+     * The speaker button at the bottom of a reel's right side isn't built
+     * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#showsSoundButton}, #190). Off by
+     * default. A change shows from the next reel.
+     */
+    public static final BooleanSetting HIDE_REEL_SOUND_BUTTON =
+            new BooleanSetting("hushfacebook_hide_reel_sound_button", FALSE);
+
+    /**
      * A video tapped in the feed opens in the full-screen player on its own, with no reels to swipe
      * to after it ({@link app.morphe.extension.facebook.reels.FeedVideoAlone}, #161). The player's
      * reels feed is told nothing more came. The Reels tab keeps scrolling. Off until it's turned on,

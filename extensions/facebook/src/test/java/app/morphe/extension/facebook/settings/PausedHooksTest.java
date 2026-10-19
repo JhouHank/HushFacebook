@@ -521,6 +521,10 @@ public class PausedHooksTest {
                 () -> !"12".equals(ReelDeclutter.countText("12")),
                 // The sidebar's Save button is skipped only while the patch runs.
                 () -> ReelDeclutter.hideSidebarButton(SidebarIcon.BOOKMARK),
+                // So is the speaker button under it.
+                () -> !ReelDeclutter.showsSoundButton(true),
+                // And the footer's speaker, when the footer builds it.
+                () -> ReelDeclutter.soundButton(new Object()) == null,
                 // A feed video's player asking for more right after the tap gets none.
                 () -> {
                     FeedVideoAlone.feedVideoTapped();
