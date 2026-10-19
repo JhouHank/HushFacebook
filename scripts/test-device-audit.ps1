@@ -7,7 +7,7 @@ if ($parseErrors.Count) { throw ($parseErrors -join "`n") }
 $testFunctions = @('Assert-AuditLease', 'Assert-AuditSteps', 'Assert-AuditForeground', 'Invoke-Adb',
     'Get-AuditLocales', 'Get-AuditNightMode', 'Restore-AuditState', 'Format-Shell',
     'New-AuditBaseline', 'Test-AuditBaseline', 'Publish-AuditBaseline', 'Save-SettingsPages', 'Write-Step', 'Test-AuditDestination', 'Select-AuditTapNode', 'Get-UiNodes', 'Send-Profile', 'Test-AuditLocaleList', 'Get-AuditLauncher', 'Get-Report',
-    'Test-AuditReelViewer', 'Get-AuditReelProof')
+    'Test-AuditReelViewer', 'Get-AuditReelProof', 'Test-AuditKeyboard')
 foreach ($functionName in $testFunctions) {
     $definition = $auditAst.Find({ param($node)
         $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $functionName
@@ -43,6 +43,8 @@ $script:adbCalls = [Collections.Generic.List[string]]::new()
 $script:foreground = "topResumedActivity=ActivityRecord{1 u0 $Package/.Main t1}"
 $script:focusedWindow = "mCurrentFocus=Window{1 u0 $Package/$Package.Main}"
 $script:uiDump = "<?xml version=`"1.0`"?><hierarchy><node package=`"$Package`" text=`"Comment`" content-desc=`"Comment`" bounds=`"[0,0][20,20]`" /></hierarchy>"
+$script:imeState = '  mInputShown=false'
+$AuditQuery = 'news'
 $inputNodeLabel = 'Comment'
 function Invoke-FakeAdb {
     $command = $args -join ' '
@@ -56,6 +58,7 @@ function Invoke-FakeAdb {
     if ($command -like '*cat */import.txt*') { return 'applied 4' }
     if ($command -like '*dumpsys activity activities') { return $script:foreground }
     if ($command -like '*dumpsys activity top') { return $script:topDump }
+    if ($command -like '*dumpsys input_method') { return $script:imeState }
     if ($command -like '*dumpsys window') {
         if ($script:changeOwnWindowAfterDump -and $null -ne $script:postDumpFocusReads) {
             $script:postDumpFocusReads++
@@ -119,8 +122,10 @@ try {
         $Visit = @($unsafe)
         Assert-Throws { Assert-AuditSteps } "Unsafe step accepted: $unsafe"
     }
-    $Visit = @('fb://feed', 'tap:Comment', 'back', 'tap:Feeds', 'tap:Settings and privacy', 'longpress')
+    $Visit = @('fb://feed', 'tap:Comment', 'back', 'tap:Feeds', 'tap:Settings and privacy', 'longpress', 'fb://search', 'query')
     Assert-AuditSteps
+    $Visit = @('fb://search', 'query:hello')
+    Assert-Throws { Assert-AuditSteps } 'A query step with its own text was accepted.'
 
     $identityVerified = $false
     Assert-Throws { Invoke-Adb shell input keyevent KEYCODE_WAKEUP } 'Unverified identity permitted input.'
@@ -223,6 +228,32 @@ try {
     Assert-Throws { Invoke-Adb shell input swipe 10 20 10 5 } 'A swipe went to a reel viewer that is not on screen.'
     Assert-That (-not @($script:adbCalls | Where-Object { $_ -like '* input *' }).Count) 'Input escaped the reel guard.'
     $inputReel = $false
+    # A swipe across an open keyboard types into the focused field, and only the query is typed.
+    $script:imeState = "  mShowRequested=true`n  mInputShown=true"
+    $script:adbCalls.Clear()
+    Assert-Throws { Invoke-Adb shell input swipe 10 20 10 5 } 'A swipe went across an open keyboard.'
+    Assert-Throws { Invoke-Adb shell input tap 10 10 } 'A tap went across an open keyboard.'
+    Assert-Throws { Invoke-Adb shell input text news } 'Text was typed outside the query step.'
+    $inputQuery = $true
+    Assert-Throws { Invoke-Adb shell input text hello } 'A word other than the audit query was typed.'
+    Assert-Throws { Invoke-Adb shell input text news hello } 'Extra words went in with the audit query.'
+    Assert-That (-not @($script:adbCalls | Where-Object { $_ -like '* input *' }).Count) 'Input escaped the keyboard guard.'
+    Invoke-Adb shell input text news | Out-Null
+    Invoke-Adb shell input keyevent KEYCODE_ENTER | Out-Null
+    Assert-That (@($script:adbCalls | Where-Object { $_ -like '* input *' }).Count -eq 2) 'The query was not typed and submitted.'
+    $script:imeState = '  mInputShown=false'
+    $script:adbCalls.Clear()
+    Assert-Throws { Invoke-Adb shell input text news } 'The query was typed with no keyboard open.'
+    $inputQuery = $false
+    Assert-Throws { Invoke-Adb shell input keyevent KEYCODE_ENTER } 'Enter was sent outside the query step.'
+    Assert-Throws { Invoke-Adb shell input keyevent KEYCODE_MENU } 'An unlisted key was sent.'
+    Assert-Throws { Invoke-Adb shell input draganddrop 10 20 10 5 } 'An unlisted input command was sent.'
+    $script:imeState = 'mServedView=null'
+    Assert-Throws { Invoke-Adb shell input swipe 10 20 10 5 } 'A dump that does not say whether the keyboard is open permitted a swipe.'
+    Assert-That (-not @($script:adbCalls | Where-Object { $_ -like '* input *' }).Count) 'Input escaped the keyboard guard with no keyboard state.'
+    $script:imeState = '  mInputShown=false'
+    Invoke-Adb shell input swipe 10 20 10 5 | Out-Null
+    Assert-That (@($script:adbCalls | Where-Object { $_ -like '* input swipe *' }).Count -eq 1) 'A swipe with the keyboard closed was refused.'
     function New-TestNode([string]$Label, [string]$Class = 'android.view.View', [string]$Owner = $Package) {
         return [pscustomobject]@{ text = $Label; 'content-desc' = $Label; package = $Owner; class = $Class }
     }
