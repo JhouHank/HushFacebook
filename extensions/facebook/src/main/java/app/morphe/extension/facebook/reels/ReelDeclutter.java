@@ -284,7 +284,7 @@ public final class ReelDeclutter {
     /**
      * Injection point, in the reel sidebar's builder, handed each button type as it's read and before
      * anything is built for it (#190). True skips that type, so the button isn't built, marked or
-     * named, and the ones after it move up. Only Save goes, and only while its switch is on. Never
+     * named, and the ones before it move down. Only Save goes, and only while its switch is on. Never
      * throws: off, paused, before the settings are ready, for any other type or on a failure the
      * button is built as before.
      *

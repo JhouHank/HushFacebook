@@ -467,7 +467,7 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_reel_counts", FALSE);
 
     /**
-     * The Save button down a reel's right side isn't built, and the buttons under it move up
+     * The Save button down a reel's right side isn't built, and the buttons above it move down
      * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#hideSidebarButton}, #190). Off by
      * default. A change shows from the next reel.
      */

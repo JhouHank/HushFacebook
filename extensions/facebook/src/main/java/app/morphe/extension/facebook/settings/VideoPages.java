@@ -132,7 +132,7 @@ final class VideoPages {
                     L10n.t("Takes the numbers away from under a reel's Like, Comment and Share icons. "
                             + "The icons stay where they are. A change shows from the next reel.")));
             reels.addPreference(toggle(context, Settings.HIDE_REEL_SAVE_BUTTON,
-                    L10n.t("Takes the Save button off the side of reels. The buttons under it move up. "
+                    L10n.t("Takes the Save button off the side of reels. The buttons above it move down. "
                             + "A change shows from the next reel.")));
             // Asked as a feed video's player asks for more, so a change shows from the next feed video.
             reels.addPreference(toggle(context, Settings.FEED_VIDEOS_ALONE,
