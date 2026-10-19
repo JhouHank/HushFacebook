@@ -295,13 +295,17 @@ final class VideoPages {
                 downloads.addPreference(toggle(context, Settings.POST_MENU_PHOTO_SAVE,
                         L10n.t("With Save any photo on, a post with photos gets Save photo in its three-dot menu too. A post with several saves each one, one after another.")));
             }
-            // Every save reads these two, a story's and a reel's as much as a feed video's, so they're
-            // here whichever download patch is in, the compatible one above the quality it keeps within.
+            // Every save reads these, a story's and a reel's as much as a feed video's, so they're here
+            // whichever download patch is in, the compatible ones above the quality they keep within.
             downloads.addPreference(toggle(context, Settings.DOWNLOAD_QUIET,
                     L10n.t("No toast when a save starts, finishes or is canceled. A save that fails still says why.")));
             downloads.addPreference(toggle(context, Settings.DOWNLOAD_COMPATIBLE,
                     L10n.t("Fixes saved videos that play without sound in WhatsApp, video editors such as CapCut and InShot, or "
                             + "some galleries and players. May lower quality.")));
+            downloads.addPreference(toggle(context, Settings.DOWNLOAD_CONVERT,
+                    L10n.t("With Save videos other apps can open on, a full size video Facebook only has as VP9 or AV1 is "
+                            + "converted to H.264 on your phone instead of saved smaller. Slower, and videos over 10 minutes "
+                            + "stay smaller.")));
             downloads.addPreference(qualityRow(context));
             downloads.addPreference(saveToRow(context));
             downloads.addPreference(folderRow(context));

@@ -378,6 +378,10 @@ Go straight to one group of settings. Back returns to where you were.	直接前�
 Save videos other apps can open	保存其他应用能打开的视频
 # context: summary of that switch; WhatsApp is a name and stays as it is, and saves are the videos the user saved to the phone
 Fixes saved videos that play without sound in WhatsApp, video editors such as CapCut and InShot, or some galleries and players. May lower quality.	修复已保存的视频在 WhatsApp、CapCut 和 InShot 等视频编辑器，或某些相册和播放器中播放时没有声音的问题。可能会降低画质。
+# context: title of a switch under Downloads; convert means re-encoding the video on the phone
+Convert to keep the full size	转换以保留原始尺寸
+# context: summary of that switch; Save videos other apps can open is the switch above it, VP9, AV1 and H.264 are video formats and stay as they are
+With Save videos other apps can open on, a full size video Facebook only has as VP9 or AV1 is converted to H.264 on your phone instead of saved smaller. Slower, and videos over 10 minutes stay smaller.	开启“保存其他应用能打开的视频”后，Facebook 只提供 VP9 或 AV1 格式的原尺寸视频会在手机上转换为 H.264，而不是保存成更小的尺寸。速度较慢，超过 10 分钟的视频仍会保存为较小尺寸。
 # context: switch title under Downloads; on, a save shows no message when it starts, finishes or is canceled
 Quiet saves	静默保存
 # context: summary of that switch; a toast is Android's short message at the bottom of the screen

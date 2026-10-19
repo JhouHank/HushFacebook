@@ -107,6 +107,39 @@ public class CompatibleTracksTest {
     }
 
     /**
+     * Issue #189: with convert to keep the full size on too, issue #11's reel, 1080p AV1 beside
+     * 720p H.264, is saved from the AV1 picture made H.264, with its AAC-LC sound. A quality the
+     * H.264 track already fits, a picture no larger, or a phone that can't convert keeps the H.264
+     * track, and the switch without saves other apps can open converts nothing.
+     */
+    @Test
+    public void aLargerPictureIsConvertedWithTheFullSizeSwitch() {
+        DashManifest.Converter any = track -> true;
+        DashManifest.Pick full = DashManifest.pick(ISSUE_11, true, DownloadQuality.BEST, true, true, any, true);
+        assertSame(AV1_1080, full.video);
+        assertSame(LC_64, full.audio);
+        assertTrue(full.transcodeVideo);
+        assertFalse(full.reencodeSound);
+
+        assertSame("the switch off", H264_720,
+                DashManifest.pick(ISSUE_11, true, DownloadQuality.BEST, true, true, any, false).video);
+        assertSame("a quality the H.264 track fits", H264_720,
+                DashManifest.pick(ISSUE_11, true, DownloadQuality.P720, true, true, any, true).video);
+        assertSame("a phone that can't convert", H264_720,
+                DashManifest.pick(ISSUE_11, true, DownloadQuality.BEST, true, true, track -> false, true).video);
+        assertSame("no converter", H264_720,
+                DashManifest.pick(ISSUE_11, true, DownloadQuality.BEST, true, true, null, true).video);
+        DashManifest.Pick tie = DashManifest.pick(Arrays.asList(VP9_720, H264_720, LC_64), true, DownloadQuality.BEST,
+                true, true, any, true);
+        assertSame("the same size needs no converting", H264_720, tie.video);
+        assertFalse(tie.transcodeVideo);
+
+        DashManifest.Pick notCompatible = DashManifest.pick(ISSUE_11, true, DownloadQuality.BEST, false, true, any, true);
+        assertSame(AV1_1080, notCompatible.video);
+        assertFalse(notCompatible.transcodeVideo);
+    }
+
+    /**
      * Only 8-bit VP9, AV1 and H.265 pictures are ever offered for converting: a 10-bit one is HDR
      * or made to look like it, and an 8-bit encoder would wash it out.
      */

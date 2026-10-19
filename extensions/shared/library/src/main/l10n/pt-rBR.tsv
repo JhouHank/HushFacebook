@@ -363,6 +363,10 @@ Jump to a section	Ir para uma seção
 Go straight to one group of settings. Back returns to where you were.	Vá diretamente para um grupo de configurações. Voltar leva você de volta ao ponto em que estava.
 Save videos other apps can open	Salvar vídeos que outros apps conseguem abrir
 Fixes saved videos that play without sound in WhatsApp, video editors such as CapCut and InShot, or some galleries and players. May lower quality.	Corrige vídeos salvos que tocam sem som no WhatsApp, em editores de vídeo como CapCut e InShot ou em algumas galerias e players. Pode reduzir a qualidade.
+# context: title of a switch under Downloads; convert means re-encoding the video on the phone
+Convert to keep the full size	Converter para manter o tamanho original
+# context: summary of that switch; Save videos other apps can open is the switch above it, VP9, AV1 and H.264 are video formats and stay as they are
+With Save videos other apps can open on, a full size video Facebook only has as VP9 or AV1 is converted to H.264 on your phone instead of saved smaller. Slower, and videos over 10 minutes stay smaller.	Com Salvar vídeos que outros apps conseguem abrir ativado, um vídeo em tamanho original que o Facebook só tem em VP9 ou AV1 é convertido para H.264 no seu celular em vez de ser salvo menor. É mais lento, e vídeos com mais de 10 minutos continuam menores.
 # context: switch title under Downloads; on, a save shows no message when it starts, finishes or is canceled
 Quiet saves	Salvar sem avisos
 # context: summary of that switch; a toast is Android's short message at the bottom of the screen

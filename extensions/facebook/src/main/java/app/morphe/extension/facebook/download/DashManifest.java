@@ -374,6 +374,17 @@ final class DashManifest {
      */
     static Pick pick(List<Track> tracks, boolean allowAv1, DownloadQuality quality, boolean compatible,
             boolean reencodable, Converter converter) {
+        return pick(tracks, allowAv1, quality, compatible, reencodable, converter, false);
+    }
+
+    /**
+     * As above. With [convertLarger] too, the picture to convert is picked over the H.264 one
+     * whenever it suits [quality] better, not only when there's no H.264 track: Facebook often lists
+     * a reel's full size only as VP9 or AV1 and its H.264 a size or two down (#189). On a tie the
+     * H.264 track stays, since it needs no converting.
+     */
+    static Pick pick(List<Track> tracks, boolean allowAv1, DownloadQuality quality, boolean compatible,
+            boolean reencodable, Converter converter, boolean convertLarger) {
         if (!compatible) {
             Track video = pickVideo(tracks, allowAv1, quality);
             Track audio = bestAudio(tracks);
@@ -384,9 +395,12 @@ final class DashManifest {
 
         Track video = pickCompatibleVideo(tracks, quality);
         boolean convert = false;
-        if (video == null && converter != null) {
-            video = pickConvertibleVideo(tracks, quality, converter);
-            convert = video != null;
+        if (converter != null && (video == null || convertLarger)) {
+            Track converted = pickConvertibleVideo(tracks, quality, converter);
+            if (converted != null && (video == null || suitsBetter(converted, video, quality))) {
+                video = converted;
+                convert = true;
+            }
         }
         if (video == null) return null;
 
@@ -409,6 +423,12 @@ final class DashManifest {
             if (converter.canConvert(track)) convertible.add(track);
         }
         return pickVideo(convertible, true, quality);
+    }
+
+    /** Whether [video] suits [quality] better than [other]: at the best quality a larger picture, below it a nearer fit. */
+    static boolean suitsBetter(Track video, Track other, DownloadQuality quality) {
+        if (quality == null || quality == DownloadQuality.BEST) return video.shortSide() > other.shortSide();
+        return quality.compare(video.quality(), other.quality()) < 0;
     }
 
     /** The xHE-AAC track with the highest bitrate, or {@code null}. */

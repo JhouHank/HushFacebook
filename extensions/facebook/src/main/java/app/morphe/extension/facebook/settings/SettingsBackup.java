@@ -248,6 +248,7 @@ public final class SettingsBackup {
             Settings.OPEN_IN_ANOTHER_APP,
             Settings.POST_MENU_DOWNLOAD_FIRST,
             Settings.DOWNLOAD_COMPATIBLE,
+            Settings.DOWNLOAD_CONVERT,
             Settings.DOWNLOAD_QUIET,
             Settings.OPEN_ON_CHOSEN_TAB,
             Settings.FOLLOWING_FEED_HOME,

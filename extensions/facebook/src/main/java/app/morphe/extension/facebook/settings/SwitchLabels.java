@@ -167,6 +167,7 @@ final class SwitchLabels {
         if (setting == Settings.OPEN_IN_ANOTHER_APP) return L10n.t("Open videos in another app");
         if (setting == Settings.POST_MENU_DOWNLOAD_FIRST) return L10n.t("Download first in post menus");
         if (setting == Settings.DOWNLOAD_COMPATIBLE) return L10n.t("Save videos other apps can open");
+        if (setting == Settings.DOWNLOAD_CONVERT) return L10n.t("Convert to keep the full size");
         if (setting == Settings.DOWNLOAD_QUIET) return L10n.t("Quiet saves");
         if (setting == Settings.HIDE_GET_MESSENGER_CARD) return L10n.t("Hide the Get Messenger card");
         if (setting == Settings.HIDE_CHAT_NOTES_TRAY) return L10n.t("Hide the notes and active now row");

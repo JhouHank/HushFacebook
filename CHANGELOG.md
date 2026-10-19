@@ -7,6 +7,7 @@ Changes in each Hushfacebook version, newest first.
 ### Added
 
 * **Facebook:** New switch under News feed, `Hide the Find friends card`. The "Want to see more posts from friends?" card with its Find friends button stops showing where your friends' posts run out, and the "You're all caught up with friends" line above it goes too, since Facebook builds them as one block. It starts off (issue #187).
+* **Facebook:** New switch under Downloads, `Convert to keep the full size`. With `Save videos other apps can open` on, a full size video Facebook only has as VP9 or AV1 gets converted to H.264 on your phone, so it isn't saved at a smaller size any more. It's slower, videos over 10 minutes still save smaller, and it starts off (issue #189).
 
 ### Fixed
 

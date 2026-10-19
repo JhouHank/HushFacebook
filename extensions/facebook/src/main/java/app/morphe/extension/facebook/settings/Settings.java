@@ -1721,6 +1721,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_download_compatible", FALSE);
 
     /**
+     * With {@link #DOWNLOAD_COMPATIBLE} on, a VP9, AV1 or H.265 picture larger than the best H.264
+     * one is converted to H.264 on the phone instead of the save keeping the smaller H.264 (#189).
+     * Facebook often lists a reel's full size only as VP9 or AV1. Converting takes a while, so it's
+     * off by default. Every download patch reads it ({@link PatchFamily#DOWNLOAD_SWITCHES}).
+     */
+    public static final BooleanSetting DOWNLOAD_CONVERT =
+            new BooleanSetting("hushfacebook_download_convert", FALSE);
+
+    /**
      * Saves go without the toasts that only say how a save went: Saving as it starts, Saved to as
      * it finishes, and Save canceled (issue #142). A failed save still says why, and the WhatsApp
      * warning still shows when no notification card carries it. Off by default. Every download
