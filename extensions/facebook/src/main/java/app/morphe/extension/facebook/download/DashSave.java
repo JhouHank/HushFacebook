@@ -188,7 +188,7 @@ final class DashSave {
                     }
                 } catch (OutputAllowance.Exceeded over) {
                     return Downloader.Result.fail(Downloader.Status.WRITE_ERROR, Downloader.Cause.CONVERSION,
-                        "the converted picture outgrew the " + room + " bytes kept for it");
+                        "the converted picture outgrew the " + room + " bytes kept for it (" + over.getMessage() + ")");
                 }
                 long took = SystemClock.uptimeMillis() - started;
                 File made = picture;

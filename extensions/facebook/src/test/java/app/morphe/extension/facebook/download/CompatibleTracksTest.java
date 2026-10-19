@@ -181,17 +181,22 @@ public class CompatibleTracksTest {
     /**
      * A long, thin picture gets room for what the encoder makes of it. The S22's four minute 1080p
      * reel came at 467 kbps in 14.9 MB, so six times the file, the room it used to get, was 89 MB,
-     * and the H.264 at 2.5 Mbps outgrew it and the save fell back to the 720p file. A picture that
-     * doesn't say how long it runs keeps the old room.
+     * and the H.264 asked for 2.5 Mbps outgrew it and the save fell back to the 720p file. Half
+     * again over 2.5 Mbps, 119 MB, ran out too: that encoder made about 8 Mbps of 1080p whatever
+     * it was asked for (8.0 Mbps asked for 3.0, 8.2 for 3.2). A picture that doesn't say how long
+     * it runs keeps the old room.
      */
     @Test
     public void aLongThinPictureGetsRoomForWhatItBecomes() {
         long durationUs = 254_505_375L;
         long bytes = 14_881_053L;
-        long made = (long) VideoTranscode.bitRate(1920, 1080, 30, 467_000) / 8 * durationUs / 1_000_000;
-        assertTrue("the old room gave the encoder a fifth over its rate", bytes * 6 < made * 6 / 5);
+        long asked = (long) VideoTranscode.bitRate(1920, 1080, 30, 467_000) / 8 * durationUs / 1_000_000;
+        assertTrue("the old room gave the encoder a fifth over its rate", bytes * 6 < asked * 6 / 5);
         long room = VideoTranscode.roomFor(durationUs, 1920, 1080, 30, 467_000, bytes);
-        assertTrue("no room for the encoder running over", room > made * 3 / 2 + OutputAllowance.BOXES);
+        assertTrue("the room is no larger than half again over the asked rate", room > asked * 3 / 2 + OutputAllowance.BOXES);
+        // The most the S22's encoder made of a 1080p picture, 8.2 Mbps, for the whole reel.
+        long most = 8_200_000L / 8 * durationUs / 1_000_000;
+        assertTrue("no room for an encoder at its quality floor", room > most + OutputAllowance.BOXES);
         assertEquals("a picture that says nothing keeps the old room", bytes * 6,
             VideoTranscode.roomFor(-1, 1920, 1080, 30, 467_000, bytes));
         assertEquals("a short clip keeps the old floor", VideoTranscode.LEAST_ROOM,
