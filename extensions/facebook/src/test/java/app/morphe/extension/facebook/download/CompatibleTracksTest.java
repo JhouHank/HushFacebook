@@ -312,6 +312,30 @@ public class CompatibleTracksTest {
         assertNotNull(DashManifest.pick(tracks, true, DownloadQuality.BEST, false));
     }
 
+    /**
+     * How long a manifest says it runs, which a save weighs a conversion by before it fetches
+     * anything. A 13:38 reel with only AV1 pictures had its 1080p track fetched, then refused as
+     * too long to convert, and two error toasts came before the single file.
+     */
+    @Test
+    public void aManifestSaysHowLongItRuns() throws IOException {
+        assertEquals(64_814_812L, DashManifest.durationUs(resource("meta-public-dash.mpd")));
+        assertEquals(818_033_000L, DashManifest.durationUs(mpd("PT13M38.033S")));
+        assertTrue("over the length a picture is converted for",
+                DashManifest.durationUs(mpd("PT13M38.033S")) > VideoTranscode.MAX_DURATION_US);
+        assertEquals(3_723_500_000L, DashManifest.durationUs(mpd("PT1H2M3.5S")));
+        assertEquals(86_400_000_000L, DashManifest.durationUs(mpd("P1D")));
+        assertEquals("no length in it", -1L, DashManifest.durationUs(mpd("PT")));
+        assertEquals("not a length", -1L, DashManifest.durationUs(mpd("13 minutes")));
+        assertEquals("too long to hold", -1L, DashManifest.durationUs(mpd("PT99999999999999999H")));
+        assertEquals("no attribute", -1L, DashManifest.durationUs("<MPD type=\"static\"><Period/></MPD>"));
+        assertEquals(-1L, DashManifest.durationUs(null));
+    }
+
+    private static String mpd(String length) {
+        return "<MPD type=\"static\" mediaPresentationDuration=\"" + length + "\"><Period/></MPD>";
+    }
+
     /** AAC-LC first, whatever its bitrate, then HE-AAC, then HE-AAC v2 at the same rank. */
     @Test
     public void heAacIsTakenWhenThereIsNoLc() {

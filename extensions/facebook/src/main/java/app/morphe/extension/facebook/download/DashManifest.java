@@ -151,6 +151,38 @@ final class DashManifest {
         return tracks;
     }
 
+    private static final Pattern PRESENTATION_LENGTH = Pattern.compile("<MPD\\b[^>]*?\\bmediaPresentationDuration"
+        + "\\s*=\\s*\"P(?:(\\d+)D)?(?:T(?:(\\d+)H)?(?:(\\d+)M)?(?:(\\d+(?:\\.\\d+)?)S)?)?\"");
+
+    /**
+     * How long [manifest] says its video runs, in microseconds, from the {@code MPD}'s
+     * {@code mediaPresentationDuration} ({@code PT64.814812S} in Facebook's), or -1 when it doesn't
+     * say or isn't read. Never throws. A save weighs a conversion by it before it fetches anything
+     * ({@link VideoTranscode#MAX_DURATION_US}).
+     */
+    static long durationUs(String manifest) {
+        if (!withinLimits(manifest)) return -1;
+        try {
+            Matcher length = PRESENTATION_LENGTH.matcher(manifest);
+            if (!length.find()) return -1;
+            if (length.group(1) == null && length.group(2) == null && length.group(3) == null && length.group(4) == null) {
+                return -1;
+            }
+            long seconds = 0;
+            long[] unit = {86_400, 3_600, 60};
+            for (int i = 0; i < unit.length; i++) {
+                String part = length.group(i + 1);
+                if (part != null) seconds = Math.addExact(seconds, Math.multiplyExact(Long.parseLong(part), unit[i]));
+            }
+            long us = Math.multiplyExact(seconds, 1_000_000L);
+            String rest = length.group(4);
+            return rest == null ? us : Math.addExact(us, Math.round(Double.parseDouble(rest) * 1_000_000));
+        } catch (Throwable ignored) {
+            // A length too large to hold, or of an unexpected shape, says nothing.
+            return -1;
+        }
+    }
+
     /**
      * The best video track a save can write into an MP4, or {@code null}.
      *

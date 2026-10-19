@@ -862,9 +862,17 @@ public final class MediaDownload {
         // of a video that has no other sound, and one that can make VP9, AV1 or H.265 H.264 keeps
         // the picture of a video that has no H.264 track (#77).
         // With convert to keep the full size on too, so does one whose H.264 track is smaller (#189).
-        boolean convertLarger = compatible && convertSaves();
+        // Not a picture the manifest says runs longer than VideoTranscode converts: it was fetched,
+        // then refused, and two error toasts came before the single file (a 13:38 AV1 reel on the S22).
+        long lengthUs = DashManifest.durationUs(manifest);
+        boolean convertible = compatible && lengthUs <= VideoTranscode.MAX_DURATION_US;
+        if (compatible && !convertible) {
+            info(() -> "the manifest of " + label + " runs " + lengthUs / 1_000_000 + " s, over the "
+                + VideoTranscode.MAX_DURATION_US / 60_000_000 + " minutes a picture is converted for, so none is");
+        }
+        boolean convertLarger = convertible && convertSaves();
         DashManifest.Pick converted = DashManifest.pick(tracks, allowAv1, quality, compatible,
-            compatible && AacReencode.available(), compatible ? VideoTranscode::canConvert : null, convertLarger);
+            compatible && AacReencode.available(), convertible ? VideoTranscode::canConvert : null, convertLarger);
         if (convertLarger && converted != null && converted.transcodeVideo
                 && !beatsFile(converted.video, fallback, fallbackQuality, quality)) {
             // A larger picture the single file already matches isn't worth converting: the H.264 pick stands.
