@@ -17,6 +17,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* **Facebook:** `Default comment order` applies on a post's own page too, the one a link, a notification or a post's date opens (issue #192). That page asks Facebook for its comments another way than the comment sheet does, so Most relevant or Newest only took hold in the sheet and the page kept Facebook's order.
 * **Facebook:** `Leave calls and chats to Messenger` works with a Messenger installed under another name beside Meta's apps, the way HushMessenger's "install beside" option makes one (issue #193). Facebook only counted Meta's own Messenger package, so with a renamed copy it kept ringing and posting the same chat notification Messenger posted. The Messenger icon at the top and the Get Messenger card already counted such a copy.
 * **Facebook:** `Hide the notes and active now row` takes the whole row away now. Your own "Your note" tile used to stay behind and keep the row at full height.
 * **Facebook:** With `Save videos other apps can open` on, a long video Facebook only has as VP9 or AV1 keeps its full size when it's made H.264. A thin four minute 1080p reel used to run out of the room set aside for the conversion and save at 720p instead (issue #189).
@@ -31,7 +32,6 @@ Changes in each Hushfacebook version, newest first.
 
 ### Added
 
-* **Facebook:** New switch under Comment sheet options, `Hide the new comments pop-up`. The "3 new comments" bubble stops popping up over the comments while you read them, and new comments still land in the list. It starts off (issue #185).
 * **Facebook:** New switch in Clean up Reels, `Open feed videos on their own`. A video you tap in the feed opens full screen by itself, and no more reels load after it, so a swipe up can't lead into an endless reels feed. The Reels tab, the Watch page and a reel you open from a link keep scrolling as before. It also catches a reel someone shared to your feed, which some accounts open straight in the reels viewer, and a swipe past that video no longer lands on a loading circle that never ends. It starts off (issue #161).
 * **Facebook:** New switch, `Hide the status bar`, under Appearance with the other bar switches. The phone's status bar with the time and battery goes from Facebook's main screen, so the feed gets the whole screen, and a swipe down from the top edge shows it for a moment. It starts off (issue #124).
 
