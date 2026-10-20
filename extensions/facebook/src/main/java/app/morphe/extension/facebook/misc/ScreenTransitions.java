@@ -17,7 +17,7 @@ import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 
 /**
- * Turn off screen transitions. Four things slide or zoom in Facebook, each its own way:
+ * Turn off screen transitions. Five things slide or zoom in Facebook, each its own way:
  *
  * <p>A screen that opens over the app as its own activity, like the post composer. Facebook asks
  * Android for a slide with {@code overridePendingTransition} as it opens and closes one, and that
@@ -34,6 +34,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>A photo, which grows from its place in the feed to full screen as the photo viewer opens and
  * shrinks back as it closes. {@link #photoZooms} tells the patch to put it at its end place at once.
+ *
+ * <p>A screen Facebook opens inside its own, like a post's page: a fragment added with custom
+ * animations, which slides in and slides out again on Back. {@link #fragmentAnimation} hands each
+ * animation back as none.
  *
  * <p>A swipe between tabs asks none of these and keeps following the finger, and so does the
  * panel's settle after a drag, which Facebook scrolls from a method of its own, and a photo
@@ -58,6 +62,9 @@ public final class ScreenTransitions {
 
     /** Counted for each photo the photo viewer opens or closes without its zoom. */
     static final String PHOTO = "photo shown without its zoom";
+
+    /** Counted for each animation left out of a screen Facebook opens inside its own, like a post's page. */
+    static final String INNER = "inner screen animation left out";
 
     private static final String FAMILY = FamilyNames.SCREEN_TRANSITIONS;
 
@@ -169,6 +176,24 @@ public final class ScreenTransitions {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "photo", failure);
             return true;
+        }
+    }
+
+    /**
+     * Injection point, at the start of the fragment transaction's setCustomAnimations, once for each
+     * of the four animations it's handed (enter, exit, and the two Back plays): 0, none, while the
+     * switch is on, else [animation], Facebook's own. A screen Facebook opens inside its own, like a
+     * post's page, slides in and out with these.
+     */
+    public static int fragmentAnimation(int animation) {
+        try {
+            if (animation == 0 || !on()) return animation;
+            HookStatus.bound(FAMILY, "inner screen");
+            HookStatus.counted(FAMILY, INNER);
+            return 0;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "inner screen", failure);
+            return animation;
         }
     }
 

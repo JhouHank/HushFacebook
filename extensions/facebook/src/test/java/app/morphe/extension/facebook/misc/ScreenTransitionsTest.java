@@ -34,7 +34,8 @@ import app.morphe.extension.shared.settings.PauseForTests;
  * Turn off screen transitions: with the patch in and its switch on, a Facebook screen asks Android
  * for no transition as it comes to the front and as it closes, with the open and close overrides
  * set on Android 14, a tab that would slide gets the other style, a panel is told not to slide,
- * and a photo not to zoom. Off, paused or without the patch, Facebook's stay.
+ * a photo not to zoom, and an inner screen's animations come back as none. Off, paused or without
+ * the patch, Facebook's stay.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34)
@@ -219,6 +220,30 @@ public class ScreenTransitionsTest {
         assertFalse("the switch didn't come back after the pause", ScreenTransitions.photoZooms());
         ScreenTransitions.inBuildForTests = false;
         assertTrue("without the patch, the photo lost its zoom", ScreenTransitions.photoZooms());
+    }
+
+    @Test
+    public void anInnerScreenShowsWithoutItsSlides() {
+        int slideOut = 0x7f01006e;
+        assertEquals("no animation became one", 0, ScreenTransitions.fragmentAnimation(0));
+        assertNull("no animation was counted", statusLine());
+
+        assertEquals("the post page still slid", 0, ScreenTransitions.fragmentAnimation(slideOut));
+        assertEquals("the post page still slid", 0, ScreenTransitions.fragmentAnimation(0x7f010070));
+        assertEquals(FamilyNames.SCREEN_TRANSITIONS + ": invoked 2, 1 found, 0 missing. Counted: "
+                + ScreenTransitions.INNER + " 2", statusLine());
+
+        Settings.TURN_OFF_SCREEN_TRANSITIONS.save(false);
+        assertEquals("off, the post page lost its slide", slideOut, ScreenTransitions.fragmentAnimation(slideOut));
+        Settings.TURN_OFF_SCREEN_TRANSITIONS.save(true);
+        for (HushfacebookPause.Reason reason : PAUSES) {
+            PauseForTests.pause(reason);
+            assertEquals("paused by " + reason + ", the post page lost its slide", slideOut, ScreenTransitions.fragmentAnimation(slideOut));
+            PauseForTests.resume();
+        }
+        assertEquals("the switch didn't come back after the pause", 0, ScreenTransitions.fragmentAnimation(slideOut));
+        ScreenTransitions.inBuildForTests = false;
+        assertEquals("without the patch, the post page lost its slide", slideOut, ScreenTransitions.fragmentAnimation(slideOut));
     }
 
     @Test

@@ -70,6 +70,16 @@ internal object PhotoOpenFingerprint : Fingerprint(
     },
 )
 
+/**
+ * BackStackRecord's dump(writer, prefix, full), which prints a fragment transaction's four custom
+ * animations by name (583 `LX/0Aa;->A0V`). The androidx labels outlive Redex (FragmentSlides.kt).
+ */
+internal object BackStackDumpFingerprint : Fingerprint(
+    returnType = "V",
+    parameters = listOf("Ljava/io/PrintWriter;", "Ljava/lang/String;", "Z"),
+    strings = listOf(ENTER_ANIM_LOG, POP_ENTER_ANIM_LOG),
+)
+
 /** The composer's Feelings and Activities picker, which keeps its class name. */
 internal const val MINUTIAE_PICKER = "Lcom/facebook/composer/minutiae/activity/MinutiaeTabbedPickerActivity;"
 
