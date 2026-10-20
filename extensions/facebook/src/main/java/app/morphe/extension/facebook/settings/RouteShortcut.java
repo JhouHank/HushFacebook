@@ -38,6 +38,9 @@ import app.morphe.extension.shared.settings.BooleanSetting;
  * literal the translation check can see.
  */
 final class RouteShortcut {
+    /** The id prefix of every Hushfacebook launcher entry, the settings one included. */
+    private static final String OURS = "hushfacebook_";
+
     final String id;
     private final String name;
     private final String uri;
@@ -164,20 +167,28 @@ final class RouteShortcut {
             route.setComponent(destination);
             List<ShortcutInfo> shortcuts = manager.getDynamicShortcuts();
             ShortcutInfo existing = null;
-            int rank = 0;
+            int afterOurs = 0;
+            int facebooks = Integer.MAX_VALUE;
             for (ShortcutInfo shortcut : shortcuts) {
                 if (id.equals(shortcut.getId())) existing = shortcut;
-                else rank = Math.max(rank, shortcut.getRank() + 1);
+                else if (shortcut.getId().startsWith(OURS)) afterOurs = Math.max(afterOurs, shortcut.getRank() + 1);
+                else facebooks = Math.min(facebooks, shortcut.getRank());
             }
+            // One UI shows the first four entries, and Facebook's three plus the settings entry fill
+            // them, so an entry behind Facebook's is published but never seen (#52). It takes the
+            // first rank Facebook holds: ShortcutManager puts an entry given a taken rank ahead of
+            // the one holding it, so Facebook's move down one and none is removed.
+            boolean inFront = existing != null && existing.getRank() < facebooks;
+            int rank = inFront ? existing.getRank() : facebooks == Integer.MAX_VALUE ? afterOurs : facebooks;
             String text = label.apply(context);
-            if (existing != null && text.contentEquals(existing.getShortLabel())
+            if (inFront && text.contentEquals(existing.getShortLabel())
                     && route.filterEquals(existing.getIntent())) return SavedShortcut.Result.PUBLISHED;
             if (existing == null && shortcuts.size() + manager.getManifestShortcuts().size()
                     >= manager.getMaxShortcutCountPerActivity()) return SavedShortcut.Result.NO_ROOM;
             ShortcutInfo shortcut = new ShortcutInfo.Builder(context, id)
                     .setShortLabel(text).setLongLabel(text)
                     .setIcon(icon(context))
-                    .setIntent(route).setRank(existing == null ? rank : existing.getRank()).build();
+                    .setIntent(route).setRank(rank).build();
             // addDynamicShortcuts refuses a full activity. pushDynamicShortcut would evict its last entry.
             boolean published = existing == null
                     ? manager.addDynamicShortcuts(Collections.singletonList(shortcut))

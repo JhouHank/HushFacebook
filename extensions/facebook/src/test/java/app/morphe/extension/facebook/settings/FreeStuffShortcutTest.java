@@ -139,6 +139,32 @@ public class FreeStuffShortcutTest {
         assertNotNull("turning Free stuff off took Watch history with it", shortcut(manager, WatchHistoryShortcut.ID));
     }
 
+    @Test public void itGoesAheadOfFacebooksEntriesWhereTheLauncherShowsIt() {
+        // One UI shows four entries, and Facebook's three behind the settings entry filled them,
+        // so a Free stuff entry ranked last was published but never seen (#52).
+        Context context = RuntimeEnvironment.getApplication();
+        ShortcutManager manager = context.getSystemService(ShortcutManager.class);
+        manager.addDynamicShortcuts(List.of(stock(context, SettingsEntry.SHORTCUT_ID, 0),
+                stock(context, "notifications", 1), stock(context, "friends", 2), stock(context, "reels", 3)));
+        Settings.FREE_STUFF_SHORTCUT.save(true);
+        assertTrue(aStartPublishes());
+        ShortcutInfo free = shortcut(manager, FreeStuffShortcut.ID);
+        assertEquals("not given the first rank Facebook holds", 1, free.getRank());
+        assertEquals(0, shortcut(manager, SettingsEntry.SHORTCUT_ID).getRank());
+        for (String facebooks : new String[] {"notifications", "friends", "reels"}) {
+            assertNotNull(facebooks + " was removed", shortcut(manager, facebooks));
+        }
+
+        // Facebook publishing its own again put them first, so the next refresh moves it back.
+        manager.updateShortcuts(List.of(new ShortcutInfo.Builder(context, FreeStuffShortcut.ID)
+                .setShortLabel(free.getShortLabel()).setIntent(free.getIntent()).setRank(4).build()));
+        assertEquals(SavedShortcut.Result.PUBLISHED, FreeStuffShortcut.refreshNow(context));
+        free = shortcut(manager, FreeStuffShortcut.ID);
+        assertEquals(1, free.getRank());
+        assertEquals(FreeStuffShortcut.ROUTE, free.getIntent().getDataString());
+        assertEquals(5, manager.getDynamicShortcuts().size());
+    }
+
     @Test public void fullLauncherNeverEvictsFacebooksEntries() {
         Context context = RuntimeEnvironment.getApplication();
         ShortcutManager manager = context.getSystemService(ShortcutManager.class);

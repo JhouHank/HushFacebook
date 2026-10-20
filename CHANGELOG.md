@@ -12,7 +12,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** New switch under Reels and Watch, `Hide the speaker button on reels`. It takes the speaker button off the bottom of the side of reels, and your phone's volume buttons still turn the sound on. It's part of `Clean up Reels` and starts off (issue #190).
 * **Facebook:** New switch under Appearance, `Black cards`, for the AMOLED black theme. Cards, comments, menus, the Create story tile and the strip behind the Menu's Log out button go fully black like the page instead of the near black that sets them apart, and buttons like See more and Log out keep a dark gray fill so they still show. It starts off and needs a restart (issue #191).
 * **Facebook:** `Menu tiles to hide` lists the rows under Help and support and Settings and privacy too, so Orders and payments or Report a problem can leave the Menu (issue #153). They show up in the list once you've opened those groups in the Menu, and the rows Hushfacebook adds there always stay.
-* **Facebook:** New switch under Marketplace, `Free stuff shortcut`. Facebook's app has no Free category in Marketplace, so this adds Free stuff to the menu you get by holding Facebook's icon (if there's room) and a Free stuff row to the Menu's Settings and privacy. Both open Marketplace's free listings, the same ones the website's Free Stuff category shows. It starts off (Discussion #52).
+* **Facebook:** New switch under Marketplace, `Free stuff shortcut`. Facebook's app has no Free category in Marketplace, so this adds Free stuff to the menu you get by holding Facebook's icon (right after the Hushfacebook entry, if there's room) and a Free stuff row to the Menu's Settings and privacy. Both open Marketplace's free listings, the same ones the website's Free Stuff category shows. It starts off (Discussion #52).
 
 ### Changed
 
@@ -22,6 +22,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* **Facebook:** The Saved and Watch history entries you can add to the menu you get by holding Facebook's icon now sit right after the Hushfacebook entry, ahead of Facebook's own. Samsung phones show only the first four, and with Facebook's Notifications, Friends and Reels behind the Hushfacebook entry, yours got added but never showed. Facebook's entries just move down one.
 * **Facebook:** With `Keep the progress bar` on, a reel Facebook doesn't hand a bar to no longer shows the last reel's frozen spot and time (issues #90 and #120). They stay hidden until you're back on that reel or the next one takes the bar.
 * **Facebook:** `Default comment order` applies on a post's own page too, the one a link, a notification or a post's date opens (issue #192). That page asks Facebook for its comments another way than the comment sheet does, so Most relevant or Newest only took hold in the sheet and the page kept Facebook's order.
 * **Facebook:** `Hide the new comments pill` takes away the newer pill as well, the one with the commenters' pictures on it (issue #185). Facebook has two of them now and the switch only knew the older one.
