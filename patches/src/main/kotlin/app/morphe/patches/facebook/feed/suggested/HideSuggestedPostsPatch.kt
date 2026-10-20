@@ -12,7 +12,8 @@
  * Stories you might like from other rows of Stories, which four more switches read. The People you
  * may know switch also reaches the carousel on your own profile, through a hook in that section's
  * children builder. It also fills the two accessors the switch for posts from groups you're not in
- * reads: a story's group and that group's join state.
+ * reads: a story's group and that group's join state. On the search screen, before anything is
+ * typed, it hands each row's type names to the extension for Debug logging, changing nothing.
  */
 package app.morphe.patches.facebook.feed.suggested
 
@@ -52,6 +53,7 @@ import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.patches.facebook.misc.settings.settingsPatch
+import app.morphe.patches.facebook.search.hookPreSearchSections
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
@@ -192,6 +194,12 @@ val hideSuggestedPostsPatch = bytecodePatch(
             fillGroupJoinStubs()
         } catch (exception: PatchException) {
             patchLog.warning("${exception.message}, so Hide posts from groups you're not in keeps every post.")
+        }
+        // The search screen's People you may know and For you sections are read-only for now: Debug logs their types (#80).
+        try {
+            hookPreSearchSections()
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so Debug logging doesn't name the search screen's sections.")
         }
         enableStatus("suggestedPosts")
     }
