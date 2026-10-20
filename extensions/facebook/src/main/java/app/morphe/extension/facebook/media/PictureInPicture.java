@@ -7,13 +7,17 @@ package app.morphe.extension.facebook.media;
 import android.app.Activity;
 import android.app.Application;
 import android.app.PictureInPictureParams;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Rational;
 import android.view.View;
@@ -28,6 +32,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import app.morphe.extension.facebook.navigation.FacebookTabs;
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.Logger;
@@ -79,6 +84,13 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * activity joins, so a link, a notification or a settings shortcut opened meanwhile drew its page in
  * the window and left it there. A page opening in that task while the window floats brings Facebook
  * back full screen ({@link #arrived}).
+ *
+ * <p>When a reel floats from Facebook's full-screen viewer instead, the window's task has the viewer
+ * at its root, and a link opened from another app starts that same viewer for its page, so Android
+ * only brought the floating reel forward and the page never opened. A link that also builds
+ * Facebook's main screen under its page cleared the window's task and drew that screen in the
+ * window. Facebook's launch step gives such a start a task of its own, so the page opens full screen
+ * and the reel keeps floating ({@link #ownTask}).
  *
  * <p>While the window is armed, a reel's More sheet opened on the armed screen gets a
  * Picture-in-picture row ({@link PictureInPictureRow}), whose tap opens the window right away with
@@ -148,6 +160,12 @@ public final class PictureInPicture {
     /** Counted each time a page opened in the floating window's task brought Facebook back full screen. */
     static final String BROUGHT_BACK = "page opened in the window brought back full screen";
 
+    /** Counted each time a page started while a reel floats got a task of its own, so it opened full screen. */
+    static final String OWN_TASK = "page started in a task of its own";
+
+    /** The extra Facebook puts on its main screen's start when it builds that screen under a page. */
+    static final String UNDER_A_PAGE = "launched_in_background_of_activity_stack";
+
     /** Counted each time auto-enter goes off after an arming because the window opens only from the More menu. */
     static final String MENU_ONLY = "auto-enter kept off for the More menu";
 
@@ -196,6 +214,12 @@ public final class PictureInPicture {
 
     /** The application the page watch went on, so arming again adds no second one. */
     private static WeakReference<Application> watching = new WeakReference<>(null);
+
+    /**
+     * Set on a thread once the first start of a page's task stack got a task of its own, until that
+     * thread's next message: the starts after it follow it into its task.
+     */
+    private static final ThreadLocal<Boolean> stackGoingBy = new ThreadLocal<>();
 
     /** The armed screen while the page watch saw it in the window, until it comes back full screen. */
     private static WeakReference<Activity> floating = new WeakReference<>(null);
@@ -573,6 +597,75 @@ public final class PictureInPicture {
         }
     }
 
+    /**
+     * The hook, first thing in Facebook's launch step (583 `LX/0Oe;->A01`), which every start of a
+     * Facebook screen passes with the [context] it starts from and its [intent], before Facebook's
+     * interceptors copy it. While a reel floats from a screen other than Facebook's main one, two
+     * kinds of start would end in the window's task, so each gets FLAG_ACTIVITY_NEW_TASK and
+     * FLAG_ACTIVITY_MULTIPLE_TASK and opens full screen in a task of its own, with the reel still
+     * floating (#126):
+     * - a start of the floating screen's own class that looks for a task. The window's task has that
+     *   screen at its root, and Android counts an intent that differs only in its extras as the same
+     *   one, so it brought the floating reel forward and dropped the page.
+     * - the first start of a task stack Facebook builds with its main screen under a page, which
+     *   clears the task it finds and drew the main screen in the window. The page's own start after
+     *   it is left alone and follows it into its new task.
+     * A floating main screen, the Reels tab's window, is left to {@link #arrived}.
+     */
+    public static void ownTask(@Nullable Context context, @Nullable Intent intent) {
+        try {
+            if (intent == null || followsItsStack(intent)) return;
+            Activity screen = armedScreen();
+            if (screen == null || !screen.isInPictureInPictureMode() || screen.isFinishing() || !on()) return;
+            String floats = screen.getComponentName().getClassName();
+            ComponentName target = intent.getComponent();
+            if (FacebookTabs.MAIN_TAB_ACTIVITY.equals(floats) || target == null
+                    || !screen.getPackageName().equals(target.getPackageName())) return;
+            boolean stackFirst = (intent.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK) != 0
+                    && intent.getBooleanExtra(UNDER_A_PAGE, false);
+            if (!stackFirst && !(floats.equals(target.getClassName()) && looksForTask(context, intent, screen))) return;
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
+            if (stackFirst) stackGoesBy();
+            HookStatus.bound(FAMILY, "start while floating");
+            HookStatus.counted(FAMILY, OWN_TASK);
+            Logger.printDebug(() -> "Picture-in-picture: " + target.getShortClassName() + " started in a task of its own while a reel floats");
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "start while floating", failure);
+        }
+    }
+
+    /**
+     * Whether Android looks for a task to start [intent] from [context] in: it asks for a new one, or
+     * comes from no activity (Facebook adds NEW_TASK after its launch step then), from a
+     * single-instance one like Facebook's link handler, or from inside the floating [screen]'s task.
+     */
+    private static boolean looksForTask(@Nullable Context context, Intent intent, Activity screen) throws PackageManager.NameNotFoundException {
+        if ((intent.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK) != 0) return true;
+        Activity source = activityOf(context);
+        if (source == null || source.getTaskId() == screen.getTaskId()) return true;
+        return source.getPackageManager().getActivityInfo(source.getComponentName(), 0).launchMode
+                == ActivityInfo.LAUNCH_SINGLE_INSTANCE;
+    }
+
+    /**
+     * Whether [intent] is a later start of a task stack whose first start got a task of its own just
+     * now on this thread: it asks for no new task, so it goes on top of that one.
+     */
+    private static boolean followsItsStack(Intent intent) {
+        if (stackGoingBy.get() == null) return false;
+        if ((intent.getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK) == 0) return true;
+        stackGoingBy.remove();
+        return false;
+    }
+
+    /** Marks a task stack going by on this thread until its next message, when there is a looper to end it. */
+    private static void stackGoesBy() {
+        Looper looper = Looper.myLooper();
+        if (looper == null) return;
+        stackGoingBy.set(Boolean.TRUE);
+        new Handler(looper).post(stackGoingBy::remove);
+    }
+
     /** The hook, first thing in each of ReelsPipUtil's disarms. Nothing is armed after it. */
     public static void disarmed() {
         try {
@@ -948,9 +1041,10 @@ public final class PictureInPicture {
         return on() && Settings.PICTURE_IN_PICTURE_FROM_MENU.get();
     }
 
-    /** Forgets what was armed and when a page last brought Facebook back. Tests only. */
+    /** Forgets what was armed, when a page last brought Facebook back, and a task stack going by. Tests only. */
     static void forget() {
         arm(null, null, null);
+        stackGoingBy.remove();
         synchronized (PictureInPicture.class) {
             broughtBackAt = -BRING_BACK_GAP_MS;
             floating = new WeakReference<>(null);

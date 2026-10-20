@@ -24,6 +24,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* **Facebook:** With `Picture-in-picture` on, a Facebook link you open from another app while a reel floats in the small window opens its page full screen, and the reel keeps playing in its window (issue #126). Before, the link just brought the floating reel back to full screen, or opened Facebook's Home instead of the page.
 * **Facebook:** With `Keep the progress bar` and its time on, swiping to the next reel shows 0:00 and that reel's length right away (issue #120). Before, the time went missing until the reel started playing, about a second on a slow connection.
 * **Facebook:** The Saved and Watch history entries you can add to the menu you get by holding Facebook's icon now sit right after the Hushfacebook entry, ahead of Facebook's own. Samsung phones show only the first four, and with Facebook's Notifications, Friends and Reels behind the Hushfacebook entry, yours got added but never showed. Facebook's entries just move down one.
 * **Facebook:** With `Keep the progress bar` on, a reel Facebook doesn't hand a bar to no longer shows the last reel's frozen spot and time (issues #90 and #120). They stay hidden until you're back on that reel or the next one takes the bar.
