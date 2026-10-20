@@ -1645,3 +1645,7 @@ Hides posts from groups you haven't joined, like a friend's post in a public gro
 Hide For you in search	Ocultar Para você na pesquisa
 # context: summary of that switch; recent searches are the user's own past searches, and the suggestions as you type are the ones under the search box while typing
 Hides the For you searches Facebook suggests when you open search. Your recent searches and the suggestions as you type stay.	Oculta as pesquisas de Para você que o Facebook sugere quando você abre a pesquisa. Suas pesquisas recentes e as sugestões enquanto você digita continuam.
+# context: switch title under Search; on, what the user searches for isn't added to their Facebook search history
+Don't save search history	Não salvar o histórico de pesquisa
+# context: summary of that switch; searches already in the history are the user's own past searches, which stay until the user deletes them
+What you search for isn't added to your Facebook search history. Searches already there stay until you delete them.	O que você pesquisa não é adicionado ao seu histórico de pesquisa do Facebook. As pesquisas que já estão lá continuam até você apagá-las.

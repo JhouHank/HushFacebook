@@ -146,6 +146,7 @@ import app.morphe.extension.facebook.reels.ReelPrompts;
 import app.morphe.extension.facebook.reels.SeenStateSendForTests;
 import app.morphe.extension.facebook.search.MetaAiSearchForTests;
 import app.morphe.extension.facebook.search.PreSearchSectionsForTests;
+import app.morphe.extension.facebook.search.SearchHistory;
 import app.morphe.extension.facebook.stories.StoryAdvance;
 import app.morphe.extension.facebook.stories.StorySeenForTests;
 import app.morphe.extension.facebook.stories.StoryUpload;
@@ -813,6 +814,8 @@ public class PausedHooksTest {
                 MetaAiSearchForTests::hidesAnswer,
                 MetaAiSearchForTests::dropsPrompts,
                 MetaAiSearchForTests::stopsSuggestionRoute));
+        // A search Facebook would add to your history is kept out.
+        probes.put(PatchFamily.SEARCH_HISTORY, Collections.singletonList(() -> SearchHistory.skipSave(false)));
         // XAnalytics' upload and uploader resume are skipped, and the Papaya job finishes unrun.
         probes.put(PatchFamily.ANALYTICS_UPLOADS, Arrays.asList(
                 AnalyticsUploads::holdXAnalyticsUpload,

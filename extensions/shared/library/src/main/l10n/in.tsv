@@ -1753,3 +1753,7 @@ Hides posts from groups you haven't joined, like a friend's post in a public gro
 Hide For you in search	Sembunyikan Untuk Anda di pencarian
 # context: summary of that switch; recent searches are the user's own past searches, and the suggestions as you type are the ones under the search box while typing
 Hides the For you searches Facebook suggests when you open search. Your recent searches and the suggestions as you type stay.	Menyembunyikan pencarian Untuk Anda yang disarankan Facebook saat kamu membuka pencarian. Pencarian terbaru kamu dan saran saat mengetik tetap ada.
+# context: switch title under Search; on, what the user searches for isn't added to their Facebook search history
+Don't save search history	Jangan simpan riwayat pencarian
+# context: summary of that switch; searches already in the history are the user's own past searches, which stay until the user deletes them
+What you search for isn't added to your Facebook search history. Searches already there stay until you delete them.	Apa yang kamu cari tidak ditambahkan ke riwayat pencarian Facebook kamu. Pencarian yang sudah ada tetap di sana sampai kamu menghapusnya.

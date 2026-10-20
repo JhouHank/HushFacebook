@@ -215,6 +215,8 @@ public enum PatchFamily {
             new BooleanSetting[]{Settings.HIDE_SHARE_GROUP_BUTTONS, Settings.HIDE_SHARE_PEOPLE_ROW}),
     META_AI_SEARCH(FamilyNames.META_AI_SEARCH, "metaAiSearch", null,
             Settings.HIDE_META_AI_IN_SEARCH),
+    SEARCH_HISTORY(FamilyNames.SEARCH_HISTORY, "searchHistory", null,
+            Settings.DONT_SAVE_SEARCH_HISTORY),
     ANALYTICS_UPLOADS(FamilyNames.ANALYTICS_UPLOADS, "analyticsUploads", null,
             Settings.HOLD_ANALYTICS_UPLOADS, Settings.HOLD_CAMERA_ROLL_PROCESSING),
     SCREENSHOTS(FamilyNames.SCREENSHOTS, "allowScreenshots", null,

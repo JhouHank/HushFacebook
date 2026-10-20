@@ -1154,6 +1154,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_meta_ai_in_search", TRUE);
 
     /**
+     * What you search for, from the main search bar, Reels or Watch, stops being added to your
+     * Facebook search history: the recent searches store takes Facebook's own "don't add this one"
+     * branch ({@link app.morphe.extension.facebook.search.SearchHistory}, #196). Searches already
+     * in the history stay. Off by default.
+     */
+    public static final BooleanSetting DONT_SAVE_SEARCH_HISTORY =
+            new BooleanSetting("hushfacebook_dont_save_search_history", FALSE);
+
+    /**
      * The For you section of searches Facebook suggests, on the search screen before anything is
      * typed (#80), found by the module name Facebook gives its entry. Recent searches, the search box
      * and the suggestions while typing stay. Part of Hide suggested and promoted posts, off until picked.

@@ -1748,3 +1748,7 @@ Hides posts from groups you haven't joined, like a friend's post in a public gro
 Hide For you in search	在搜索中隐藏“为你推荐”
 # context: summary of that switch; recent searches are the user's own past searches, and the suggestions as you type are the ones under the search box while typing
 Hides the For you searches Facebook suggests when you open search. Your recent searches and the suggestions as you type stay.	打开搜索时不再显示 Facebook 推荐的“为你推荐”搜索。你的最近搜索和输入时的建议会保留。
+# context: switch title under Search; on, what the user searches for isn't added to their Facebook search history
+Don't save search history	不保存搜索记录
+# context: summary of that switch; searches already in the history are the user's own past searches, which stay until the user deletes them
+What you search for isn't added to your Facebook search history. Searches already there stay until you delete them.	你搜索的内容不会加入你的 Facebook 搜索记录。已有的搜索会保留，直到你删除。

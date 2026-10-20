@@ -622,6 +622,44 @@
       "options": []
     },
     {
+      "name": "Don't save search history",
+      "description": "Stops Facebook from adding what you search for to your search history, so there's nothing to clear by hand. Searches already there stay until you delete them. Starts off. Turn it on in Hushfacebook settings > Search.",
+      "category": "Privacy",
+      "use": true,
+      "dependencies": [
+        "BytecodePatch",
+        "Hushfacebook settings"
+      ],
+      "compatiblePackages": {
+        "com.facebook.katana": [
+          "583.0.0.39.55"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Facebook",
+          "packageName": "com.facebook.katana",
+          "description": null,
+          "appIconColor": 550655,
+          "signatures": [
+            "911d604446084ca7f4760b775bfc160fa8702441240a7258645d7a72c4312d27",
+            "e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1"
+          ],
+          "targets": [
+            {
+              "version": "583.0.0.39.55",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 475614366,
+                "ARMEABI_V7A": 475614365
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Don't send reel watch history",
       "description": "Stops sending Facebook the list of reels you've watched, so it learns less about what you watch. Reels you've already seen may come back. Starts off. Turn it on in Hushfacebook settings > Reels and Watch.",
       "category": "Privacy",
