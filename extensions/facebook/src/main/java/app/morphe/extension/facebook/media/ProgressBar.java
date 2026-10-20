@@ -7,11 +7,13 @@ package app.morphe.extension.facebook.media;
 import android.os.SystemClock;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
 import java.lang.ref.WeakReference;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -66,6 +68,8 @@ public final class ProgressBar {
     static final String NEXT_REEL_CLEARED = "Reel bar cleared for the next reel";
     /** Counted each time the bar goes back to the start as the scrubber takes the next reel. */
     static final String NEXT_REEL_STARTED_OVER = "Reel bar started over for the next reel";
+    /** Counted each time the next reel's time label shows 0:00 and its length as the scrubber takes it. */
+    static final String NEXT_REEL_TIME_SHOWN = "Reel time shown from the start of the next reel";
     /** Counted each time a full-screen video's fade timer isn't set. */
     static final String CONTROLS_KEPT = "Video controls kept";
 
@@ -267,10 +271,33 @@ public final class ProgressBar {
 
     /**
      * The reel length the bar info builder last logged, so a bar info built again for the same reel
-     * doesn't log again. Only the debug log reads it (#120: whether the next reel's length is known
-     * before {@link #nextReel} hides its time).
+     * doesn't log again. Only the debug log reads it.
      */
     private static volatile int lastLoggedLengthMs = -1;
+
+    /**
+     * The bar info Facebook's builder made last: the reel's length, when, and on which thread. As the
+     * scrubber takes another reel, the builder runs for that reel about a millisecond before {@link
+     * #nextReel} (seen on the S22 on every swipe, #120), so nextReel can show the reel's length right
+     * away instead of hiding the time until the reel plays.
+     */
+    private static final class BarInfo {
+        final int lengthMs;
+        final long at;
+        final Thread thread;
+
+        BarInfo(int lengthMs, long at, Thread thread) {
+            this.lengthMs = lengthMs;
+            this.at = at;
+            this.thread = thread;
+        }
+    }
+
+    @Nullable
+    private static volatile BarInfo lastBarInfo;
+
+    /** How old the last bar info can be for {@link #nextReel} to take it as the next reel's. */
+    static final long BAR_INFO_FRESH_MS = 50;
 
     /** Forgets every hand-over and the scrubber last picked, for tests, which share one process. */
     static void forgetHandOversForTests() {
@@ -279,6 +306,7 @@ public final class ProgressBar {
         lastLabel = null;
         lastBar = null;
         lastShown = null;
+        lastBarInfo = null;
     }
 
     private ProgressBar() {
@@ -351,8 +379,11 @@ public final class ProgressBar {
      * A reel that waits, held by Tap to play or for a player that's slow to start, showed the last
      * reel's position and time until it played, with Facebook's thin line as much as with the kept
      * bar (#90, #120). While the bar is kept or Tap to play is on, this puts the bar back at the
-     * start, and a time label that stays up goes invisible until {@link #refreshesTime} puts it back
-     * with the reel's own time. Otherwise Facebook's code runs as it would.
+     * start. A time label that stays up shows 0:00 and the reel's own length right away when the
+     * reel's bar info was just built ({@link #startsTime}), and otherwise goes invisible until {@link
+     * #refreshesTime} puts it back with the reel's own time, which waits for the reel to play (0.7 s
+     * on the S22, a second or more on a slow connection, #120). Otherwise Facebook's code runs as it
+     * would.
      */
     public static void nextReel(@Nullable ViewGroup label, @Nullable View bar) {
         try {
@@ -364,13 +395,64 @@ public final class ProgressBar {
                 HookStatus.counted(FAMILY, NEXT_REEL_STARTED_OVER);
             }
             if (label != null && showsTime()) {
-                label.setVisibility(View.INVISIBLE);
                 lastRefresh.remove(label);
-                Logger.printDebug(() -> "Reel bar: the scrubber takes another reel, its time is hidden until the reel plays");
+                String length = startsTime(label, bar);
+                if (length != null) {
+                    HookStatus.counted(FAMILY, NEXT_REEL_TIME_SHOWN);
+                    Logger.printDebug(() -> "Reel bar: the scrubber takes another reel, its time starts at 0:00 of " + length);
+                } else {
+                    label.setVisibility(View.INVISIBLE);
+                    Logger.printDebug(() -> "Reel bar: the scrubber takes another reel, its time is hidden until the reel plays");
+                }
             }
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "reel bar start over", failure);
         }
+    }
+
+    /**
+     * Writes 0:00 and the next reel's length into [label]'s elapsed and total time, its first and
+     * last children, the way Facebook's time writer does, and keeps the label up. Only when the bar
+     * info Facebook built last is the next reel's: built on this thread at most {@link
+     * #BAR_INFO_FRESH_MS} ago, and not taken already. A label hidden for holding the last reel stays
+     * hidden, and one Facebook made invisible comes back only while the bar shows and nobody drags
+     * it, as in {@link #refreshesTime}. Answers the length when the label shows it, or null when it
+     * stays hidden.
+     */
+    @Nullable
+    private static String startsTime(ViewGroup label, @Nullable View bar) {
+        BarInfo info = lastBarInfo;
+        if (info == null || info.thread != Thread.currentThread()) return null;
+        long age = SystemClock.uptimeMillis() - info.at;
+        if (age < 0 || age > BAR_INFO_FRESH_MS) return null;
+        HandOver over = handOvers.get(label);
+        if (over != null && over.hidden) return null;
+        int count = label.getChildCount();
+        if (count < 2) return null;
+        View elapsed = label.getChildAt(0);
+        View total = label.getChildAt(count - 1);
+        if (!(elapsed instanceof TextView) || !(total instanceof TextView)) return null;
+        lastBarInfo = null;
+        String length = time(info.lengthMs);
+        ((TextView) elapsed).setText(time(0));
+        ((TextView) total).setText(length);
+        if (label.getVisibility() == View.INVISIBLE && bar != null && !bar.isPressed() && visible(bar)) {
+            label.setVisibility(View.VISIBLE);
+        }
+        return label.getVisibility() == View.VISIBLE ? length : null;
+    }
+
+    /**
+     * A time as Facebook's time writer puts it: whole seconds, m:ss, or h:mm:ss from an hour on,
+     * with the app's locale's digits.
+     */
+    static String time(long ms) {
+        long seconds = ms / 1000;
+        long hours = seconds / 3600;
+        long minutes = seconds / 60 % 60;
+        return hours > 0
+                ? String.format(Locale.getDefault(), "%d:%02d:%02d", hours, minutes, seconds % 60)
+                : String.format(Locale.getDefault(), "%d:%02d", minutes, seconds % 60);
     }
 
     /**
@@ -716,13 +798,17 @@ public final class ProgressBar {
      * bar at all and the reel's length in ms. Facebook answers no for an ad, for what the viewer's
      * config rules out and for some reels it flags on its servers, and the scrubber then hides the bar
      * (#73). While the bar is kept, a reel with a known length gets one; otherwise Facebook's answer
-     * stands.
+     * stands. A known length is noted for {@link #nextReel}, which comes right after for a reel the
+     * scrubber takes.
      */
     public static boolean hasBar(boolean facebook, int lengthMs) {
-        if (lengthMs > 0 && lengthMs != lastLoggedLengthMs && Utils.settingsReady()) {
-            lastLoggedLengthMs = lengthMs;
+        if (lengthMs > 0) {
             try {
-                Logger.printDebug(() -> "Reel bar: bar info built for a reel of " + lengthMs + " ms");
+                lastBarInfo = new BarInfo(lengthMs, SystemClock.uptimeMillis(), Thread.currentThread());
+                if (lengthMs != lastLoggedLengthMs && Utils.settingsReady()) {
+                    lastLoggedLengthMs = lengthMs;
+                    Logger.printDebug(() -> "Reel bar: bar info built for a reel of " + lengthMs + " ms");
+                }
             } catch (Throwable failure) {
                 HookStatus.threw(FAMILY, "reel bar info", failure);
             }
