@@ -24,8 +24,11 @@ import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstructio
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction21c
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction31c
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction31i
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction31t
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction35c
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction3rc
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutablePackedSwitchPayload
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableSwitchElement
 import com.android.tools.smali.dexlib2.immutable.reference.ImmutableMethodReference
 import com.android.tools.smali.dexlib2.immutable.reference.ImmutableStringReference
 import com.android.tools.smali.dexlib2.immutable.reference.ImmutableTypeReference
@@ -346,6 +349,35 @@ class ClonedPackageLiteralsTest {
         assertEquals(16 to 1, (routed[1] as RegisterRangeInstruction).let { it.startRegister to it.registerCount })
         assertEquals(facebook, routed[4].literal())
         assertEquals("the name as the intent itself", Opcode.INVOKE_VIRTUAL_RANGE, routed[5].opcode)
+    }
+
+    /**
+     * A switch case that lands right after a load would pass the call that goes there, so that load
+     * keeps the literal, the same as one a branch lands after. The case is read from the payload, not
+     * the switch's jump to it.
+     */
+    @Test
+    fun aLoadASwitchCaseLandsRightAfterKeepsTheLiteral() {
+        val owner = "Lcom/example/BadgeSwitch;"
+        // Addresses: switch 0, load 3, setPackage 5, load 8, setPackage 10, return 13, payload 14.
+        val context = PatchContexts.of(
+            listOf(
+                classDef(owner, method(owner, 10,
+                    ImmutableInstruction31t(Opcode.PACKED_SWITCH, 9, 14),
+                    load(0, facebook), setPackage(1, 0),
+                    load(0, facebook), setPackage(1, 0),
+                    ImmutableInstruction10x(Opcode.RETURN_VOID),
+                    ImmutablePackedSwitchPayload(listOf(ImmutableSwitchElement(0, 5))))),
+            ),
+        )
+
+        assertEquals(1, context.routeOwnPackageCalls(facebook))
+
+        val routed = context.mutableClassDefBy(owner).methods.single().instructions()
+        assertEquals(facebook, routed[1].literal())
+        assertEquals("the case's own setPackage keeps the literal", Opcode.INVOKE_VIRTUAL, routed[2].opcode)
+        assertEquals(facebook, routed[3].literal())
+        assertEquals(PACKAGE_CALL, (routed[4] as ReferenceInstruction).reference.toString())
     }
 
     /**

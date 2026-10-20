@@ -10,7 +10,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
-import app.morphe.patches.facebook.chats.jumpTargets
+import app.morphe.patches.facebook.layout.theme.branchTargets
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.extension.patchLog
@@ -322,16 +322,16 @@ internal fun Method.ownPackageCallLoads(packageName: String): List<Int> {
 
 /**
  * The index of each const-string of [packageName] in [this] whose value only [reads] reads before
- * its register is written again. A load something jumps in right after is left out, since the jump
- * would pass the call that goes there.
+ * its register is written again. A load a branch or switch case lands right after is left out, since
+ * the jump would pass the call that goes there.
  */
 private fun Method.packageLoadsReadOnlyBy(packageName: String, reads: (Instruction, Int) -> Boolean): List<Int> =
     packageLoadsReadBy(packageName) { readers, code, register -> readers.all { reads(code[it], register) } }
 
 /**
  * The index of each const-string of [packageName] in [this] that something reads before its
- * register is written again and whose readers [take] accepts. A load something jumps in right after
- * is left out, since the jump would pass the call that goes there.
+ * register is written again and whose readers [take] accepts. A load a branch or switch case lands
+ * right after is left out, since the jump would pass the call that goes there.
  */
 private fun Method.packageLoadsReadBy(
     packageName: String,
@@ -340,7 +340,7 @@ private fun Method.packageLoadsReadBy(
     val code = implementation?.instructions?.toList() ?: return emptyList()
     val loads = code.indices.filter { code[it].loadedString() == packageName }
     if (loads.isEmpty()) return emptyList()
-    val targets = jumpTargets(code)
+    val targets = branchTargets(code)
     return loads.filter { at ->
         val register = (code[at] as OneRegisterInstruction).registerA
         if (at + 1 in targets || register > 255) return@filter false
@@ -417,7 +417,7 @@ internal const val MESSENGER_DEBUG = "com.facebook.orca.debug"
 internal fun Method.metaAppLookupReads(): List<Int> {
     val code = implementation?.instructions?.toList() ?: return emptyList()
     if (code.none { it.loadedString() == MESSENGER_DEBUG }) return emptyList()
-    val targets = jumpTargets(code)
+    val targets = branchTargets(code)
     return code.indices.filter { at ->
         val call = code[at]
         val moved = code.getOrNull(at + 1) ?: return@filter false
