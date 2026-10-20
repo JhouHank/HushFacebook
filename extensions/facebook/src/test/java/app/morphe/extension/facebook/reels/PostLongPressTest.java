@@ -20,6 +20,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -46,9 +47,10 @@ import app.morphe.extension.shared.settings.PauseForTests;
 
 /**
  * Long press opens comments on a feed post (#179): a press held on a post's photo or name line
- * clicks the second button of its footer and cancels the rest of the gesture; the text, a profile
- * picture, a carousel, a full-size page and a post with no footer are left to Facebook, as is
- * everything with the switch off or Hushfacebook paused. The rows copy the S22's Home feed on 583.
+ * clicks the second button of its footer and cancels the rest of the gesture, the photo's own long
+ * press included; the text, a profile picture, a grid tile, a carousel, a full-size page and a post
+ * with no footer are left to Facebook, as is everything with the switch off or Hushfacebook paused.
+ * The rows copy the S22's Home feed on 583.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30, qualifiers = "w1080dp-h2400dp-mdpi")
@@ -56,6 +58,8 @@ public class PostLongPressTest {
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 
     private final List<String> clicked = new ArrayList<>();
+    /** What the window's own handling of a touch ran on the photo. */
+    private final List<String> facebook = new ArrayList<>();
     private ActivityController<Activity> window;
     private Activity activity;
     private FrameLayout root;
@@ -99,7 +103,8 @@ public class PostLongPressTest {
         FrameLayout header = new FrameLayout(activity);
         header.setClickable(true);
         place(post, header, 0, 0, 1080, 181);
-        avatar = button("avatar");
+        avatar = new ImageView(activity);
+        avatar.setOnClickListener(v -> clicked.add("avatar"));
         avatar.setLongClickable(true);
         place(header, avatar, 34, 34, 147, 147);
         name = new View(activity);
@@ -109,7 +114,10 @@ public class PostLongPressTest {
         text = button("text");
         text.setLongClickable(true);
         place(post, text, 34, 181, 1046, 304);
-        photo = new View(activity);
+        // On the S22 the photo has a tap and a long press of its own, and the long press shows nothing.
+        photo = new ImageView(activity);
+        photo.setOnClickListener(v -> facebook.add("photo tap"));
+        photo.setOnLongClickListener(v -> facebook.add("photo long"));
         place(post, photo, 0, 304, 1080, 688);
         FrameLayout footer = new FrameLayout(activity);
         place(post, footer, 0, 688, 1080, 812);
@@ -163,6 +171,13 @@ public class PostLongPressTest {
     /** Sends [event] the way the hook does and hands it back. */
     private MotionEvent send(MotionEvent event) {
         PostLongPress.touch(activity, event);
+        return event;
+    }
+
+    /** Sends [event] the way the hook does, then on through the window, and hands it back. */
+    private MotionEvent deliver(MotionEvent event) {
+        PostLongPress.touch(activity, event);
+        activity.getWindow().getDecorView().dispatchTouchEvent(event);
         return event;
     }
 
@@ -309,6 +324,53 @@ public class PostLongPressTest {
         assertTrue(clicked.toString(), clicked.isEmpty());
         assertEquals("the lift is Facebook's", MotionEvent.ACTION_UP, send(event(MotionEvent.ACTION_UP, at)).getActionMasked());
         assertFalse(statusLine(), statusLine().contains(PostLongPress.HELD));
+    }
+
+    /** The photo's own long press, timed by the window from the same touch, never runs after the click. */
+    @Test
+    public void thePhotosOwnLongPressGivesWayToComments() {
+        int[] at = middleOf(photo);
+        Settings.LONG_PRESS_OPENS_COMMENTS.save(false);
+        deliver(event(MotionEvent.ACTION_DOWN, at));
+        holdLongEnough();
+        deliver(event(MotionEvent.ACTION_UP, at));
+        assertEquals("with the switch off the window runs the photo's long press", List.of("photo long"), facebook);
+        facebook.clear();
+
+        Settings.LONG_PRESS_OPENS_COMMENTS.save(true);
+        deliver(event(MotionEvent.ACTION_DOWN, at));
+        holdLongEnough();
+        assertEquals(List.of("comment"), clicked);
+        assertEquals("the lift went on as a cancel", MotionEvent.ACTION_CANCEL,
+                deliver(event(MotionEvent.ACTION_UP, at)).getActionMasked());
+        assertTrue("the photo ran nothing: " + facebook, facebook.isEmpty());
+    }
+
+    /** A picture narrower than the row, like a grid tile, or one inside another long press stays Facebook's. */
+    @Test
+    public void aNarrowPictureOrOneInsideAnotherLongPressIsFacebooks() {
+        ViewGroup post = (ViewGroup) photo.getParent();
+        post.removeView(photo);
+        ImageView tile = new ImageView(activity);
+        tile.setLongClickable(true);
+        place(post, tile, 0, 304, 540, 688);
+        layOut();
+        assertNull("grid tile", PostLongPress.rowAt(root, middleOf(tile)[0], middleOf(tile)[1]));
+        send(event(MotionEvent.ACTION_DOWN, middleOf(tile)));
+        holdLongEnough();
+        assertTrue(clicked.toString(), clicked.isEmpty());
+
+        post.removeView(tile);
+        FrameLayout wrapper = new FrameLayout(activity);
+        wrapper.setLongClickable(true);
+        place(post, wrapper, 0, 304, 1080, 688);
+        ImageView wide = new ImageView(activity);
+        wide.setLongClickable(true);
+        place(wrapper, wide, 0, 0, 1080, 384);
+        layOut();
+        assertNull("inside another long press", PostLongPress.rowAt(root, middleOf(wide)[0], middleOf(wide)[1]));
+        wrapper.setLongClickable(false);
+        assertSame("the same picture on its own is the photo", row, PostLongPress.rowAt(root, middleOf(wide)[0], middleOf(wide)[1]));
     }
 
     /** A window that lost focus before the time was up, to a call or a task switch, opens nothing. */

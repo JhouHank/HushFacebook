@@ -14,6 +14,7 @@ import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.Window;
 import android.widget.HorizontalScrollView;
+import android.widget.ImageView;
 import android.widget.ScrollView;
 
 import androidx.annotation.Nullable;
@@ -40,6 +41,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * press must sit in a feed post: a row of a list that scrolls up and down, not a full-size page like
  * a reel's, with nothing between the finger and the row that has a long press of its own (the post
  * text and the profile pictures do, as do a carousel's tiles) and no carousel or pager in the way.
+ * The one exception is a picture as wide as the row: the S22's feed photo has a long press that
+ * shows nothing, so it counts as the photo, and its pending long press is cancelled before the click.
  *
  * <p>The row's Comment button is found by the footer's order, since its label is translated and
  * 583 has no resource names: the lowest line of three or more clickable views sharing one top and
@@ -148,6 +151,11 @@ public final class PostLongPress {
                 Logger.printDebug(() -> "Feed long press: " + NO_BUTTON);
                 return;
             }
+            // The photo's own long press was timed from the same touch, so it would run next.
+            for (View on = hit(root, Math.round(downX), Math.round(downY)); on != null && on != row.getParent();
+                    on = on.getParent() instanceof View ? (View) on.getParent() : null) {
+                on.cancelLongPress();
+            }
             if (!comment.performClick()) {
                 HookStatus.threw(FAMILY, "feed long press", new IllegalStateException("the Comment button took no click"));
                 return;
@@ -179,14 +187,21 @@ public final class PostLongPress {
     @Nullable
     static View rowAt(View root, int x, int y) {
         View view = hit(root, x, y);
+        View picture = null;
         while (view != null) {
-            if (view.isLongClickable()) return null;
+            if (view.isLongClickable()) {
+                // On the S22 the post's photo has a long press that shows nothing. It's still the
+                // photo when it's the only one on the path and spans the row, unlike a grid tile.
+                if (picture != null || !(view instanceof ImageView)) return null;
+                picture = view;
+            }
             ViewParent parent = view.getParent();
             if (!(parent instanceof View)) return null;
             View up = (View) parent;
             if (isNamed(up, LIST)) {
                 if (!up.canScrollVertically(1) && !up.canScrollVertically(-1)) return null;
                 if (view.getWidth() == up.getWidth() && view.getHeight() == up.getHeight()) return null;
+                if (picture != null && picture.getWidth() < view.getWidth()) return null;
                 return view;
             }
             if (isScroller(up)) return null;
