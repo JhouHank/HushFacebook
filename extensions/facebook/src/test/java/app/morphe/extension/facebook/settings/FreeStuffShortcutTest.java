@@ -98,6 +98,28 @@ public class FreeStuffShortcutTest {
         assertEquals(Intent.FLAG_ACTIVITY_NEW_TASK, free.getIntent().getFlags() & Intent.FLAG_ACTIVITY_NEW_TASK);
     }
 
+    @Test public void facebooksTwoLinkTakersStillPublishAndOpenTheRouter() {
+        // Facebook takes the link in its catch-all alias as well as IntentUriHandler, and on the
+        // phone resolveActivity then answers Android's chooser, so the entry never showed (#52).
+        Context context = RuntimeEnvironment.getApplication();
+        ResolveInfo alias = new ResolveInfo();
+        alias.activityInfo = new ActivityInfo();
+        alias.activityInfo.packageName = context.getPackageName();
+        alias.activityInfo.name = "com.facebook.deeplinking.aliasactivity.CatchAllUriAliasActivity";
+        alias.activityInfo.targetActivity = "com.facebook.silentapp.SilentAppActivity";
+        shadowOf(context.getPackageManager()).addResolveInfoForIntent(FreeStuffShortcut.intent(context), alias);
+        Settings.FREE_STUFF_SHORTCUT.save(true);
+        assertTrue(aStartPublishes());
+        String router = context.getPackageName() + ".IntentUriHandler";
+        ShortcutInfo free = shortcut(context.getSystemService(ShortcutManager.class), FreeStuffShortcut.ID);
+        assertEquals(router, free.getIntent().getComponent().getClassName());
+        assertTrue(FreeStuffShortcut.wanted(context));
+        assertTrue(FreeStuffShortcut.open(context));
+        Intent started = shadowOf(RuntimeEnvironment.getApplication()).getNextStartedActivity();
+        assertEquals(router, started.getComponent().getClassName());
+        assertEquals(FreeStuffShortcut.ROUTE, started.getDataString());
+    }
+
     @Test public void itSitsBesideTheWatchHistoryEntryWithoutTakingItsPlace() {
         Context context = RuntimeEnvironment.getApplication();
         ShortcutManager manager = context.getSystemService(ShortcutManager.class);

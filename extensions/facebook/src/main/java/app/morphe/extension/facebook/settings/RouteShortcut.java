@@ -8,6 +8,9 @@ import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
 import android.graphics.Bitmap;
@@ -84,10 +87,24 @@ final class RouteShortcut {
         }
     }
 
-    /** The activity of this package that takes the route, or null. */
+    /**
+     * The activity of this package that takes the route, or null. Facebook takes a facebook.com link
+     * in two places once it turns on its catch-all alias (to SilentAppActivity) next to
+     * IntentUriHandler, and then resolveActivity answers Android's chooser, not either of them
+     * (Discussion #52). So this asks for every taker and prefers an activity of its own over an alias.
+     */
     private ComponentName destination(Context context) {
-        ComponentName destination = intent(context).resolveActivity(context.getPackageManager());
-        return destination != null && context.getPackageName().equals(destination.getPackageName()) ? destination : null;
+        List<ResolveInfo> takers = context.getPackageManager()
+                .queryIntentActivities(intent(context), PackageManager.MATCH_DEFAULT_ONLY);
+        ComponentName alias = null;
+        for (ResolveInfo taker : takers) {
+            ActivityInfo activity = taker.activityInfo;
+            if (activity == null || !context.getPackageName().equals(activity.packageName)) continue;
+            ComponentName component = new ComponentName(activity.packageName, activity.name);
+            if (activity.targetActivity == null) return component;
+            if (alias == null) alias = component;
+        }
+        return alias;
     }
 
     void refresh(Context context) {
