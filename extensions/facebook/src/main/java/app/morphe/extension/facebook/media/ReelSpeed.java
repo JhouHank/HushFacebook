@@ -4,6 +4,8 @@
  */
 package app.morphe.extension.facebook.media;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.SystemClock;
 
 import androidx.annotation.Nullable;
@@ -46,9 +48,11 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * Facebook's speed. A reel that started before the pick, such as the next one Facebook readies in
  * advance, gets it when it starts again. A reel paused and started again after that, a reel held at
  * 2x and anything else set on the reel you're watching stay as they are until the next reel.
- * Picking normal speed goes back to Facebook's reset for that viewer. The speeds live in memory
- * only, so they're gone when Facebook restarts, and nothing is kept or applied while the switch is
- * off, Hushfacebook is paused, the settings aren't ready, or anything here fails.
+ * Picking normal speed goes back to Facebook's reset for that viewer. The speeds are saved in a
+ * preferences file of their own ({@link #FILE}), so they last through a restart of Facebook or the
+ * phone (#199) and never reach the settings export or the diagnostic report. Nothing is kept or
+ * applied while the switch is off, Hushfacebook is paused, the settings aren't ready, or anything
+ * here fails.
  *
  * <p>Keep the video speed, the patch's second switch, does the same for videos that aren't reels: a
  * speed picked in a feed or Watch video's gear menu is kept once for every viewer, and each next
@@ -102,6 +106,19 @@ public final class ReelSpeed {
     };
 
     private static final String FAMILY = FamilyNames.KEEP_REEL_SPEED;
+
+    /** The preferences file the kept speeds are saved in, in Facebook's own preferences folder. Only this class writes it. */
+    static final String FILE = "hushfacebook_kept_speeds";
+
+    /** The key the video speed is saved under. A viewer's reel speed is saved under {@link #REEL_KEY} and its origin. */
+    private static final String VIDEO_KEY = "video";
+    private static final String REEL_KEY = "reel:";
+
+    /** How many viewers' reel speeds are saved. Facebook has a short list of viewers; a pick past it is kept until a restart. */
+    static final int MAX_SAVED = 32;
+
+    /** The fastest speed read back from the file. Facebook's menus top out at 2x. */
+    private static final float FASTEST = 4f;
 
     /** What this class reads from a player and does to it. {@link #PATCHED} is the patch's; tests stand in. */
     interface Player {
@@ -180,6 +197,13 @@ public final class ReelSpeed {
     /** The player that last started playing, weakly: the reel on screen when its menu opens. */
     @Nullable
     private static WeakReference<Object> lastStartedPlayer;
+
+    /** Whether the saved speeds have been read into {@link #KEPT} and {@link #videoKept}. */
+    private static boolean loaded;
+
+    /** The file the speeds are saved in, or null outside Facebook's main process or before a context. */
+    @Nullable
+    private static SharedPreferences saved;
 
     private ReelSpeed() {
     }
@@ -428,7 +452,9 @@ public final class ReelSpeed {
                     String viewer = onScreen == null ? null : originName(onScreen);
                     if (viewer != null) {
                         synchronized (LOCK) {
+                            loadSaved();
                             KEPT.remove(viewer);
+                            save(REEL_KEY + viewer, null);
                         }
                     }
                     Logger.printDebug(() -> viewer != null
@@ -441,10 +467,13 @@ public final class ReelSpeed {
             }
             Object params = access.params(player);
             synchronized (LOCK) {
+                loadSaved();
                 if (same(speed, NORMAL)) {
                     KEPT.remove(origin);
+                    save(REEL_KEY + origin, null);
                 } else {
                     KEPT.put(origin, speed);
+                    save(REEL_KEY + origin, KEPT.size() <= MAX_SAVED ? speed : null);
                 }
                 // The reel picked on already plays at the speed.
                 if (params != null) HANDLED.put(player, new WeakReference<>(params));
@@ -472,7 +501,9 @@ public final class ReelSpeed {
             return;
         }
         synchronized (LOCK) {
+            loadSaved();
             videoKept = same(speed, NORMAL) ? null : speed;
+            save(VIDEO_KEY, videoKept);
             // The video picked on already plays at the speed.
             HANDLED.put(player, new WeakReference<>(params));
         }
@@ -497,6 +528,7 @@ public final class ReelSpeed {
             Float reelKept;
             Float videoSpeed;
             synchronized (LOCK) {
+                loadSaved();
                 lastStartedPlayer = new WeakReference<>(player);
                 reelKept = !reels || origin == null ? null : KEPT.get(origin);
                 videoSpeed = videos ? videoKept : null;
@@ -572,6 +604,52 @@ public final class ReelSpeed {
         return Math.abs(a - b) < SAME;
     }
 
+    // ------------------------------------------------------------------ the saved speeds
+
+    /**
+     * Reads the saved speeds into memory the first time a hook needs them, so after a restart of
+     * Facebook or the phone the next reel or video starts where the last pick left it. A value
+     * that can't be a pick is skipped. Holds {@link #LOCK}.
+     */
+    private static void loadSaved() {
+        if (loaded) return;
+        loaded = true;
+        if (saved == null) {
+            Context context = Utils.getContext();
+            if (context == null || !Utils.isMainProcess()) return;
+            saved = context.getSharedPreferences(FILE, Context.MODE_PRIVATE);
+        }
+        for (Map.Entry<String, ?> entry : saved.getAll().entrySet()) {
+            Object value = entry.getValue();
+            if (!(value instanceof Float) || !usable((Float) value)) continue;
+            String key = entry.getKey();
+            if (VIDEO_KEY.equals(key)) {
+                videoKept = (Float) value;
+            } else if (key.startsWith(REEL_KEY) && key.length() > REEL_KEY.length()) {
+                KEPT.put(key.substring(REEL_KEY.length()), (Float) value);
+            }
+        }
+        String read = KEPT + (videoKept == null ? "" : ", video " + videoKept);
+        Logger.printDebug(() -> "Reel speed: read the saved speeds " + read);
+    }
+
+    /** Whether [speed], read back from the file, is one a menu could have picked and normal isn't. */
+    private static boolean usable(float speed) {
+        return !Float.isNaN(speed) && speed >= SLOWER[0] - SAME && speed <= FASTEST && !same(speed, NORMAL);
+    }
+
+    /** Saves [speed] under [key], or removes the key when [speed] is null. Holds {@link #LOCK}. */
+    private static void save(String key, @Nullable Float speed) {
+        if (saved == null) return;
+        SharedPreferences.Editor edit = saved.edit();
+        if (speed == null) {
+            edit.remove(key);
+        } else {
+            edit.putFloat(key, speed);
+        }
+        edit.apply();
+    }
+
     /** The player a pick of [speed] at [now] set its speed on, or null when none did just before. */
     @Nullable
     static Object pickedPlayer(float speed, long now) {
@@ -611,6 +689,7 @@ public final class ReelSpeed {
     /** The speed kept for [origin], or {@link #NORMAL} when none is. For tests. */
     static float kept(String origin) {
         synchronized (LOCK) {
+            loadSaved();
             Float kept = KEPT.get(origin);
             return kept == null ? NORMAL : kept;
         }
@@ -619,12 +698,13 @@ public final class ReelSpeed {
     /** The speed kept for feed and Watch videos, or {@link #NORMAL} when none is. For tests. */
     static float videoKept() {
         synchronized (LOCK) {
+            loadSaved();
             return videoKept == null ? NORMAL : videoKept;
         }
     }
 
-    /** Forgets every kept speed, the last speed set and every started video. For tests. */
-    static void forget() {
+    /** Forgets what's in memory, as a restart of Facebook does, and leaves the saved speeds. For tests. */
+    static void restart() {
         synchronized (LOCK) {
             videoKept = null;
             lastSetPlayer = null;
@@ -633,6 +713,16 @@ public final class ReelSpeed {
             lastStartedPlayer = null;
             KEPT.clear();
             HANDLED.clear();
+            loaded = false;
+        }
+    }
+
+    /** Forgets every kept speed, the saved ones too, the last speed set and every started video. For tests. */
+    static void forget() {
+        restart();
+        synchronized (LOCK) {
+            if (saved != null) saved.edit().clear().commit();
+            saved = null;
         }
         access = PATCHED;
     }

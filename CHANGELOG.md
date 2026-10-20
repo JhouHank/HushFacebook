@@ -20,6 +20,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Changed
 
+* **Facebook:** `Keep the reel speed` and `Keep the video speed` remember the speed you picked after Facebook or the phone restarts, so the first reel or video you play starts at it. Pick normal speed and it's gone for good (#199).
 * **Facebook:** `Turn off screen transitions` also skips the zoom a photo opens and closes with. Tap a photo in the feed and it's full screen right away, and Back puts it away without shrinking it into the post. Dragging a photo away still follows your finger.
 * **Facebook:** `Turn off screen transitions` also skips the slides of screens Facebook opens inside the app, the ones that slide in from the side and back out to the right when you press Back. They just appear and go now.
 * **Facebook:** `Turn off screen transitions` also covers posts with several photos. Tap one of the photos and its page is there right away, without the photo growing out of its tile or the gray background fading in. Back closes it just as fast, with no shrink into the tile or slide off the screen.

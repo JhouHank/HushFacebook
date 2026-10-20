@@ -777,7 +777,7 @@ Turn off double tap to like	关闭双击点赞
 A double tap on a reel or video no longer likes it or shows a heart. A single tap and the Like button work as before.	双击 Reels 或视频不再点赞，也不会显示爱心。单击和“赞”按钮照常使用。
 Keep the reel speed	保持 Reels 播放速度
 # context: summary of that switch
-A playback speed you pick in a reel's menu stays for the next reels until you pick another or Facebook restarts. Off, every reel starts at normal speed.	你在 Reels 菜单中选择的播放速度会保留给后面的 Reels，直到你选择其他速度或 Facebook 重启。关闭后，每个 Reels 都以正常速度开始。
+A playback speed you pick in a reel's menu stays for the next reels, after a restart too, until you pick another. Off, every reel starts at normal speed.	你在 Reels 菜单中选择的播放速度会保留给后面的 Reels，重启后也一样，直到你选择其他速度。关闭后，每个 Reels 都以正常速度开始。
 Hold a reel for 2x	按住 Reels 以 2 倍速播放
 # context: summary of that switch; more button is the reel's own button with three dots
 Holding a reel plays it at double speed until you let go, in place of Facebook's long-press menu. The reel's more button still opens that menu.	按住 Reels 会以两倍速播放，直到你松手，取代 Facebook 的长按菜单。Reels 的“更多”按钮仍可打开那个菜单。

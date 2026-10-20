@@ -66,8 +66,8 @@ internal const val PATCH = "Keep the reel speed"
 val keepReelSpeedPatch = bytecodePatch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Keep the reel speed",
-    description = "A speed you pick in a reel's menu stays for the next reels until Facebook restarts, so you " +
-        "don't set it every time. On by default. A second switch for feed and Watch videos starts off. Both are " +
+    description = "A speed you pick in a reel's menu stays for the next reels, even after Facebook restarts, " +
+        "so you don't set it every time. Pick normal speed to go back. On by default. A second switch for feed and Watch videos starts off. Both are " +
         "in Hushfacebook settings > Reels and Watch.",
     default = true,
 ) {
