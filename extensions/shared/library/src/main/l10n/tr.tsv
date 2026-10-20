@@ -1749,3 +1749,7 @@ Skipping silent parts again	Sessiz kısımlar yeniden atlanıyor
 Hide posts from groups you're not in	Üyesi olmadığınız grupların gönderilerini gizle
 # context: summary of that switch; a friend's share of a group post is a post on the friend's own profile that shares a group post, and it stays
 Hides posts from groups you haven't joined, like a friend's post in a public group. Posts from your groups and a friend's share of a group post stay.	Katılmadığınız grupların gönderilerini gizler, örneğin bir arkadaşınızın herkese açık bir gruptaki gönderisini. Üyesi olduğunuz grupların gönderileri ve bir arkadaşınızın paylaştığı grup gönderileri kalır.
+# context: switch title under Search; For you is the section of searches Facebook suggests on the search screen before anything is typed, under a header that reads For you
+Hide For you in search	Aramada Sizin İçin bölümünü gizle
+# context: summary of that switch; recent searches are the user's own past searches, and the suggestions as you type are the ones under the search box while typing
+Hides the For you searches Facebook suggests when you open search. Your recent searches and the suggestions as you type stay.	Aramayı açtığınızda Facebook'un önerdiği Sizin İçin aramalarını gizler. Son aramalarınız ve yazarken çıkan öneriler kalır.

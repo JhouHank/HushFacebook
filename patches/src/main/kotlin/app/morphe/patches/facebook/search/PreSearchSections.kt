@@ -35,9 +35,12 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  * (LX/Bne) draws each entry in its event method's item case (A2c): it reads the entry's node (A00, a
  * tree LX/7RO), then the node's module tree through a static (tree, Class, key, tag) reader
  * (LX/3gt;->A09 to LX/7RP), and draws that as a native template, or an empty row when there's none.
- * No field names either section; the node's "rendered_modules" string, which Facebook hands its own
- * performance logger, is the nearest thing. So this is a read-only probe: the extension logs, with
- * Debug logging on, each entry's type names and module names, and never its id or text.
+ * (The empty row is a Litho column with no children and no style, LX/2aC.) No field is named for a
+ * section, but the node's "rendered_modules" string, which Facebook hands its own performance logger,
+ * says what it holds: on the S22 (583, 2026-10-20) the For you section is the one entry whose node
+ * lists TRENDING_QUERY_SUGGESTION there. The extension logs, with Debug logging on, each entry's type
+ * names and module names, never its id or text, and answers the module to draw: null, Facebook's
+ * empty row, while Hide For you in search is on and the entry is For you.
  */
 
 /** The name the pre-search section gives itself. */
@@ -47,12 +50,15 @@ internal const val PRE_SEARCH_SECTION = "SearchTypeaheadPaginableSection"
 internal const val PRE_SEARCH_LIST = "null_state_results_paginating"
 
 internal const val PRE_SEARCH_ENTRY =
-    "$EXTENSION_PACKAGE/search/PreSearchSections;->entry(Ljava/lang/Object;Ljava/lang/Object;)V"
+    "$EXTENSION_PACKAGE/search/PreSearchSections;->entry(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"
 
 private const val PAGINABLE_LIST_READER = "getCachedPaginableTreeList"
 
-/** Where an entry is drawn: [read] is the `move-result-object` keeping the [module] tree read off the [node]. */
-internal data class PreSearchSite(val method: Method, val read: Int, val node: Int, val module: Int)
+/**
+ * Where an entry is drawn: [read] is the `move-result-object` keeping the [module] tree read off the
+ * [node], whose reader answers a [moduleType].
+ */
+internal data class PreSearchSite(val method: Method, val read: Int, val node: Int, val module: Int, val moduleType: String)
 
 /**
  * The entry class of the pre-search list: the `const-class` loaded right before the
@@ -123,13 +129,16 @@ private fun siteAt(method: Method, code: List<Instruction>, index: Int, entry: S
     if (code.getOrNull(reader + 1)?.opcode != Opcode.MOVE_RESULT_OBJECT) return null
     val module = (code[reader + 1] as OneRegisterInstruction).registerA
     if (module == node) return null
-    return PreSearchSite(method, reader + 1, node, module)
+    val moduleType = ((code[reader] as ReferenceInstruction).reference as MethodReference).returnType
+    if (!moduleType.startsWith("L")) return null
+    return PreSearchSite(method, reader + 1, node, module, moduleType)
 }
 
 /**
- * Right after the module tree is kept, hand the node and the module to the extension, which only
- * reads them. Refuses unless the section, its entry class and one site are found, and nothing jumps
- * past the call.
+ * Right after the module tree is kept, hand the node and the module to the extension and keep its
+ * answer as the module, cast back to the reader's type, so Facebook's own null test draws the empty
+ * row for a null. Refuses unless the section, its entry class and one site are found, and nothing
+ * jumps past the call.
  */
 internal fun BytecodePatchContext.hookPreSearchSections() {
     val entry = preSearchEntryType() ?: throw PatchException("no single entry class for \"$PRE_SEARCH_LIST\"")
@@ -148,7 +157,11 @@ internal fun BytecodePatchContext.hookPreSearchSections() {
     }
     mutableClassDefBy(section.type).findMutableMethodOf(site.method).addInstructions(
         site.read + 1,
-        "invoke-static { v${site.node}, v${site.module} }, $PRE_SEARCH_ENTRY",
+        """
+            invoke-static { v${site.node}, v${site.module} }, $PRE_SEARCH_ENTRY
+            move-result-object v${site.module}
+            check-cast v${site.module}, ${site.moduleType}
+        """,
     )
 }
 

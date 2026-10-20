@@ -1749,3 +1749,7 @@ Skipping silent parts again	Lại bỏ qua đoạn im lặng
 Hide posts from groups you're not in	Ẩn bài viết từ nhóm bạn chưa tham gia
 # context: summary of that switch; a friend's share of a group post is a post on the friend's own profile that shares a group post, and it stays
 Hides posts from groups you haven't joined, like a friend's post in a public group. Posts from your groups and a friend's share of a group post stay.	Ẩn bài viết từ các nhóm bạn chưa tham gia, như bài viết của bạn bè trong một nhóm công khai. Bài viết từ nhóm của bạn và bài viết nhóm do bạn bè chia sẻ vẫn giữ nguyên.
+# context: switch title under Search; For you is the section of searches Facebook suggests on the search screen before anything is typed, under a header that reads For you
+Hide For you in search	Ẩn Dành cho bạn trong tìm kiếm
+# context: summary of that switch; recent searches are the user's own past searches, and the suggestions as you type are the ones under the search box while typing
+Hides the For you searches Facebook suggests when you open search. Your recent searches and the suggestions as you type stay.	Ẩn các tìm kiếm Dành cho bạn mà Facebook gợi ý khi bạn mở tìm kiếm. Các tìm kiếm gần đây và gợi ý khi bạn gõ vẫn giữ nguyên.

@@ -13,7 +13,8 @@
  * may know switch also reaches the carousel on your own profile, through a hook in that section's
  * children builder. It also fills the two accessors the switch for posts from groups you're not in
  * reads: a story's group and that group's join state. On the search screen, before anything is
- * typed, it hands each row's type names to the extension for Debug logging, changing nothing.
+ * typed, it hands each row to the extension, which draws the For you section as an empty row while
+ * Hide For you in search is on, and names every row for Debug logging.
  */
 package app.morphe.patches.facebook.feed.suggested
 
@@ -195,11 +196,11 @@ val hideSuggestedPostsPatch = bytecodePatch(
         } catch (exception: PatchException) {
             patchLog.warning("${exception.message}, so Hide posts from groups you're not in keeps every post.")
         }
-        // The search screen's People you may know and For you sections are read-only for now: Debug logs their types (#80).
+        // The search screen's For you section, and Debug logging's names for every row there (#80).
         try {
             hookPreSearchSections()
         } catch (exception: PatchException) {
-            patchLog.warning("${exception.message}, so Debug logging doesn't name the search screen's sections.")
+            patchLog.warning("${exception.message}, so For you stays on the search screen.")
         }
         enableStatus("suggestedPosts")
     }

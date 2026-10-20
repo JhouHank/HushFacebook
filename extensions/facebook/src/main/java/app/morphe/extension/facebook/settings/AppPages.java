@@ -205,7 +205,8 @@ final class AppPages {
     /** Search. */
     static void search(HushfacebookPreferenceFragment page, PreferenceScreen screen, Context context,
             Set<PatchFamily> build) {
-        if (build.contains(PatchFamily.META_AI_SEARCH) || build.contains(PatchFamily.SPONSORED_SEARCH)) {
+        if (build.contains(PatchFamily.META_AI_SEARCH) || build.contains(PatchFamily.SPONSORED_SEARCH)
+                || build.contains(PatchFamily.SUGGESTED_POSTS)) {
             PreferenceCategory search = category(screen, L10n.t("Search"));
             if (build.contains(PatchFamily.META_AI_SEARCH)) {
                 search.addPreference(toggle(context, Settings.HIDE_META_AI_IN_SEARCH,
@@ -215,6 +216,11 @@ final class AppPages {
             if (build.contains(PatchFamily.SPONSORED_SEARCH)) {
                 search.addPreference(toggle(context, Settings.HIDE_SPONSORED_SEARCH_RESULTS,
                         L10n.t("Hides ads between your search results. The results you searched for stay.")));
+            }
+            if (build.contains(PatchFamily.SUGGESTED_POSTS)) {
+                search.addPreference(toggle(context, Settings.HIDE_SEARCH_FOR_YOU,
+                        L10n.t("Hides the For you searches Facebook suggests when you open search. Your recent searches "
+                                + "and the suggestions as you type stay.")));
             }
         }
     }

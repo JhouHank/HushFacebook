@@ -1749,3 +1749,7 @@ Skipping silent parts again	Bagian yang hening dilewati lagi
 Hide posts from groups you're not in	Sembunyikan postingan dari grup yang belum kamu ikuti
 # context: summary of that switch; a friend's share of a group post is a post on the friend's own profile that shares a group post, and it stays
 Hides posts from groups you haven't joined, like a friend's post in a public group. Posts from your groups and a friend's share of a group post stay.	Menyembunyikan postingan dari grup yang belum kamu ikuti, seperti postingan teman di grup publik. Postingan dari grup kamu dan postingan grup yang dibagikan teman tetap ada.
+# context: switch title under Search; For you is the section of searches Facebook suggests on the search screen before anything is typed, under a header that reads For you
+Hide For you in search	Sembunyikan Untuk Anda di pencarian
+# context: summary of that switch; recent searches are the user's own past searches, and the suggestions as you type are the ones under the search box while typing
+Hides the For you searches Facebook suggests when you open search. Your recent searches and the suggestions as you type stay.	Menyembunyikan pencarian Untuk Anda yang disarankan Facebook saat kamu membuka pencarian. Pencarian terbaru kamu dan saran saat mengetik tetap ada.

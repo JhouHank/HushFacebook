@@ -20,6 +20,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstructio
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -31,8 +32,9 @@ import org.junit.Test
  * "SearchTypeaheadPaginableSection", and one place in its own methods reads an entry's node and the
  * module tree off it. That class is the section Facebook logs "rendered_modules" for and compares
  * entries by "unique_id" in, and the module goes on to be drawn as a tree. The patch adds one call
- * after the module is kept, handing over both, and changes nothing else. Reads the fixture bundles
- * from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
+ * after the module is kept, handing over both, keeps its answer as the module cast back to the
+ * reader's type, and changes nothing else. Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR
+ * and skips without it.
  */
 class PreSearchSectionsFixtureTest {
     private fun Method.code(): List<Instruction> = implementation!!.instructions.toList()
@@ -88,14 +90,24 @@ class PreSearchSectionsFixtureTest {
                             patchedMethod.parameterTypes.map(CharSequence::toString) ==
                             site.method.parameterTypes.map(CharSequence::toString)
                     }.code()
-                // The 3-unit call can move a switch payload, which gains or loses an alignment nop.
-                assertEquals("$name: one instruction added", code.opcodes().size + 1, patched.opcodes().size)
+                // The added code can move a switch payload, which gains or loses an alignment nop.
+                assertEquals("$name: three instructions added", code.opcodes().size + 3, patched.opcodes().size)
                 val hand = patched[site.read + 1] as FiveRegisterInstruction
                 assertEquals("$name: the extension handed node and module",
                     listOf(Opcode.INVOKE_STATIC, PRE_SEARCH_ENTRY, 2, site.node, site.module),
                     listOf(hand.opcode, hand.call().toString(), hand.registerCount, hand.registerC, hand.registerD))
+                val kept = patched[site.read + 2] as OneRegisterInstruction
+                assertEquals("$name: the extension's answer is the module",
+                    listOf(Opcode.MOVE_RESULT_OBJECT, site.module), listOf(kept.opcode, kept.registerA))
+                val cast = patched[site.read + 3]
+                assertEquals("$name: the answer is cast back to the reader's type",
+                    listOf(Opcode.CHECK_CAST, site.module, site.moduleType),
+                    listOf(cast.opcode, (cast as OneRegisterInstruction).registerA,
+                        ((cast as ReferenceInstruction).reference as TypeReference).type))
+                assertEquals("$name: the reader's type is what it returns",
+                    code[site.read - 1].call()?.returnType, site.moduleType)
                 assertEquals("$name: the rest is Facebook's", code.opcodes(),
-                    patched.filterIndexed { index, _ -> index != site.read + 1 }.opcodes())
+                    patched.filterIndexed { index, _ -> index !in site.read + 1..site.read + 3 }.opcodes())
                 checked += version
             }
         }

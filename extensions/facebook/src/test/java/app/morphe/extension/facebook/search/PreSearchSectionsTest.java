@@ -6,6 +6,8 @@ package app.morphe.extension.facebook.search;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.After;
@@ -16,11 +18,20 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
+import app.morphe.extension.facebook.settings.FamilyNames;
+import app.morphe.extension.facebook.settings.PatchFamily;
+import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
+import app.morphe.extension.shared.diagnostics.HookStatus;
 import app.morphe.extension.shared.settings.BaseSettings;
+import app.morphe.extension.shared.settings.HushfacebookPause;
+import app.morphe.extension.shared.settings.PauseForTests;
 import app.morphe.extension.shared.settings.preference.LogBufferManager;
 
-/** The search screen's rows are named with Debug logging on, and only by type and module names (#80). */
+/**
+ * The search screen before typing (#80): For you is drawn as an empty row while its switch is on,
+ * and with Debug logging on the rows are named, only by type and module names.
+ */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
 public class PreSearchSectionsTest {
@@ -62,9 +73,78 @@ public class PreSearchSectionsTest {
 
     @After
     public void restore() {
+        PauseForTests.resume();
         PreSearchSections.forget();
         BaseSettings.DEBUG.resetToDefault();
+        Settings.HIDE_SEARCH_FOR_YOU.resetToDefault();
         LogBufferManager.clearLogBuffer();
+        HookStatus.clear();
+    }
+
+    private static Tree forYou() {
+        return new Tree(PreSearchSections.FOR_YOU_NODE, true, PreSearchSections.FOR_YOU_MODULE);
+    }
+
+    private static String statusLine() {
+        for (String line : HookStatus.report()) {
+            if (line.startsWith(FamilyNames.SUGGESTED_POSTS + ":")) return line;
+        }
+        return "";
+    }
+
+    @Test
+    public void theSwitchStartsOffAndOffDrawsForYou() {
+        BaseSettings.DEBUG.save(false);
+        assertFalse(Settings.HIDE_SEARCH_FOR_YOU.defaultValue);
+        assertTrue(PatchFamily.SUGGESTED_POSTS.switches.contains(Settings.HIDE_SEARCH_FOR_YOU));
+        Tree node = forYou();
+        Object module = new Tree("NativeTemplateView", true, null);
+        assertSame(module, PreSearchSections.entry(node, module));
+        assertEquals("off reads nothing off the node", 0, node.stringReads);
+        assertFalse(statusLine().contains(PreSearchSections.HIDDEN));
+    }
+
+    @Test
+    public void onDrawsForYouAsAnEmptyRow() {
+        Settings.HIDE_SEARCH_FOR_YOU.save(true);
+        assertNull(PreSearchSections.entry(forYou(), new Tree("NativeTemplateView", true, null)));
+        // For you among a few module names is enough.
+        assertNull(PreSearchSections.entry(new Tree(PreSearchSections.FOR_YOU_NODE, true,
+                "SEARCH_HEADER, " + PreSearchSections.FOR_YOU_MODULE), new Tree("NativeTemplateView", true, null)));
+        String line = statusLine();
+        assertTrue(line, line.contains(PreSearchSections.HIDDEN + " 2"));
+        // Debug logging still names the row Facebook would have drawn.
+        assertTrue(log(), log().contains("node=" + PreSearchSections.FOR_YOU_NODE + " module=NativeTemplateView rendered_modules="
+                + PreSearchSections.FOR_YOU_MODULE));
+    }
+
+    @Test
+    public void everyOtherRowStays() {
+        Settings.HIDE_SEARCH_FOR_YOU.save(true);
+        Object module = new Tree("NativeTemplateView", true, null);
+        assertSame(module, PreSearchSections.entry(new Tree(PreSearchSections.FOR_YOU_NODE, true, "RECENT_SEARCHES"), module));
+        assertSame(module, PreSearchSections.entry(new Tree(PreSearchSections.FOR_YOU_NODE, true, null), module));
+        assertSame(module, PreSearchSections.entry(new Tree(PreSearchSections.FOR_YOU_NODE, true,
+                PreSearchSections.FOR_YOU_MODULE + "_V2"), module));
+        assertSame(module, PreSearchSections.entry(new Tree("SearchNullStateUnit", true, PreSearchSections.FOR_YOU_MODULE), module));
+        // A released node can't be read, so its row is Facebook's.
+        Tree released = new Tree(PreSearchSections.FOR_YOU_NODE, false, PreSearchSections.FOR_YOU_MODULE);
+        assertSame(module, PreSearchSections.entry(released, module));
+        assertEquals(0, released.stringReads);
+        // An empty row stays empty.
+        assertNull(PreSearchSections.entry(forYou(), null));
+        assertFalse(statusLine().contains(PreSearchSections.HIDDEN));
+    }
+
+    @Test
+    public void pausedOrBeforeTheSettingsAreReadyDrawsForYou() {
+        Settings.HIDE_SEARCH_FOR_YOU.save(true);
+        Object module = new Tree("NativeTemplateView", true, null);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertSame(module, PreSearchSections.entry(forYou(), module));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> assertSame(module, PreSearchSections.entry(forYou(), module)));
+        assertNull(PreSearchSections.entry(forYou(), module));
     }
 
     private static String log() {
@@ -111,7 +191,8 @@ public class PreSearchSectionsTest {
     public void debugOffLogsNothingAndTouchesNothing() {
         BaseSettings.DEBUG.save(false);
         Tree node = new Tree("SearchNullStateUnit", true, "RECENT_SEARCHES");
-        PreSearchSections.entry(node, new Tree("NTSearchModule", true, null));
+        Object module = new Tree("NTSearchModule", true, null);
+        assertSame(module, PreSearchSections.entry(node, module));
         assertEquals(0, node.stringReads);
         assertFalse(log(), log().contains(PreSearchSections.PREFIX));
     }
