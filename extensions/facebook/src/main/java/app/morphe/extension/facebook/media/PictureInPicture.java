@@ -187,6 +187,14 @@ public final class PictureInPicture {
      */
     static final long BRING_BACK_GAP_MS = 3000;
 
+    /**
+     * How long after a start got a task of its own while a reel floats a screen opening in the window
+     * is left alone. The page is already full screen in its own task, so starting Facebook again would
+     * only stack its launcher screen over it: on the S22 a SimpleLoginActivity opened and closed in the
+     * window right after a link's page left it, and the launcher start covered the page.
+     */
+    static final long SENT_AWAY_GAP_MS = 5000;
+
     private static final String FAMILY = FamilyNames.PICTURE_IN_PICTURE;
 
     /** The Android version the hooks go by. Tests stand in a later one. */
@@ -211,6 +219,9 @@ public final class PictureInPicture {
 
     /** When a page in the window last brought Facebook back, in uptime milliseconds. */
     private static long broughtBackAt = -BRING_BACK_GAP_MS;
+
+    /** When a start while a reel floats last got a task of its own, in uptime milliseconds. */
+    private static long sentAwayAt = -SENT_AWAY_GAP_MS;
 
     /** The application the page watch went on, so arming again adds no second one. */
     private static WeakReference<Application> watching = new WeakReference<>(null);
@@ -512,20 +523,26 @@ public final class PictureInPicture {
 
     /**
      * Whether [activity] opened in the armed screen's task while that screen floats in the window,
-     * with the switch on and Facebook not brought back in the last {@link #BRING_BACK_GAP_MS}, as of
-     * [now]. Answering yes starts that gap.
+     * with the switch on, Facebook not brought back in the last {@link #BRING_BACK_GAP_MS} and no start
+     * sent to a task of its own in the last {@link #SENT_AWAY_GAP_MS}, as of [now]. Answering yes
+     * starts that gap.
      */
     static synchronized boolean bringingBack(Activity activity, long now) {
         Activity screen = armedScreen.get();
         if (screen == null || screen == activity) return false;
         if (!screen.isInPictureInPictureMode() || screen.getTaskId() != activity.getTaskId() || !on()) return false;
-        if (now - broughtBackAt < BRING_BACK_GAP_MS) return false;
+        if (now - sentAwayAt < SENT_AWAY_GAP_MS || now - broughtBackAt < BRING_BACK_GAP_MS) return false;
         broughtBackAt = now;
         return true;
     }
 
     private static synchronized Activity armedScreen() {
         return armedScreen.get();
+    }
+
+    /** A start while a reel floats got a task of its own at [now]. */
+    static synchronized void sentAway(long now) {
+        sentAwayAt = now;
     }
 
     /** [activity] paused a moment ago. If it's the armed screen and it floats in the window now, that's noted. */
@@ -625,6 +642,7 @@ public final class PictureInPicture {
                     && intent.getBooleanExtra(UNDER_A_PAGE, false);
             if (!stackFirst && !(floats.equals(target.getClassName()) && looksForTask(context, intent, screen))) return;
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
+            sentAway(SystemClock.uptimeMillis());
             if (stackFirst) stackGoesBy();
             HookStatus.bound(FAMILY, "start while floating");
             HookStatus.counted(FAMILY, OWN_TASK);
@@ -1041,12 +1059,16 @@ public final class PictureInPicture {
         return on() && Settings.PICTURE_IN_PICTURE_FROM_MENU.get();
     }
 
-    /** Forgets what was armed, when a page last brought Facebook back, and a task stack going by. Tests only. */
+    /**
+     * Forgets what was armed, when a page last brought Facebook back or a start last got a task of its
+     * own, and a task stack going by. Tests only.
+     */
     static void forget() {
         arm(null, null, null);
         stackGoingBy.remove();
         synchronized (PictureInPicture.class) {
             broughtBackAt = -BRING_BACK_GAP_MS;
+            sentAwayAt = -SENT_AWAY_GAP_MS;
             floating = new WeakReference<>(null);
         }
     }

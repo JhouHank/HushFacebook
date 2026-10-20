@@ -5,6 +5,8 @@
 package app.morphe.extension.facebook.media;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
 import android.app.Activity;
@@ -13,6 +15,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.os.Looper;
+import android.os.SystemClock;
 
 import java.util.Collections;
 
@@ -155,6 +158,21 @@ public class PictureInPictureOwnTaskTest {
         singleInstance();
         assertEquals(OWN, seen(source, viewerStart(0)));
         assertEquals(1, counted());
+    }
+
+    /** Once the stack's first start has a task of its own, a screen opening in the window is left alone. */
+    @Test
+    public void aScreenInTheWindowAfterTheStackLeftDoesntBringFacebookBack() {
+        assertEquals(OWN, seen(source, stackFirst()));
+        source.task = screen.task;
+        int was = PictureInPicture.apiLevel;
+        PictureInPicture.apiLevel = 31;
+        try {
+            assertFalse(PictureInPicture.bringingBack(source, SystemClock.uptimeMillis()));
+            assertTrue(PictureInPicture.bringingBack(source, SystemClock.uptimeMillis() + PictureInPicture.SENT_AWAY_GAP_MS));
+        } finally {
+            PictureInPicture.apiLevel = was;
+        }
     }
 
     @Test
