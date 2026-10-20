@@ -202,8 +202,8 @@ final class HushfacebookPages {
         if (build.contains(PatchFamily.SCREEN_TRANSITIONS)) {
             // Asked at each tap and each screen change, so a change shows from the next one.
             appearance.addPreference(toggle(context, Settings.TURN_OFF_SCREEN_TRANSITIONS,
-                    L10n.t("Tabs, the Menu and screens that open over Facebook appear at once instead of sliding in. Swiping "
-                            + "between tabs still works.")));
+                    L10n.t("Tabs, the Menu, photos and screens that open over Facebook appear at once instead of sliding or "
+                            + "zooming in. Swiping between tabs still works.")));
         }
         if (build.contains(PatchFamily.APP_ICONS)) {
             // The App icon page asks as it opens. A picked icon is a launcher alias, so it outlives the switch.

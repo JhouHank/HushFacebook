@@ -3314,7 +3314,7 @@
     },
     {
       "name": "Turn off screen transitions",
-      "description": "Shows Facebook's tabs, Menu and new screens at once, without the slide between them, so the app feels quicker. Swipes and animations inside a page stay. Starts off. Turn it on in Hushfacebook settings > Appearance.",
+      "description": "Shows Facebook's tabs, Menu, photos and new screens at once, without the slide or zoom between them, so the app feels quicker. Swipes and animations inside a page stay. Starts off. Turn it on in Hushfacebook settings > Appearance.",
       "category": "Interface",
       "use": true,
       "dependencies": [

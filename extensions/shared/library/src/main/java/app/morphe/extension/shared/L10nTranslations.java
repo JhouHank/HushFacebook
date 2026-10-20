@@ -1941,8 +1941,8 @@ public final class L10nTranslations {
                 "Tab-Leiste oben");
         table.put("Tab to open on",
                 "Tab beim Start");
-        table.put("Tabs, the Menu and screens that open over Facebook appear at once instead of sliding in. Swiping between tabs still works.",
-                "Tabs, das Men\u00fc und Seiten, die sich \u00fcber Facebook \u00f6ffnen, erscheinen sofort, ohne einzugleiten. Das Wischen zwischen Tabs funktioniert weiterhin.");
+        table.put("Tabs, the Menu, photos and screens that open over Facebook appear at once instead of sliding or zooming in. Swiping between tabs still works.",
+                "Tabs, das Men\u00fc, Fotos und Seiten, die sich \u00fcber Facebook \u00f6ffnen, erscheinen sofort, ohne einzugleiten oder heranzuzoomen. Das Wischen zwischen Tabs funktioniert weiterhin.");
         table.put("Tag suggestions only after @",
                 "Markierungsvorschl\u00e4ge nur nach @");
         table.put("Takes away Send to group when you pick two or more people, and the share sheet's own ways to start a new group, so nothing you share makes a group chat by accident. Send separately stays.",
@@ -4278,8 +4278,8 @@ public final class L10nTranslations {
                 "Barra de pesta\u00f1as arriba");
         table.put("Tab to open on",
                 "Pesta\u00f1a al abrir");
-        table.put("Tabs, the Menu and screens that open over Facebook appear at once instead of sliding in. Swiping between tabs still works.",
-                "Las pesta\u00f1as, el Men\u00fa y las pantallas que se abren sobre Facebook aparecen al instante, sin deslizarse. Deslizar entre pesta\u00f1as sigue funcionando.");
+        table.put("Tabs, the Menu, photos and screens that open over Facebook appear at once instead of sliding or zooming in. Swiping between tabs still works.",
+                "Las pesta\u00f1as, el Men\u00fa, las fotos y las pantallas que se abren sobre Facebook aparecen al instante, sin deslizarse ni hacer zoom. Deslizar entre pesta\u00f1as sigue funcionando.");
         table.put("Tag suggestions only after @",
                 "Sugerencias para etiquetar solo despu\u00e9s de @");
         table.put("Takes away Send to group when you pick two or more people, and the share sheet's own ways to start a new group, so nothing you share makes a group chat by accident. Send separately stays.",
@@ -6615,8 +6615,8 @@ public final class L10nTranslations {
                 "Bilah tab di atas");
         table.put("Tab to open on",
                 "Tab saat dibuka");
-        table.put("Tabs, the Menu and screens that open over Facebook appear at once instead of sliding in. Swiping between tabs still works.",
-                "Tab, Menu, dan layar yang terbuka di atas Facebook langsung muncul tanpa efek geser. Menggeser antar tab tetap berfungsi.");
+        table.put("Tabs, the Menu, photos and screens that open over Facebook appear at once instead of sliding or zooming in. Swiping between tabs still works.",
+                "Tab, Menu, foto, dan layar yang terbuka di atas Facebook langsung muncul tanpa efek geser atau zoom. Menggeser antar tab tetap berfungsi.");
         table.put("Tag suggestions only after @",
                 "Saran menandai hanya setelah @");
         table.put("Takes away Send to group when you pick two or more people, and the share sheet's own ways to start a new group, so nothing you share makes a group chat by accident. Send separately stays.",
@@ -8952,8 +8952,8 @@ public final class L10nTranslations {
                 "Barra de abas no alto");
         table.put("Tab to open on",
                 "Aba ao abrir");
-        table.put("Tabs, the Menu and screens that open over Facebook appear at once instead of sliding in. Swiping between tabs still works.",
-                "As abas, o Menu e as telas que abrem sobre o Facebook aparecem na hora, sem deslizar. Deslizar entre abas continua funcionando.");
+        table.put("Tabs, the Menu, photos and screens that open over Facebook appear at once instead of sliding or zooming in. Swiping between tabs still works.",
+                "As abas, o Menu, as fotos e as telas que abrem sobre o Facebook aparecem na hora, sem deslizar nem dar zoom. Deslizar entre abas continua funcionando.");
         table.put("Tag suggestions only after @",
                 "Sugest\u00f5es de marca\u00e7\u00e3o s\u00f3 depois de @");
         table.put("Takes away Send to group when you pick two or more people, and the share sheet's own ways to start a new group, so nothing you share makes a group chat by accident. Send separately stays.",
@@ -11289,8 +11289,8 @@ public final class L10nTranslations {
                 "Sekme \u00e7ubu\u011fu \u00fcstte");
         table.put("Tab to open on",
                 "A\u00e7\u0131l\u0131\u015fta g\u00f6sterilecek sekme");
-        table.put("Tabs, the Menu and screens that open over Facebook appear at once instead of sliding in. Swiping between tabs still works.",
-                "Sekmeler, Men\u00fc ve Facebook'un \u00fczerinde a\u00e7\u0131lan ekranlar kayarak gelmek yerine hemen g\u00f6r\u00fcn\u00fcr. Sekmeler aras\u0131nda kayd\u0131rma yine \u00e7al\u0131\u015f\u0131r.");
+        table.put("Tabs, the Menu, photos and screens that open over Facebook appear at once instead of sliding or zooming in. Swiping between tabs still works.",
+                "Sekmeler, Men\u00fc, foto\u011fraflar ve Facebook'un \u00fczerinde a\u00e7\u0131lan ekranlar kayarak ya da yak\u0131nla\u015farak gelmek yerine hemen g\u00f6r\u00fcn\u00fcr. Sekmeler aras\u0131nda kayd\u0131rma yine \u00e7al\u0131\u015f\u0131r.");
         table.put("Tag suggestions only after @",
                 "Etiket \u00f6nerileri yaln\u0131zca @ sonras\u0131nda");
         table.put("Takes away Send to group when you pick two or more people, and the share sheet's own ways to start a new group, so nothing you share makes a group chat by accident. Send separately stays.",
@@ -13626,8 +13626,8 @@ public final class L10nTranslations {
                 "Thanh tab \u1edf tr\u00ean c\u00f9ng");
         table.put("Tab to open on",
                 "Tab m\u1edf \u0111\u1ea7u ti\u00ean");
-        table.put("Tabs, the Menu and screens that open over Facebook appear at once instead of sliding in. Swiping between tabs still works.",
-                "C\u00e1c tab, Menu v\u00e0 m\u00e0n h\u00ecnh m\u1edf \u0111\u00e8 l\u00ean Facebook xu\u1ea5t hi\u1ec7n ngay thay v\u00ec tr\u01b0\u1ee3t v\u00e0o. Vu\u1ed1t gi\u1eefa c\u00e1c tab v\u1eabn ho\u1ea1t \u0111\u1ed9ng.");
+        table.put("Tabs, the Menu, photos and screens that open over Facebook appear at once instead of sliding or zooming in. Swiping between tabs still works.",
+                "C\u00e1c tab, Menu, \u1ea3nh v\u00e0 m\u00e0n h\u00ecnh m\u1edf \u0111\u00e8 l\u00ean Facebook xu\u1ea5t hi\u1ec7n ngay thay v\u00ec tr\u01b0\u1ee3t hay ph\u00f3ng to v\u00e0o. Vu\u1ed1t gi\u1eefa c\u00e1c tab v\u1eabn ho\u1ea1t \u0111\u1ed9ng.");
         table.put("Tag suggestions only after @",
                 "Ch\u1ec9 g\u1ee3i \u00fd g\u1eafn th\u1ebb sau @");
         table.put("Takes away Send to group when you pick two or more people, and the share sheet's own ways to start a new group, so nothing you share makes a group chat by accident. Send separately stays.",
@@ -15963,8 +15963,8 @@ public final class L10nTranslations {
                 "\u9876\u90e8\u6807\u7b7e\u680f");
         table.put("Tab to open on",
                 "\u6253\u5f00\u65f6\u8fdb\u5165\u7684\u6807\u7b7e\u9875");
-        table.put("Tabs, the Menu and screens that open over Facebook appear at once instead of sliding in. Swiping between tabs still works.",
-                "\u6807\u7b7e\u9875\u3001\u83dc\u5355\u548c\u5728 Facebook \u4e0a\u65b9\u6253\u5f00\u7684\u9875\u9762\u4f1a\u7acb\u5373\u51fa\u73b0\uff0c\u800c\u4e0d\u662f\u6ed1\u5165\u3002\u5728\u6807\u7b7e\u9875\u4e4b\u95f4\u6ed1\u52a8\u4ecd\u7136\u6709\u6548\u3002");
+        table.put("Tabs, the Menu, photos and screens that open over Facebook appear at once instead of sliding or zooming in. Swiping between tabs still works.",
+                "\u6807\u7b7e\u9875\u3001\u83dc\u5355\u3001\u7167\u7247\u548c\u5728 Facebook \u4e0a\u65b9\u6253\u5f00\u7684\u9875\u9762\u4f1a\u7acb\u5373\u51fa\u73b0\uff0c\u800c\u4e0d\u662f\u6ed1\u5165\u6216\u653e\u5927\u3002\u5728\u6807\u7b7e\u9875\u4e4b\u95f4\u6ed1\u52a8\u4ecd\u7136\u6709\u6548\u3002");
         table.put("Tag suggestions only after @",
                 "\u4ec5\u5728\u8f93\u5165 @ \u540e\u663e\u793a\u6807\u8bb0\u5efa\u8bae");
         table.put("Takes away Send to group when you pick two or more people, and the share sheet's own ways to start a new group, so nothing you share makes a group chat by accident. Send separately stays.",
