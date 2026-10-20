@@ -11,7 +11,8 @@
  * suggested groups type names, and the flag Facebook's own Discover unit reads to tell a row of
  * Stories you might like from other rows of Stories, which four more switches read. The People you
  * may know switch also reaches the carousel on your own profile, through a hook in that section's
- * children builder.
+ * children builder. It also fills the two accessors the switch for posts from groups you're not in
+ * reads: a story's group and that group's join state.
  */
 package app.morphe.patches.facebook.feed.suggested
 
@@ -185,6 +186,12 @@ val hideSuggestedPostsPatch = bytecodePatch(
             hookFindFriendsCard()
         } catch (exception: PatchException) {
             patchLog.warning("${exception.message}, so the end of the feed keeps its Find friends card.")
+        }
+        // A friend's post in a group you're not in is an ordinary story; its group's join state tells it apart (#195).
+        try {
+            fillGroupJoinStubs()
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so Hide posts from groups you're not in keeps every post.")
         }
         enableStatus("suggestedPosts")
     }

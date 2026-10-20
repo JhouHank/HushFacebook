@@ -116,6 +116,7 @@ public final class SettingsBackup {
             Settings.HIDE_SUGGESTED_FOR_YOU,
             Settings.HIDE_PEOPLE_YOU_MAY_KNOW,
             Settings.HIDE_SUGGESTED_GROUPS,
+            Settings.HIDE_GROUP_POSTS_NOT_JOINED,
             Settings.HIDE_STORIES_YOU_MIGHT_LIKE,
             Settings.HIDE_FEED_MEMORIES,
             Settings.HIDE_FEED_FRIEND_REQUESTS,

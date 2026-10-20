@@ -612,6 +612,15 @@
     },
     {
       "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/suggested/GroupJoinState.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: posts from groups you aren't in. In Facebook 583 a post in a group carries the group as its to field, a Profile model that answers the type name Group, and that model reads viewer_join_state through getCachedEnum as an enum naming CAN_JOIN, CAN_REQUEST, MEMBER and the rest. Facebook's Join button shows for CAN_JOIN and CAN_REQUEST. The patch finds the one GraphQLStory accessor of to by its field key and type tag, the one accessor of viewer_join_state on that model by its key, and the enum by the names its static initializer holds, and fills two extension stubs with calls to them. The extension hides a post whose group answers either Join button state while the switch is on."
+    },
+    {
+      "paths": [
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/postprompts/PostCounts.kt"
       ],
       "origin": "original",

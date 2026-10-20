@@ -85,6 +85,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_suggested_groups", TRUE);
 
     /**
+     * Posts from groups you aren't in, such as a friend's post in a public group, found by the join
+     * state Facebook's own Join button reads off the group the story was posted to (#195). Posts from
+     * groups you're in and a friend's share of a group post stay. Off until picked.
+     */
+    public static final BooleanSetting HIDE_GROUP_POSTS_NOT_JOINED =
+            new BooleanSetting("hushfacebook_hide_group_posts_not_joined", FALSE);
+
+    /**
      * The row of Stories from people you aren't connected to that Facebook puts between posts,
      * "Stories you might like", found by the flag Facebook's own Discover unit reads for it. A row
      * of your friends' Stories and the Stories tray stay.

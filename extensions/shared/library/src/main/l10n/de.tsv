@@ -1745,3 +1745,7 @@ Skip silent parts: off for this video	Stille Stellen überspringen: aus für die
 Silent parts play in this video	Stille Stellen werden in diesem Video abgespielt
 # context: short message after tapping the row again; silent parts are skipped again
 Skipping silent parts again	Stille Stellen werden wieder übersprungen
+# context: switch title under News feed; posts Facebook shows from groups the user hasn't joined, which come with a Join button next to the group's name
+Hide posts from groups you're not in	Beiträge aus Gruppen ausblenden, in denen du nicht bist
+# context: summary of that switch; a friend's share of a group post is a post on the friend's own profile that shares a group post, and it stays
+Hides posts from groups you haven't joined, like a friend's post in a public group. Posts from your groups and a friend's share of a group post stay.	Blendet Beiträge aus Gruppen aus, denen du nicht beigetreten bist, etwa den Beitrag eines Freundes in einer öffentlichen Gruppe. Beiträge aus deinen Gruppen und das Teilen eines Gruppenbeitrags durch einen Freund bleiben.

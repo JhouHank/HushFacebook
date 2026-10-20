@@ -1745,3 +1745,7 @@ Skip silent parts: off for this video	Lewati bagian yang hening: nonaktif untuk 
 Silent parts play in this video	Bagian yang hening diputar di video ini
 # context: short message after tapping the row again; silent parts are skipped again
 Skipping silent parts again	Bagian yang hening dilewati lagi
+# context: switch title under News feed; posts Facebook shows from groups the user hasn't joined, which come with a Join button next to the group's name
+Hide posts from groups you're not in	Sembunyikan postingan dari grup yang belum kamu ikuti
+# context: summary of that switch; a friend's share of a group post is a post on the friend's own profile that shares a group post, and it stays
+Hides posts from groups you haven't joined, like a friend's post in a public group. Posts from your groups and a friend's share of a group post stay.	Menyembunyikan postingan dari grup yang belum kamu ikuti, seperti postingan teman di grup publik. Postingan dari grup kamu dan postingan grup yang dibagikan teman tetap ada.

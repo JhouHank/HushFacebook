@@ -1637,3 +1637,7 @@ Skip silent parts: off for this video	Pular partes em silêncio: desativado nest
 Silent parts play in this video	As partes em silêncio tocam neste vídeo
 # context: short message after tapping the row again; silent parts are skipped again
 Skipping silent parts again	Pulando as partes em silêncio de novo
+# context: switch title under News feed; posts Facebook shows from groups the user hasn't joined, which come with a Join button next to the group's name
+Hide posts from groups you're not in	Ocultar publicações de grupos dos quais você não participa
+# context: summary of that switch; a friend's share of a group post is a post on the friend's own profile that shares a group post, and it stays
+Hides posts from groups you haven't joined, like a friend's post in a public group. Posts from your groups and a friend's share of a group post stay.	Oculta publicações de grupos dos quais você não participa, como a publicação de um amigo em um grupo público. As publicações dos seus grupos e o compartilhamento de uma publicação de grupo por um amigo continuam.
