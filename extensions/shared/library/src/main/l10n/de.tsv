@@ -1737,3 +1737,11 @@ Free stuff shortcut	Verknüpfung „Zu verschenken“
 Free stuff isn't available in this build.	„Zu verschenken“ ist in dieser Version nicht verfügbar.
 Adds Free stuff, Marketplace's free listings, to the menu you get by holding Facebook's icon, if there's room, and a Free stuff row in Settings and privacy. Existing shortcuts stay.	Fügt „Zu verschenken“, also kostenlose Marketplace-Angebote, zum Menü hinzu, das beim langen Drücken des Facebook-Symbols erscheint, wenn Platz ist, sowie eine Zeile „Zu verschenken“ unter Einstellungen und Privatsphäre. Vorhandene Verknüpfungen bleiben.
 Adds Free stuff, Marketplace's free listings, to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	Fügt „Zu verschenken“, also kostenlose Marketplace-Angebote, zum Menü hinzu, das beim langen Drücken des Facebook-Symbols erscheint, wenn Platz ist. Vorhandene Verknüpfungen bleiben.
+# context: row in a video's menu while Skip silent parts is on; the video's silent parts are skipped
+Skip silent parts: on	Stille Stellen überspringen: an
+# context: the same row after a tap; this one video keeps its silent parts
+Skip silent parts: off for this video	Stille Stellen überspringen: aus für dieses Video
+# context: short message after tapping the row; this video now plays its silent parts
+Silent parts play in this video	Stille Stellen werden in diesem Video abgespielt
+# context: short message after tapping the row again; silent parts are skipped again
+Skipping silent parts again	Stille Stellen werden wieder übersprungen

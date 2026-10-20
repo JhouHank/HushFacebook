@@ -2902,7 +2902,7 @@
     },
     {
       "name": "Skip silent parts",
-      "description": "Plays videos, reels and stories past the silent stretches in their sound, so talks and how-tos get to the point sooner. Starts off. Turn it on in Hushfacebook settings > Playback.",
+      "description": "Plays videos, reels and stories past the silent stretches in their sound, so talks and how-tos get to the point sooner. Starts off. Turn it on in Hushfacebook settings > Playback. With Resume long videos patched too, a video's menu can keep the silent parts in that one video.",
       "category": "Playback",
       "use": true,
       "dependencies": [

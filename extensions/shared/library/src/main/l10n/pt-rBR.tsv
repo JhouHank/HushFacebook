@@ -1629,3 +1629,11 @@ Free stuff shortcut	Atalho para Itens grátis
 Free stuff isn't available in this build.	Itens grátis não estão disponíveis nesta versão.
 Adds Free stuff, Marketplace's free listings, to the menu you get by holding Facebook's icon, if there's room, and a Free stuff row in Settings and privacy. Existing shortcuts stay.	Adiciona Itens grátis, os anúncios gratuitos do Marketplace, ao menu que aparece ao segurar o ícone do Facebook, se houver espaço, e uma linha Itens grátis em Configurações e privacidade. Os atalhos existentes ficam.
 Adds Free stuff, Marketplace's free listings, to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	Adiciona Itens grátis, os anúncios gratuitos do Marketplace, ao menu que aparece ao segurar o ícone do Facebook, se houver espaço. Os atalhos existentes ficam.
+# context: row in a video's menu while Skip silent parts is on; the video's silent parts are skipped
+Skip silent parts: on	Pular partes em silêncio: ativado
+# context: the same row after a tap; this one video keeps its silent parts
+Skip silent parts: off for this video	Pular partes em silêncio: desativado neste vídeo
+# context: short message after tapping the row; this video now plays its silent parts
+Silent parts play in this video	As partes em silêncio tocam neste vídeo
+# context: short message after tapping the row again; silent parts are skipped again
+Skipping silent parts again	Pulando as partes em silêncio de novo

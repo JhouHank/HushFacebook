@@ -1737,3 +1737,11 @@ Free stuff shortcut	Lối tắt Đồ miễn phí
 Free stuff isn't available in this build.	Đồ miễn phí không có trong bản dựng này.
 Adds Free stuff, Marketplace's free listings, to the menu you get by holding Facebook's icon, if there's room, and a Free stuff row in Settings and privacy. Existing shortcuts stay.	Thêm Đồ miễn phí (các tin đăng miễn phí trên Marketplace) vào menu hiện ra khi nhấn giữ biểu tượng Facebook, nếu còn chỗ, và thêm dòng Đồ miễn phí trong Cài đặt & quyền riêng tư. Các lối tắt hiện có vẫn giữ nguyên.
 Adds Free stuff, Marketplace's free listings, to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	Thêm Đồ miễn phí (các tin đăng miễn phí trên Marketplace) vào menu hiện ra khi nhấn giữ biểu tượng Facebook, nếu còn chỗ. Các lối tắt hiện có vẫn giữ nguyên.
+# context: row in a video's menu while Skip silent parts is on; the video's silent parts are skipped
+Skip silent parts: on	Bỏ qua đoạn im lặng: bật
+# context: the same row after a tap; this one video keeps its silent parts
+Skip silent parts: off for this video	Bỏ qua đoạn im lặng: tắt cho video này
+# context: short message after tapping the row; this video now plays its silent parts
+Silent parts play in this video	Đoạn im lặng được phát trong video này
+# context: short message after tapping the row again; silent parts are skipped again
+Skipping silent parts again	Lại bỏ qua đoạn im lặng

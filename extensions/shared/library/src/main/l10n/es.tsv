@@ -1737,3 +1737,11 @@ Free stuff shortcut	Acceso directo a Artículos gratis
 Free stuff isn't available in this build.	Artículos gratis no están disponibles en esta versión.
 Adds Free stuff, Marketplace's free listings, to the menu you get by holding Facebook's icon, if there's room, and a Free stuff row in Settings and privacy. Existing shortcuts stay.	Añade Artículos gratis, los anuncios gratis de Marketplace, al menú que aparece al mantener pulsado el icono de Facebook, si hay espacio, y una fila Artículos gratis en Configuración y privacidad. Los accesos directos existentes se conservan.
 Adds Free stuff, Marketplace's free listings, to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	Añade Artículos gratis, los anuncios gratis de Marketplace, al menú que aparece al mantener pulsado el icono de Facebook, si hay espacio. Los accesos directos existentes se conservan.
+# context: row in a video's menu while Skip silent parts is on; the video's silent parts are skipped
+Skip silent parts: on	Saltar las partes en silencio: activado
+# context: the same row after a tap; this one video keeps its silent parts
+Skip silent parts: off for this video	Saltar las partes en silencio: desactivado en este video
+# context: short message after tapping the row; this video now plays its silent parts
+Silent parts play in this video	Las partes en silencio se reproducen en este video
+# context: short message after tapping the row again; silent parts are skipped again
+Skipping silent parts again	Se vuelven a saltar las partes en silencio
