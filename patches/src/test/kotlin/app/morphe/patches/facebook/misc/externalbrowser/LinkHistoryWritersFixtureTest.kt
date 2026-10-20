@@ -12,6 +12,7 @@ import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
@@ -95,6 +96,11 @@ class LinkHistoryWritersFixtureTest {
                     patched.take(4).map { it.opcode })
                 assertEquals("$name: the gate asks holdUpload", HOLD_LINK_HISTORY_UPLOAD,
                     ((patched[0] as ReferenceInstruction).reference as MethodReference).toString())
+                assertEquals("$name: the gate tests the answer it kept",
+                    (patched[1] as OneRegisterInstruction).registerA, (patched[2] as OneRegisterInstruction).registerA)
+                // A no jumps over the return to Facebook's first instruction.
+                assertEquals("$name: where a no goes", patched[2].codeUnits + patched[3].codeUnits,
+                    (patched[2] as OffsetInstruction).codeOffset)
                 // Without nops: added code can move a payload, which gains or loses an alignment nop.
                 assertEquals("$name: the rest is Facebook's",
                     code.map { it.opcode }.filter { it != Opcode.NOP }, patched.drop(4).map { it.opcode }.filter { it != Opcode.NOP })
