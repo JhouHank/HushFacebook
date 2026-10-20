@@ -105,6 +105,7 @@ import app.morphe.extension.facebook.media.ResumePlaybackForTests;
 import app.morphe.extension.facebook.media.TapToPlay;
 import app.morphe.extension.facebook.media.TapToPlayForTests;
 import app.morphe.extension.facebook.media.TapToSeek;
+import app.morphe.extension.facebook.menu.MenuPanel;
 import app.morphe.extension.facebook.menu.MenuSectionsForTests;
 import app.morphe.extension.facebook.misc.MetaUpsells;
 import app.morphe.extension.facebook.misc.AnalyticsUploads;
@@ -773,12 +774,14 @@ public class PausedHooksTest {
                 MessengerHandoffForTests::dropsARing,
                 MessengerHandoffForTests::dropsAMessage));
         // The Menu's Upgrades and Also from Meta groups build nothing, in the section Facebook
-        // draws and in the one carrying what the server sends.
+        // draws and in the one carrying what the server sends, and the side panel gets Facebook's own
+        // Menu instead of the Bloks one.
         probes.put(PatchFamily.MENU_PROMOTIONS, Arrays.asList(
                 MenuSectionsForTests::hidesUpgrades,
                 MenuSectionsForTests::hidesAlsoFromMeta,
                 MenuSectionsForTests::hidesServerUpgrades,
-                MenuSectionsForTests::hidesServerAlsoFromMeta));
+                MenuSectionsForTests::hidesServerAlsoFromMeta,
+                () -> !MenuPanel.bloksPanel(true)));
         // Edits' header flag and both shapes of its pill request, the Threads cross-posting
         // onboarding and the share sheet's Threads and Muse items, the Meta Verified sheet and label, an avatar
         // sticker upsell, Imagine's post button, composer capability and Create story tile, and the

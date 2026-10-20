@@ -51,6 +51,10 @@ internal const val LIST_COPY_OF = "$IMMUTABLE_LIST->copyOf(Ljava/util/Collection
  * The Help and support and Settings and privacy rows come to the native section from two builders.
  * Right after each call the list goes through the extension, which leaves out the rows picked in
  * Menu tiles to hide, and back into an ImmutableList. See MenuRowAnchors.kt.
+ *
+ * Accounts whose Menu slides in from the side can get the server-drawn Bloks Menu there, which none
+ * of the hooks above reach (#184). The server's answer to which Menu goes in the panel goes to the
+ * extension, which answers the native one while any Menu switch acts. See MenuPanelAnchors.kt.
  */
 @Suppress("unused")
 val hideMenuPromotionsPatch = bytecodePatch(
@@ -103,6 +107,7 @@ val hideMenuPromotionsPatch = bytecodePatch(
             "$PATCH: ${folder.definingClass}->${folder.name} doesn't read one bookmark list of its own class",
         )
         mutableClassDefBy(folder.definingClass).findMutableMethodOf(folder).passBookmarksThroughShortcuts(listRead)
+        askAboutBloksPanel()
         enableStatus("menuPromotions")
     }
 }
