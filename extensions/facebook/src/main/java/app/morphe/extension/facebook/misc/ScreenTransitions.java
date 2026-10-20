@@ -34,6 +34,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>A photo, which grows from its place in the feed to full screen as the photo viewer opens and
  * shrinks back as it closes. {@link #photoZooms} tells the patch to put it at its end place at once.
+ * A viewer whose photo can't go back to its place slides away instead, and one opened without it
+ * slides up, each with a fade of its background; {@link #photoViewerLength} hands those no length.
  * A multi-photo post's photo opens on a page of its own instead, which grows the photo from its
  * tile with an animator, fades its background in, and on Back shrinks the photo back or slides the
  * page away. {@link #photoPageZoom} and {@link #photoPageLength} hand each of those no length.
@@ -71,6 +73,9 @@ public final class ScreenTransitions {
 
     /** Counted for each zoom, fade or slide a multi-photo post's photo page plays without its length. */
     static final String PHOTO_PAGE = "photo page animation left out";
+
+    /** Counted for each slide or fade the photo viewer plays without its length. */
+    static final String PHOTO_VIEWER = "photo viewer slide left out";
 
     private static final String FAMILY = FamilyNames.SCREEN_TRANSITIONS;
 
@@ -236,6 +241,23 @@ public final class ScreenTransitions {
             return 0;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "photo page", failure);
+            return length;
+        }
+    }
+
+    /**
+     * Injection point, in the photo viewer's methods that slide it away on Back or up for a photo
+     * opened without its place in the feed, at each length handed to the slide or to the fade of the
+     * viewer's background: 0 while the switch is on, else [length], Facebook's own.
+     */
+    public static long photoViewerLength(long length) {
+        try {
+            if (length == 0 || !on()) return length;
+            HookStatus.bound(FAMILY, "photo viewer");
+            HookStatus.counted(FAMILY, PHOTO_VIEWER);
+            return 0;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "photo viewer", failure);
             return length;
         }
     }

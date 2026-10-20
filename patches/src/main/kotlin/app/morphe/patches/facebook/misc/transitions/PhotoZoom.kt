@@ -44,11 +44,14 @@ import com.android.tools.smali.dexlib2.util.MethodUtil
  *
  * A phone rated older than 2015 takes a ValueAnimator instead (583 `LX/AeB;->A00`), the one a
  * multi-photo post's photo page zooms with, and PhotoPage.kt has its length go through the
- * extension. A photo opened without its thumbnail slides up from the bottom, which isn't changed.
+ * extension. A viewer whose photo can't go back to its place slides away over 250 ms instead (583
+ * `A0C`), and one opened without its thumbnail slides up from the bottom (`A0G`), each with a fade
+ * of its background, and their lengths go through the extension the way the photo page's do.
  */
 
 internal const val PHOTO_VIEWER = "Lcom/facebook/photos/dialog/SutroPhotoAnimationDialogFragment;"
 internal const val PHOTO_ZOOMS = "$SCREEN_TRANSITIONS->photoZooms()Z"
+internal const val PHOTO_VIEWER_LENGTH = "$SCREEN_TRANSITIONS->photoViewerLength(J)J"
 
 /** The year class the photo viewer compares the phone's with, 2015, before it picks the spring. */
 internal const val SPRING_YEAR = 0x7df
@@ -173,4 +176,20 @@ internal fun BytecodePatchContext.quietPhotoZoom(open: Method) {
         """,
         ExternalLabel("zooms", start.getInstruction(at + 1)),
     )
+}
+
+/** The photo viewer's methods that slide it, away on Back and up for a photo opened without its place (583 `A0C` and `A0G`). */
+internal fun photoViewerSlides(viewer: ClassDef): List<Method> {
+    val slides = viewer.methods.filter { method -> method.code().any { it.called?.makesASlide() == true } }
+    if (slides.isEmpty()) throw PatchException("$PATCH: no method of ${viewer.type} slides it")
+    return slides
+}
+
+/**
+ * Has the photo viewer's slides, and the fade of its background that goes with each, ask the
+ * extension for their length, as the photo page's do (see PhotoPage.kt).
+ */
+internal fun BytecodePatchContext.quietPhotoViewerSlides() {
+    val viewer = mutableClassDefByOrNull(PHOTO_VIEWER) ?: throw PatchException("$PATCH: no $PHOTO_VIEWER")
+    wrapLengths(checkedLengths(photoViewerSlides(viewer)), PHOTO_VIEWER_LENGTH)
 }

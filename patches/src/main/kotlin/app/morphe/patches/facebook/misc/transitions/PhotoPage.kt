@@ -50,6 +50,8 @@ internal const val SLIDE = "Landroid/animation/ObjectAnimator;->ofFloat(Ljava/la
 
 private const val INTERPOLATOR = "Landroid/animation/TimeInterpolator;"
 private const val LENGTH = "Ljava/lang/Long;"
+private const val OBJECT_ANIMATOR = "Landroid/animation/ObjectAnimator;"
+private const val PROPERTY = "Landroid/util/Property;"
 
 private val Instruction.called: MethodReference?
     get() = (this as? ReferenceInstruction)?.reference as? MethodReference
@@ -66,6 +68,12 @@ private fun MethodReference.movesAPhoto(): Boolean {
     return returnType == "V" && shape.size == 6 && shape[0] == INTERPOLATOR && shape[3] == shape[4] && shape[3].startsWith("L") &&
         shape[5] == LENGTH
 }
+
+/**
+ * A call that makes the animator a view slides with: an ObjectAnimator of a property named by its
+ * name ([SLIDE]) or by a Property, as the photo viewer's own maker takes it (583 `LX/ldC;->A0V`).
+ */
+internal fun MethodReference.makesASlide(): Boolean = smali() == SLIDE || (returnType == OBJECT_ANIMATOR && PROPERTY in shape())
 
 /**
  * Whether [method] may read or make a double anywhere: the opcode mnemonics name the double ops
@@ -90,7 +98,7 @@ internal fun photoPageZoom(page: ClassDef): MethodReference {
 /** The photo page's methods that set its zoom or a slide going (583 `A0B`, `A0C` and `A0E`). */
 internal fun photoPageMoves(page: ClassDef, zoom: MethodReference): List<Method> {
     val moves = page.methods.filter { method ->
-        method.code().any { it.called?.smali()?.let { call -> call == zoom.smali() || call == SLIDE } == true }
+        method.code().any { it.called?.let { call -> call.smali() == zoom.smali() || call.makesASlide() } == true }
     }
     if (moves.isEmpty()) throw PatchException("$PATCH: no method of ${page.type} sets its zoom or a slide going")
     return moves
@@ -116,19 +124,7 @@ internal fun BytecodePatchContext.quietPhotoPage() {
     val length = (zoom.implementation ?: throw PatchException("$PATCH: $where has no code")).registerCount - 1
     if (length > 15) throw PatchException("$PATCH: $where keeps its length in v$length, past v15")
 
-    val moves = photoPageMoves(page, reference).map { it as MutableMethod }.associateWith { move ->
-        val name = "${move.definingClass}->${move.name}"
-        // The answer goes back in the long's own registers, typed long from then on.
-        if (usesDoubles(move)) throw PatchException("$PATCH: $name works with doubles")
-        lengthCalls(move).onEach { at ->
-            val call = move.implementation!!.instructions.elementAt(at)
-            if ((call as BuilderInstruction).location.labels.isNotEmpty()) throw PatchException("$PATCH: $name jumps straight to a length at $at")
-            val registers = call as FiveRegisterInstruction
-            if (registers.registerCount != 3 || registers.registerE != registers.registerD + 1) {
-                throw PatchException("$PATCH: $name hands a length at $at in registers other than one pair")
-            }
-        }
-    }
+    val lengths = checkedLengths(photoPageMoves(page, reference))
 
     zoom.addInstructions(
         0,
@@ -137,13 +133,36 @@ internal fun BytecodePatchContext.quietPhotoPage() {
             move-result-object v$length
         """,
     )
-    for ((move, calls) in moves) {
+    wrapLengths(lengths, PHOTO_PAGE_LENGTH)
+}
+
+/**
+ * Where each of [moves] hands a length, checked before anything is changed. The answer goes back
+ * in the long's own registers, typed long from then on, so a method that works with doubles, a
+ * length a branch jumps straight to, or one handed in anything but one register pair refuses.
+ */
+internal fun checkedLengths(moves: List<Method>): Map<MutableMethod, List<Int>> = moves.map { it as MutableMethod }.associateWith { move ->
+    val name = "${move.definingClass}->${move.name}"
+    if (usesDoubles(move)) throw PatchException("$PATCH: $name works with doubles")
+    lengthCalls(move).onEach { at ->
+        val call = move.implementation!!.instructions.elementAt(at)
+        if ((call as BuilderInstruction).location.labels.isNotEmpty()) throw PatchException("$PATCH: $name jumps straight to a length at $at")
+        val registers = call as FiveRegisterInstruction
+        if (registers.registerCount != 3 || registers.registerE != registers.registerD + 1) {
+            throw PatchException("$PATCH: $name hands a length at $at in registers other than one pair")
+        }
+    }
+}
+
+/** Has each length in [lengths] go through [hook] right before the call it's handed to, back in the same pair. */
+internal fun wrapLengths(lengths: Map<MutableMethod, List<Int>>, hook: String) {
+    for ((move, calls) in lengths) {
         for (at in calls.asReversed()) {
             val call = move.implementation!!.instructions.elementAt(at) as FiveRegisterInstruction
             move.addInstructions(
                 at,
                 """
-                    invoke-static { v${call.registerD}, v${call.registerE} }, $PHOTO_PAGE_LENGTH
+                    invoke-static { v${call.registerD}, v${call.registerE} }, $hook
                     move-result-wide v${call.registerD}
                 """,
             )

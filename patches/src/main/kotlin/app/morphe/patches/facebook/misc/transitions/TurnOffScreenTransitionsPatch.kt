@@ -69,6 +69,13 @@ val turnOffScreenTransitionsPatch = bytecodePatch(
             patchLog.warning("${moved.message}. The patch goes on without the photo zoom.")
         }
 
+        // The photo viewer's slides, away on Back and up for a photo opened without its place: see PhotoZoom.kt.
+        try {
+            quietPhotoViewerSlides()
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. The patch goes on without the photo viewer's slides.")
+        }
+
         // The zoom, fade and slides of the page a multi-photo post's photo opens on: see PhotoPage.kt.
         try {
             quietPhotoPage()

@@ -20,6 +20,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.immutable.ImmutableClassDef
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction10x
@@ -37,7 +38,9 @@ import java.io.File
  * viewer's open sets the zoom going through one method, which makes a spring, sets its end value
  * and returns; the spring can be put at a value without resting, and its speed set. Then the patch:
  * before that return, while the extension says no, the spring sits at its end value with a nudge
- * over its rest speed. Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
+ * over its rest speed. The viewer's slides, and the fade of its background with each, hand their
+ * length as a long, and the patch has each go through the extension right before the call, back in
+ * the same pair. Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class PhotoZoomFixtureTest {
     private fun Method.code(): List<Instruction> = implementation!!.instructions.toList()
@@ -141,6 +144,64 @@ class PhotoZoomFixtureTest {
             }
         }
         assertEquals("a declared build has no fixture", declaredBundles().keys, checked)
+    }
+
+    @Test
+    fun `each declared build slides its photo viewer for a length, and the patch has each length go through the extension`() {
+        val checked = mutableSetOf<String>()
+        for ((version, bundles) in declaredBundles()) {
+            for (bundle in bundles) {
+                val name = bundle.name
+                val viewer = FixtureDex.classes(bundle, setOf(PHOTO_VIEWER))[PHOTO_VIEWER]
+                    ?: throw AssertionError("$name: no $PHOTO_VIEWER")
+                val slides = photoViewerSlides(viewer)
+                assertTrue("$name: the viewer slides away on Back and up as it opens without its place", slides.size >= 2)
+                val calls = slides.associateWith { lengthCalls(it) }
+                val handed = calls.flatMap { (slide, at) -> at.map { slide.code()[it].call!! } }
+                assertTrue("$name: no slide is handed a length", handed.any { it.name == "setDuration" && it.definingClass.startsWith("Landroid/animation/") })
+                assertTrue("$name: the background's fade is handed no length", handed.any { it.returnType == "V" && it.definingClass.startsWith("LX/") })
+                // Every long the patch sends through the extension is a length, so a new kind of call fails here first.
+                for (call in handed) {
+                    assertTrue("$name: ${call.key()} takes a long but is neither an animator's length nor the fade's",
+                        (call.name == "setDuration" && call.definingClass.startsWith("Landroid/animation/")) ||
+                            (call.returnType == "V" && call.definingClass.startsWith("LX/")))
+                }
+                println("$name: " + calls.entries.joinToString { (slide, at) -> "${slide.name} " + at.joinToString("/") { "${slide.code()[it].call!!.name}@$it" } })
+
+                val context = PatchContexts.of(listOf(viewer))
+                with(context) { quietPhotoViewerSlides() }
+                val patched = context.mutableClassDefBy(PHOTO_VIEWER)
+                for ((slide, at) in calls) {
+                    val before = slide.code()
+                    val after = patched.methods.single { MethodUtil.methodSignaturesMatch(it, slide) }.code()
+                    assertEquals("$name: ${slide.name} gains two instructions for each length", before.size + 2 * at.size, after.size)
+                    var shift = 0
+                    for ((index, instruction) in before.withIndex()) {
+                        if (index in at) {
+                            val pair = instruction as FiveRegisterInstruction
+                            assertEquals("$name: ${slide.name} asks at $index", PHOTO_VIEWER_LENGTH, after[index + shift].call!!.key())
+                            val ask = after[index + shift] as FiveRegisterInstruction
+                            assertEquals("$name: ${slide.name} hands one pair at $index", 2, ask.registerCount)
+                            assertEquals("$name: ${slide.name} hands its pair at $index", listOf(pair.registerD, pair.registerE), listOf(ask.registerC, ask.registerD))
+                            val answer = after[index + shift + 1]
+                            assertEquals("$name: ${slide.name} takes the answer at $index", Opcode.MOVE_RESULT_WIDE, answer.opcode)
+                            assertEquals("$name: ${slide.name} keeps it in the pair at $index", pair.registerD, (answer as OneRegisterInstruction).registerA)
+                            shift += 2
+                        }
+                        assertEquals("$name: ${slide.name}'s own at $index", instruction.opcode, after[index + shift].opcode)
+                    }
+                }
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", declaredBundles().keys, checked)
+    }
+
+    @Test
+    fun `a viewer that slides no way refuses, naming the class`() {
+        val viewer = ImmutableClassDef(PHOTO_VIEWER, AccessFlags.PUBLIC.value, "Ljava/lang/Object;", null, null, null, null, null)
+        val failure = assertThrows(PatchException::class.java) { photoViewerSlides(viewer) }
+        assertEquals("$PATCH: no method of $PHOTO_VIEWER slides it", failure.message)
     }
 
     @Test

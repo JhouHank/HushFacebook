@@ -276,6 +276,29 @@ public class ScreenTransitionsTest {
     }
 
     @Test
+    public void thePhotoViewerShowsAndClosesWithoutItsSlideOrFade() {
+        assertEquals("no length became one", 0, ScreenTransitions.photoViewerLength(0));
+        assertNull("no length was counted", statusLine());
+
+        assertEquals("the photo viewer still slid", 0, ScreenTransitions.photoViewerLength(250));
+        assertEquals("the photo viewer's background still faded", 0, ScreenTransitions.photoViewerLength(250));
+        assertEquals(FamilyNames.SCREEN_TRANSITIONS + ": invoked 2, 1 found, 0 missing. Counted: "
+                + ScreenTransitions.PHOTO_VIEWER + " 2", statusLine());
+
+        Settings.TURN_OFF_SCREEN_TRANSITIONS.save(false);
+        assertEquals("off, the photo viewer lost its slide", 250, ScreenTransitions.photoViewerLength(250));
+        Settings.TURN_OFF_SCREEN_TRANSITIONS.save(true);
+        for (HushfacebookPause.Reason reason : PAUSES) {
+            PauseForTests.pause(reason);
+            assertEquals("paused by " + reason + ", the photo viewer lost its slide", 250, ScreenTransitions.photoViewerLength(250));
+            PauseForTests.resume();
+        }
+        assertEquals("the switch didn't come back after the pause", 0, ScreenTransitions.photoViewerLength(250));
+        ScreenTransitions.inBuildForTests = false;
+        assertEquals("without the patch, the photo viewer lost its slide", 250, ScreenTransitions.photoViewerLength(250));
+    }
+
+    @Test
     public void offPausedOrWithoutThePatchFacebooksStay() {
         Settings.TURN_OFF_SCREEN_TRANSITIONS.save(false);
         assertFacebooks("off");
