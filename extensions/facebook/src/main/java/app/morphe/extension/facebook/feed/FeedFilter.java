@@ -464,6 +464,7 @@ public final class FeedFilter {
             // only read with the patch that fills their accessor.
             Logger.printDebug(() -> {
                 String type = typeName(feedUnit);
+                String id = SeenPosts.shortId(feedUnit);
                 return "Feed edge: " + categoryName + " " + type + " ifr="
                         + (suggestedPatched ? recommendationFlag(feedUnit, recommendationAccessor) : "none")
                         + (reelsPatched ? " showcase=" + showcaseFor(type, feedUnit, showcaseAccessor) : "")
@@ -473,7 +474,8 @@ public final class FeedFilter {
                                 ? " group=" + GroupPosts.read(feedUnit, groupReaders) : "")
                         + (aiPatched ? " genai=" + flagValue(GenAiLabel.FLAG, feedUnit, aiAccessor)
                                 + " ailabel=" + flagValue(GenAiLabel.SELF_LABEL, feedUnit, aiLabelAccessor) : "")
-                        + (ENGAGEMENT_PROMO.equals(categoryName) ? " qp=" + promotionId(feedUnit) : "");
+                        + (ENGAGEMENT_PROMO.equals(categoryName) ? " qp=" + promotionId(feedUnit) : "")
+                        + (id != null ? " id=" + id : "");
             });
             // An edge a prefetch adds before the settings are ready stays: no switch can be read yet.
             if (!Utils.settingsReady()) return false;
