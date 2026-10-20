@@ -90,8 +90,10 @@ val openLinksExternallyPatch = bytecodePatch(
         }
 
         // A link that stays in Facebook's browser still feeds its link history. The second switch
-        // stops both writers before they exist (see LinkHistoryWriters.kt).
+        // stops both writers before they exist, and the upload of what they recorded, which other
+        // parts of the browser reach too (see LinkHistoryWriters.kt).
         linkHistoryFactories().forEach { mutableFactory(it).holdLinkHistory() }
+        mutableFactory(linkHistoryUpload()).holdLinkHistoryUpload()
 
         enableStatus("externalBrowser")
     }
