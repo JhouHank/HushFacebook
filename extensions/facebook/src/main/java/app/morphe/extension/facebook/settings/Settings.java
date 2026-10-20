@@ -1587,6 +1587,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_force_dark_mode", FALSE, true);
 
     /**
+     * With the AMOLED black theme, a card, a comment or a popover takes the page's colour instead of
+     * the near black that keeps its edge, and a secondary button takes an input's fill so it still
+     * shows ({@link app.morphe.extension.facebook.theme.AmoledTheme}, issue #191). Facebook asks for
+     * colours as each screen builds, so a change shows fully after a restart.
+     */
+    public static final BooleanSetting AMOLED_FLAT_CARDS =
+            new BooleanSetting("hushfacebook_amoled_flat_cards", FALSE, true);
+
+    /**
      * The strip some posts carry ("Are you interested in this post?", "Show less", who recently
      * commented, follow and chat suggestions) goes, and so does the room kept for it
      * ({@link app.morphe.extension.facebook.feed.PostPrompts}). A change shows on the posts drawn

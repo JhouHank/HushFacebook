@@ -119,6 +119,10 @@ The top bar and the tab bar turn see-through, so the feed shows through them as 
 Force dark mode	Karanlık modu zorla
 # context: description of that switch; on some tablets Facebook's own Settings page has no Dark mode row
 Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook has no Dark mode switch. Restart Facebook to see the change.	Facebook'un kendi ayarı ne olursa olsun karanlık kalmasını sağlar. Facebook'ta Karanlık mod anahtarı olmayan tabletler için. Değişikliği görmek için Facebook'u yeniden başlatın.
+# context: switch title under Appearance, shown with the AMOLED black theme; it makes cards, comments and menus pure black like the page
+Black cards	Siyah kartlar
+# context: description of that switch; a card is a raised panel such as a post or the Menu's profile box, near black is the dark gray the theme gives it
+Cards and menus take the page's own color instead of the near black that sets them apart. Buttons and search fields keep a dark gray fill, so you can still see them. Restart Facebook to see the change.	Kartlar ve menüler, onları ayıran neredeyse siyah renk yerine sayfanın kendi rengini alır. Düğmeler ve arama alanları koyu gri dolgusunu korur, böylece onları görmeye devam edersiniz. Değişikliği görmek için Facebook'u yeniden başlatın.
 Draws Facebook's text in your phone's font, or in a font file you choose below. Restart Facebook to see the change.	Facebook'un yazılarını telefonunuzun yazı tipiyle veya aşağıdan seçtiğiniz bir yazı tipi dosyasıyla gösterir. Değişikliği görmek için Facebook'u yeniden başlatın.
 Font file	Yazı tipi dosyası
 Use your phone's font	Telefonun yazı tipini kullan

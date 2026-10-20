@@ -187,6 +187,13 @@ final class HushfacebookPages {
                     L10n.t("Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook has no Dark mode "
                             + "switch. Restart Facebook to see the change.")));
         }
+        if (build.contains(PatchFamily.AMOLED_THEME)) {
+            // Colours Facebook asks for as each screen builds, so a change shows fully after a restart.
+            appearance.addPreference(toggle(context, Settings.AMOLED_FLAT_CARDS,
+                    L10n.t("Cards and menus take the page's own color instead of the near black that sets them apart. "
+                            + "Buttons and search fields keep a dark gray fill, so you can still see them. Restart "
+                            + "Facebook to see the change.")));
+        }
         if (build.contains(PatchFamily.HAPTICS)) {
             appearance.addPreference(toggle(context, Settings.TURN_OFF_HAPTICS,
                     L10n.t("Stops the small vibrations Facebook makes when you tap or swipe. Your keyboard and phone vibrations "

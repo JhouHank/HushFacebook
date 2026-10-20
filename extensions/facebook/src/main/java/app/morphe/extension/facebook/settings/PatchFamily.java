@@ -237,7 +237,8 @@ public enum PatchFamily {
     AD_PREFETCH(FamilyNames.AD_PREFETCH, "adPrefetch", "No ads downloaded in advance"),
     AD_TELEMETRY(FamilyNames.AD_TELEMETRY, "adTelemetry", "No ad tracking"),
     AUDIENCE_NETWORK(FamilyNames.AUDIENCE_NETWORK, "audienceNetwork", "No Facebook ads in other apps"),
-    AMOLED_THEME(FamilyNames.AMOLED_THEME, "amoledTheme", FamilyNames.AMOLED_THEME),
+    // The theme is written into the APK and stays; Pause takes Black cards back to near black.
+    AMOLED_THEME(FamilyNames.AMOLED_THEME, "amoledTheme", FamilyNames.AMOLED_THEME, Settings.AMOLED_FLAT_CARDS),
     MATERIAL_YOU_THEME(FamilyNames.MATERIAL_YOU_THEME, "materialYouTheme", FamilyNames.MATERIAL_YOU_THEME),
     // No switch: a list picks the accent, and Pause makes it read Facebook's blue, so nothing stays in.
     ACCENT_COLOR(FamilyNames.ACCENT_COLOR, "accentColor", Settings.ACCENT_COLOR),
@@ -456,7 +457,8 @@ public enum PatchFamily {
     /**
      * "on", "disabled by its switch" or "disabled while paused", then the saved switches. A
      * family with independent switches is on while either is. Options need their main switch. A
-     * family set by its list says so, with its switches saved beside the list.
+     * family set by its list says so, with its switches saved beside the list. The AMOLED theme is
+     * on either way, its one switch being an option on it.
      */
     private String reportLine(boolean paused) {
         StringBuilder line = new StringBuilder(patchName).append(": ");
@@ -491,7 +493,12 @@ public enum PatchFamily {
                     || Settings.HIDE_LINK_POSTS.savedValue() || Settings.HIDE_BACKGROUND_POSTS.savedValue()
                     || Settings.HIDE_REPOSTS.savedValue();
         }
-        line.append(paused ? "disabled while paused (saved " : anyOn ? "on (" : "disabled by its switch (");
+        // The theme runs with Black cards off and while paused: its switch only flattens the cards.
+        if (this == AMOLED_THEME) {
+            line.append(paused ? "on, its switch off while paused (saved " : "on (");
+        } else {
+            line.append(paused ? "disabled while paused (saved " : anyOn ? "on (" : "disabled by its switch (");
+        }
         for (int i = 0; i < switches.size(); i++) {
             if (i > 0) line.append(", ");
             BooleanSetting setting = switches.get(i);
@@ -517,7 +524,10 @@ public enum PatchFamily {
         LogBufferManager.registerReportSection(PushDiagnostics.REPORT);
         LogBufferManager.registerReportSection(NetworkUsage.REPORT);
         for (PatchFamily family : values()) {
-            if (family.switches.isEmpty() && family.choice == null) HookStatus.runsWhilePaused(family.patchName);
+            // The theme's hooks run paused too: only Black cards, its one switch, steps back.
+            if ((family.switches.isEmpty() && family.choice == null) || family == AMOLED_THEME) {
+                HookStatus.runsWhilePaused(family.patchName);
+            }
         }
     }
 

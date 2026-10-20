@@ -300,6 +300,7 @@ public final class SettingsBackup {
             Settings.HIDE_MESSENGER_COUNT,
             Settings.HIDE_FACEBOOK_LOGO,
             Settings.FORCE_DARK_MODE,
+            Settings.AMOLED_FLAT_CARDS,
             Settings.HIDE_REEL_PROMPTS,
             Settings.HIDE_GET_MESSENGER_CARD,
             Settings.HIDE_CHAT_NOTES_TRAY,

@@ -402,8 +402,9 @@ private fun isDarkBackground(value: String): Boolean {
 val amoledThemePatch = bytecodePatch(
     name = "AMOLED black theme",
     description = "Makes Facebook's dark mode black, or a dark color you pick, instead of dark gray, which can " +
-        "save battery on OLED screens. Turn on dark mode in Facebook first. It isn't selected by default because " +
-        "undoing it means patching again. Turn on Expert mode in Manager to pick it.",
+        "save battery on OLED screens. Cards and menus stay a shade lighter than the page. Turn on Black cards in " +
+        "Hushfacebook settings > Appearance to make them black too. Turn on dark mode in Facebook first. It isn't " +
+        "selected by default because undoing it means patching again. Turn on Expert mode in Manager to pick it.",
     default = false,
 ) {
     category("Theme")

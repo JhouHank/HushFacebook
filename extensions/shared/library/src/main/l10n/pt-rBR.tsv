@@ -119,6 +119,10 @@ The top bar and the tab bar turn see-through, so the feed shows through them as 
 Force dark mode	Forçar modo escuro
 # context: description of that switch; on some tablets Facebook's own Settings page has no Dark mode row
 Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook has no Dark mode switch. Restart Facebook to see the change.	Mantém o Facebook escuro independentemente da configuração dele. Feito para tablets em que o Facebook não tem a opção de modo escuro. Reinicie o Facebook para ver a mudança.
+# context: switch title under Appearance, shown with the AMOLED black theme; it makes cards, comments and menus pure black like the page
+Black cards	Cartões pretos
+# context: description of that switch; a card is a raised panel such as a post or the Menu's profile box, near black is the dark gray the theme gives it
+Cards and menus take the page's own color instead of the near black that sets them apart. Buttons and search fields keep a dark gray fill, so you can still see them. Restart Facebook to see the change.	Cartões e menus ficam com a cor da própria página em vez do quase preto que os destaca. Botões e campos de pesquisa mantêm um preenchimento cinza-escuro, para você continuar vendo. Reinicie o Facebook para ver a mudança.
 Draws Facebook's text in your phone's font, or in a font file you choose below. Restart Facebook to see the change.	Mostra o texto do Facebook com a fonte do celular ou com um arquivo de fonte que você escolher abaixo. Reinicie o Facebook para ver a mudança.
 Font file	Arquivo de fonte
 Use your phone's font	Usar a fonte do celular

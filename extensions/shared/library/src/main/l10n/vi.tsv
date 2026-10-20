@@ -119,6 +119,10 @@ The top bar and the tab bar turn see-through, so the feed shows through them as 
 Force dark mode	Buộc dùng chế độ tối
 # context: description of that switch; on some tablets Facebook's own Settings page has no Dark mode row
 Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook has no Dark mode switch. Restart Facebook to see the change.	Giữ Facebook ở chế độ tối bất kể cài đặt của Facebook. Dành cho máy tính bảng mà Facebook không có công tắc Chế độ tối. Khởi động lại Facebook để thấy thay đổi.
+# context: switch title under Appearance, shown with the AMOLED black theme; it makes cards, comments and menus pure black like the page
+Black cards	Thẻ màu đen
+# context: description of that switch; a card is a raised panel such as a post or the Menu's profile box, near black is the dark gray the theme gives it
+Cards and menus take the page's own color instead of the near black that sets them apart. Buttons and search fields keep a dark gray fill, so you can still see them. Restart Facebook to see the change.	Thẻ và menu dùng màu của chính trang thay cho màu gần đen giúp tách chúng ra. Nút và ô tìm kiếm vẫn giữ nền xám đậm để bạn còn nhìn thấy. Khởi động lại Facebook để thấy thay đổi.
 Draws Facebook's text in your phone's font, or in a font file you choose below. Restart Facebook to see the change.	Hiển thị chữ của Facebook bằng phông chữ của điện thoại, hoặc bằng tệp phông chữ bạn chọn bên dưới. Khởi động lại Facebook để thấy thay đổi.
 Font file	Tệp phông chữ
 Use your phone's font	Dùng phông chữ của điện thoại

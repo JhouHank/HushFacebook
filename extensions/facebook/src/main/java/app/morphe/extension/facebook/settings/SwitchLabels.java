@@ -236,6 +236,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_MESSENGER_COUNT) return L10n.t("Hide the Messenger count");
         if (setting == Settings.HIDE_FACEBOOK_LOGO) return L10n.t("Hide the Facebook logo");
         if (setting == Settings.FORCE_DARK_MODE) return L10n.t("Force dark mode");
+        if (setting == Settings.AMOLED_FLAT_CARDS) return L10n.t("Black cards");
         throw new IllegalArgumentException("No individual switch label: " + setting.key);
     }
 }
