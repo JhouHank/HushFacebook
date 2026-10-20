@@ -32,11 +32,14 @@ final class MarketplaceResponseDiagnostics {
     static final int MAX_RESPONSE_CHARS = 2 * 1024 * 1024;
     static final int MAX_REQUESTS = 16;
     // A search page of listings walks past 256 objects and 32 shapes, so the S22's
-    // 2026-10-20 search capture stopped early and said incomplete.
-    static final int MAX_SHAPES = 96;
+    // 2026-10-20 search capture stopped early and said incomplete. Once the seller and price
+    // children had names, Home filled 96 shapes too, and so did the search pages between them.
+    static final int MAX_SHAPES = 192;
     static final int MAX_VISITS = 2048;
     private static final int MAX_LEVEL = 14;
     private static final String PREFIX = "Marketplace shape: ";
+    // The last three are a listing's own page, from Facebook 583's code: the listing route times
+    // MarketplacePDPSurfaceQuery (react_native_routes.json), and the other two are in its dex.
     private static final String[] QUERIES = {
             "MarketplaceHomeFeedAdsThemedQuery",
             "MarketplaceProductDetailsPageRelatedAdsDetailQuery",
@@ -48,6 +51,9 @@ final class MarketplaceResponseDiagnostics {
             "MarketplacePlainHomeAppQuery",
             "MarketplaceSearchApp_MarketplaceSearchFeedHeadQuery",
             "MarketplaceSearchFeedPaginationQuery",
+            "MarketplacePDPSurfaceQuery",
+            "MarketplaceProductDetailsPageAppQuery",
+            "MarketplaceListingAvailabilityQuery",
     };
     // The last group is what a listing's seller may be. The S22's 2026-10-20 capture had every
     // seller object unrecognized, so whether a page or business sells it couldn't be told.
@@ -177,7 +183,8 @@ final class MarketplaceResponseDiagnostics {
         private boolean inString;
         private boolean escaped;
         private boolean stopped;
-        private boolean complete = true;
+        /** Why the capture is incomplete, the first reason only, or null while it's complete. */
+        @Nullable private String gap;
         private int payloads;
         private int unrecognizedModels;
         private final Map<String, Integer> models = new TreeMap<>();
@@ -222,7 +229,7 @@ final class MarketplaceResponseDiagnostics {
 
         private void inspect(String text, MarketplaceSearchAds.Value value, String path, int level, int[] visits) {
             if (--visits[0] < 0 || level > MAX_LEVEL) {
-                complete = false;
+                missing("shape traversal budget");
                 record(query, "shape traversal budget");
                 return;
             }
@@ -230,7 +237,8 @@ final class MarketplaceResponseDiagnostics {
                 String model = model(text, value);
                 if (model.equals("unrecognized")) unrecognizedModels++;
                 else if (!model.equals("none")) models.put(model, models.getOrDefault(model, 0) + 1);
-                if (!record(query, path + " model=" + model + " " + fields(text, value))) complete = false;
+                // The walk goes on, so the model counts stay whole; only this shape's line is dropped.
+                if (!record(query, path + " model=" + model + " " + fields(text, value))) missing("shape budget");
                 for (int i = 0; i < value.items.size(); i++) {
                     MarketplaceSearchAds.Value child = value.items.get(i);
                     if (child.kind != '{' && child.kind != '[') continue;
@@ -245,13 +253,17 @@ final class MarketplaceResponseDiagnostics {
             if (!stopped && waiting.length() > 0) stop("unfinished payload");
             Set<String> counts = new TreeSet<>();
             for (Map.Entry<String, Integer> model : models.entrySet()) counts.add(model.getKey() + ":" + model.getValue());
-            record(query, "response summary payloads=" + payloads + " capture=" + (complete ? "complete" : "incomplete")
+            record(query, "response summary payloads=" + payloads + " capture=" + (gap == null ? "complete" : "incomplete(" + gap + ")")
                     + " models={" + String.join(",", counts) + "} unrecognized_models=" + unrecognizedModels, true);
+        }
+
+        private void missing(String reason) {
+            if (gap == null) gap = reason;
         }
 
         private void stop(String reason) {
             stopped = true;
-            complete = false;
+            missing(reason);
             waiting.setLength(0);
             waiting.trimToSize();
             record(query, reason + "; observer stopped");

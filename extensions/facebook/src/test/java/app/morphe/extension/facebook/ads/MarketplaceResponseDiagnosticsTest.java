@@ -318,8 +318,22 @@ public class MarketplaceResponseDiagnosticsTest {
         assertSame(response, MarketplaceAdFilterForTests.responseWhole(THEMED, response));
         String report = LogBufferManager.buildExportText();
         assertTrue(report, report.contains("shape traversal budget"));
-        assertTrue(report, report.contains("capture=incomplete"));
+        assertTrue(report, report.contains("capture=incomplete(shape traversal budget)"));
         assertFalse(report.contains("capture=complete"));
+    }
+
+    /** A listing's own page is read too: Facebook's listing route times MarketplacePDPSurfaceQuery. */
+    @Test
+    public void aListingPagesQueriesAreRead() {
+        String response = response();
+        for (String query : new String[] {"MarketplacePDPSurfaceQuery", "MarketplaceProductDetailsPageAppQuery",
+                "MarketplaceListingAvailabilityQuery"}) {
+            assertSame(response, MarketplaceAdFilterForTests.responseWhole(query, response));
+            String report = LogBufferManager.buildExportText();
+            assertTrue(report, report.contains(SHAPE + query + " response"));
+            assertTrue(report, report.contains(SHAPE + query + " response summary payloads=1 capture=complete"));
+        }
+        assertFalse(LogBufferManager.buildExportText().contains("SensitiveListingText"));
     }
 
     @Test
@@ -347,7 +361,7 @@ public class MarketplaceResponseDiagnosticsTest {
         assertSame(overflow, MarketplaceAdFilterForTests.responsePiece(THEMED, overflow, omitted));
         assertNull(MarketplaceAdFilter.responseEnd(omitted));
         report = LogBufferManager.buildExportText();
-        assertTrue(report, report.contains("payloads=1 capture=incomplete"));
+        assertTrue(report, report.contains("payloads=1 capture=incomplete(shape budget)"));
         assertFalse(report.contains("capture=complete"));
         assertFalse(report.contains("other_string:" + (MarketplaceResponseDiagnostics.MAX_SHAPES + 1)));
         assertPrivateShapeDataAbsent(report);
