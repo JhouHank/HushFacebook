@@ -55,6 +55,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * <p>A post whose author turned comments off has no Comment button, so its second footer button is
  * whatever follows Like there (Share or Send), which opens its own sheet and posts nothing. With the
  * switch off, with Hushfacebook paused or when anything in here fails, touches go through untouched.
+ *
+ * <p>A held press left to Facebook counts why, and with Debug logging on logs the view under the
+ * finger, so a phone's report says which check passed the hold over.
  */
 public final class PostLongPress {
     private static final String FAMILY = FamilyNames.REEL_GESTURES;
@@ -65,6 +68,19 @@ public final class PostLongPress {
     static final String OPENED = "feed post comments opened";
     /** Counted for each held post with no footer line to find the Comment button in. */
     static final String NO_BUTTON = "no Comment button in the row";
+    /** Counted for each press held to the long-press time, before anything about it is checked. */
+    static final String TIMED = "feed press held to the time";
+    /** Counted for a press lifted after the long-press time whose timer hadn't run yet. */
+    static final String LIFTED_LATE = "feed press lifted before its timer ran";
+    // Why a held press was left to Facebook.
+    static final String LOST_FOCUS = "feed hold passed: window not focused";
+    static final String OWN_LONG_PRESS = "feed hold passed: its own long press";
+    static final String NO_LIST = "feed hold passed: in no feed list";
+    static final String STILL_LIST = "feed hold passed: list doesn't scroll up and down";
+    static final String FULL_PAGE = "feed hold passed: full-size page";
+    static final String NARROW_PICTURE = "feed hold passed: picture narrower than the row";
+    static final String SCROLLER = "feed hold passed: in a scroller or pager";
+    static final String ON_FOOTER = "feed hold passed: on or under the footer";
 
     /** The kept name of the list every feed is drawn in; Facebook's own lists extend it. */
     static final String LIST = "androidx.recyclerview.widget.RecyclerView";
@@ -83,6 +99,8 @@ public final class PostLongPress {
     private static boolean timing;
     /** The press opened comments, so every later event of the gesture becomes a cancel. */
     private static boolean swallowing;
+    /** Why the last {@link #rowAt} found no row, one of the passed labels above. */
+    @Nullable static String passedOver;
     private static final Runnable FIRE = PostLongPress::fire;
 
     private PostLongPress() {
@@ -126,6 +144,11 @@ public final class PostLongPress {
         if (action == MotionEvent.ACTION_MOVE) {
             if (Math.hypot(event.getRawX() - downX, event.getRawY() - downY) > slop) stop();
         } else {
+            if ((action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL)
+                    && event.getEventTime() - event.getDownTime() >= ViewConfiguration.getLongPressTimeout()) {
+                HookStatus.counted(FAMILY, LIFTED_LATE);
+                Logger.printDebug(() -> "Feed long press: " + LIFTED_LATE);
+            }
             stop();
         }
     }
@@ -137,14 +160,24 @@ public final class PostLongPress {
         pressedRoot = new WeakReference<>(null);
         try {
             if (root == null || !Settings.LONG_PRESS_OPENS_COMMENTS.get()) return;
+            HookStatus.counted(FAMILY, TIMED);
             // A call, a task switch or a dialog that took the window mid-press leaves it alone.
-            if (!root.isAttachedToWindow() || !root.hasWindowFocus()) return;
+            if (!root.isAttachedToWindow() || !root.hasWindowFocus()) {
+                passed(LOST_FOCUS, root);
+                return;
+            }
             View row = rowAt(root, Math.round(downX), Math.round(downY));
-            if (row == null) return;
+            if (row == null) {
+                passed(passedOver, root);
+                return;
+            }
             View comment = commentButton(row);
             // The photo and the name line sit above the footer, so a hold on the footer's own
             // buttons or on anything under it stays Facebook's.
-            if (comment != null && Math.round(downY) >= topOf(comment)) return;
+            if (comment != null && Math.round(downY) >= topOf(comment)) {
+                passed(ON_FOOTER, root);
+                return;
+            }
             HookStatus.counted(FAMILY, HELD);
             if (comment == null) {
                 HookStatus.counted(FAMILY, NO_BUTTON);
@@ -168,6 +201,15 @@ public final class PostLongPress {
         }
     }
 
+    /** Counts [why] the hold was left to Facebook and logs it with the view under the finger in [root]. */
+    private static void passed(String why, View root) {
+        HookStatus.counted(FAMILY, why);
+        View under = hit(root, Math.round(downX), Math.round(downY));
+        Logger.printDebug(() -> "Feed long press: " + why + ", at "
+                + (under == null ? "nothing" : under.getClass().getName() + " " + under.getWidth() + "x" + under.getHeight()
+                + (under.isLongClickable() ? " long-clickable" : "")));
+    }
+
     private static void stop() {
         timing = false;
         pressedRoot = new WeakReference<>(null);
@@ -182,31 +224,38 @@ public final class PostLongPress {
     /**
      * The feed row under the screen point ([x], [y]) inside [root], or null when the press there is
      * Facebook's: on something with its own long press, inside a carousel, pager or scroller, on a
-     * full-size page, or in no list at all.
+     * full-size page, or in no list at all. A null leaves the reason in {@link #passedOver}.
      */
     @Nullable
     static View rowAt(View root, int x, int y) {
+        passedOver = null;
         View view = hit(root, x, y);
         View picture = null;
         while (view != null) {
             if (view.isLongClickable()) {
                 // On the S22 the post's photo has a long press that shows nothing. It's still the
                 // photo when it's the only one on the path and spans the row, unlike a grid tile.
-                if (picture != null || !(view instanceof ImageView)) return null;
+                if (picture != null || !(view instanceof ImageView)) return pass(OWN_LONG_PRESS);
                 picture = view;
             }
             ViewParent parent = view.getParent();
-            if (!(parent instanceof View)) return null;
+            if (!(parent instanceof View)) return pass(NO_LIST);
             View up = (View) parent;
             if (isNamed(up, LIST)) {
-                if (!up.canScrollVertically(1) && !up.canScrollVertically(-1)) return null;
-                if (view.getWidth() == up.getWidth() && view.getHeight() == up.getHeight()) return null;
-                if (picture != null && picture.getWidth() < view.getWidth()) return null;
+                if (!up.canScrollVertically(1) && !up.canScrollVertically(-1)) return pass(STILL_LIST);
+                if (view.getWidth() == up.getWidth() && view.getHeight() == up.getHeight()) return pass(FULL_PAGE);
+                if (picture != null && picture.getWidth() < view.getWidth()) return pass(NARROW_PICTURE);
                 return view;
             }
-            if (isScroller(up)) return null;
+            if (isScroller(up)) return pass(SCROLLER);
             view = up;
         }
+        return pass(NO_LIST);
+    }
+
+    @Nullable
+    private static View pass(String why) {
+        passedOver = why;
         return null;
     }
 
@@ -307,5 +356,6 @@ public final class PostLongPress {
     static void reset() {
         stop();
         swallowing = false;
+        passedOver = null;
     }
 }

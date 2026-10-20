@@ -387,6 +387,55 @@ public class PostLongPressTest {
         assertEquals("with the focus back the hold works", List.of("comment"), clicked);
     }
 
+    /** Each hold left to Facebook counts why, so a phone's report names the check that passed it over. */
+    @Test
+    public void eachHoldLeftToFacebookCountsWhy() {
+        send(event(MotionEvent.ACTION_DOWN, middleOf(text)));
+        holdLongEnough();
+        send(event(MotionEvent.ACTION_DOWN, middleOf(addFriend)));
+        holdLongEnough();
+        send(event(MotionEvent.ACTION_DOWN, new int[] {middleOf(comment)[0] + 162, middleOf(comment)[1]}));
+        holdLongEnough();
+        send(event(MotionEvent.ACTION_DOWN, middleOf(photo)));
+        window.windowFocusChanged(false);
+        holdLongEnough();
+        window.windowFocusChanged(true);
+        assertTrue(clicked.toString(), clicked.isEmpty());
+        String status = statusLine();
+        assertTrue(status, status.contains(PostLongPress.TIMED + " 4"));
+        assertTrue(status, status.contains(PostLongPress.OWN_LONG_PRESS + " 1"));
+        assertTrue("a sideways carousel: " + status, status.contains(PostLongPress.STILL_LIST + " 1"));
+        assertTrue(status, status.contains(PostLongPress.ON_FOOTER + " 1"));
+        assertTrue(status, status.contains(PostLongPress.LOST_FOCUS + " 1"));
+        assertFalse(status, status.contains(PostLongPress.HELD));
+
+        list.removeAllViews();
+        View page = new View(activity);
+        place(list, page, 0, 0, 1080, 2000);
+        layOut();
+        assertNull(PostLongPress.rowAt(root, middleOf(page)[0], middleOf(page)[1]));
+        assertEquals(PostLongPress.FULL_PAGE, PostLongPress.passedOver);
+    }
+
+    /** A lift that comes after the long-press time while the timer still waits is counted, not opened. */
+    @Test
+    public void aLiftAfterTheTimeBeforeTheTimerRanIsCounted() {
+        int[] at = middleOf(photo);
+        long down = SystemClock.uptimeMillis();
+        send(MotionEvent.obtain(down, down, MotionEvent.ACTION_DOWN, at[0], at[1], 0));
+        long late = down + ViewConfiguration.getLongPressTimeout() + 10L;
+        assertEquals("the lift is Facebook's", MotionEvent.ACTION_UP,
+                send(MotionEvent.obtain(down, late, MotionEvent.ACTION_UP, at[0], at[1], 0)).getActionMasked());
+        holdLongEnough();
+        assertTrue(clicked.toString(), clicked.isEmpty());
+        assertTrue(statusLine(), statusLine().contains(PostLongPress.LIFTED_LATE + " 1"));
+
+        send(event(MotionEvent.ACTION_DOWN, at));
+        waitFor(100);
+        send(event(MotionEvent.ACTION_UP, at));
+        assertTrue("a quick tap isn't late: " + statusLine(), statusLine().contains(PostLongPress.LIFTED_LATE + " 1"));
+    }
+
     @Test
     public void offOrPausedEveryTouchIsFacebooks() {
         int[] at = middleOf(photo);
