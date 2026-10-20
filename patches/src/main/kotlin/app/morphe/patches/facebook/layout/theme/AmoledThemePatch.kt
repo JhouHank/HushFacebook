@@ -464,6 +464,13 @@ val amoledThemePatch = bytecodePatch(
         // resource reaches them.
         check(blackenColourLiterals(background()) > 0) { "No dark colour written in code, so the chrome would stay grey" }
 
+        // The colours Facebook writes for its dark theme only, past route three's greys: the Create
+        // story tile's #333334 stayed grey with Black cards on (#191). Material You reads the same
+        // sites after this and puts its stand-in after AMOLED's, so it gets AMOLED's answer.
+        if (readDarkBranchLiterals(darkCheck, AMOLED_DARK_BRANCH) == 0) {
+            patchLog.warning("No colour written on Facebook's dark branch found, so Black cards leaves the Create story tile grey")
+        }
+
         // Route four. The server sends some colours as strings, and the app parses them with
         // Color.parseColor. Each of those calls goes to the extension instead, and so does each
         // read of a colour resource, where light mode gets back what route two wrote black over.
@@ -509,6 +516,9 @@ val amoledThemePatch = bytecodePatch(
 
 /** Gets the banner wrapper's colour after route one. Gives the colour to paint. */
 internal const val FLEX_BANNER = "Lapp/morphe/extension/facebook/theme/AmoledTheme;->flexBanner(I)I"
+
+/** Gets a colour Facebook writes on its dark branch only, for Black cards (#191). Gives the colour to paint. */
+internal const val AMOLED_DARK_BRANCH = "Lapp/morphe/extension/facebook/theme/AmoledTheme;->darkBranch(I)I"
 
 /** The FDS token the Data mode banner paints its wrapper with. */
 private const val CARD_BACKGROUND = "CARD_BACKGROUND"

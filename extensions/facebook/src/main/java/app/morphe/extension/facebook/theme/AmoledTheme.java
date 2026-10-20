@@ -461,6 +461,26 @@ public final class AmoledTheme {
     }
 
     /**
+     * Route three for a colour Facebook writes into its code for its dark theme only, issue #191:
+     * the patch sends here each colour {@code const} that is the first thing Facebook does once its
+     * own dark check said yes. The Create story tile at the start of the stories tray is #333334
+     * written that way, a card's grey above the greys route three blackens, so it stayed grey with
+     * every other card gone black.
+     *
+     * <p>With Material You in the build, its stand-in for the same {@code const} comes after this
+     * one, so it gets the page's colour this gives, and black stays black there.
+     *
+     * @return the background colour for a card's grey, up to {@link #MAX_SERVER_CARD_CHANNEL} as
+     * route four takes one with no token, with Black cards on, in Facebook's dark mode, otherwise
+     * {@code color}. Black stays black, and so does a lighter grey such as a popover's #3B3C3E.
+     */
+    public static int darkBranch(int color) {
+        HookStatus.invoked(FamilyNames.AMOLED_THEME);
+        if (color == BLACK || !isDarkNeutral(color, MAX_SERVER_CARD_CHANNEL) || !DarkMode.on() || !flatCards()) return color;
+        return background;
+    }
+
+    /**
      * Route four: a colour that the server sends as text.
      *
      * <p>The patch replaces each call to {@link Color#parseColor} in the app with a call to this
