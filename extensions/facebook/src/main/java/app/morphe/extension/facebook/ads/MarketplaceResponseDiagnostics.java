@@ -31,7 +31,11 @@ final class MarketplaceResponseDiagnostics {
     static final int MAX_PAYLOAD_CHARS = 256 * 1024;
     static final int MAX_RESPONSE_CHARS = 2 * 1024 * 1024;
     static final int MAX_REQUESTS = 16;
-    static final int MAX_SHAPES = 32;
+    // A search page of listings walks past 256 objects and 32 shapes, so the S22's
+    // 2026-10-20 search capture stopped early and said incomplete.
+    static final int MAX_SHAPES = 96;
+    static final int MAX_VISITS = 2048;
+    private static final int MAX_LEVEL = 14;
     private static final String PREFIX = "Marketplace shape: ";
     private static final String[] QUERIES = {
             "MarketplaceHomeFeedAdsThemedQuery",
@@ -55,8 +59,9 @@ final class MarketplaceResponseDiagnostics {
     // without proven semantics on returned results. The listing names come from Facebook 583's own
     // code: its GraphQL model reader for product items (prices, title, photos, subtitles), the
     // composer's listing serializer (delivery) and Marketplace's React Native route params (listing
-    // price, seller id, local pickup). Naming one says it was present, not what it means. A
-    // seller's name and the distance have no name here that the app's code shows on a listing.
+    // price, seller id, local pickup). Naming one says it was present, not what it means. The last
+    // group is candidates from Facebook's web Marketplace listings (price amount, place, seller,
+    // sold or pending state), not seen in Android traffic yet: a capture shows which ones arrive.
     private static final Set<String> FIELDS = new HashSet<>(Arrays.asList(
             "__typename", "data", "edges", "node", "listing", "story", "sponsored_data", "ad_id",
             "marketplace_search", "feed_units", "location", "is_shipping_offered", "shipping_offer_type",
@@ -64,7 +69,10 @@ final class MarketplaceResponseDiagnostics {
             "listing_price", "formatted_price", "strikethrough_price", "current_product_price",
             "product_item_price", "product_sale_price", "is_on_sale", "marketplace_listing_title",
             "description", "custom_sub_titles", "primary_listing_photo", "listing_photos",
-            "delivery_types", "pickup_delivery_info", "local_pickup", "seller_id"));
+            "delivery_types", "pickup_delivery_info", "local_pickup", "seller_id",
+            "id", "amount", "formatted_amount", "reverse_geocode", "city", "state", "city_page",
+            "display_name", "location_text", "marketplace_listing_seller", "name", "is_sold", "is_pending",
+            "is_hidden", "is_live", "custom_title", "marketplace_listing_category_id"));
     private static final Map<Object, Observer> observers = new WeakHashMap<>();
     private static final Map<String, Set<String>> shapes = new HashMap<>();
     private static final Set<String> summaryBudgetNotices = new HashSet<>();
@@ -195,7 +203,7 @@ final class MarketplaceResponseDiagnostics {
                 waiting.setLength(0);
                 if (waiting.capacity() > 65_536) waiting.trimToSize();
                 try {
-                    inspect(text, MarketplaceSearchAds.Parser.whole(text), "response", 0, new int[] {256});
+                    inspect(text, MarketplaceSearchAds.Parser.whole(text), "response", 0, new int[] {MAX_VISITS});
                     payloads++;
                 } catch (Exception unreadable) {
                     stop("unreadable payload");
@@ -205,7 +213,7 @@ final class MarketplaceResponseDiagnostics {
         }
 
         private void inspect(String text, MarketplaceSearchAds.Value value, String path, int level, int[] visits) {
-            if (--visits[0] < 0 || level > 10) {
+            if (--visits[0] < 0 || level > MAX_LEVEL) {
                 complete = false;
                 record(query, "shape traversal budget");
                 return;

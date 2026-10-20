@@ -103,14 +103,66 @@ public class MarketplaceResponseDiagnosticsTest {
         String report = LogBufferManager.buildExportText();
         for (String named : new String[] {"formatted_price:object", "strikethrough_price:null",
                 "marketplace_listing_title:string", "description:object", "primary_listing_photo:object",
-                "custom_sub_titles:array", "delivery_types:array", "seller_id:string", "other_object:1",
-                "capture=complete"}) {
+                "custom_sub_titles:array", "delivery_types:array", "seller_id:string",
+                "marketplace_listing_seller:object", "capture=complete"}) {
             assertTrue(named + " missing from " + report, report.contains(named));
         }
-        for (String privateText : new String[] {"Sensitive", "SENSITIVE", "424242424242", "private.example",
-                "marketplace_listing_seller"}) {
+        for (String privateText : new String[] {"Sensitive", "SENSITIVE", "424242424242", "private.example"}) {
             assertFalse(privateText + " reached the diagnostic report", report.contains(privateText));
         }
+    }
+
+    /**
+     * The seller, place, state and price parts Facebook's web Marketplace sends with a listing are
+     * named as candidates, so a capture shows which of them Android gets too. A name outside the list
+     * still stays a count, and no value reaches the report.
+     */
+    @Test
+    public void webListingNamesAreCandidatesAndTheirValuesStayPrivate() {
+        String response = "{\"data\":{\"edges\":[{\"node\":{\"__typename\":\"MarketplaceFeedGeneralListingObject\","
+                + "\"listing\":{\"__typename\":\"GroupCommerceProductItem\",\"id\":\"987654321012345\","
+                + "\"listing_price\":{\"formatted_amount\":\"$SensitiveAmount\",\"amount\":\"13.37\"},"
+                + "\"location\":{\"reverse_geocode\":{\"city\":\"SensitiveCity\",\"state\":\"SensitiveState\","
+                + "\"city_page\":{\"display_name\":\"SensitivePage\"}}},"
+                + "\"marketplace_listing_seller\":{\"__typename\":\"User\",\"name\":\"SensitiveSeller\"},"
+                + "\"is_sold\":false,\"is_pending\":false,\"is_hidden\":false,\"is_live\":true,"
+                + "\"custom_title\":null,\"marketplace_listing_category_id\":\"SensitiveCategory\","
+                + "\"private_seller_note\":\"SensitiveNote\"}}}]}}";
+        assertSame(response, MarketplaceAdFilterForTests.responseWhole(THEMED, response));
+        String report = LogBufferManager.buildExportText();
+        for (String named : new String[] {"id:string", "formatted_amount:string", "amount:string",
+                "reverse_geocode:object", "city:string", "state:string", "city_page:object",
+                "display_name:string", "marketplace_listing_seller:object", "name:string", "is_sold:boolean",
+                "is_pending:boolean", "is_hidden:boolean", "is_live:boolean", "custom_title:null",
+                "marketplace_listing_category_id:string", "other_string:1", "capture=complete"}) {
+            assertTrue(named + " missing from " + report, report.contains(named));
+        }
+        for (String privateText : new String[] {"Sensitive", "987654321012345", "13.37", "private_seller_note"}) {
+            assertFalse(privateText + " reached the diagnostic report", report.contains(privateText));
+        }
+    }
+
+    /**
+     * A search page of 40 listings, each with its price, photo, place and seller, reads in full: the
+     * S22's search captures stopped at the old 256-object walk and said incomplete.
+     */
+    @Test
+    public void aFullSearchPageOfListingsReadsComplete() {
+        StringBuilder edges = new StringBuilder();
+        for (int i = 0; i < 40; i++) {
+            if (i > 0) edges.append(',');
+            edges.append("{\"node\":{\"__typename\":\"MarketplaceFeedGeneralListingObject\",\"listing\":")
+                    .append("{\"__typename\":\"GroupCommerceProductItem\",\"listing_price\":{\"amount\":\"1\"},")
+                    .append("\"primary_listing_photo\":{\"image\":{\"uri\":\"https://private.example/p\"}},")
+                    .append("\"location\":{\"reverse_geocode\":{\"city_page\":{\"display_name\":\"x\"}}},")
+                    .append("\"marketplace_listing_seller\":{\"name\":\"x\"},\"story\":{\"id\":\"1\"}}}}");
+        }
+        String response = "{\"data\":{\"marketplace_search\":{\"feed_units\":{\"edges\":[" + edges + "]}}}}";
+        assertSame(response, MarketplaceAdFilterForTests.responseWhole(SEARCH, response));
+        String report = LogBufferManager.buildExportText();
+        assertTrue(report, report.contains("capture=complete"));
+        assertTrue(report, report.contains("MarketplaceFeedGeneralListingObject:40"));
+        assertFalse(report, report.contains("shape traversal budget"));
     }
 
     @Test
@@ -216,7 +268,7 @@ public class MarketplaceResponseDiagnosticsTest {
     @Test
     public void searchShapeTrafficCannotUseUpEitherMissingQuerysEvidenceBudget() {
         Settings.HIDE_SPONSORED_MARKETPLACE_LISTINGS.save(false);
-        for (int count = 1; count <= 50; count++) {
+        for (int count = 1; count <= MarketplaceResponseDiagnostics.MAX_SHAPES + 20; count++) {
             String data = "\"private_field\":null,".repeat(count);
             String response = "{\"data\":{" + data + "\"tail\":null}}";
             assertSame(response, MarketplaceAdFilterForTests.responseWhole(SEARCH, response));
@@ -229,13 +281,13 @@ public class MarketplaceResponseDiagnosticsTest {
         assertTrue(report, report.contains(SHAPE + RELATED));
         assertFalse(report.contains("private_field"));
         int lines = report.split(java.util.regex.Pattern.quote(SHAPE + SEARCH), -1).length - 1;
-        assertTrue("unbounded diagnostic output: " + lines, lines <= 40);
+        assertTrue("unbounded diagnostic output: " + lines, lines <= MarketplaceResponseDiagnostics.MAX_SHAPES + 8);
     }
 
     @Test
     public void aPartialTraversalNeverClaimsToHaveCapturedEveryModel() {
         String item = "{\"__typename\":\"MarketplaceFeedAdStory\"}";
-        String response = "{\"data\":[" + (item + ",").repeat(300) + item + "]}";
+        String response = "{\"data\":[" + (item + ",").repeat(MarketplaceResponseDiagnostics.MAX_VISITS) + item + "]}";
         assertSame(response, MarketplaceAdFilterForTests.responseWhole(THEMED, response));
         String report = LogBufferManager.buildExportText();
         assertTrue(report, report.contains("shape traversal budget"));
