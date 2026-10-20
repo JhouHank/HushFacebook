@@ -1726,3 +1726,9 @@ A video you tap in the feed opens full screen by itself, with no reels to swipe 
 Hide the new comments pop-up	隐藏新评论弹窗
 # context: the bubble Facebook shows over an open comment list when new comments arrive, like "3 new comments"
 The "new comments" bubble no longer pops up while you read comments. New comments still show in the list.	阅读评论时不再弹出“新评论”气泡。新评论仍会显示在列表中。
+# context: the name of a launcher shortcut and a Menu row that open Marketplace's free listings (Facebook's website calls that category Free Stuff)
+Free stuff	免费物品
+Free stuff shortcut	“免费物品”快捷方式
+Free stuff isn't available in this build.	此版本中没有“免费物品”。
+Adds Free stuff, Marketplace's free listings, to the menu you get by holding Facebook's icon, if there's room, and a Free stuff row in Settings and privacy. Existing shortcuts stay.	如果有空位，把“免费物品”（Marketplace 上的免费商品）添加到长按 Facebook 图标时出现的菜单中，并在“设置和隐私”中添加一行“免费物品”。现有的快捷方式保留。
+Adds Free stuff, Marketplace's free listings, to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	如果有空位，把“免费物品”（Marketplace 上的免费商品）添加到长按 Facebook 图标时出现的菜单中。现有的快捷方式保留。

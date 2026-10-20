@@ -11,7 +11,8 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** New switch under Reels and Watch, `Hide Save on reels`. It takes the Save button off the side of reels, and the buttons above it move down. It's part of `Clean up Reels` and starts off (issue #190).
 * **Facebook:** New switch under Reels and Watch, `Hide the speaker button on reels`. It takes the speaker button off the bottom of the side of reels, and your phone's volume buttons still turn the sound on. It's part of `Clean up Reels` and starts off (issue #190).
 * **Facebook:** New switch under Appearance, `Black cards`, for the AMOLED black theme. Cards, comments, menus, the Create story tile and the strip behind the Menu's Log out button go fully black like the page instead of the near black that sets them apart, and buttons like See more and Log out keep a dark gray fill so they still show. It starts off and needs a restart (issue #191).
-* **Facebook:** `Menu tiles to hide` lists the rows under Help and support and Settings and privacy too, so Orders and payments or Report a problem can leave the Menu (issue #153). They show up in the list once you've opened those groups in the Menu, and the Hushfacebook, Saved and Watch history rows always stay.
+* **Facebook:** `Menu tiles to hide` lists the rows under Help and support and Settings and privacy too, so Orders and payments or Report a problem can leave the Menu (issue #153). They show up in the list once you've opened those groups in the Menu, and the rows Hushfacebook adds there always stay.
+* **Facebook:** New switch under Marketplace, `Free stuff shortcut`. Facebook's app has no Free category in Marketplace, so this adds Free stuff to the menu you get by holding Facebook's icon (if there's room) and a Free stuff row to the Menu's Settings and privacy. Both open Marketplace's free listings, the same ones the website's Free Stuff category shows. It starts off (Discussion #52).
 
 ### Changed
 

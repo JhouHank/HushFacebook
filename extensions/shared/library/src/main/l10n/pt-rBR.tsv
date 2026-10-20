@@ -1623,3 +1623,9 @@ A video you tap in the feed opens full screen by itself, with no reels to swipe 
 Hide the new comments pop-up	Ocultar o aviso de novos comentários
 # context: the bubble Facebook shows over an open comment list when new comments arrive, like "3 new comments"
 The "new comments" bubble no longer pops up while you read comments. New comments still show in the list.	A bolha de “novos comentários” não aparece mais enquanto você lê os comentários. Os novos comentários continuam aparecendo na lista.
+# context: the name of a launcher shortcut and a Menu row that open Marketplace's free listings (Facebook's website calls that category Free Stuff)
+Free stuff	Itens grátis
+Free stuff shortcut	Atalho para Itens grátis
+Free stuff isn't available in this build.	Itens grátis não estão disponíveis nesta versão.
+Adds Free stuff, Marketplace's free listings, to the menu you get by holding Facebook's icon, if there's room, and a Free stuff row in Settings and privacy. Existing shortcuts stay.	Adiciona Itens grátis, os anúncios gratuitos do Marketplace, ao menu que aparece ao segurar o ícone do Facebook, se houver espaço, e uma linha Itens grátis em Configurações e privacidade. Os atalhos existentes ficam.
+Adds Free stuff, Marketplace's free listings, to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	Adiciona Itens grátis, os anúncios gratuitos do Marketplace, ao menu que aparece ao segurar o ícone do Facebook, se houver espaço. Os atalhos existentes ficam.

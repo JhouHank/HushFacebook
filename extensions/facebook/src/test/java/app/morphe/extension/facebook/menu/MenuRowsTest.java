@@ -80,11 +80,12 @@ public class MenuRowsTest {
                 new Row("Report a problem", REPORT), new Row("Terms and Policies", TERMS)));
     }
 
-    /** Settings and privacy as a phone shows it, with our three rows at the end. */
+    /** Settings and privacy as a phone shows it, with our four rows at the end. */
     private static List<Object> settings() {
         return new ArrayList<>(Arrays.asList(new Row("Settings", 1001), new Row("Privacy Center", 1002),
                 new Row("Orders and payments", 1003), new Row("Saved", MenuSettingsRow.SAVED_ROW_ID),
                 new Row("Watch history", MenuSettingsRow.WATCH_HISTORY_ROW_ID),
+                new Row("Free stuff", MenuSettingsRow.FREE_STUFF_ROW_ID),
                 new Row("Hushfacebook settings", MenuSettingsRow.ROW_ID)));
     }
 
@@ -126,8 +127,8 @@ public class MenuRowsTest {
         MenuTiles.hide(Arrays.asList("help_" + SCAM_CENTER, "settings_1003"));
         assertEquals(Arrays.asList("Meta AI support assistant", "Support", "Report a problem", "Terms and Policies"),
                 titles(MenuRows.help(help())));
-        assertEquals(Arrays.asList("Settings", "Privacy Center", "Saved", "Watch history", "Hushfacebook settings"),
-                titles(MenuRows.settings(settings())));
+        assertEquals(Arrays.asList("Settings", "Privacy Center", "Saved", "Watch history", "Free stuff",
+                "Hushfacebook settings"), titles(MenuRows.settings(settings())));
     }
 
     /** A row's id counts only in its own group, so a Settings row never hides a Help row that shares it. */
@@ -148,7 +149,7 @@ public class MenuRowsTest {
         assertEquals("settings_1001=Settings\nsettings_1002=Privacy Center\nsettings_1003=Orders and payments",
                 Settings.SEEN_MENU_TILES.savedValue());
         MenuTiles.hide(Arrays.asList("settings_1001", "settings_1002", "settings_1003"));
-        assertEquals(Arrays.asList("Saved", "Watch history", "Hushfacebook settings"),
+        assertEquals(Arrays.asList("Saved", "Watch history", "Free stuff", "Hushfacebook settings"),
                 titles(MenuRows.settings(settings())));
     }
 

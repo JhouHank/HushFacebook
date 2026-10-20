@@ -256,6 +256,7 @@ public final class SettingsBackup {
             Settings.FOLLOWING_FEED_HOME,
             Settings.SAVED_SHORTCUT,
             Settings.WATCH_HISTORY_SHORTCUT,
+            Settings.FREE_STUFF_SHORTCUT,
             Settings.SETTINGS_SHORTCUT,
             Settings.SETTINGS_LOGO_PRESS,
             Settings.SETTINGS_MENU_ROW,

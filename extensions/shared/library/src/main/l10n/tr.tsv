@@ -1731,3 +1731,9 @@ A video you tap in the feed opens full screen by itself, with no reels to swipe 
 Hide the new comments pop-up	Yeni yorumlar açılır bildirimini gizle
 # context: the bubble Facebook shows over an open comment list when new comments arrive, like "3 new comments"
 The "new comments" bubble no longer pops up while you read comments. New comments still show in the list.	Yorumları okurken “yeni yorumlar” baloncuğu artık çıkmaz. Yeni yorumlar listede görünmeye devam eder.
+# context: the name of a launcher shortcut and a Menu row that open Marketplace's free listings (Facebook's website calls that category Free Stuff)
+Free stuff	Ücretsiz ürünler
+Free stuff shortcut	Ücretsiz ürünler kısayolu
+Free stuff isn't available in this build.	Ücretsiz ürünler bu sürümde kullanılamıyor.
+Adds Free stuff, Marketplace's free listings, to the menu you get by holding Facebook's icon, if there's room, and a Free stuff row in Settings and privacy. Existing shortcuts stay.	Facebook simgesine basılı tutunca açılan menüye, yer varsa Ücretsiz ürünler seçeneğini (ücretsiz Marketplace ilanları) ve Ayarlar ve gizlilik içine bir Ücretsiz ürünler satırı ekler. Mevcut kısayollar kalır.
+Adds Free stuff, Marketplace's free listings, to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	Facebook simgesine basılı tutunca açılan menüye, yer varsa Ücretsiz ürünler seçeneğini (ücretsiz Marketplace ilanları) ekler. Mevcut kısayollar kalır.

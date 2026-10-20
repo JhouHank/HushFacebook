@@ -275,6 +275,7 @@ public class PausedHooksTest {
         probes.put(Settings.CHECK_FOR_RELEASES, ReleaseCheckForTests::aStartAsksGitHub);
         probes.put(Settings.SAVED_SHORTCUT, SavedShortcutTest::aStartPublishes);
         probes.put(Settings.WATCH_HISTORY_SHORTCUT, WatchHistoryShortcutTest::aStartPublishes);
+        probes.put(Settings.FREE_STUFF_SHORTCUT, FreeStuffShortcutTest::aStartPublishes);
         // A start puts the Hushfacebook settings shortcut in the launcher icon's menu.
         probes.put(Settings.SETTINGS_SHORTCUT, SettingsEntryTest::aStartPublishes);
         // A finger on the logo is timed for a long press, and the Menu list gets the Hushfacebook row.

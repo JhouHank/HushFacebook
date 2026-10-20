@@ -219,10 +219,9 @@ final class AppPages {
         }
     }
 
-    /** Marketplace. */
+    /** Marketplace. The Free stuff shortcut is the settings entry's own, so every build has the section. */
     static void marketplace(HushfacebookPreferenceFragment page, PreferenceScreen screen, Context context,
             Set<PatchFamily> build) {
-        if (!build.contains(PatchFamily.SPONSORED_MARKETPLACE) && !build.contains(PatchFamily.SELLER_VIEW_PROFILE)) return;
         PreferenceCategory marketplace = category(screen, L10n.t("Marketplace"));
         if (build.contains(PatchFamily.SPONSORED_MARKETPLACE)) {
             marketplace.addPreference(toggle(context, Settings.HIDE_SPONSORED_MARKETPLACE_LISTINGS,
@@ -234,6 +233,18 @@ final class AppPages {
                     L10n.t("Adds a View profile button to every seller's Marketplace page, opening their Facebook profile. "
                             + "Facebook only shows it to some accounts.")));
         }
+        SwitchPreference free = toggle(context, Settings.FREE_STUFF_SHORTCUT, build.contains(PatchFamily.MENU_SETTINGS_ROW)
+                ? L10n.t("Adds Free stuff, Marketplace's free listings, to the menu you get by holding "
+                        + "Facebook's icon, if there's room, and a Free stuff row in Settings and privacy. Existing "
+                        + "shortcuts stay.")
+                : L10n.t("Adds Free stuff, Marketplace's free listings, to the menu you get by holding "
+                        + "Facebook's icon, if there's room. Existing shortcuts stay."));
+        free.setOnPreferenceChangeListener((preference, value) -> {
+            Settings.FREE_STUFF_SHORTCUT.save((Boolean) value);
+            FreeStuffShortcut.changed(context);
+            return true;
+        });
+        marketplace.addPreference(free);
     }
 
     /** The row that puts Facebook's chime in the phone's notification sounds. */

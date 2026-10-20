@@ -29,10 +29,10 @@ import app.morphe.extension.shared.settings.BooleanSetting;
 
 /**
  * An optional launcher entry for one of Facebook's own routes, and whether its Menu row is wanted:
- * {@link SavedShortcut} and {@link WatchHistoryShortcut}. Each publishes only while its switch is
- * on and this build opens the route itself, and never evicts another shortcut. The shortcuts hand
- * in their text through calls of their own, so every string stays a literal the translation check
- * can see.
+ * {@link SavedShortcut}, {@link WatchHistoryShortcut} and {@link FreeStuffShortcut}. Each publishes
+ * only while its switch is on and this build opens the route itself, and never evicts another
+ * shortcut. The shortcuts hand in their text through calls of their own, so every string stays a
+ * literal the translation check can see.
  */
 final class RouteShortcut {
     final String id;

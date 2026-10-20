@@ -1236,6 +1236,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_watch_history_shortcut", FALSE);
 
     /**
+     * A launcher shortcut and a Menu row to Marketplace's free listings (the web's Free Stuff
+     * category, which Facebook's link handler opens in Marketplace), added only when the shortcut
+     * won't displace an existing entry (Discussion #52).
+     */
+    public static final BooleanSetting FREE_STUFF_SHORTCUT =
+            new BooleanSetting("hushfacebook_free_stuff_shortcut", FALSE);
+
+    /**
      * The Hushfacebook settings shortcut in the menu a long press on Facebook's launcher icon opens
      * ({@link SettingsEntry}). On by default, as it always was. Off, the shortcut goes at once and
      * isn't published again; the Menu row and the logo's long press still open the screen (#146).

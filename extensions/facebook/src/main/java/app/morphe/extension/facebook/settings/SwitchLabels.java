@@ -179,6 +179,7 @@ final class SwitchLabels {
         if (setting == Settings.LEAVE_CALLS_AND_CHATS_TO_MESSENGER) return L10n.t("Leave calls and chats to Messenger");
         if (setting == Settings.SAVED_SHORTCUT) return L10n.t("Saved shortcut");
         if (setting == Settings.WATCH_HISTORY_SHORTCUT) return L10n.t("Watch history shortcut");
+        if (setting == Settings.FREE_STUFF_SHORTCUT) return L10n.t("Free stuff shortcut");
         if (setting == Settings.SETTINGS_SHORTCUT) return L10n.t("Settings shortcut on the app icon");
         if (setting == Settings.SETTINGS_LOGO_PRESS) return L10n.t("Open settings from the logo");
         if (setting == Settings.SETTINGS_MENU_ROW) return L10n.t("Settings row in Menu");

@@ -1731,3 +1731,9 @@ A video you tap in the feed opens full screen by itself, with no reels to swipe 
 Hide the new comments pop-up	Ẩn bong bóng bình luận mới
 # context: the bubble Facebook shows over an open comment list when new comments arrive, like "3 new comments"
 The "new comments" bubble no longer pops up while you read comments. New comments still show in the list.	Bong bóng "bình luận mới" không còn bật lên khi bạn đọc bình luận. Bình luận mới vẫn hiện trong danh sách.
+# context: the name of a launcher shortcut and a Menu row that open Marketplace's free listings (Facebook's website calls that category Free Stuff)
+Free stuff	Đồ miễn phí
+Free stuff shortcut	Lối tắt Đồ miễn phí
+Free stuff isn't available in this build.	Đồ miễn phí không có trong bản dựng này.
+Adds Free stuff, Marketplace's free listings, to the menu you get by holding Facebook's icon, if there's room, and a Free stuff row in Settings and privacy. Existing shortcuts stay.	Thêm Đồ miễn phí (các tin đăng miễn phí trên Marketplace) vào menu hiện ra khi nhấn giữ biểu tượng Facebook, nếu còn chỗ, và thêm dòng Đồ miễn phí trong Cài đặt & quyền riêng tư. Các lối tắt hiện có vẫn giữ nguyên.
+Adds Free stuff, Marketplace's free listings, to the menu you get by holding Facebook's icon, if there's room. Existing shortcuts stay.	Thêm Đồ miễn phí (các tin đăng miễn phí trên Marketplace) vào menu hiện ra khi nhấn giữ biểu tượng Facebook, nếu còn chỗ. Các lối tắt hiện có vẫn giữ nguyên.
