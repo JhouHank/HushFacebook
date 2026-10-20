@@ -208,6 +208,10 @@ Saved to %1$s	Gespeichert unter %1$s
 Saved to the gallery	In der Galerie gespeichert
 Saved to %1$s in lower quality than on Facebook	Gespeichert unter %1$s, in geringerer Qualität als auf Facebook
 Saved to the gallery in lower quality than on Facebook	In der Galerie gespeichert, in geringerer Qualität als auf Facebook
+# context: a video save's end message when the best file was over 512 MB and a smaller one was saved instead; %1$s is the folder, %2$s the smaller file's quality, such as 480p
+Saved to %1$s at %2$s, since the bigger file is over 512 MB	Gespeichert unter %1$s in %2$s, da die größere Datei über 512 MB groß ist
+# context: a video save's end message when the best file was over 512 MB and a smaller one was saved instead; %1$s is the smaller file's quality, such as 480p
+Saved to the gallery at %1$s, since the bigger file is over 512 MB	In der Galerie in %1$s gespeichert, da die größere Datei über 512 MB groß ist
 Saved. Restart Facebook to see the change.	Gespeichert. Starte Facebook neu, um die Änderung zu sehen.
 Saves your switches and download choices to a file, to back up or copy to another phone. Pause, Debug logging and the update check aren't included.	Speichert deine Schalter und Download-Auswahl in einer Datei, zur Sicherung oder für ein anderes Telefon. Pause, Debug-Protokollierung und die Update-Prüfung sind nicht enthalten.
 # The release check: its switch and Check now row under Updates, the status card's line about a newer release, and what a failed try says.

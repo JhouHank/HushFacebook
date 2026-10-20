@@ -208,6 +208,10 @@ Saved to %1$s	Şuraya kaydedildi: %1$s
 Saved to the gallery	Galeriye kaydedildi
 Saved to %1$s in lower quality than on Facebook	Şuraya Facebook'takinden düşük kalitede kaydedildi: %1$s
 Saved to the gallery in lower quality than on Facebook	Galeriye Facebook'takinden düşük kalitede kaydedildi
+# context: a video save's end message when the best file was over 512 MB and a smaller one was saved instead; %1$s is the folder, %2$s the smaller file's quality, such as 480p
+Saved to %1$s at %2$s, since the bigger file is over 512 MB	Büyük dosya 512 MB'ı aştığı için %2$s olarak kaydedildi: %1$s
+# context: a video save's end message when the best file was over 512 MB and a smaller one was saved instead; %1$s is the smaller file's quality, such as 480p
+Saved to the gallery at %1$s, since the bigger file is over 512 MB	Büyük dosya 512 MB'ı aştığı için galeriye %1$s olarak kaydedildi
 Saved. Restart Facebook to see the change.	Kaydedildi. Değişikliği görmek için Facebook'u yeniden başlatın.
 Saves your switches and download choices to a file, to back up or copy to another phone. Pause, Debug logging and the update check aren't included.	Anahtarlarınızı ve indirme seçimlerinizi bir dosyaya kaydeder; yedeklemek veya başka bir telefona taşımak için. Duraklat, Hata ayıklama günlüğü ve güncelleme denetimi dahil değildir.
 # The release check: its switch and Check now row under Updates, the status card's line about a newer release, and what a failed try says.

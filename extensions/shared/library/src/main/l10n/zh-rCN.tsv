@@ -208,6 +208,10 @@ Saved to %1$s	已保存到 %1$s
 Saved to the gallery	已保存到相册
 Saved to %1$s in lower quality than on Facebook	已保存到 %1$s，画质低于 Facebook 上的画质
 Saved to the gallery in lower quality than on Facebook	已保存到相册，画质低于 Facebook 上的画质
+# context: a video save's end message when the best file was over 512 MB and a smaller one was saved instead; %1$s is the folder, %2$s the smaller file's quality, such as 480p
+Saved to %1$s at %2$s, since the bigger file is over 512 MB	已以 %2$s 保存到 %1$s，因为更大的文件超过 512 MB
+# context: a video save's end message when the best file was over 512 MB and a smaller one was saved instead; %1$s is the smaller file's quality, such as 480p
+Saved to the gallery at %1$s, since the bigger file is over 512 MB	已以 %1$s 保存到相册，因为更大的文件超过 512 MB
 Saved. Restart Facebook to see the change.	已保存。重启 Facebook 后可看到更改。
 Saves your switches and download choices to a file, to back up or copy to another phone. Pause, Debug logging and the update check aren't included.	把你的开关和下载选项保存到文件中，用于备份或复制到另一部手机。不包括暂停、调试日志和更新检查。
 # The release check: its switch and Check now row under Updates, the status card's line about a newer release, and what a failed try says.
