@@ -143,6 +143,33 @@ public class MarketplaceResponseDiagnosticsTest {
     }
 
     /**
+     * The shape the S22's 2026-10-20 capture showed: a seller object named by its type, and the
+     * guessed names inside listing_price and location_text, with no value in the report.
+     */
+    @Test
+    public void aSellersTypeAndThePriceAndPlaceNamesAreReadWithoutTheirValues() {
+        String response = "{\"data\":{\"edges\":[{\"node\":{\"__typename\":\"MarketplaceFeedGeneralListingObject\","
+                + "\"listing\":{\"__typename\":\"GroupCommerceProductItem\",\"id\":\"123456789012345\","
+                + "\"listing_price\":{\"formatted_amount_zeros_stripped\":\"$SensitivePrice\","
+                + "\"amount_with_offset_in_currency\":\"SensitiveOffset\"},"
+                + "\"location_text\":{\"text\":\"SensitiveTown\"},"
+                + "\"marketplace_listing_seller\":{\"__typename\":\"Page\",\"id\":\"SensitiveSellerId\"}}}},"
+                + "{\"node\":{\"__typename\":\"MarketplaceFeedGeneralListingObject\","
+                + "\"listing\":{\"__typename\":\"GroupCommerceProductItem\","
+                + "\"marketplace_listing_seller\":{\"__typename\":\"User\",\"id\":\"SensitiveUserId\"}}}}]}}";
+        assertSame(response, MarketplaceAdFilterForTests.responseWhole(THEMED, response));
+        String report = LogBufferManager.buildExportText();
+        for (String named : new String[] {"formatted_amount_zeros_stripped:string",
+                "amount_with_offset_in_currency:string", "location_text model=none fields={text:string}",
+                "model=Page", "model=User", "Page:1", "User:1", "unrecognized_models=0", "capture=complete"}) {
+            assertTrue(named + " missing from " + report, report.contains(named));
+        }
+        for (String privateText : new String[] {"Sensitive", "123456789012345"}) {
+            assertFalse(privateText + " reached the diagnostic report", report.contains(privateText));
+        }
+    }
+
+    /**
      * A search page of 40 listings, each with its price, photo, place and seller, reads in full: the
      * S22's search captures stopped at the old 256-object walk and said incomplete.
      */

@@ -49,10 +49,13 @@ final class MarketplaceResponseDiagnostics {
             "MarketplaceSearchApp_MarketplaceSearchFeedHeadQuery",
             "MarketplaceSearchFeedPaginationQuery",
     };
+    // The last group is what a listing's seller may be. The S22's 2026-10-20 capture had every
+    // seller object unrecognized, so whether a page or business sells it couldn't be told.
     private static final String[] MODELS = {
             "MarketplaceFeedGeneralListingObject", "MarketplaceFeedListingStoryObject",
             "MarketplaceFeedAdStory", "GroupCommerceProductItem", "MarketplaceSearch",
             "MarketplaceSearchFeedStoriesEdge",
+            "User", "Page", "Group", "Business", "MarketplaceSeller",
     };
     // Structural fields used by the existing filter; the selection variables come from the fixture
     // query configs, including PlainHome's radius. Shipping names occur in stock app serializers,
@@ -61,7 +64,10 @@ final class MarketplaceResponseDiagnostics {
     // composer's listing serializer (delivery) and Marketplace's React Native route params (listing
     // price, seller id, local pickup). Naming one says it was present, not what it means. The last
     // group is candidates from Facebook's web Marketplace listings (price amount, place, seller,
-    // sold or pending state), not seen in Android traffic yet: a capture shows which ones arrive.
+    // sold or pending state); the S22's 2026-10-20 capture saw id, location_text,
+    // marketplace_listing_seller and marketplace_listing_category_id among them. The names after
+    // those are guesses for what Android's listing_price (two strings) and location_text (one)
+    // hold, since none of the web names arrived inside them.
     private static final Set<String> FIELDS = new HashSet<>(Arrays.asList(
             "__typename", "data", "edges", "node", "listing", "story", "sponsored_data", "ad_id",
             "marketplace_search", "feed_units", "location", "is_shipping_offered", "shipping_offer_type",
@@ -72,7 +78,9 @@ final class MarketplaceResponseDiagnostics {
             "delivery_types", "pickup_delivery_info", "local_pickup", "seller_id",
             "id", "amount", "formatted_amount", "reverse_geocode", "city", "state", "city_page",
             "display_name", "location_text", "marketplace_listing_seller", "name", "is_sold", "is_pending",
-            "is_hidden", "is_live", "custom_title", "marketplace_listing_category_id"));
+            "is_hidden", "is_live", "custom_title", "marketplace_listing_category_id",
+            "text", "currency", "amount_with_offset", "amount_with_offset_in_currency",
+            "formatted_amount_zeros_stripped", "offset"));
     private static final Map<Object, Observer> observers = new WeakHashMap<>();
     private static final Map<String, Set<String>> shapes = new HashMap<>();
     private static final Set<String> summaryBudgetNotices = new HashSet<>();
