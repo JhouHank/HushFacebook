@@ -1674,7 +1674,7 @@ Long press opens comments	长按打开评论
 # context: summary of the double tap switch
 A double tap on a reel opens its comments instead of liking it. Turn off double tap to like still wins when it's on. Off by default, since it hasn't been tried on a real account yet.	双击 Reels 会打开它的评论，而不是点赞。开启“关闭双击点赞”时，以它为准。默认关闭，因为尚未在真实账号上试过。
 # context: summary of the long press switch
-Holding a reel opens its comments instead of Facebook's long-press menu or the 2x hold. The reel's more button still opens that menu. Off by default, since it hasn't been tried on a real account yet.	按住 Reels 会打开它的评论，取代 Facebook 的长按菜单或 2 倍速按住。Reels 的“更多”按钮仍可打开那个菜单。默认关闭，因为尚未在真实账号上试过。
+Holding a reel opens its comments instead of Facebook's long-press menu or the 2x hold. The reel's more button still opens that menu. Holding a feed post's photo or the line with its name opens that post's comments, and holding its text or a profile picture works as before. Off by default, since it hasn't been tried on a real account yet.	按住 Reels 会打开它的评论，取代 Facebook 的长按菜单或 2 倍速按住。Reels 的“更多”按钮仍可打开那个菜单。按住动态中帖子的照片或带名字的那一行会打开该帖子的评论，按住文字或头像则和以前一样。默认关闭，因为尚未在真实账号上试过。
 # context: switch title under Downloads; the switch adds the post menu row "Open in another app" to feed and Watch videos
 Open videos in another app	用其他应用打开视频
 # context: summary of that switch; "Open in another app" is the menu row; VLC and Web Video Caster are app names, keep them
