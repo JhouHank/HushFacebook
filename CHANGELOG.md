@@ -22,6 +22,7 @@ Changes in each Hushfacebook version, newest first.
 * **Diagnostics:** With Debug logging on, a report says more when a game's download screen closes right away. Next to the module and the error, its line lists the steps Facebook's downloader took for that module in the last 30 seconds and what the download task ended with, so one report can show where a game that won't open stopped (issue #168).
 * **Diagnostics:** With Debug logging on, a report gets a line for Bengali text the first time each part of Facebook lays it out. It lists the font's line height at that size, how high and low the letters really reach, and how much room Facebook left them, so a report can show where captions lose the tops of their letters (issue #96). The text itself isn't logged.
 * **Diagnostics:** With Debug logging on, a report lists what each kind of feed request asked Facebook for, like its feed style and ordering. That lets Home with a `Home shows` filter be compared with the same filter on the Feeds tab, since Home with Friends still comes back full of suggestions for some accounts. Ids, page cursors and anything that isn't a plain one-word value are left out.
+* **Diagnostics:** With Debug logging on, Marketplace's report lines name a listing's price, title, photo, delivery and seller fields when Facebook sends them, where before they only counted as other fields. Only the field names and their kinds go in, never prices, titles, links or ids.
 
 ### Fixed
 

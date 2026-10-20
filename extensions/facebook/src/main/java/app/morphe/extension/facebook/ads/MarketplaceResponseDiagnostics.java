@@ -52,11 +52,19 @@ final class MarketplaceResponseDiagnostics {
     };
     // Structural fields used by the existing filter; the selection variables come from the fixture
     // query configs, including PlainHome's radius. Shipping names occur in stock app serializers,
-    // without proven semantics on returned results.
+    // without proven semantics on returned results. The listing names come from Facebook 583's own
+    // code: its GraphQL model reader for product items (prices, title, photos, subtitles), the
+    // composer's listing serializer (delivery) and Marketplace's React Native route params (listing
+    // price, seller id, local pickup). Naming one says it was present, not what it means. A
+    // seller's name and the distance have no name here that the app's code shows on a listing.
     private static final Set<String> FIELDS = new HashSet<>(Arrays.asList(
             "__typename", "data", "edges", "node", "listing", "story", "sponsored_data", "ad_id",
             "marketplace_search", "feed_units", "location", "is_shipping_offered", "shipping_offer_type",
-            "localOnly", "shippedOnly", "radius", "search_radius_in_meters"));
+            "localOnly", "shippedOnly", "radius", "search_radius_in_meters",
+            "listing_price", "formatted_price", "strikethrough_price", "current_product_price",
+            "product_item_price", "product_sale_price", "is_on_sale", "marketplace_listing_title",
+            "description", "custom_sub_titles", "primary_listing_photo", "listing_photos",
+            "delivery_types", "pickup_delivery_info", "local_pickup", "seller_id"));
     private static final Map<Object, Observer> observers = new WeakHashMap<>();
     private static final Map<String, Set<String>> shapes = new HashMap<>();
     private static final Set<String> summaryBudgetNotices = new HashSet<>();

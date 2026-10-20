@@ -85,6 +85,34 @@ public class MarketplaceResponseDiagnosticsTest {
         }
     }
 
+    /**
+     * A listing's price, title, photo, delivery and seller fields that Facebook's own code names are
+     * reported by name and type. A name the app's code doesn't show stays a count, and no value,
+     * ID or link reaches the report.
+     */
+    @Test
+    public void listingNamesFromFacebooksCodeAreNamedAndOthersStayUnknown() {
+        String response = "{\"data\":{\"edges\":[{\"node\":{\"__typename\":\"MarketplaceFeedGeneralListingObject\","
+                + "\"listing\":{\"__typename\":\"GroupCommerceProductItem\","
+                + "\"formatted_price\":{\"text\":\"SensitivePrice\"},\"strikethrough_price\":null,"
+                + "\"marketplace_listing_title\":\"SensitiveTitle\",\"description\":{\"text\":\"SensitiveText\"},"
+                + "\"primary_listing_photo\":{\"image\":{\"uri\":\"https://private.example/photo\"}},"
+                + "\"custom_sub_titles\":[\"SensitiveSubtitle\"],\"delivery_types\":[\"SENSITIVE_DELIVERY\"],"
+                + "\"seller_id\":\"424242424242\",\"marketplace_listing_seller\":{\"name\":\"SensitiveSeller\"}}}}]}}";
+        assertSame(response, MarketplaceAdFilterForTests.responseWhole(THEMED, response));
+        String report = LogBufferManager.buildExportText();
+        for (String named : new String[] {"formatted_price:object", "strikethrough_price:null",
+                "marketplace_listing_title:string", "description:object", "primary_listing_photo:object",
+                "custom_sub_titles:array", "delivery_types:array", "seller_id:string", "other_object:1",
+                "capture=complete"}) {
+            assertTrue(named + " missing from " + report, report.contains(named));
+        }
+        for (String privateText : new String[] {"Sensitive", "SENSITIVE", "424242424242", "private.example",
+                "marketplace_listing_seller"}) {
+            assertFalse(privateText + " reached the diagnostic report", report.contains(privateText));
+        }
+    }
+
     @Test
     public void everySplitIsPassedOnImmediatelyAndAnIncompleteTailIsNeverFlushedTwice() {
         String response = response();
