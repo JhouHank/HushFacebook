@@ -265,6 +265,13 @@ public final class ProgressBar {
     @Nullable
     private static String lastShown;
 
+    /**
+     * The reel length the bar info builder last logged, so a bar info built again for the same reel
+     * doesn't log again. Only the debug log reads it (#120: whether the next reel's length is known
+     * before {@link #nextReel} hides its time).
+     */
+    private static volatile int lastLoggedLengthMs = -1;
+
     /** Forgets every hand-over and the scrubber last picked, for tests, which share one process. */
     static void forgetHandOversForTests() {
         handOvers.clear();
@@ -359,6 +366,7 @@ public final class ProgressBar {
             if (label != null && showsTime()) {
                 label.setVisibility(View.INVISIBLE);
                 lastRefresh.remove(label);
+                Logger.printDebug(() -> "Reel bar: the scrubber takes another reel, its time is hidden until the reel plays");
             }
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "reel bar start over", failure);
@@ -711,6 +719,14 @@ public final class ProgressBar {
      * stands.
      */
     public static boolean hasBar(boolean facebook, int lengthMs) {
+        if (lengthMs > 0 && lengthMs != lastLoggedLengthMs && Utils.settingsReady()) {
+            lastLoggedLengthMs = lengthMs;
+            try {
+                Logger.printDebug(() -> "Reel bar: bar info built for a reel of " + lengthMs + " ms");
+            } catch (Throwable failure) {
+                HookStatus.threw(FAMILY, "reel bar info", failure);
+            }
+        }
         if (facebook || lengthMs <= 0) return facebook;
         return keeps("reel without a bar", NO_BAR_REEL);
     }
