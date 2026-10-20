@@ -977,8 +977,8 @@ The Feeds tab will open on %1$s.	La pestaña Feeds se abrirá en %1$s.
 # context: title of the list under Following feed on Home that picks which Feeds tab filter Home shows
 Home shows	Inicio muestra
 Home shows the same posts as All in the Feeds tab.	Inicio muestra las mismas publicaciones que Todo en la pestaña Feeds.
-# context: %1$s is a Feeds tab filter's name, like Friends or Groups
-Home shows the same posts as %1$s in the Feeds tab. If Facebook doesn't have that feed, Home shows All.	Inicio muestra las mismas publicaciones que %1$s en la pestaña Feeds. Si Facebook no tiene ese feed, Inicio muestra Todo.
+# context: %1$s is a Feeds tab filter's name, like Friends or Groups; %2$s is the Hide "Suggested for you" posts switch and %3$s the Hide Reels in the feed switch
+Home asks Facebook for the posts %1$s shows in the Feeds tab. When there's nothing new there, Facebook can fill Home with suggested posts and reels, which %2$s and %3$s take out. If Facebook doesn't have that feed, Home shows All.	Inicio le pide a Facebook las publicaciones que muestra %1$s en la pestaña Feeds. Cuando ahí no hay nada nuevo, Facebook puede llenar Inicio con publicaciones y reels sugeridos, que %2$s y %3$s quitan. Si Facebook no tiene ese feed, Inicio muestra Todo.
 # context: settings import preview; %1$s is the Following feed on Home switch, %2$s a Feeds tab filter
 With %1$s on, Home will show the same posts as %2$s in the Feeds tab.	Con %1$s activado, Inicio mostrará las mismas publicaciones que %2$s en la pestaña Feeds.
 Saved	Guardado

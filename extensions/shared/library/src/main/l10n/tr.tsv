@@ -977,8 +977,8 @@ The Feeds tab will open on %1$s.	Akışlar sekmesi %1$s filtresinde açılacak.
 # context: title of the list under Following feed on Home that picks which Feeds tab filter Home shows
 Home shows	Ana Sayfa'da gösterilen
 Home shows the same posts as All in the Feeds tab.	Ana Sayfa, Akışlar sekmesindeki Tümü ile aynı gönderileri gösterir.
-# context: %1$s is a Feeds tab filter's name, like Friends or Groups
-Home shows the same posts as %1$s in the Feeds tab. If Facebook doesn't have that feed, Home shows All.	Ana Sayfa, Akışlar sekmesindeki %1$s ile aynı gönderileri gösterir. Facebook'ta bu akış yoksa Ana Sayfa Tümü'nü gösterir.
+# context: %1$s is a Feeds tab filter's name, like Friends or Groups; %2$s is the Hide "Suggested for you" posts switch and %3$s the Hide Reels in the feed switch
+Home asks Facebook for the posts %1$s shows in the Feeds tab. When there's nothing new there, Facebook can fill Home with suggested posts and reels, which %2$s and %3$s take out. If Facebook doesn't have that feed, Home shows All.	Ana Sayfa, Akışlar sekmesinde %1$s filtresinin gösterdiği gönderileri Facebook'tan ister. Orada yeni bir şey yoksa Facebook Ana Sayfa'yı önerilen gönderiler ve reels videolarıyla doldurabilir. %2$s ve %3$s bunları kaldırır. Facebook'ta bu akış yoksa Ana Sayfa Tümü'nü gösterir.
 # context: settings import preview; %1$s is the Following feed on Home switch, %2$s a Feeds tab filter
 With %1$s on, Home will show the same posts as %2$s in the Feeds tab.	%1$s açıkken Ana Sayfa, Akışlar sekmesindeki %2$s ile aynı gönderileri gösterecek.
 Saved	Kaydedilenler

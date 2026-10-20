@@ -974,8 +974,8 @@ The Feeds tab will open on %1$s.	“动态”标签页将显示“%1$s”。
 # context: title of the list under Following feed on Home that picks which Feeds tab filter Home shows
 Home shows	主页显示
 Home shows the same posts as All in the Feeds tab.	主页显示与“动态”标签页中“全部”相同的帖子。
-# context: %1$s is a Feeds tab filter's name, like Friends or Groups
-Home shows the same posts as %1$s in the Feeds tab. If Facebook doesn't have that feed, Home shows All.	主页显示与“动态”标签页中“%1$s”相同的帖子。如果 Facebook 没有该动态，主页会显示“全部”。
+# context: %1$s is a Feeds tab filter's name, like Friends or Groups; %2$s is the Hide "Suggested for you" posts switch and %3$s the Hide Reels in the feed switch
+Home asks Facebook for the posts %1$s shows in the Feeds tab. When there's nothing new there, Facebook can fill Home with suggested posts and reels, which %2$s and %3$s take out. If Facebook doesn't have that feed, Home shows All.	主页会向 Facebook 请求“动态”标签页中“%1$s”显示的帖子。那里没有新内容时，Facebook 可能会用推荐的帖子和 Reels 填满主页，%2$s 和 %3$s 可以把它们去掉。如果 Facebook 没有该动态，主页会显示“全部”。
 # context: settings import preview; %1$s is the Following feed on Home switch, %2$s a Feeds tab filter
 With %1$s on, Home will show the same posts as %2$s in the Feeds tab.	开启“%1$s”后，主页将显示与“动态”标签页中“%2$s”相同的帖子。
 Saved	收藏

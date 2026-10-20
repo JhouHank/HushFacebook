@@ -100,8 +100,10 @@ val followingFeedHomePatch = bytecodePatch(
     name = "Following feed on Home",
     description = "Makes Home show the newest posts from the friends, groups and Pages you follow instead of " +
         "Facebook's ranked feed, so you see what they posted rather than what Facebook picks. Home shows, right " +
-        "below it, narrows Home to one of the Feeds tab's filters (Friends, Favorites, Groups or Pages). Starts " +
-        "off. Turn it on in Hushfacebook settings > Opening Facebook.",
+        "below it, asks Facebook for one of the Feeds tab's filters (Friends, Favorites, Groups or Pages) instead. " +
+        "When that filter has nothing new, Facebook can fill Home with suggested posts and reels, so pair it with " +
+        "Hide \"Suggested for you\" posts and Hide Reels in the feed. Starts off. Turn it on in Hushfacebook " +
+        "settings > Opening Facebook.",
     default = true,
 ) {
     category("Feed")

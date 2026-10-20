@@ -977,8 +977,8 @@ The Feeds tab will open on %1$s.	Tab Bảng feed sẽ mở ở %1$s.
 # context: title of the list under Following feed on Home that picks which Feeds tab filter Home shows
 Home shows	Trang chủ hiện
 Home shows the same posts as All in the Feeds tab.	Trang chủ hiện cùng bài viết như Tất cả trong tab Bảng feed.
-# context: %1$s is a Feeds tab filter's name, like Friends or Groups
-Home shows the same posts as %1$s in the Feeds tab. If Facebook doesn't have that feed, Home shows All.	Trang chủ hiện cùng bài viết như %1$s trong tab Bảng feed. Nếu Facebook không có bảng feed đó, Trang chủ hiện Tất cả.
+# context: %1$s is a Feeds tab filter's name, like Friends or Groups; %2$s is the Hide "Suggested for you" posts switch and %3$s the Hide Reels in the feed switch
+Home asks Facebook for the posts %1$s shows in the Feeds tab. When there's nothing new there, Facebook can fill Home with suggested posts and reels, which %2$s and %3$s take out. If Facebook doesn't have that feed, Home shows All.	Trang chủ yêu cầu Facebook gửi các bài viết mà %1$s hiện trong tab Bảng feed. Khi ở đó không có gì mới, Facebook có thể lấp Trang chủ bằng bài viết và thước phim được gợi ý, mà %2$s và %3$s sẽ ẩn đi. Nếu Facebook không có bảng feed đó, Trang chủ hiện Tất cả.
 # context: settings import preview; %1$s is the Following feed on Home switch, %2$s a Feeds tab filter
 With %1$s on, Home will show the same posts as %2$s in the Feeds tab.	Khi %1$s bật, Trang chủ sẽ hiện cùng bài viết như %2$s trong tab Bảng feed.
 Saved	Đã lưu
