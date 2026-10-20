@@ -603,6 +603,15 @@
     },
     {
       "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/suggested/FindFriendsCard.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: the Find friends card where the feed runs out of friends' posts. In Facebook 583 the end of the feed is one section whose children builder adds a part for each of its pieces, and the card is the one that names itself EndOfFeedCIUnitSection. The builder reads a string off the section's settings and builds the card only when that string isn't null. The patch finds the one String field read guarded by a null check right before the card's section is created, and hands the string to the extension, which answers null while the switch is on so the card is skipped the way some feed types already skip it."
+    },
+    {
+      "paths": [
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/postprompts/PostCounts.kt"
       ],
       "origin": "original",
