@@ -27,9 +27,15 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * parts of the browser can call too. It asks {@link #holdUpload} first, and a yes returns before
  * anything is sent. Nothing waits for that upload: its answer only goes to Facebook's own logging.
  *
+ * <p>When you fill in a form on a page, the browser also logs two autofill reports to Facebook's
+ * analytics: one with the page's address and host, the form's fields and the ad the page came from,
+ * and a first-party data event. Each asks {@link #holdAutofillReport} first, and a yes returns before
+ * the event is built. Autofill itself keeps what you declined in its own preferences and never reads
+ * the reports, so it works the same either way.
+ *
  * <p>It fails open: the switch off, a pause, settings that aren't ready yet, or a failure in here,
- * and the browser builds its writers and sends as it would have. Login, checkout and autofill are
- * other parts of the browser and don't ask.
+ * and the browser builds its writers and sends as it would have. Login and checkout are other parts
+ * of the browser and don't ask.
  */
 public final class LinkHistory {
     /** The diagnostic counter route: each writer and upload the browser went to make, and the ones held back. */
@@ -40,6 +46,9 @@ public final class LinkHistory {
 
     /** What an upload that wasn't sent is counted under. */
     static final String UPLOADS = "Link history uploads";
+
+    /** What an autofill report that wasn't logged is counted under. */
+    static final String AUTOFILL_REPORTS = "Autofill reports";
 
     private LinkHistory() {
     }
@@ -58,6 +67,14 @@ public final class LinkHistory {
      */
     public static boolean holdUpload() {
         return held(UPLOADS, "link history upload", "an upload");
+    }
+
+    /**
+     * Injection point, first thing in each of the browser's two autofill reports. True makes it
+     * return before the page's address, the form's fields and the ad are logged. Never throws.
+     */
+    public static boolean holdAutofillReport() {
+        return held(AUTOFILL_REPORTS, "autofill report", "an autofill report");
     }
 
     private static boolean held(String counted, String site, String what) {
