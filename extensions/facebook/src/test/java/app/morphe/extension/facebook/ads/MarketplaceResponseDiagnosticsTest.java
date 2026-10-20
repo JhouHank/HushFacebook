@@ -122,11 +122,14 @@ public class MarketplaceResponseDiagnosticsTest {
         String response = "{\"data\":{\"edges\":[{\"node\":{\"__typename\":\"MarketplaceFeedGeneralListingObject\","
                 + "\"listing\":{\"__typename\":\"GroupCommerceProductItem\",\"id\":\"987654321012345\","
                 + "\"listing_price\":{\"formatted_amount\":\"$SensitiveAmount\",\"amount\":\"13.37\"},"
-                + "\"location\":{\"reverse_geocode\":{\"city\":\"SensitiveCity\",\"state\":\"SensitiveState\","
+                + "\"location\":{\"latitude\":40.71234,\"longitude\":-74.00567,"
+                + "\"reverse_geocode\":{\"city\":\"SensitiveCity\",\"state\":\"SensitiveState\","
                 + "\"city_page\":{\"display_name\":\"SensitivePage\"}}},"
                 + "\"marketplace_listing_seller\":{\"__typename\":\"User\",\"name\":\"SensitiveSeller\"},"
                 + "\"is_sold\":false,\"is_pending\":false,\"is_hidden\":false,\"is_live\":true,"
                 + "\"custom_title\":null,\"marketplace_listing_category_id\":\"SensitiveCategory\","
+                + "\"redacted_description\":{\"text\":\"SensitiveDescription\"},\"creation_time\":1760918400,"
+                + "\"listing_inventory_type\":\"SensitiveInventory\","
                 + "\"private_seller_note\":\"SensitiveNote\"}}}]}}";
         assertSame(response, MarketplaceAdFilterForTests.responseWhole(THEMED, response));
         String report = LogBufferManager.buildExportText();
@@ -134,10 +137,13 @@ public class MarketplaceResponseDiagnosticsTest {
                 "reverse_geocode:object", "city:string", "state:string", "city_page:object",
                 "display_name:string", "marketplace_listing_seller:object", "name:string", "is_sold:boolean",
                 "is_pending:boolean", "is_hidden:boolean", "is_live:boolean", "custom_title:null",
-                "marketplace_listing_category_id:string", "other_string:1", "capture=complete"}) {
+                "marketplace_listing_category_id:string", "redacted_description:object", "creation_time:number",
+                "latitude:number", "longitude:number", "listing_inventory_type:string", "other_string:1",
+                "capture=complete"}) {
             assertTrue(named + " missing from " + report, report.contains(named));
         }
-        for (String privateText : new String[] {"Sensitive", "987654321012345", "13.37", "private_seller_note"}) {
+        for (String privateText : new String[] {"Sensitive", "987654321012345", "13.37", "private_seller_note",
+                "40.71234", "74.00567", "1760918400"}) {
             assertFalse(privateText + " reached the diagnostic report", report.contains(privateText));
         }
     }
@@ -192,6 +198,30 @@ public class MarketplaceResponseDiagnosticsTest {
         assertFalse(report, report.contains("shape traversal budget"));
     }
 
+    /**
+     * A search page sent as one payload past 256 KB reads to the end. On the S22 one such page
+     * stopped before its first payload and read payloads=0, incomplete.
+     */
+    @Test
+    public void aSearchPagePastTheOldPayloadBudgetReadsComplete() {
+        String title = "t".repeat(8_000);
+        StringBuilder edges = new StringBuilder();
+        for (int i = 0; i < 40; i++) {
+            if (i > 0) edges.append(',');
+            edges.append("{\"node\":{\"__typename\":\"MarketplaceFeedGeneralListingObject\",\"listing\":")
+                    .append("{\"__typename\":\"GroupCommerceProductItem\",\"marketplace_listing_title\":\"")
+                    .append(title).append("\"}}}");
+        }
+        String response = "{\"data\":{\"marketplace_search\":{\"feed_units\":{\"edges\":[" + edges + "]}}}}";
+        assertTrue(response.length() > 256 * 1024);
+        assertSame(response, MarketplaceAdFilterForTests.responseWhole(SEARCH, response));
+        String report = LogBufferManager.buildExportText();
+        assertTrue(report, report.contains("payloads=1 capture=complete"));
+        assertTrue(report, report.contains("MarketplaceFeedGeneralListingObject:40"));
+        assertFalse(report, report.contains("payload budget"));
+        assertFalse(report, report.contains(title));
+    }
+
     @Test
     public void everySplitIsPassedOnImmediatelyAndAnIncompleteTailIsNeverFlushedTwice() {
         String response = response();
@@ -238,7 +268,7 @@ public class MarketplaceResponseDiagnosticsTest {
     public void unknownModelValuesStayPrivateAndOversizedOrMalformedAnswersStillPassThrough() {
         String unknown = "{\"data\":{\"listing\":{\"__typename\":\"SensitivePrivateModel\",\"is_shipping_offered\":false}}}";
         assertSame(unknown, MarketplaceAdFilterForTests.responseWhole(THEMED, unknown));
-        String oversized = "{\"data\":\"" + "x".repeat(300_000) + "\"}";
+        String oversized = "{\"data\":\"" + "x".repeat(MarketplaceResponseDiagnostics.MAX_PAYLOAD_CHARS) + "\"}";
         assertSame(oversized, MarketplaceAdFilterForTests.responseWhole(RELATED, oversized));
         String malformed = "{\"data\":{\"listing\":}}";
         assertSame(malformed, MarketplaceAdFilterForTests.responseWhole(THEMED, malformed));

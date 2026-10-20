@@ -28,7 +28,9 @@ import app.morphe.extension.shared.settings.BaseSettings;
  * describe fields actually present, not a promise of fulfillment or distance semantics.
  */
 final class MarketplaceResponseDiagnostics {
-    static final int MAX_PAYLOAD_CHARS = 256 * 1024;
+    // One search page on the S22 (2026-10-20) was a single payload past 256 KB, so its capture
+    // stopped before reading anything. Debug-only, and still under the whole-response budget.
+    static final int MAX_PAYLOAD_CHARS = 1024 * 1024;
     static final int MAX_RESPONSE_CHARS = 2 * 1024 * 1024;
     static final int MAX_REQUESTS = 16;
     // A search page of listings walks past 256 objects and 32 shapes, so the S22's
@@ -73,7 +75,9 @@ final class MarketplaceResponseDiagnostics {
     // sold or pending state); the S22's 2026-10-20 capture saw id, location_text,
     // marketplace_listing_seller and marketplace_listing_category_id among them. The names after
     // those are guesses for what Android's listing_price (two strings) and location_text (one)
-    // hold, since none of the web names arrived inside them.
+    // hold, since none of the web names arrived inside them. The final line is the web listing
+    // page's description, age, map point and inventory kind: a listing's own page on the S22 came
+    // back with 35 unnamed strings and 19 unnamed objects, and 583's dex names none of these.
     private static final Set<String> FIELDS = new HashSet<>(Arrays.asList(
             "__typename", "data", "edges", "node", "listing", "story", "sponsored_data", "ad_id",
             "marketplace_search", "feed_units", "location", "is_shipping_offered", "shipping_offer_type",
@@ -86,7 +90,8 @@ final class MarketplaceResponseDiagnostics {
             "display_name", "location_text", "marketplace_listing_seller", "name", "is_sold", "is_pending",
             "is_hidden", "is_live", "custom_title", "marketplace_listing_category_id",
             "text", "currency", "amount_with_offset", "amount_with_offset_in_currency",
-            "formatted_amount_zeros_stripped", "offset"));
+            "formatted_amount_zeros_stripped", "offset",
+            "redacted_description", "creation_time", "latitude", "longitude", "listing_inventory_type"));
     private static final Map<Object, Observer> observers = new WeakHashMap<>();
     private static final Map<String, Set<String>> shapes = new HashMap<>();
     private static final Set<String> summaryBudgetNotices = new HashSet<>();
