@@ -34,6 +34,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>A photo, which grows from its place in the feed to full screen as the photo viewer opens and
  * shrinks back as it closes. {@link #photoZooms} tells the patch to put it at its end place at once.
+ * A multi-photo post's photo opens on a page of its own instead, which grows the photo from its
+ * tile with an animator, fades its background in, and on Back shrinks the photo back or slides the
+ * page away. {@link #photoPageZoom} and {@link #photoPageLength} hand each of those no length.
  *
  * <p>A screen Facebook opens inside its own, like a post's page: a fragment added with custom
  * animations, which slides in and slides out again on Back. {@link #fragmentAnimation} hands each
@@ -65,6 +68,9 @@ public final class ScreenTransitions {
 
     /** Counted for each animation left out of a screen Facebook opens inside its own, like a post's page. */
     static final String INNER = "inner screen animation left out";
+
+    /** Counted for each zoom, fade or slide a multi-photo post's photo page plays without its length. */
+    static final String PHOTO_PAGE = "photo page animation left out";
 
     private static final String FAMILY = FamilyNames.SCREEN_TRANSITIONS;
 
@@ -194,6 +200,43 @@ public final class ScreenTransitions {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "inner screen", failure);
             return animation;
+        }
+    }
+
+    /**
+     * Injection point, at the start of the animator that grows a photo from one place to another on
+     * a multi-photo post's photo page (and in the photo viewer on a phone Facebook rates older than
+     * 2015): how long it runs. None, 0, while the switch is on, else [length], Facebook's own, which
+     * is null for its default. An animator of no length draws its end at once and tells its
+     * listeners it ended on the next frame, so the page goes on as it does after its own zoom.
+     */
+    @Nullable
+    public static Long photoPageZoom(@Nullable Long length) {
+        try {
+            if (!on()) return length;
+            HookStatus.bound(FAMILY, "photo page");
+            HookStatus.counted(FAMILY, PHOTO_PAGE);
+            return 0L;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "photo page", failure);
+            return length;
+        }
+    }
+
+    /**
+     * Injection point, in the photo page's methods that zoom or slide it in and out, at each length
+     * handed to an animator or to the fade of the page's background: 0 while the switch is on, else
+     * [length], Facebook's own.
+     */
+    public static long photoPageLength(long length) {
+        try {
+            if (length == 0 || !on()) return length;
+            HookStatus.bound(FAMILY, "photo page");
+            HookStatus.counted(FAMILY, PHOTO_PAGE);
+            return 0;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "photo page", failure);
+            return length;
         }
     }
 

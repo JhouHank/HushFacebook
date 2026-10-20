@@ -34,8 +34,8 @@ import app.morphe.extension.shared.settings.PauseForTests;
  * Turn off screen transitions: with the patch in and its switch on, a Facebook screen asks Android
  * for no transition as it comes to the front and as it closes, with the open and close overrides
  * set on Android 14, a tab that would slide gets the other style, a panel is told not to slide,
- * a photo not to zoom, and an inner screen's animations come back as none. Off, paused or without
- * the patch, Facebook's stay.
+ * a photo not to zoom, and an inner screen's animations and a post's photo page's lengths come back
+ * as none. Off, paused or without the patch, Facebook's stay.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34)
@@ -244,6 +244,35 @@ public class ScreenTransitionsTest {
         assertEquals("the switch didn't come back after the pause", 0, ScreenTransitions.fragmentAnimation(slideOut));
         ScreenTransitions.inBuildForTests = false;
         assertEquals("without the patch, the post page lost its slide", slideOut, ScreenTransitions.fragmentAnimation(slideOut));
+    }
+
+    @Test
+    public void aPostsPhotoPageShowsWithoutItsZoomFadeOrSlide() {
+        assertEquals("no length became one", 0, ScreenTransitions.photoPageLength(0));
+        assertNull("no length was counted", statusLine());
+
+        assertEquals("the photo page still slid", 0, ScreenTransitions.photoPageLength(250));
+        assertEquals("the photo page's background still faded", 0, ScreenTransitions.photoPageLength(100));
+        assertEquals("the photo still grew at its default length", Long.valueOf(0), ScreenTransitions.photoPageZoom(null));
+        assertEquals("the photo still grew", Long.valueOf(0), ScreenTransitions.photoPageZoom(300L));
+        assertEquals(FamilyNames.SCREEN_TRANSITIONS + ": invoked 4, 1 found, 0 missing. Counted: "
+                + ScreenTransitions.PHOTO_PAGE + " 4", statusLine());
+
+        Settings.TURN_OFF_SCREEN_TRANSITIONS.save(false);
+        assertEquals("off, the photo page lost its slide", 250, ScreenTransitions.photoPageLength(250));
+        assertNull("off, the photo lost its default length", ScreenTransitions.photoPageZoom(null));
+        assertEquals("off, the photo lost its length", Long.valueOf(300), ScreenTransitions.photoPageZoom(300L));
+        Settings.TURN_OFF_SCREEN_TRANSITIONS.save(true);
+        for (HushfacebookPause.Reason reason : PAUSES) {
+            PauseForTests.pause(reason);
+            assertEquals("paused by " + reason + ", the photo page lost its slide", 250, ScreenTransitions.photoPageLength(250));
+            assertNull("paused by " + reason + ", the photo lost its default length", ScreenTransitions.photoPageZoom(null));
+            PauseForTests.resume();
+        }
+        assertEquals("the switch didn't come back after the pause", 0, ScreenTransitions.photoPageLength(250));
+        ScreenTransitions.inBuildForTests = false;
+        assertEquals("without the patch, the photo page lost its slide", 250, ScreenTransitions.photoPageLength(250));
+        assertNull("without the patch, the photo lost its default length", ScreenTransitions.photoPageZoom(null));
     }
 
     @Test

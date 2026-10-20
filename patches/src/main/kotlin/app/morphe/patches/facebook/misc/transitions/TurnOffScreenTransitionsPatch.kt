@@ -22,7 +22,9 @@ import app.morphe.patches.shared.compat.AppCompatibilities
  * (TransitionAnchors.kt). A tab strip inside a screen asks its pager for the page, and the patch
  * asks the extension first in the two places a tap goes through (PagerTabs.kt). A photo zooms from
  * its place in the feed on a spring, and the patch asks the extension as the spring is set going
- * (PhotoZoom.kt). A screen opened inside Facebook's own, like a post's page, is a fragment that
+ * (PhotoZoom.kt), and a multi-photo post's photo opens on a page whose zoom, fade and slides run
+ * for a length the patch has go through the extension (PhotoPage.kt). A screen opened inside
+ * Facebook's own, like a post's page, is a fragment that
  * slides in and out with the animations its transaction is handed, and the patch has each go
  * through the extension as it's handed over (FragmentSlides.kt).
  *
@@ -65,6 +67,13 @@ val turnOffScreenTransitionsPatch = bytecodePatch(
             quietPhotoZoom(PhotoOpenFingerprint.method)
         } catch (moved: PatchException) {
             patchLog.warning("${moved.message}. The patch goes on without the photo zoom.")
+        }
+
+        // The zoom, fade and slides of the page a multi-photo post's photo opens on: see PhotoPage.kt.
+        try {
+            quietPhotoPage()
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. The patch goes on without the photo page's zoom.")
         }
 
         // The slides of a screen opened inside Facebook's own, like a post's page: see FragmentSlides.kt.

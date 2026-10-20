@@ -42,8 +42,9 @@ import com.android.tools.smali.dexlib2.util.MethodUtil
  * photo already in place, and the spring rests a few frames later. (A rest speed of 0 would leave
  * the nudge at 0 too, but then Facebook's own zoom would never rest either; Rebound's is 0.005.)
  *
- * A phone rated older than 2015 takes a ValueAnimator instead (583 `LX/AeB;->A00`), and a photo
- * opened without its thumbnail slides up from the bottom. Neither is changed.
+ * A phone rated older than 2015 takes a ValueAnimator instead (583 `LX/AeB;->A00`), the one a
+ * multi-photo post's photo page zooms with, and PhotoPage.kt has its length go through the
+ * extension. A photo opened without its thumbnail slides up from the bottom, which isn't changed.
  */
 
 internal const val PHOTO_VIEWER = "Lcom/facebook/photos/dialog/SutroPhotoAnimationDialogFragment;"
