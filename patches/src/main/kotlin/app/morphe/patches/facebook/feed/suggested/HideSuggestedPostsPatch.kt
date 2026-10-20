@@ -196,6 +196,12 @@ val hideSuggestedPostsPatch = bytecodePatch(
         } catch (exception: PatchException) {
             patchLog.warning("${exception.message}, so Hide posts from groups you're not in keeps every post.")
         }
+        // Home asks for that join state only where MobileConfig says so.
+        try {
+            askForJoinState()
+        } catch (exception: PatchException) {
+            patchLog.warning("${exception.message}, so Home asks for groups' join states only when Facebook does.")
+        }
         // The search screen's For you section, and Debug logging's names for every row there (#80).
         try {
             hookPreSearchSections()

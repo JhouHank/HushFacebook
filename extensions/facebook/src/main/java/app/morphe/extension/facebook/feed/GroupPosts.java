@@ -7,6 +7,9 @@ package app.morphe.extension.facebook.feed;
 import androidx.annotation.Nullable;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
+import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.shared.Logger;
+import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 
 /**
@@ -25,6 +28,10 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * <p>The story's accessor of {@code to} and the profile's accessor of its join state are Redex
  * names, so the patch fills in {@link #storyTarget} and {@link #joinState}. The enum's constant
  * names survive the obfuscator. What the report counts is a shape, never the group.
+ *
+ * <p>Home asks the server for the join state only while a MobileConfig answer says so, and an
+ * account without it reads the unset default on every group post. The patch hands that answer to
+ * {@link #askForJoinState}, which says yes while the switch is on.
  */
 public final class GroupPosts {
     /** The route the report counts each story read for its group on, while the switch is on. */
@@ -50,6 +57,11 @@ public final class GroupPosts {
     static final String READ_FAILED = "read failed";
 
     private static final String FAMILY = FamilyNames.SUGGESTED_POSTS;
+
+    /** Counted under the patch's name each time Home is asked for join states Facebook wouldn't ask for. */
+    static final String ASKED = "Home asked for groups' join states";
+
+    private static final String QUERY_HOOK = "group join state query";
 
     /** The two accessors a read goes through: the stubs the patch filled, or stand-ins in a test. */
     static final class Readers {
@@ -81,6 +93,31 @@ public final class GroupPosts {
      */
     public static Object joinState(Object profile) {
         return StoryFlag.NOT_PATCHED;
+    }
+
+    /**
+     * Injection point, in Home's query builder, right before it hands over its answer for
+     * {@code should_include_viewer_join_state}. Never throws.
+     *
+     * @param facebooks whether Facebook would ask for each group's join state.
+     * @return whether to ask for it.
+     */
+    public static boolean askForJoinState(boolean facebooks) {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (facebooks || !Utils.settingsReady() || !Settings.HIDE_GROUP_POSTS_NOT_JOINED.get()) {
+                Logger.printDebug(() -> "Group posts: kept Facebook's " + facebooks + " for join states");
+                return facebooks;
+            }
+            HookStatus.bound(FAMILY, QUERY_HOOK);
+            HookStatus.counted(FAMILY, ASKED);
+            Logger.printDebug(() -> "Group posts: asked Home for join states");
+            return true;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, QUERY_HOOK, failure);
+            Logger.printException(() -> "Group posts: could not read the switch for join states", failure);
+            return facebooks;
+        }
     }
 
     /**

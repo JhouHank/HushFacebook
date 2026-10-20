@@ -77,6 +77,7 @@ import app.morphe.extension.facebook.feed.FindFriendsCard;
 import app.morphe.extension.facebook.feed.SeenPostsForTests;
 import app.morphe.extension.facebook.feed.FeedsHeader;
 import app.morphe.extension.facebook.feed.FollowingHome;
+import app.morphe.extension.facebook.feed.GroupPosts;
 import app.morphe.extension.facebook.feed.ReturnRefresh;
 import app.morphe.extension.facebook.feed.FeedGuardForTests;
 import app.morphe.extension.facebook.feed.MetaAiQuestions;
@@ -355,6 +356,8 @@ public class PausedHooksTest {
                 // A friend's post in a public group you're not in.
                 () -> FeedGuardForTests.hidesGroupPost(Category.ORGANIC, FeedGuardForTests.group(),
                         FeedGuardForTests.JoinState.CAN_JOIN),
+                // Home is asked for each group's join state where Facebook wouldn't ask.
+                () -> GroupPosts.askForJoinState(false),
                 // A row of Stories from people you aren't connected to.
                 () -> FeedGuardForTests.hides(Category.ORGANIC, FeedGuardForTests.storiesRow(true)),
                 // Your own profile's People you may know carousel builds nothing.

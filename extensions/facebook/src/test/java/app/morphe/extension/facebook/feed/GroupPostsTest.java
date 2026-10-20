@@ -24,6 +24,7 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 
 import app.morphe.extension.facebook.feed.FeedGuardForTests.JoinState;
+import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.diagnostics.FeedFilterCounters;
@@ -250,5 +251,47 @@ public class GroupPostsTest {
         assertFalse(FeedFilter.hideEdge(Category.ORGANIC, stand.inGroup(JoinState.CAN_JOIN), true, true));
         assertEquals(0, stand.calls);
         assertTrue(FeedGuardForTests.hidesGroupPost(Category.ORGANIC, FeedGuardForTests.group(), JoinState.CAN_JOIN));
+    }
+
+    private static String statusLine() {
+        for (String reported : HookStatus.report()) {
+            if (reported.startsWith(FamilyNames.SUGGESTED_POSTS + ":")) return reported;
+        }
+        return "";
+    }
+
+    /** Off, Home asks for join states only when Facebook would. */
+    @Test
+    public void offKeepsFacebooksAnswerForTheJoinStateQuery() {
+        assertFalse(GroupPosts.askForJoinState(false));
+        assertTrue(GroupPosts.askForJoinState(true));
+        assertFalse(statusLine().contains(GroupPosts.ASKED));
+    }
+
+    /** On, Home always asks, so a group post reads its real state instead of the unset default. */
+    @Test
+    public void onAsksHomeForJoinStates() {
+        Settings.HIDE_GROUP_POSTS_NOT_JOINED.save(true);
+        assertTrue(GroupPosts.askForJoinState(false));
+        String status = statusLine();
+        assertTrue(status, status.contains(GroupPosts.ASKED + " 1"));
+    }
+
+    /** Facebook's own yes stays a yes and isn't counted as the switch's doing. */
+    @Test
+    public void facebooksYesIsKeptAndNotCounted() {
+        Settings.HIDE_GROUP_POSTS_NOT_JOINED.save(true);
+        assertTrue(GroupPosts.askForJoinState(true));
+        assertFalse(statusLine().contains(GroupPosts.ASKED));
+    }
+
+    @Test
+    public void pausedOrNotReadyKeepsFacebooksAnswerForTheJoinStateQuery() {
+        Settings.HIDE_GROUP_POSTS_NOT_JOINED.save(true);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse(GroupPosts.askForJoinState(false));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> assertFalse(GroupPosts.askForJoinState(false)));
+        assertTrue(GroupPosts.askForJoinState(false));
     }
 }
