@@ -1603,7 +1603,7 @@ Takes the row of profile pictures off the share sheet, the people Facebook sugge
 Hide who is typing in comments	Yorumlarda kimin yazdığını gizle
 Takes away the line that says someone is typing a comment. Your own typing is a separate switch under Privacy.	Birinin yorum yazdığını gösteren satırı kaldırır. Senin yazman için Gizlilik altında ayrı bir anahtar var.
 Hide the search pill on reels	Reels'te arama önerisini gizle
-Hides the search suggestion under a reel's caption, the magnifier with a question to look up.	Bir reel'in açıklamasının altındaki arama önerisini, yani aranacak bir soru içeren büyüteci gizler.
+Hides the search suggestion under a reel's caption, the magnifier with a question to look up, and the one at the top of its comments.	Bir reel'in açıklamasının altındaki arama önerisini, yani aranacak bir soru içeren büyüteci, ve yorumların en üstündekini gizler.
 # context: switch title under Appearance; the button is Facebook's Messenger icon in the top bar of Home
 Hide the Messenger button	Messenger düğmesini gizle
 # context: summary of that switch; the other top bar buttons move over to fill the space; Hushfacebook is the app's name

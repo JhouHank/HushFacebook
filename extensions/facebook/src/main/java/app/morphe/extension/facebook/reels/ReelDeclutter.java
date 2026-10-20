@@ -82,6 +82,7 @@ public final class ReelDeclutter {
     /** Counted under its own name each time the search pill isn't built. */
     static final String SEARCH_ROUTE = "Reel search pill";
     static final String SEARCH_PILL = "search pill";
+    static final String COMMENT_SEARCH_PILL = "comment search pill";
 
     /** Counted under its own name each time a sidebar button's number is taken away. */
     static final String COUNTS_ROUTE = "Reel counts";
@@ -260,6 +261,31 @@ public final class ReelDeclutter {
             HookStatus.threw(FamilyNames.REEL_DECLUTTER, SEARCH_PILL, failure);
             Logger.printException(() -> "Reel search pill: could not read its switch", failure);
             return false;
+        }
+    }
+
+    /**
+     * Injection point, right after the comment sheet's builder reads the search prompt it puts over
+     * a reel's comments (#197). Null while the search pill switch is on, which is the path Facebook
+     * takes for a sheet that has no prompt, so the row isn't built. Never throws: off, paused, before
+     * the settings are ready or on a failure the prompt comes back as it was handed in.
+     *
+     * @param prompt Facebook's SearchPromptParam, or null when the sheet has none.
+     */
+    public static Object commentSearchPrompt(Object prompt) {
+        if (prompt == null) return null;
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            FeedFilterCounters.sawList(SEARCH_ROUTE, 1);
+            FeedFilterCounters.sawKind(SEARCH_ROUTE, COMMENT_SEARCH_PILL);
+            if (!Utils.settingsReady() || !Settings.HIDE_REEL_SEARCH_PILL.get()) return prompt;
+            FeedFilterCounters.removed(SEARCH_ROUTE, 1, COMMENT_SEARCH_PILL);
+            logOnce(COMMENT_SEARCH_PILL, () -> "Reel search pill: none over the comments");
+            return null;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, COMMENT_SEARCH_PILL, failure);
+            Logger.printException(() -> "Reel search pill: could not read its switch for the comments", failure);
+            return prompt;
         }
     }
 

@@ -13,8 +13,11 @@ import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -81,6 +84,66 @@ class SearchPillFixtureTest {
             }
         }
         assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    @Test
+    fun `each declared build's comment sheet hands its search prompt to the extension`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val builders = FixtureDex.methodsWhere(bundle, { true }, ::isCommentPillBuilder)
+                    .filter { !it.definingClass.startsWith("L$EXTENSION_PACKAGE") }
+                assertEquals("$name: static builders holding $COMMENT_PIVOT", 1, builders.size)
+                val builder = builders.single()
+                val owner = FixtureDex.classes(bundle, setOf(builder.definingClass)).getValue(builder.definingClass)
+                val callers = owner.methods.filter { callsBuilder(it, builder) }
+                assertEquals("$name: callers of the comment pill builder", 1, callers.size)
+                val caller = callers.single()
+
+                // Positive control: another method of the class reads the prompt too and the caller
+                // check turns it away, and the one caller tests the prompt for null after reading it.
+                assertTrue("$name: nothing else reads the prompt, so the caller check proves nothing",
+                    owner.methods.count { promptReads(it).isNotEmpty() } >= 2)
+                val original = caller.code()
+                val read = promptReads(caller).single()
+                val register = (original[read] as TwoRegisterInstruction).registerA
+                assertTrue("$name: the prompt isn't null-checked after it's read",
+                    original.drop(read + 1).any { it.opcode == Opcode.IF_EQZ && (it as OneRegisterInstruction).registerA == register })
+
+                val context = PatchContexts.of(listOf(owner))
+                context.hideCommentSearchPill()
+                val patched = context.mutableClassDefBy(owner.type).methods.single {
+                    it.name == caller.name && it.parameterTypes.map(CharSequence::toString) ==
+                        caller.parameterTypes.map(CharSequence::toString)
+                }.code()
+                assertEquals("$name: three instructions added", original.size + 3, patched.size)
+                assertEquals("$name: shape of the hook",
+                    listOf(Opcode.IGET_OBJECT, Opcode.INVOKE_STATIC_RANGE, Opcode.MOVE_RESULT_OBJECT, Opcode.CHECK_CAST),
+                    patched.subList(read, read + 4).map { it.opcode })
+                assertEquals("$name: the extension is asked", COMMENT_SEARCH_PROMPT,
+                    ((patched[read + 1] as ReferenceInstruction).reference as MethodReference).toString())
+                assertEquals("$name: the answer goes back where the prompt was", register,
+                    (patched[read + 2] as OneRegisterInstruction).registerA)
+                assertEquals("$name: and is cast back to the prompt's type", SEARCH_PROMPT_PARAM,
+                    ((patched[read + 3] as ReferenceInstruction).reference as TypeReference).type)
+                assertEquals("$name: the rest is Facebook's",
+                    original.map { it.opcode }, patched.take(read + 1).map { it.opcode } + patched.drop(read + 4).map { it.opcode })
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    @Test
+    fun `the extension has the comment prompt hook`() {
+        val type = COMMENT_SEARCH_PROMPT.substringBefore("->")
+        val hook = ExtensionDex.classDef(type).methods.singleOrNull { it.name == "commentSearchPrompt" }
+        assertNotNull("the extension has no ReelDeclutter.commentSearchPrompt", hook)
+        assertEquals("commentSearchPrompt's shape", COMMENT_SEARCH_PROMPT,
+            "${hook!!.definingClass}->${hook.name}(${hook.parameterTypes.joinToString("")})${hook.returnType}")
+        assertTrue("commentSearchPrompt isn't static", AccessFlags.STATIC.isSet(hook.accessFlags))
     }
 
     @Test

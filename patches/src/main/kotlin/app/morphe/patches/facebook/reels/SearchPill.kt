@@ -5,6 +5,7 @@
 package app.morphe.patches.facebook.reels
 
 import app.morphe.patcher.StringComparisonType
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
@@ -19,6 +20,8 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 
@@ -35,11 +38,26 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  *   three instructions: a no-argument static call, its move-result-object and the return. That call
  *   builds the empty component every caller already copes with, so the switch answers with it.
  * - The builder's callers are the reel footer's render methods (arm64 LX/AQ0; and LX/AQ1;).
+ *
+ * The same switch takes the search pill off the top of a reel's comments (#197). Read from 583,
+ * 2026-10-20, arm64:
+ *
+ * - One static builder makes that pill (arm64 LX/A8a;->A01) and it's the only method holding the
+ *   fb_video_comment_search_pivot literal. It has no empty answer: it always returns the pill.
+ * - Its one caller is the comment sheet's section builder (arm64 LX/A8a;->A2b), in the same class.
+ *   It reads a SearchPromptParam field once, near its start, and builds the pill row only when that
+ *   prompt isn't null (and only for the two reels surfaces, FB_SHORTS_VIEWER and
+ *   FB_SHORTS_PROFILE_VIDEO_CHAINING). A null prompt is Facebook's own path past the whole row, and
+ *   the register isn't read again after it, so the hook answers the prompt or null right there.
  */
 
 internal const val ELEVATED_CTA = "FbShortsSearchElevatedCTAComponent"
 internal const val PIVOT_VIEW_TAG = "search_pivot_view_tag"
 internal const val HIDE_SEARCH_PILL = "$EXTENSION_PACKAGE/reels/ReelDeclutter;->hideSearchPill()Z"
+internal const val COMMENT_PIVOT = "fb_video_comment_search_pivot"
+internal const val SEARCH_PROMPT_PARAM = "Lcom/facebook/ufiservices/flyout/params/SearchPromptParam;"
+internal const val COMMENT_SEARCH_PROMPT =
+    "$EXTENSION_PACKAGE/reels/ReelDeclutter;->commentSearchPrompt(Ljava/lang/Object;)Ljava/lang/Object;"
 
 private const val PATCH = "Clean up Reels"
 
@@ -115,4 +133,57 @@ internal fun BytecodePatchContext.hideSearchPill() {
             it.parameterTypes.map(CharSequence::toString) == builder.parameterTypes.map(CharSequence::toString)
     }
     method.hidePillWhen(HIDE_SEARCH_PILL, empty)
+}
+
+/** Whether [method] is the static builder of the pill over a reel's comments: it holds [COMMENT_PIVOT]. */
+internal fun isCommentPillBuilder(method: Method): Boolean =
+    AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType.startsWith("L") && holdsString(method, COMMENT_PIVOT)
+
+/** Whether [method] calls [builder]. */
+internal fun callsBuilder(method: Method, builder: Method): Boolean =
+    method.implementation?.instructions?.any {
+        val reference = (it as? ReferenceInstruction)?.reference as? MethodReference
+        reference != null && reference.definingClass == builder.definingClass && reference.name == builder.name &&
+            reference.returnType == builder.returnType &&
+            reference.parameterTypes.map(CharSequence::toString) == builder.parameterTypes.map(CharSequence::toString)
+    } == true
+
+/** The indexes of [method]'s iget-object reads of a [SEARCH_PROMPT_PARAM] field. */
+internal fun promptReads(method: Method): List<Int> =
+    method.implementation?.instructions?.withIndex()?.filter { (_, instruction) ->
+        instruction.opcode == Opcode.IGET_OBJECT &&
+            ((instruction as ReferenceInstruction).reference as? FieldReference)?.type == SEARCH_PROMPT_PARAM
+    }?.map { it.index } ?: emptyList()
+
+/**
+ * Finds the pill builder over a reel's comments by its kept literal, then its one caller in the same
+ * class, and puts the extension's answer in the register the caller reads the search prompt into.
+ * Refuses unless each step finds exactly one.
+ */
+internal fun BytecodePatchContext.hideCommentSearchPill() {
+    val builders = classDefByStrings(COMMENT_PIVOT, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+        .flatMap { classDef -> classDef.methods.filter(::isCommentPillBuilder) }
+    val builder = builders.singleOrNull() ?: throw PatchException(
+        "$PATCH: expected one static builder holding $COMMENT_PIVOT, found ${builders.size}",
+    )
+    val owner = mutableClassDefBy(builder.definingClass)
+    val callers = owner.methods.filter { callsBuilder(it, builder) }
+    val caller = callers.singleOrNull() ?: throw PatchException(
+        "$PATCH: expected one caller of the comment pill builder in ${owner.type}, found ${callers.size}",
+    )
+    val reads = promptReads(caller)
+    val index = reads.singleOrNull() ?: throw PatchException(
+        "$PATCH: expected one read of a search prompt in the comment sheet builder, found ${reads.size}",
+    )
+    val register = (caller.getInstruction(index) as TwoRegisterInstruction).registerA
+    if (register > 255) throw PatchException("$PATCH: the search prompt sits in v$register, past what check-cast takes")
+    caller.addInstructions(
+        index + 1,
+        """
+            invoke-static/range { v$register .. v$register }, $COMMENT_SEARCH_PROMPT
+            move-result-object v$register
+            check-cast v$register, $SEARCH_PROMPT_PARAM
+        """,
+    )
 }

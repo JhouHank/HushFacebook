@@ -257,6 +257,29 @@ public class ReelDeclutterTest {
     }
 
     /**
+     * The same switch takes the prompt away from over a reel's comments (#197): handed back while
+     * off, null while on, and a sheet with no prompt stays without one and isn't counted.
+     */
+    @Test
+    public void theCommentSearchPromptGoesWithTheSearchPillSwitch() {
+        Object prompt = new Object();
+        assertSame(prompt, ReelDeclutter.commentSearchPrompt(prompt));
+        Settings.HIDE_REEL_SEARCH_PILL.save(true);
+        try {
+            assertNull(ReelDeclutter.commentSearchPrompt(prompt));
+            assertNull(ReelDeclutter.commentSearchPrompt(null));
+        } finally {
+            Settings.HIDE_REEL_SEARCH_PILL.resetToDefault();
+        }
+        assertSame("the prompt didn't come back once the switch was off", prompt,
+                ReelDeclutter.commentSearchPrompt(prompt));
+        assertEquals(ReelDeclutter.SEARCH_ROUTE + ": 3 lists, 3 items, 1 removed. Last reason: "
+                        + ReelDeclutter.COMMENT_SEARCH_PILL + ". Removed: " + ReelDeclutter.COMMENT_SEARCH_PILL
+                        + " 1. Kinds: " + ReelDeclutter.COMMENT_SEARCH_PILL + " 3",
+                line(ReelDeclutter.SEARCH_ROUTE));
+    }
+
+    /**
      * The sidebar counts (#180): the switch starts off, so every button keeps its text. On, a text
      * holding a number becomes one zero-width space, which keeps the text row and so the icons'
      * places, while a word, a missing text and an empty one stay as they came. Off again, the

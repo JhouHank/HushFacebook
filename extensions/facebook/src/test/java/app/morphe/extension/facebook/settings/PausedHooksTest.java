@@ -533,6 +533,8 @@ public class PausedHooksTest {
                 () -> !"es".equals(OriginalAudio.language("es")),
                 // The search pill is answered as empty only while the patch runs.
                 ReelDeclutter::hideSearchPill,
+                // So is the prompt over a reel's comments.
+                () -> ReelDeclutter.commentSearchPrompt(new Object()) == null,
                 // A sidebar button's count loses its number only while the patch runs.
                 () -> !"12".equals(ReelDeclutter.countText("12")),
                 // The sidebar's Save button is skipped only while the patch runs.

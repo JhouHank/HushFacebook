@@ -126,7 +126,8 @@ final class VideoPages {
                             + "account yet.")));
             // The pill is built as each reel's footer is, so a change shows from the next reel.
             reels.addPreference(toggle(context, Settings.HIDE_REEL_SEARCH_PILL,
-                    L10n.t("Hides the search suggestion under a reel's caption, the magnifier with a question to look up.")));
+                    L10n.t("Hides the search suggestion under a reel's caption, the magnifier with a question to look up, "
+                            + "and the one at the top of its comments.")));
             // The sidebar buttons are built as each reel is, so a change shows from the next reel.
             reels.addPreference(toggle(context, Settings.HIDE_REEL_COUNTS,
                     L10n.t("Takes the numbers away from under a reel's Like, Comment and Share icons. "
