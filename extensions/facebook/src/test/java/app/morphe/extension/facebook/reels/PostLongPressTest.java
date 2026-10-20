@@ -30,6 +30,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 
 import java.time.Duration;
@@ -55,6 +56,7 @@ public class PostLongPressTest {
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 
     private final List<String> clicked = new ArrayList<>();
+    private ActivityController<Activity> window;
     private Activity activity;
     private FrameLayout root;
     private RecyclerView list;
@@ -70,13 +72,16 @@ public class PostLongPressTest {
     public void setUp() {
         PostLongPress.reset();
         Settings.LONG_PRESS_OPENS_COMMENTS.save(true);
-        activity = Robolectric.buildActivity(Activity.class).setup().get();
+        window = Robolectric.buildActivity(Activity.class).setup();
+        activity = window.get();
         root = new FrameLayout(activity);
         list = new RecyclerView(activity, true);
         place(root, list, 0, 100, 1080, 2100);
         row = post(list, 0);
         activity.setContentView(root);
         layOut();
+        window.windowFocusChanged(true);
+        waitFor(0);
     }
 
     @After
@@ -183,6 +188,8 @@ public class PostLongPressTest {
         send(event(MotionEvent.ACTION_DOWN, at));
         holdLongEnough();
         assertEquals(List.of("comment"), clicked);
+        assertEquals("a move after the click went on as a cancel", MotionEvent.ACTION_CANCEL,
+                send(event(MotionEvent.ACTION_MOVE, at)).getActionMasked());
         assertEquals("the lift went on as a cancel", MotionEvent.ACTION_CANCEL,
                 send(event(MotionEvent.ACTION_UP, at)).getActionMasked());
         assertTrue(statusLine(), statusLine().contains(PostLongPress.OPENED + " 1"));
@@ -289,6 +296,33 @@ public class PostLongPressTest {
         send(event(MotionEvent.ACTION_MOVE, new int[] {at[0] + 1, at[1] + 1}));
         holdLongEnough();
         assertEquals(List.of("comment"), clicked);
+    }
+
+    /** A hold on a footer button, Share here, is that button's: the photo and name line are above it. */
+    @Test
+    public void aHoldOnTheFooterItselfIsLeftToFacebook() {
+        View share = PostLongPress.hit(root, middleOf(comment)[0] + 162, middleOf(comment)[1]);
+        assertSame("the footer's row is still found", row, PostLongPress.rowAt(root, middleOf(comment)[0] + 162, middleOf(comment)[1]));
+        int[] at = middleOf(share);
+        send(event(MotionEvent.ACTION_DOWN, at));
+        holdLongEnough();
+        assertTrue(clicked.toString(), clicked.isEmpty());
+        assertEquals("the lift is Facebook's", MotionEvent.ACTION_UP, send(event(MotionEvent.ACTION_UP, at)).getActionMasked());
+        assertFalse(statusLine(), statusLine().contains(PostLongPress.HELD));
+    }
+
+    /** A window that lost focus before the time was up, to a call or a task switch, opens nothing. */
+    @Test
+    public void aWindowThatLostFocusMidPressOpensNothing() {
+        int[] at = middleOf(photo);
+        send(event(MotionEvent.ACTION_DOWN, at));
+        window.windowFocusChanged(false);
+        holdLongEnough();
+        assertTrue(clicked.toString(), clicked.isEmpty());
+        window.windowFocusChanged(true);
+        send(event(MotionEvent.ACTION_DOWN, at));
+        holdLongEnough();
+        assertEquals("with the focus back the hold works", List.of("comment"), clicked);
     }
 
     @Test

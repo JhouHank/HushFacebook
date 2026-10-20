@@ -134,10 +134,15 @@ public final class PostLongPress {
         pressedRoot = new WeakReference<>(null);
         try {
             if (root == null || !Settings.LONG_PRESS_OPENS_COMMENTS.get()) return;
+            // A call, a task switch or a dialog that took the window mid-press leaves it alone.
+            if (!root.isAttachedToWindow() || !root.hasWindowFocus()) return;
             View row = rowAt(root, Math.round(downX), Math.round(downY));
             if (row == null) return;
-            HookStatus.counted(FAMILY, HELD);
             View comment = commentButton(row);
+            // The photo and the name line sit above the footer, so a hold on the footer's own
+            // buttons or on anything under it stays Facebook's.
+            if (comment != null && Math.round(downY) >= topOf(comment)) return;
+            HookStatus.counted(FAMILY, HELD);
             if (comment == null) {
                 HookStatus.counted(FAMILY, NO_BUTTON);
                 Logger.printDebug(() -> "Feed long press: " + NO_BUTTON);
@@ -257,6 +262,12 @@ public final class PostLongPress {
                 collect(child, into);
             }
         }
+    }
+
+    private static int topOf(View view) {
+        int[] at = new int[2];
+        view.getLocationOnScreen(at);
+        return at[1];
     }
 
     private static boolean contains(View view, int x, int y) {
