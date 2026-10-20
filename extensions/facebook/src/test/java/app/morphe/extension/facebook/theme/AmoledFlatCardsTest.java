@@ -6,6 +6,12 @@ package app.morphe.extension.facebook.theme;
 
 import static org.junit.Assert.assertEquals;
 
+import android.content.Context;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -47,6 +53,7 @@ public class AmoledFlatCardsTest {
         Settings.AMOLED_FLAT_CARDS.resetToDefault();
         DarkMode.answer(true);
         AmoledTheme.useBackground(BLACK);
+        AmoledTheme.forgetPageColourForTests();
     }
 
     /** The Menu's profile card is a #333334 card, the older ones #3A3B3C. */
@@ -144,6 +151,68 @@ public class AmoledFlatCardsTest {
                 AmoledTheme.apply(0xFF46484B, Token.SECONDARY_BUTTON_BACKGROUND_OPAQUE));
         assertEquals("light mode, a server's card", 0xFF333334, AmoledTheme.parseColor("#333334"));
         assertEquals("light mode, the Create story tile", 0xFF333334, AmoledTheme.darkBranch(0xFF333334));
+    }
+
+    /** Facebook's one #333334 colour resource, which a dozen tokens' dark items point at. */
+    private static final int SHARED_GREY = 0x7f06014e;
+
+    /**
+     * A dark resource with a hue (as dark as a raised grey, its channels too far apart), one that's
+     * black already, and the page colour resource the patch adds.
+     */
+    private static final int HUE = 0x7f060150;
+    private static final int ALREADY_BLACK = 0x7f060151;
+    private static final int PAGE = 0x7f060fff;
+
+    private static Context facebook() {
+        Map<Integer, Integer> colours = new HashMap<>();
+        colours.put(SHARED_GREY, 0xFF333334);
+        colours.put(HUE, 0xFF2A3440);
+        colours.put(ALREADY_BLACK, BLACK);
+        colours.put(PAGE, BLACK);
+        return ColourResources.context(colours, Collections.singletonMap(AmoledTheme.PAGE_COLOUR, PAGE));
+    }
+
+    /**
+     * The band behind the Menu's Log out button is a drawable of the resource FDS's token lookup gives
+     * out for CARD_BACKGROUND_FLAT. With the switch on, a card's answer is the page's colour resource,
+     * while a button or an input asking for the same shared grey keeps it, and so does a hue.
+     */
+    @Test
+    public void aCardsTokenResourceIsThePagesColour() {
+        AmoledTheme.forgetPageColourForTests();
+        Settings.AMOLED_FLAT_CARDS.save(true);
+        Context context = facebook();
+        assertEquals("a card", PAGE, AmoledTheme.tokenResource(SHARED_GREY, context, Token.CARD_BACKGROUND));
+        assertEquals("a comment", PAGE, AmoledTheme.tokenResource(SHARED_GREY, context, Token.COMMENT_BACKGROUND));
+        assertEquals("a button", SHARED_GREY,
+                AmoledTheme.tokenResource(SHARED_GREY, context, Token.SECONDARY_BUTTON_BACKGROUND));
+        assertEquals("an input", SHARED_GREY, AmoledTheme.tokenResource(SHARED_GREY, context, Token.PRIMARY_UI));
+        assertEquals("text", SHARED_GREY, AmoledTheme.tokenResource(SHARED_GREY, context, Token.PRIMARY_TEXT));
+        assertEquals("a card with a hue", HUE, AmoledTheme.tokenResource(HUE, context, Token.CARD_BACKGROUND));
+        assertEquals("a card that's black already", ALREADY_BLACK,
+                AmoledTheme.tokenResource(ALREADY_BLACK, context, Token.CARD_BACKGROUND));
+        assertEquals("no token to go on", SHARED_GREY, AmoledTheme.tokenResource(SHARED_GREY, context, "CARD_BACKGROUND"));
+        assertEquals("no resource", 0, AmoledTheme.tokenResource(0, context, Token.CARD_BACKGROUND));
+        assertEquals("not a colour", 0x7f0a0001, AmoledTheme.tokenResource(0x7f0a0001, context, Token.CARD_BACKGROUND));
+        assertEquals("no context", SHARED_GREY, AmoledTheme.tokenResource(SHARED_GREY, null, Token.CARD_BACKGROUND));
+    }
+
+    /** The mutation controls: off, in light mode and in a build without the page's resource, every id comes back. */
+    @Test
+    public void offTheTokenResourceComesBack() {
+        AmoledTheme.forgetPageColourForTests();
+        Context context = facebook();
+        assertEquals("off", SHARED_GREY, AmoledTheme.tokenResource(SHARED_GREY, context, Token.CARD_BACKGROUND));
+
+        Settings.AMOLED_FLAT_CARDS.save(true);
+        DarkMode.answer(false);
+        assertEquals("light mode", SHARED_GREY, AmoledTheme.tokenResource(SHARED_GREY, context, Token.CARD_BACKGROUND));
+
+        DarkMode.answer(true);
+        Context unpatched = ColourResources.context(Collections.singletonMap(SHARED_GREY, 0xFF333334));
+        assertEquals("no page resource", SHARED_GREY,
+                AmoledTheme.tokenResource(SHARED_GREY, unpatched, Token.CARD_BACKGROUND));
     }
 
     /** A colour asked for before the settings are ready gets the theme's own answer. */

@@ -480,6 +480,54 @@ public final class AmoledTheme {
         return background;
     }
 
+    /** The colour resource the patch adds, which holds the Background colour, for {@link #tokenResource}. */
+    static final String PAGE_COLOUR = "hushfacebook_amoled_page";
+
+    /** {@link #PAGE_COLOUR}'s id: 0 until {@link #pageColour} looks it up, -1 when the build has none. */
+    private static volatile int pageColourId;
+
+    /**
+     * Route one for a token's colour resource, issue #191. FDS's token lookup (582 {@code
+     * LX/24i;->A02}) answers the colour resource a token's theme attribute points at, and the code
+     * that asked reads the resource itself: the band behind the Menu's Log out button is a drawable
+     * of CARD_BACKGROUND_FLAT's, past every resolver, so it stayed #333334 with Black cards on.
+     * Facebook's dark style points a dozen tokens at that one #333334 resource, cards, buttons and
+     * inputs alike, so a read of it can't tell which token it's for. The patch sends each answer here
+     * with the lookup's context and token instead, and a card's answer becomes a resource of the
+     * page's colour.
+     *
+     * @return {@link #PAGE_COLOUR}'s id for a background token whose colour {@link #apply} makes the
+     * page's, with Black cards on in Facebook's dark mode, otherwise {@code id} as it came. An
+     * input's fill and a button aren't the page's, so they keep theirs, and so does every resource
+     * when the build has no {@link #PAGE_COLOUR}.
+     */
+    public static int tokenResource(int id, @Nullable Context context, Object token) {
+        if (id == 0 || context == null || !(token instanceof Enum) || !DarkMode.on() || !flatCards()) return id;
+        if (!BACKGROUND_TOKENS.contains(((Enum<?>) token).name())) return id;
+        int color;
+        try {
+            color = context.getColor(id);
+        } catch (Resources.NotFoundException notAColour) {
+            return id;
+        }
+        if (color == background || apply(color, token) != background) return id;
+        int page = pageColour(context);
+        return page > 0 ? page : id;
+    }
+
+    /** {@link #PAGE_COLOUR}'s id, looked up once. */
+    private static int pageColour(Context context) {
+        int id = pageColourId;
+        if (id != 0) return id;
+        id = context.getResources().getIdentifier(PAGE_COLOUR, "color", context.getPackageName());
+        pageColourId = id = id != 0 ? id : -1;
+        return id;
+    }
+
+    static void forgetPageColourForTests() {
+        pageColourId = 0;
+    }
+
     /**
      * Route four: a colour that the server sends as text.
      *
