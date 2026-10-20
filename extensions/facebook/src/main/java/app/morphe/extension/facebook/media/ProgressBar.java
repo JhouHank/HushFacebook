@@ -111,6 +111,12 @@ public final class ProgressBar {
     /** Counted each time a look that would show the bar is dropped while the bar holds the last reel. */
     static final String LAST_REEL_LOOK = "Reel bar kept from showing the last reel";
 
+    /** Counted each time Facebook's Reels scrubber registry, its hide flag set, hides every bar instead of handing one over. */
+    static final String REGISTRY_HID_EVERY_BAR = "Reel bar hidden on every reel by Facebook's registry";
+
+    /** Counted each time the registry has no scrubber for a reel, so the kept bar left on the last reel is hidden. */
+    static final String NO_SCRUBBER_HIDDEN = "Reel bar hidden for a reel the registry has no scrubber for";
+
     /** Counted each time a bar still in Facebook's thin look is made full size, after the switch went on. */
     static final String KEPT_LOOK_AGAIN = "Reel bar made full size after the switch went on";
 
@@ -248,6 +254,26 @@ public final class ProgressBar {
     @Nullable
     private static WeakReference<View> handingOver;
 
+    /**
+     * The scrubber the registry last picked for a reel on screen, as {@link #handsOver} saw it: its
+     * time label, its bar and the reel it was handed. {@link #noScrubber} hides that one.
+     */
+    @Nullable
+    private static WeakReference<View> lastLabel;
+    @Nullable
+    private static WeakReference<View> lastBar;
+    @Nullable
+    private static String lastShown;
+
+    /** Forgets every hand-over and the scrubber last picked, for tests, which share one process. */
+    static void forgetHandOversForTests() {
+        handOvers.clear();
+        handingOver = null;
+        lastLabel = null;
+        lastBar = null;
+        lastShown = null;
+    }
+
     private ProgressBar() {
     }
 
@@ -340,6 +366,62 @@ public final class ProgressBar {
     }
 
     /**
+     * The hook first thing in Facebook's Reels scrubber registry as a new reel shows, with whether its
+     * hide flag is set and the reel's key. With the flag set, which the Watch tab's controller does,
+     * the registry asks every scrubber it holds for the look that hides the bar and returns. With no
+     * scrubber for the reel it returns too ({@link #noScrubber}). Both come before {@link #handsOver},
+     * so a reel that arrived with the last reel's spot and no hand-over logged (#120) couldn't tell
+     * which way it went, or whether the registry ran at all. While the bar is kept this logs each
+     * ask and counts the hide. Facebook's code goes on as it would.
+     */
+    public static void registryAsks(boolean hidesAll, @Nullable Integer reel) {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (!Utils.settingsReady() || !Settings.KEEP_PROGRESS_BAR.get()) return;
+            HookStatus.bound(FAMILY, "reel registry");
+            if (hidesAll) HookStatus.counted(FAMILY, REGISTRY_HID_EVERY_BAR);
+            Logger.printDebug(() -> "Reel bar: Facebook's registry shows reel " + reel
+                    + (hidesAll ? " and hides every bar, its hide flag is set" : ""));
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel registry", failure);
+        }
+    }
+
+    /**
+     * The hook in the registry's hand-over where it has found no scrubber for the reel on screen,
+     * neither the reel's own nor the one it falls back on, just before it returns without handing
+     * one over. The scrubber on screen then still holds the last reel, its bar and time stopped
+     * where that reel was (#120). While the bar is kept, this hides the bar and time of the scrubber
+     * the last hand-over picked, as {@link #leftOnLastReel} does, until a reel takes it.
+     */
+    public static void noScrubber() {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (!Utils.settingsReady() || !Settings.KEEP_PROGRESS_BAR.get()) return;
+            HookStatus.bound(FAMILY, "reel registry");
+            WeakReference<View> labels = lastLabel;
+            View label = labels == null ? null : labels.get();
+            if (label == null) {
+                Logger.printDebug(() -> "Reel bar: Facebook's registry has no scrubber for the reel on screen, and none was picked before");
+                return;
+            }
+            HandOver over = handOvers.get(label);
+            if (over == null) {
+                WeakReference<View> bars = lastBar;
+                over = new HandOver(bars == null ? null : bars.get(), lastShown, null);
+                handOvers.put(label, over);
+            }
+            hide(label, over);
+            HookStatus.counted(FAMILY, NO_SCRUBBER_HIDDEN);
+            String held = over.held;
+            Logger.printDebug(() -> "Reel bar: Facebook's registry has no scrubber for the reel on screen, so the bar of "
+                    + held + " is hidden until a reel takes it");
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "reel registry", failure);
+        }
+    }
+
+    /**
      * The hook in Facebook's Reels scrubber registry as a new reel shows, once it has picked the
      * scrubber, with that scrubber's time label and bar, the id of the reel the scrubber holds (its
      * bar info's) and the id of the reel on screen. Facebook goes on to hand the scrubber the reel,
@@ -354,6 +436,9 @@ public final class ProgressBar {
         try {
             handingOver = null;
             if (label == null) return;
+            lastLabel = new WeakReference<>(label);
+            lastBar = new WeakReference<>(bar);
+            lastShown = shown;
             if (shown != null && shown.equals(held)) {
                 HandOver over = handOvers.remove(label);
                 if (over != null && showBarAgain(over)) {
@@ -490,14 +575,7 @@ public final class ProgressBar {
             HandOver over = handOvers.get(label);
             if (over == null || over.mounted) return;
             if (!Utils.settingsReady() || !Settings.KEEP_PROGRESS_BAR.get()) return;
-            View bar = over.bar.get();
-            if (!over.hidden) {
-                over.hidden = true;
-                if (bar != null) over.barWas = bar.getVisibility();
-            }
-            if (bar != null && bar.getVisibility() == View.VISIBLE) bar.setVisibility(View.INVISIBLE);
-            if (label.getVisibility() == View.VISIBLE) label.setVisibility(View.INVISIBLE);
-            lastRefresh.remove(label);
+            hide(label, over);
             HookStatus.counted(FAMILY, LAST_REEL_HIDDEN);
             Logger.printDebug(() -> "Reel bar: Facebook left the bar on " + over.held + " with " + over.shown
                     + " on screen, so it's hidden until a reel takes it");
@@ -509,7 +587,7 @@ public final class ProgressBar {
     /**
      * The hook, first thing in the scrubber's look selector, with the scrubber's time label and the
      * look asked for, answering the look the selector goes on with. While {@link #leftOnLastReel}
-     * keeps the bar hidden, a look that would show it (a player event of the last reel, or a parked
+     * or {@link #noScrubber} keeps the bar hidden, a look that would show it (a player event of the last reel, or a parked
      * one) answers null, which the selector ignores, so the last reel's bar and time don't come back
      * over the reel on screen. A look that fades or hides the bar goes through, and Facebook's looks
      * then own the bar again. Every other look goes through as asked.
@@ -539,6 +617,22 @@ public final class ProgressBar {
             HookStatus.threw(FAMILY, "reel hand-over", failure);
             return look;
         }
+    }
+
+    /**
+     * Hides [label] and the bar of [over] (invisible, which keeps the layout), noting the bar's
+     * visibility the first time, so {@link #lookFor} keeps Facebook's looks from showing them until
+     * a reel takes the scrubber.
+     */
+    private static void hide(View label, HandOver over) {
+        View bar = over.bar.get();
+        if (!over.hidden) {
+            over.hidden = true;
+            if (bar != null) over.barWas = bar.getVisibility();
+        }
+        if (bar != null && bar.getVisibility() == View.VISIBLE) bar.setVisibility(View.INVISIBLE);
+        if (label.getVisibility() == View.VISIBLE) label.setVisibility(View.INVISIBLE);
+        lastRefresh.remove(label);
     }
 
     /**

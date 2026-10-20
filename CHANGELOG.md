@@ -19,6 +19,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* **Facebook:** With `Keep the progress bar` on, a reel Facebook doesn't hand a bar to no longer shows the last reel's frozen spot and time (issues #90 and #120). They stay hidden until you're back on that reel or the next one takes the bar.
 * **Facebook:** `Default comment order` applies on a post's own page too, the one a link, a notification or a post's date opens (issue #192). That page asks Facebook for its comments another way than the comment sheet does, so Most relevant or Newest only took hold in the sheet and the page kept Facebook's order.
 * **Facebook:** `Hide the new comments pill` takes away the newer pill as well, the one with the commenters' pictures on it (issue #185). Facebook has two of them now and the switch only knew the older one.
 * **Facebook:** With `View stories anonymously` on, a story you watched to the end stays grey through the feed's refreshes (issue #165). Facebook rebuilds the story tray a dozen times a second when it opens and again with each refresh, and only the first eight copies in a minute got marked, so a ring could turn back blue moments after it went grey.
