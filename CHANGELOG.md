@@ -16,6 +16,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Changed
 
+* **Facebook:** `Turn off screen transitions` also skips the zoom a photo opens and closes with. Tap a photo in the feed and it's full screen right away, and Back puts it away without shrinking it into the post. Dragging a photo away still follows your finger. On phones Facebook rates older than 2015, and for a photo that opens without its preview, it still moves as before.
 * **Tooling:** The device audit no longer fails a run just because Facebook didn't serve a sponsored post on the profile or a new-reels badge that day. Families that wait on what Facebook serves are named by `-MayIdle` and recorded in the baseline under `mayIdle`. A walk notes whether each one ran, and a new baseline never lists them among the families that must run.
 * **Diagnostics:** With Debug logging on, a report says more when a game's download screen closes right away. Next to the module and the error, its line lists the steps Facebook's downloader took for that module in the last 30 seconds and what the download task ended with, so one report can show where a game that won't open stopped (issue #168).
 

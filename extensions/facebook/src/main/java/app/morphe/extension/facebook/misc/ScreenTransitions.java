@@ -17,7 +17,7 @@ import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 
 /**
- * Turn off screen transitions. Three things slide in Facebook, each its own way:
+ * Turn off screen transitions. Four things slide or zoom in Facebook, each its own way:
  *
  * <p>A screen that opens over the app as its own activity, like the post composer. Facebook asks
  * Android for a slide with {@code overridePendingTransition} as it opens and closes one, and that
@@ -32,8 +32,12 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * <p>The Menu, on accounts where it's a panel beside the tabs. Facebook scrolls to the panel asked
  * for, smoothly unless told not to, and {@link #panelSlides} tells it not to.
  *
+ * <p>A photo, which grows from its place in the feed to full screen as the photo viewer opens and
+ * shrinks back as it closes. {@link #photoZooms} tells the patch to put it at its end place at once.
+ *
  * <p>A swipe between tabs asks none of these and keeps following the finger, and so does the
- * panel's settle after a drag, which Facebook scrolls from a method of its own.
+ * panel's settle after a drag, which Facebook scrolls from a method of its own, and a photo
+ * dragged away to close it.
  *
  * <p>The screen calls come from the activity callbacks {@code SettingsEntry} registers at start,
  * so nothing here may throw into Facebook's screen. Without the patch, off, paused, before the
@@ -51,6 +55,9 @@ public final class ScreenTransitions {
 
     /** Counted for each page a tab strip inside a screen shows without its slide. */
     static final String PAGE = "page shown without its slide";
+
+    /** Counted for each photo the photo viewer opens or closes without its zoom. */
+    static final String PHOTO = "photo shown without its zoom";
 
     private static final String FAMILY = FamilyNames.SCREEN_TRANSITIONS;
 
@@ -145,6 +152,23 @@ public final class ScreenTransitions {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "tab strip", failure);
             return slides;
+        }
+    }
+
+    /**
+     * Injection point, at the end of the method that sets off the zoom a photo opens and closes
+     * with: whether Facebook plays it. False while the switch is on, and the patch then puts the
+     * photo straight at its end place; else true.
+     */
+    public static boolean photoZooms() {
+        try {
+            if (!on()) return true;
+            HookStatus.bound(FAMILY, "photo");
+            HookStatus.counted(FAMILY, PHOTO);
+            return false;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "photo", failure);
+            return true;
         }
     }
 

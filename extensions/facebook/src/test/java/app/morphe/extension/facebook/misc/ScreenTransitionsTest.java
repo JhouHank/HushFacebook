@@ -33,8 +33,8 @@ import app.morphe.extension.shared.settings.PauseForTests;
 /**
  * Turn off screen transitions: with the patch in and its switch on, a Facebook screen asks Android
  * for no transition as it comes to the front and as it closes, with the open and close overrides
- * set on Android 14, a tab that would slide gets the other style, and a panel is told not to
- * slide. Off, paused or without the patch, Facebook's stay.
+ * set on Android 14, a tab that would slide gets the other style, a panel is told not to slide,
+ * and a photo not to zoom. Off, paused or without the patch, Facebook's stay.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34)
@@ -200,6 +200,25 @@ public class ScreenTransitionsTest {
         assertFalse("the switch didn't come back after the pause", ScreenTransitions.pageSlides(true));
         ScreenTransitions.inBuildForTests = false;
         assertTrue("without the patch, the page lost its slide", ScreenTransitions.pageSlides(true));
+    }
+
+    @Test
+    public void aPhotoShowsWithoutItsZoom() {
+        assertFalse("the photo still zoomed", ScreenTransitions.photoZooms());
+        assertEquals(FamilyNames.SCREEN_TRANSITIONS + ": invoked 1, 1 found, 0 missing. Counted: "
+                + ScreenTransitions.PHOTO + " 1", statusLine());
+
+        Settings.TURN_OFF_SCREEN_TRANSITIONS.save(false);
+        assertTrue("off, the photo lost its zoom", ScreenTransitions.photoZooms());
+        Settings.TURN_OFF_SCREEN_TRANSITIONS.save(true);
+        for (HushfacebookPause.Reason reason : PAUSES) {
+            PauseForTests.pause(reason);
+            assertTrue("paused by " + reason + ", the photo lost its zoom", ScreenTransitions.photoZooms());
+            PauseForTests.resume();
+        }
+        assertFalse("the switch didn't come back after the pause", ScreenTransitions.photoZooms());
+        ScreenTransitions.inBuildForTests = false;
+        assertTrue("without the patch, the photo lost its zoom", ScreenTransitions.photoZooms());
     }
 
     @Test

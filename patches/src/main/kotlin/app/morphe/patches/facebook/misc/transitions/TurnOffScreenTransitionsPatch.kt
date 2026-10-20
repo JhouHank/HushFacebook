@@ -20,7 +20,9 @@ import app.morphe.patches.shared.compat.AppCompatibilities
  * transition once this patch says it's in the build. A tab and the Menu are Facebook's own view
  * animations, and for those the patch asks the extension where Facebook decides to slide
  * (TransitionAnchors.kt). A tab strip inside a screen asks its pager for the page, and the patch
- * asks the extension first in the two places a tap goes through (PagerTabs.kt).
+ * asks the extension first in the two places a tap goes through (PagerTabs.kt). A photo zooms from
+ * its place in the feed on a spring, and the patch asks the extension as the spring is set going
+ * (PhotoZoom.kt).
  *
  * In the default selection with its switch off: Facebook's transitions are a matter of taste, not
  * something it does to you.
@@ -54,6 +56,13 @@ val turnOffScreenTransitionsPatch = bytecodePatch(
             }
         } catch (moved: PatchException) {
             patchLog.warning("${moved.message}. The patch goes on without the tab strips inside a screen.")
+        }
+
+        // The zoom a photo opens and closes with: see PhotoZoom.kt. A build that zooms another way keeps the rest.
+        try {
+            quietPhotoZoom(PhotoOpenFingerprint.method)
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. The patch goes on without the photo zoom.")
         }
         enableStatus("turnOffScreenTransitions")
     }
