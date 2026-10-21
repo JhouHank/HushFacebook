@@ -52,7 +52,8 @@ import app.morphe.extension.shared.settings.PauseForTests;
  * with no footer are left to Facebook, as is everything with the switch off or Hushfacebook paused.
  * The rows copy the S22's Home feed on 583 as its real view tree has it (dumpsys, not uiautomator):
  * the photo and the text are plain hosts, the text's host hangs past the margins of its box, and
- * the footer is one clickable bar holding its buttons.
+ * the footer is one clickable bar holding its buttons. The comment sheet a hold opens keeps its
+ * keyboard down; every other sheet keeps Facebook's.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30, qualifiers = "w1080dp-h2400dp-mdpi")
@@ -228,6 +229,29 @@ public class PostLongPressTest {
         assertEquals(MotionEvent.ACTION_UP, send(event(MotionEvent.ACTION_UP, at)).getActionMasked());
         holdLongEnough();
         assertEquals("a tap opens nothing of ours", 1, clicked.size());
+    }
+
+    @Test
+    public void theSheetAHoldOpensKeepsTheKeyboardDownOnceAndOnlyRightAfterTheClick() {
+        assertTrue("with no hold the sheet keeps Facebook's keyboard", PostLongPress.keyboardOnFirstLoad(true));
+        send(event(MotionEvent.ACTION_DOWN, middleOf(photo)));
+        holdLongEnough();
+        send(event(MotionEvent.ACTION_UP, middleOf(photo)));
+        assertEquals(List.of("comment"), clicked);
+        assertFalse("a sheet that never asked stays without one", PostLongPress.keyboardOnFirstLoad(false));
+        assertFalse("the hold's sheet opens to read", PostLongPress.keyboardOnFirstLoad(true));
+        assertTrue("the next sheet is Facebook's again", PostLongPress.keyboardOnFirstLoad(true));
+        assertTrue(statusLine(), statusLine().contains(PostLongPress.KEYBOARD_DOWN + " 1"));
+
+        // A sheet made long after the click isn't the one the hold opened.
+        send(event(MotionEvent.ACTION_DOWN, middleOf(photo)));
+        holdLongEnough();
+        send(event(MotionEvent.ACTION_UP, middleOf(photo)));
+        assertEquals(2, clicked.size());
+        waitFor(2100L);
+        assertTrue("a late sheet keeps the keyboard", PostLongPress.keyboardOnFirstLoad(true));
+        assertTrue("and the wait is spent", PostLongPress.keyboardOnFirstLoad(true));
+        assertTrue(statusLine(), statusLine().contains(PostLongPress.KEYBOARD_DOWN + " 1"));
     }
 
     @Test

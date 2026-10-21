@@ -42,6 +42,7 @@ import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 
 /**
  * Open a reel's comments with a double tap or a long press, and a feed post's with a long press
@@ -92,6 +93,9 @@ internal class GestureAnchors(
     val handlers: List<LongPressHook>,
     /** FbFragmentActivity's touch dispatch, where a feed post's long press is timed. */
     val dispatch: Method,
+    /** The comment sheet parameters' constructor taking the builder, and the keyboard flag it sets. */
+    val params: Method,
+    val keyboard: FieldReference,
 )
 
 /** One long-press handler's `invoke` and the static field of the Unit it returns. */
@@ -151,7 +155,18 @@ internal fun BytecodePatchContext.findGestureAnchors(): GestureAnchors {
     val dispatches = touchDispatches(activity)
     val dispatch = dispatches.singleOrNull()
         ?: refuse("expected $FRAGMENT_ACTIVITY to declare one dispatchTouchEvent(MotionEvent)Z, found ${dispatches.size}")
-    return GestureAnchors(button, click, constructor, itemParameter, doubleTapLike, heart, handlers, dispatch)
+
+    val feedbackParams = classDefByOrNull(FEEDBACK_PARAMS) ?: refuse("this build has no $FEEDBACK_PARAMS")
+    val keyboard = keyboardFlag(feedbackParams) ?: refuse("$FEEDBACK_PARAMS's toString reads no boolean after \"$KEYBOARD_LABEL\"")
+    val builds = feedbackParams.methods.filter { it.name == "<init>" && it.parameterTypes.map(CharSequence::toString) != listOf(PARCEL) }
+    val params = builds.singleOrNull()
+        ?: refuse("expected $FEEDBACK_PARAMS to have one constructor besides the Parcel one, found ${builds.size}")
+    if (params.implementation!!.instructions.none { it.opcode == Opcode.RETURN_VOID }) refuse("$FEEDBACK_PARAMS's constructor never returns")
+    // The hook reads and writes the object ({@code p0}) in a 4-bit register next to the scratch v0, which needs 1 local.
+    if (params.localRegisterCount() !in 1..14) {
+        refuse("$FEEDBACK_PARAMS's constructor has ${params.localRegisterCount()} local register(s), needs 1 to 14")
+    }
+    return GestureAnchors(button, click, constructor, itemParameter, doubleTapLike, heart, handlers, dispatch, params, keyboard)
 }
 
 internal fun BytecodePatchContext.applyGestureAnchors(anchors: GestureAnchors) {
@@ -231,6 +246,35 @@ internal fun BytecodePatchContext.applyGestureAnchors(anchors: GestureAnchors) {
     // extension may turn the rest of a gesture it took into a cancel; the range form borrows no register.
     mutableClassDefBy(FRAGMENT_ACTIVITY).findMutableMethodOf(anchors.dispatch)
         .addInstruction(0, "invoke-static/range { p0 .. p1 }, $FEED_PRESS")
+
+    // Whether each comment sheet raises the keyboard when it first loads, at every return of the
+    // constructor that builds its parameters: the sheet a feed hold opened keeps it down.
+    val keyboard = anchors.keyboard
+    val flag = "${keyboard.definingClass}->${keyboard.name}:${keyboard.type}"
+    val params = mutableClassDefBy(FEEDBACK_PARAMS).findMutableMethodOf(anchors.params)
+    params.implementation!!.instructions.withIndex().filter { it.value.opcode == Opcode.RETURN_VOID }.map { it.index }
+        .asReversed().forEach { index ->
+            params.addInstructionsAtControlFlowLabel(
+                index,
+                """
+                    iget-boolean v0, p0, $flag
+                    invoke-static { v0 }, $KEYBOARD
+                    move-result v0
+                    iput-boolean v0, p0, $flag
+                """,
+            )
+        }
+}
+
+/** The boolean field [params]' toString appends after [KEYBOARD_LABEL], the flag that raises the comment sheet's keyboard. */
+internal fun keyboardFlag(params: ClassDef): FieldReference? {
+    val code = params.methods.singleOrNull { it.name == "toString" && it.parameterTypes.isEmpty() }
+        ?.implementation?.instructions?.toList() ?: return null
+    val label = code.indexOfFirst { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == KEYBOARD_LABEL }
+    if (label < 0) return null
+    val read = code.drop(label + 1).firstOrNull { it.opcode == Opcode.IGET_BOOLEAN } ?: return null
+    val field = (read as ReferenceInstruction).reference as FieldReference
+    return field.takeIf { it.definingClass == params.type && it.type == "Z" && params.fields.any { declared -> declared.name == it.name } }
 }
 
 /** The static Unit fields [invoke] returns: a static read of a field of its own type, returned straight away. */

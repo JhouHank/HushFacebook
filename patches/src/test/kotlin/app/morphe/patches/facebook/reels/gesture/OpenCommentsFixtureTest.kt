@@ -87,6 +87,7 @@ class OpenCommentsFixtureTest {
         val attachmentClass: ClassDef,
         val owners: List<ClassDef>,
         val activity: ClassDef,
+        val feedbackParams: ClassDef,
     )
 
     /** The classes the patch reads in [bundle], each the only one of its kind. */
@@ -121,7 +122,8 @@ class OpenCommentsFixtureTest {
         }
         val activity = FixtureDex.classes(bundle, setOf(FRAGMENT_ACTIVITY)).getValue(FRAGMENT_ACTIVITY)
         assertEquals("$name: FbFragmentActivity's touch dispatches", 1, touchDispatches(activity).size)
-        return Found(helper, doubleTapLike, component, view, heart, button, click, handlers, attachmentClass, owners, activity)
+        val feedbackParams = FixtureDex.classes(bundle, setOf(FEEDBACK_PARAMS)).getValue(FEEDBACK_PARAMS)
+        return Found(helper, doubleTapLike, component, view, heart, button, click, handlers, attachmentClass, owners, activity, feedbackParams)
     }
 
     @Test
@@ -157,6 +159,22 @@ class OpenCommentsFixtureTest {
                 }
                 // The control: the click handler is the only static method of the button that holds the log name.
                 assertEquals("$name: click handlers", 1, found.button.methods.count { isCommentClick(it, found.button) })
+
+                // The keyboard flag toString labels is a final boolean of the sheet's parameters, and it is
+                // the one the sheet's first-load keyboard step reads.
+                val keyboard = keyboardFlag(found.feedbackParams) ?: throw AssertionError("$name: no boolean after \"$KEYBOARD_LABEL\"")
+                val declared = found.feedbackParams.fields.single { it.name == keyboard.name }
+                assertTrue("$name: ${keyboard.name} isn't final", AccessFlags.FINAL.isSet(declared.accessFlags))
+                val firstLoads = FixtureDex.classesHolding(bundle, KEYBOARD_STEP).flatMap { it.methods }
+                    .filter { app.morphe.patches.facebook.feed.holdsString(it, KEYBOARD_STEP) }
+                assertEquals("$name: methods holding \"$KEYBOARD_STEP\"", 1, firstLoads.size)
+                assertTrue("$name: the first-load keyboard step doesn't read ${keyboard.name}",
+                    firstLoads.single().code().any { it.opcode == Opcode.IGET_BOOLEAN && it.field.toString() == keyboard.toString() })
+                val builds = found.feedbackParams.methods.filter { it.name == "<init>" }
+                assertEquals("$name: FeedbackParams' constructors", 2, builds.size)
+                val build = builds.single { it.parameterTypes.map(CharSequence::toString) != listOf(PARCEL) }
+                assertTrue("$name: the builder constructor needs 1 to 14 locals", build.localRegisterCount() in 1..14)
+                assertTrue("$name: the builder constructor returns", build.code().any { it.opcode == Opcode.RETURN_VOID })
                 checked += version
             }
         }
@@ -170,7 +188,7 @@ class OpenCommentsFixtureTest {
             for (bundle in bundles) {
                 val name = bundle.name
                 val found = read(bundle)
-                val classes = (listOf(found.helper, found.component, found.view, found.attachmentClass, found.button, found.activity) +
+                val classes = (listOf(found.helper, found.component, found.view, found.attachmentClass, found.button, found.activity, found.feedbackParams) +
                     found.owners + found.handlers).distinctBy { it.type } +
                     ExtensionDex.classDef(SETTINGS_STATUS) + ExtensionDex.classDef(REEL_GESTURES)
                 val context = PatchContexts.of(classes)
@@ -187,6 +205,7 @@ class OpenCommentsFixtureTest {
                 val doubleTapBefore = anchors.doubleTapLike.code()
                 val constructorBefore = anchors.constructor.code()
                 val dispatchBefore = anchors.dispatch.code()
+                val paramsBefore = anchors.params.code()
                 context.applyGestureAnchors(anchors)
 
                 fun patched(method: Method): Method =
@@ -243,6 +262,23 @@ class OpenCommentsFixtureTest {
                 assertEquals("$name: the rest of the dispatch is Facebook's", dispatchBefore.map { it.opcode },
                     touch.drop(1).map { it.opcode })
 
+                // The sheet's parameters: the keyboard flag read from the object, asked about and written back before every return.
+                val build = patched(anchors.params)
+                val params = build.code()
+                val paramReturns = paramsBefore.count { it.opcode == Opcode.RETURN_VOID }
+                assertEquals("$name: keyboard hooks", paramReturns, params.count { it.call.toString() == KEYBOARD })
+                assertEquals("$name: keyboard instructions added", paramsBefore.size + 4 * paramReturns, params.size)
+                val self = build.implementation!!.registerCount - 2
+                params.withIndex().filter { it.value.opcode == Opcode.RETURN_VOID }.forEach { (index, _) ->
+                    assertEquals("$name: shape of the keyboard hook",
+                        listOf(Opcode.IGET_BOOLEAN, Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IPUT_BOOLEAN),
+                        params.subList(index - 4, index).map { it.opcode })
+                    assertEquals("$name: the flag read", anchors.keyboard.toString(), params[index - 4].field.toString())
+                    assertEquals("$name: the flag written", anchors.keyboard.toString(), params[index - 1].field.toString())
+                    assertEquals("$name: read from the object", self, (params[index - 4] as TwoRegisterInstruction).registerB)
+                    assertEquals("$name: written to the object", self, (params[index - 1] as TwoRegisterInstruction).registerB)
+                }
+
                 // The stub in the extension presses the button's click handler.
                 val stub = context.mutableClassDefBy(REEL_GESTURES).methods.single { it.name == OPEN_STUB }.code()
                 assertEquals("$name: the stub's press", "${found.button.type}->${found.click.name}", stub.first { it.opcode == Opcode.INVOKE_STATIC }.call!!.let { it.definingClass + "->" + it.name })
@@ -278,5 +314,16 @@ class OpenCommentsFixtureTest {
         assertNotNull("PostLongPress has no public touch(Activity, MotionEvent)", touch)
         assertTrue("touch isn't static", AccessFlags.STATIC.isSet(touch!!.accessFlags))
         assertEquals(FEED_PRESS, "${touch.definingClass}->${touch.name}(${touch.parameterTypes.joinToString("")})${touch.returnType}")
+
+        val keyboard = feed.methods.singleOrNull { it.name == "keyboardOnFirstLoad" }
+        assertNotNull("PostLongPress has no keyboardOnFirstLoad", keyboard)
+        assertTrue("keyboardOnFirstLoad isn't public static",
+            AccessFlags.PUBLIC.isSet(keyboard!!.accessFlags) && AccessFlags.STATIC.isSet(keyboard.accessFlags))
+        assertEquals(KEYBOARD, "${keyboard.definingClass}->${keyboard.name}(${keyboard.parameterTypes.joinToString("")})${keyboard.returnType}")
+    }
+
+    private companion object {
+        /** The log name of the comment sheet's first-load keyboard step, which reads the flag the patch sets. */
+        const val KEYBOARD_STEP = "FeedbackFragment.maybeShowKeyboardOnFirstLoad"
     }
 }

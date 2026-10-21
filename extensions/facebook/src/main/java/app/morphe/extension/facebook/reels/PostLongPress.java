@@ -7,6 +7,7 @@ package app.morphe.extension.facebook.reels;
 import android.app.Activity;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -56,7 +57,9 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * screen, so a post running past the bottom of the feed has no footer yet: the feed is scrolled up
  * by what's under and the footer looked for again over the next frames. The button is clicked, and
  * the rest of the gesture goes to Facebook as a cancel so the lift doesn't also open the photo it
- * landed on. A post without that footer line is left to Facebook.
+ * landed on. A post without that footer line is left to Facebook. The button opens the sheet to
+ * write, focusing the comment box with the keyboard up; a hold opens it to read, so the first sheet
+ * made right after the click keeps the keyboard down ({@link #keyboardOnFirstLoad}).
  *
  * <p>A post whose author turned comments off has no Comment button, so its second footer button is
  * whatever follows Like there (Share or Send), which opens its own sheet and posts nothing. With the
@@ -76,6 +79,8 @@ public final class PostLongPress {
     static final String NO_BUTTON = "no Comment button in the row";
     /** Counted for each held post scrolled up to bring its unmounted footer on screen. */
     static final String SCROLLED = "feed post scrolled to its footer";
+    /** Counted for each comment sheet a held press opened whose keyboard was kept down. */
+    static final String KEYBOARD_DOWN = "feed post comments opened without the keyboard";
     /** Counted for each press held to the long-press time, before anything about it is checked. */
     static final String TIMED = "feed press held to the time";
     /** Counted for a press lifted after the long-press time whose timer hadn't run yet. */
@@ -101,6 +106,8 @@ public final class PostLongPress {
     /** How many more times, and how many milliseconds apart, a scrolled post's footer is looked for. */
     private static final int SHOW_TRIES = 3;
     private static final long SHOW_WAIT = 50L;
+    /** How long after a hold clicks Comment the sheet it opens may still be made, in milliseconds. */
+    private static final long SHEET_WAIT = 2000L;
 
     private static Handler main;
     private static WeakReference<View> pressedRoot = new WeakReference<>(null);
@@ -112,6 +119,8 @@ public final class PostLongPress {
     private static boolean swallowing;
     /** Counts finger-downs, so a footer looked for after a scroll is only clicked for the same press. */
     private static int presses;
+    /** Until when, in uptime, the next comment sheet made comes from a hold's click; 0 when none is due. */
+    private static volatile long sheetDue;
     /** Why the last {@link #rowAt} found no row, one of the passed labels above. */
     @Nullable static String passedOver;
     private static final Runnable FIRE = PostLongPress::fire;
@@ -227,13 +236,36 @@ public final class PostLongPress {
 
     /** Clicks [comment], counting it, and says whether it took the click. */
     private static boolean open(View comment) {
+        sheetDue = SystemClock.uptimeMillis() + SHEET_WAIT;
         if (!comment.performClick()) {
+            sheetDue = 0L;
             HookStatus.threw(FAMILY, "feed long press", new IllegalStateException("the Comment button took no click"));
             return false;
         }
         HookStatus.counted(FAMILY, OPENED);
         Logger.printDebug(() -> "Feed long press: " + OPENED);
         return true;
+    }
+
+    /**
+     * Injection point, at each return of the constructor that builds the comment sheet's parameters:
+     * whether the sheet raises the keyboard when it first loads, [asked] being what Facebook set. The
+     * first sheet that asks for it within a moment of a hold clicking Comment gets no keyboard, so
+     * it opens to read; every other sheet keeps Facebook's answer.
+     */
+    public static boolean keyboardOnFirstLoad(boolean asked) {
+        try {
+            long due = sheetDue;
+            if (!asked || due == 0L) return asked;
+            sheetDue = 0L;
+            if (SystemClock.uptimeMillis() > due) return true;
+            HookStatus.counted(FAMILY, KEYBOARD_DOWN);
+            Logger.printDebug(() -> "Feed long press: " + KEYBOARD_DOWN);
+            return false;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "feed long press keyboard", failure);
+            return asked;
+        }
     }
 
     /**
@@ -479,5 +511,6 @@ public final class PostLongPress {
         stop();
         swallowing = false;
         passedOver = null;
+        sheetDue = 0L;
     }
 }
