@@ -244,6 +244,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_FACEBOOK_LOGO) return L10n.t("Hide the Facebook logo");
         if (setting == Settings.FORCE_DARK_MODE) return L10n.t("Force dark mode");
         if (setting == Settings.AMOLED_FLAT_CARDS) return L10n.t("Black cards");
+        if (setting == Settings.AMOLED_FEED_GAPS) return L10n.t("Lines between posts");
         throw new IllegalArgumentException("No individual switch label: " + setting.key);
     }
 }

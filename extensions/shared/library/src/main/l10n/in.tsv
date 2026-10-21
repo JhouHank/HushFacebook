@@ -123,6 +123,10 @@ Keeps Facebook dark no matter its own setting. Meant for tablets where Facebook 
 Black cards	Kartu hitam
 # context: description of that switch; a card is a raised panel such as a post or the Menu's profile box, near black is the dark gray the theme gives it
 Cards and menus take the page's own color instead of the near black that sets them apart. Buttons and search fields keep a dark gray fill, so you can still see them. Restart Facebook to see the change.	Kartu dan menu memakai warna halaman itu sendiri, bukan warna hampir hitam yang membuatnya menonjol. Tombol dan kolom pencarian tetap berisi abu-abu gelap agar tetap terlihat. Mulai ulang Facebook untuk melihat perubahannya.
+# context: switch title under Appearance, shown with the AMOLED black theme; it draws a thin gray line in the gap between posts in the feed
+Lines between posts	Garis di antara postingan
+# context: description of that switch; the black page is the AMOLED theme's pure black background
+A thin gray line between posts in the feed, so posts without photos don't run together on the black page.	Garis abu-abu tipis di antara postingan di feed, agar postingan tanpa foto tidak menyatu di halaman hitam.
 Draws Facebook's text in your phone's font, or in a font file you choose below. Restart Facebook to see the change.	Menampilkan teks Facebook dengan font ponsel atau file font yang kamu pilih di bawah. Mulai ulang Facebook untuk melihat perubahannya.
 Font file	File font
 Use your phone's font	Gunakan font ponsel

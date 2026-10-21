@@ -8,6 +8,7 @@ Changes in each Hushfacebook version, newest first.
 
 * **Facebook:** New switch under Privacy, `Close Facebook when you leave it`. Three seconds after you leave Facebook it closes all the way and drops out of your recent apps, so nothing of it keeps running in the background (issue #202, requested by @M7amma). It holds off while an upload, a call or a Hushfacebook save is still going, or while a file picker or camera Facebook opened is on screen, and turning the screen off with Facebook in front doesn't count as leaving. Notifications can come late, or not until you open Facebook again. It starts off. Checked on a phone.
 * **Facebook:** New switch under Comments, `Hide the video comment box`. The Add a comment box under a full-screen video goes away, outline and all, while comment boxes on posts stay (issue #213, from a patch by @dijitalcozum). The Comment button beside the video still opens the comments, with their own box. It starts off. Checked on a phone.
+* **Facebook:** New switch under Appearance with the AMOLED black theme, `Lines between posts`. Facebook leaves a thin gap between posts that shows the page behind them, and on a black page that gap went black too, so a post without a photo ran straight into the next one (issue #206). With the switch on, that gap shows as a thin dark gray line in Facebook's dark mode, while the page and the cards stay black. It starts off. Checked in tests, not yet on a phone.
 
 ### Fixed
 

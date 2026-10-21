@@ -1658,6 +1658,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_amoled_flat_cards", FALSE, true);
 
     /**
+     * With the AMOLED black theme, the gap Facebook leaves between a list's rows, posts in the feed
+     * among them, shows as a thin gray line instead of the page's black
+     * ({@link app.morphe.extension.facebook.theme.FeedGaps}, issue #206). Rows read it as they
+     * draw, so a change shows on the rows drawn after it.
+     */
+    public static final BooleanSetting AMOLED_FEED_GAPS =
+            new BooleanSetting("hushfacebook_amoled_feed_gaps", FALSE, false);
+
+    /**
      * The strip some posts carry ("Are you interested in this post?", "Show less", who recently
      * commented, follow and chat suggestions) goes, and so does the room kept for it
      * ({@link app.morphe.extension.facebook.feed.PostPrompts}). A change shows on the posts drawn

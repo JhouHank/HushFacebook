@@ -153,6 +153,7 @@ import app.morphe.extension.facebook.stories.StoryUpload;
 import app.morphe.extension.facebook.stories.SuggestedStoriesForTests;
 import app.morphe.extension.facebook.theme.AmoledTheme;
 import app.morphe.extension.facebook.theme.DarkMode;
+import app.morphe.extension.facebook.theme.FeedGapsForTests;
 import app.morphe.extension.facebook.theme.ForceDarkModeForTests;
 import app.morphe.extension.facebook.updates.UpdatePrompts;
 import app.morphe.extension.shared.SettingsContextRule;
@@ -726,10 +727,16 @@ public class PausedHooksTest {
         // Facebook's dark mode controller answers dark where it answered light.
         probes.put(PatchFamily.FORCE_DARK_MODE, Collections.singletonList(ForceDarkModeForTests::forcesDark));
         // Black cards: a card's dark grey takes the page's black, where the theme alone keeps it near black.
-        probes.put(PatchFamily.AMOLED_THEME, Collections.singletonList(() -> {
-            DarkMode.answer(true);
-            return AmoledTheme.apply(0xFF333334, Surface.CARD_BACKGROUND) == 0xFF000000;
-        }));
+        // Lines between posts: a feed row paints the gap under its content.
+        probes.put(PatchFamily.AMOLED_THEME, Arrays.asList(
+                () -> {
+                    DarkMode.answer(true);
+                    return AmoledTheme.apply(0xFF333334, Surface.CARD_BACKGROUND) == 0xFF000000;
+                },
+                () -> {
+                    DarkMode.answer(true);
+                    return FeedGapsForTests.drawsTheGap();
+                }));
         // A request for a post's comments that names no order asks for the chosen one, and with
         // All comments chosen, the menu its answer draws is picked in.
         probes.put(PatchFamily.DEFAULT_COMMENT_ORDER, Arrays.asList(

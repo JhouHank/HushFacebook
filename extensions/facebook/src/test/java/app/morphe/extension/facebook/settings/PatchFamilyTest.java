@@ -490,12 +490,13 @@ public class PatchFamilyTest {
                         + "hushfacebook_hide_share_group_buttons=on, hushfacebook_hide_share_people_row=off)",
                 PatchFamily.reportLines(EnumSet.of(PatchFamily.SHARE_SHEET_ITEMS), true).get(0));
         Settings.HIDE_SHARE_GROUP_BUTTONS.resetToDefault();
-        // The theme runs with Black cards off, and paused: only Black cards steps back.
-        assertEquals("AMOLED black theme: on (hushfacebook_amoled_flat_cards=off); stays in while paused: AMOLED black theme",
+        // The theme runs with its switches off, and paused: only Black cards and the lines step back.
+        assertEquals("AMOLED black theme: on (hushfacebook_amoled_flat_cards=off, hushfacebook_amoled_feed_gaps=off); "
+                        + "stays in while paused: AMOLED black theme",
                 PatchFamily.reportLines(EnumSet.of(PatchFamily.AMOLED_THEME), false).get(0));
         Settings.AMOLED_FLAT_CARDS.save(true);
-        assertEquals("AMOLED black theme: on, its switch off while paused (saved hushfacebook_amoled_flat_cards=on); "
-                        + "stays in while paused: AMOLED black theme",
+        assertEquals("AMOLED black theme: on, its switches off while paused (saved hushfacebook_amoled_flat_cards=on, "
+                        + "hushfacebook_amoled_feed_gaps=off); stays in while paused: AMOLED black theme",
                 PatchFamily.reportLines(EnumSet.of(PatchFamily.AMOLED_THEME), true).get(0));
         Settings.AMOLED_FLAT_CARDS.resetToDefault();
         // The reel button has a switch now, so the report says what it's set to.

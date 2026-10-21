@@ -241,8 +241,9 @@ public enum PatchFamily {
     AD_PREFETCH(FamilyNames.AD_PREFETCH, "adPrefetch", "No ads downloaded in advance"),
     AD_TELEMETRY(FamilyNames.AD_TELEMETRY, "adTelemetry", "No ad tracking"),
     AUDIENCE_NETWORK(FamilyNames.AUDIENCE_NETWORK, "audienceNetwork", "No Facebook ads in other apps"),
-    // The theme is written into the APK and stays; Pause takes Black cards back to near black.
-    AMOLED_THEME(FamilyNames.AMOLED_THEME, "amoledTheme", FamilyNames.AMOLED_THEME, Settings.AMOLED_FLAT_CARDS),
+    // The theme is written into the APK and stays; Pause takes Black cards back to near black and the lines away.
+    AMOLED_THEME(FamilyNames.AMOLED_THEME, "amoledTheme", FamilyNames.AMOLED_THEME, Settings.AMOLED_FLAT_CARDS,
+            Settings.AMOLED_FEED_GAPS),
     MATERIAL_YOU_THEME(FamilyNames.MATERIAL_YOU_THEME, "materialYouTheme", FamilyNames.MATERIAL_YOU_THEME),
     // No switch: a list picks the accent, and Pause makes it read Facebook's blue, so nothing stays in.
     ACCENT_COLOR(FamilyNames.ACCENT_COLOR, "accentColor", Settings.ACCENT_COLOR),
@@ -463,7 +464,7 @@ public enum PatchFamily {
      * "on", "disabled by its switch" or "disabled while paused", then the saved switches. A
      * family with independent switches is on while either is. Options need their main switch. A
      * family set by its list says so, with its switches saved beside the list. The AMOLED theme is
-     * on either way, its one switch being an option on it.
+     * on either way, its switches being options on it.
      */
     private String reportLine(boolean paused) {
         StringBuilder line = new StringBuilder(patchName).append(": ");
@@ -498,9 +499,9 @@ public enum PatchFamily {
                     || Settings.HIDE_LINK_POSTS.savedValue() || Settings.HIDE_BACKGROUND_POSTS.savedValue()
                     || Settings.HIDE_REPOSTS.savedValue();
         }
-        // The theme runs with Black cards off and while paused: its switch only flattens the cards.
+        // The theme runs with its switches off and while paused: they only flatten the cards and draw the lines.
         if (this == AMOLED_THEME) {
-            line.append(paused ? "on, its switch off while paused (saved " : "on (");
+            line.append(paused ? "on, its switches off while paused (saved " : "on (");
         } else {
             line.append(paused ? "disabled while paused (saved " : anyOn ? "on (" : "disabled by its switch (");
         }

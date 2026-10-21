@@ -14,6 +14,7 @@ import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.extension.requireParameterIntact
+import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.bytecodePatch
@@ -421,7 +422,8 @@ val amoledThemePatch = bytecodePatch(
     name = "AMOLED black theme",
     description = "Makes Facebook's dark mode black, or a dark color you pick, instead of dark gray, which can " +
         "save battery on OLED screens. Cards and menus stay a shade lighter than the page. Turn on Black cards in " +
-        "Hushfacebook settings > Appearance to make them black too. Turn on dark mode in Facebook first. It isn't " +
+        "Hushfacebook settings > Appearance to make them black too, and Lines between posts there for a thin gray " +
+        "line between posts in the feed. Turn on dark mode in Facebook first. It isn't " +
         "selected by default because undoing it means patching again. Turn on Expert mode in Manager to pick it.",
     default = false,
 ) {
@@ -539,6 +541,14 @@ val amoledThemePatch = bytecodePatch(
             patchLog.warning("${moved.message}. The theme goes on without the reactions token pile's page colour.")
         }
 
+        // The gap between a list's rows, which shows the page and so goes black with it (#206).
+        // Each Litho row paints it gray first as it draws, with Lines between posts on.
+        try {
+            hookFeedGaps()
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. The theme goes on without Lines between posts.")
+        }
+
         enableStatus("amoledTheme")
     }
 }
@@ -589,6 +599,35 @@ internal fun BytecodePatchContext.hookFlexBanner() {
             move-result v$colour
         """,
     )
+}
+
+/** Litho's host view. Each row Litho puts in a list is one, a LithoView, and draws through its dispatchDraw. */
+internal const val COMPONENT_HOST = "Lcom/facebook/litho/ComponentHost;"
+
+private const val CANVAS = "Landroid/graphics/Canvas;"
+
+/** Gets each Litho host and its canvas before the host draws its children, for Lines between posts (#206). */
+internal const val FEED_GAP_ROW = "Lapp/morphe/extension/facebook/theme/FeedGaps;->drawRow(Landroid/view/ViewGroup;$CANVAS)V"
+
+/** Whether [method] is the host's own dispatchDraw(Canvas), which LithoView inherits. */
+internal fun isHostDraw(method: Method) =
+    method.name == "dispatchDraw" && method.returnType == "V" &&
+        method.parameterTypes.map(CharSequence::toString) == listOf(CANVAS) &&
+        !AccessFlags.STATIC.isSet(method.accessFlags) && method.implementation != null
+
+/**
+ * Issue #206: a feed row's content stops a few pixels above the row's bottom, and that strip shows
+ * the page, which AMOLED makes black. [FEED_GAP_ROW] runs first in the host's dispatchDraw, so the
+ * extension can paint the strip under the row's children. The name is Android's, so Redex keeps it.
+ */
+internal fun BytecodePatchContext.hookFeedGaps() {
+    val host = mutableClassDefByOrNull(COMPONENT_HOST) ?: throw PatchException("This build has no Litho $COMPONENT_HOST")
+    val draws = host.methods.filter(::isHostDraw)
+    val draw = draws.singleOrNull()
+        ?: throw PatchException("Expected $COMPONENT_HOST to declare one dispatchDraw($CANVAS)V, found ${draws.size}")
+    // The host and the canvas are p0 and p1, next to each other, so the range form passes both
+    // without borrowing a register.
+    draw.addInstruction(0, "invoke-static/range { p0 .. p1 }, $FEED_GAP_ROW")
 }
 
 /**
