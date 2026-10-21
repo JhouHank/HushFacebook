@@ -237,6 +237,7 @@ public class ColdStartHooksTest {
         assertTrue("Facebook's own yes has to stand", MediaDownload.offersSave(true));
         assertFalse(ReelDownload.showsButton());
         assertNull(ReelDeclutter.filterChips(Arrays.asList(new TypedFeedUnit("XFBFBShortsRemixAttribution"))));
+        assertFalse("a Reels tab audio line drawn before the context came off", ReelDeclutter.hideAudioLine());
         assertFalse(ReelDeclutter.hideFollowButton());
         assertFalse(ReelDeclutter.hideFollowingButton());
         assertFalse(ReelDeclutter.skipHotComment());

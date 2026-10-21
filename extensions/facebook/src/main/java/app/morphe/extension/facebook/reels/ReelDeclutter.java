@@ -31,7 +31,8 @@ import app.morphe.extension.shared.settings.BaseSettings;
  *       and only the types in {@link #HIDDEN_CHIPS} go. A type this doesn't know stays. The line
  *       naming the reel's sound, "Original audio" or a song, is one of those chips, and it goes
  *       under its own switch ({@link #SOUNDTRACK_CHIP}, #200). The footer draws nothing for a
- *       list left empty.
+ *       list left empty. The Reels tab draws that line in a component of its own, which picks the
+ *       soundtrack out of the models itself, and {@link #hideAudioLine} is asked first thing there.
  *   <li>The Follow button beside a reel's author is built only when Facebook's Follow check
  *       answers yes, and {@link #hideFollowButton} is asked first thing in that check. The author
  *       row asks it on every surface, the Reels tab included. So do the author rows of sponsored
@@ -93,6 +94,10 @@ public final class ReelDeclutter {
     static final String SEARCH_ROUTE = "Reel search pill";
     static final String SEARCH_PILL = "search pill";
     static final String COMMENT_SEARCH_PILL = "comment search pill";
+
+    /** Counted under its own name each time the Reels tab's audio line isn't drawn. */
+    static final String AUDIO_ROUTE = "Reel audio line";
+    static final String AUDIO_LINE = "audio line";
 
     /** Counted under its own name each time a sidebar button's number is taken away. */
     static final String COUNTS_ROUTE = "Reel counts";
@@ -250,6 +255,30 @@ public final class ReelDeclutter {
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.REEL_DECLUTTER, kind + " query", failure);
             Logger.printException(() -> "Reel footer: could not read its switch", failure);
+            return false;
+        }
+    }
+
+    /**
+     * Injection point, first thing in the component that draws the audio line on the Reels tab
+     * (#200). That row picks the soundtrack out of the reel's attribution models on its own, so the
+     * chip filter never sees it. True makes it draw nothing, as it does for a reel with no sound
+     * line. Never throws: false draws it as before.
+     */
+    public static boolean hideAudioLine() {
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            FeedFilterCounters.sawList(AUDIO_ROUTE, 1);
+            FeedFilterCounters.sawKind(AUDIO_ROUTE, AUDIO_LINE);
+            boolean hide = Utils.settingsReady() && Settings.HIDE_REEL_AUDIO_LINE.get();
+            if (hide) {
+                FeedFilterCounters.removed(AUDIO_ROUTE, 1, AUDIO_LINE);
+                logOnce(AUDIO_LINE, () -> "Reel audio line: not drawn");
+            }
+            return hide;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, AUDIO_LINE, failure);
+            Logger.printException(() -> "Reel audio line: could not read its switch", failure);
             return false;
         }
     }

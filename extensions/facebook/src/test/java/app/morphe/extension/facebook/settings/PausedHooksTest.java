@@ -525,6 +525,8 @@ public class PausedHooksTest {
                 () -> ReelDeclutter.filterChips(Arrays.asList(new TypedFeedUnit("XFBFBShortsRemixAttribution"))) != null,
                 // The audio line goes under its own switch.
                 () -> ReelDeclutter.filterChips(Arrays.asList(new TypedFeedUnit("XFBFBShortsSoundtrackTitle"))) != null,
+                // So does the Reels tab's own audio line row.
+                ReelDeclutter::hideAudioLine,
                 ReelDeclutter::hideFollowButton,
                 ReelDeclutter::hideFollowingButton,
                 ReelDeclutter::skipHotComment,

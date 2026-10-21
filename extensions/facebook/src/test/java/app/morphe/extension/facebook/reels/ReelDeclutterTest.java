@@ -179,6 +179,41 @@ public class ReelDeclutterTest {
                 ReelDeclutter.filterChips(Arrays.asList(remix, song, location)));
     }
 
+    /**
+     * The Reels tab's own audio line row (#200) is drawn until the switch is on, then not, and it
+     * comes back paused, before the settings are ready and once the switch is off again. The chips
+     * switch alone doesn't touch it.
+     */
+    @Test
+    public void theReelsTabAudioLineIsDrawnUntilItsSwitchIsOn() {
+        assertFalse("the chips switch took the Reels tab audio line", ReelDeclutter.hideAudioLine());
+        Settings.HIDE_REEL_AUDIO_LINE.save(true);
+        assertTrue(ReelDeclutter.hideAudioLine());
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertFalse("the audio line went while paused", ReelDeclutter.hideAudioLine());
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> assertFalse("the audio line went before the settings were ready",
+                ReelDeclutter.hideAudioLine()));
+        Settings.HIDE_REEL_AUDIO_LINE.save(false);
+        assertFalse("turning the switch off didn't bring the audio line back", ReelDeclutter.hideAudioLine());
+        assertEquals(ReelDeclutter.AUDIO_ROUTE + ": 5 lists, 5 items, 1 removed. Last reason: " + ReelDeclutter.AUDIO_LINE
+                + ". Removed: " + ReelDeclutter.AUDIO_LINE + " 1. Kinds: " + ReelDeclutter.AUDIO_LINE + " 5",
+                line(ReelDeclutter.AUDIO_ROUTE));
+    }
+
+    /** A Reels tab audio line switch that can't be read draws the line, and the report names the hook. */
+    @Test
+    public void aReelsTabAudioLineSwitchThatCantBeReadDrawsTheLine() {
+        SettingReadsForTests.breakReads(Settings.HIDE_REEL_AUDIO_LINE);
+        try {
+            assertFalse(ReelDeclutter.hideAudioLine());
+        } finally {
+            SettingReadsForTests.mend(Settings.HIDE_REEL_AUDIO_LINE);
+        }
+        assertTrue(HookStatus.missing(FamilyNames.REEL_DECLUTTER).toString(), HookStatus.missing(FamilyNames.REEL_DECLUTTER)
+                .contains("a working '" + ReelDeclutter.AUDIO_LINE + "' hook (it threw " + NullPointerException.class.getName() + ")"));
+    }
+
     /** An audio line switch that can't be read keeps Facebook's list, and the report names the hook. */
     @Test
     public void anAudioLineSwitchThatCantBeReadKeepsFacebooksList() {

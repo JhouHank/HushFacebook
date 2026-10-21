@@ -384,6 +384,82 @@ class CleanUpReelsShapesTest {
         assertThrows(PatchException::class.java) { noLocal.returnFalseWhen(HIDE_FOLLOW_BUTTON) }
     }
 
+    private fun render(smali: String, name: String = RENDER) =
+        method(name, listOf("Lfixture/Context;"), "Lfixture/Component;", 6, static = false, smali)
+
+    /** A model's type, compared with the soundtrack's, and on to `:line` when it's the soundtrack. */
+    private val pickSoundtrack = """
+        invoke-interface { p1 }, Lfixture/Model;->getTypeName()Ljava/lang/String;
+        move-result-object v1
+        const-string v0, "$SOUNDTRACK_CHIP"
+        invoke-virtual { v0, v1 }, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+        move-result v0
+        if-nez v0, :line
+    """
+
+    /**
+     * The Reels tab's audio line row (#200) is the render that picks the soundtrack before it can
+     * return and answers null first. Renders that return a component first, return before they
+     * name the type, or aren't a render are the lookalikes 583 has. The hook asks first and answers
+     * null, in a local of its own.
+     */
+    @Test
+    fun `the audio line row is the render that answers null before anything else`() {
+        val row = render("""
+            const/16 v3, 0x0
+            $pickSoundtrack
+            return-object v3
+            :line
+            new-instance v2, Lfixture/Row;
+            return-object v2
+        """)
+        assertTrue(isAudioLineRender(row))
+        val builtFirst = render("""
+            new-instance v3, Lfixture/Row;
+            $pickSoundtrack
+            return-object v3
+            :line
+            const/4 v2, 0x0
+            return-object v2
+        """)
+        assertTrue("a render answering a built component first was taken", !isAudioLineRender(builtFirst))
+        val returnsFirst = render("""
+            const/4 v3, 0x0
+            if-nez p1, :pick
+            return-object v3
+            :pick
+            $pickSoundtrack
+            return-object v3
+            :line
+            return-object v3
+        """)
+        assertTrue("a render returning before it names the type was taken", !isAudioLineRender(returnsFirst))
+        val notRender = render("""
+            const/16 v3, 0x0
+            $pickSoundtrack
+            return-object v3
+            :line
+            return-object p1
+        """, name = "A1C")
+        assertTrue("a method that isn't a render was taken", !isAudioLineRender(notRender))
+
+        row.returnNullWhen(HIDE_AUDIO_LINE)
+        val body = row.body()
+        assertEquals(HIDE_AUDIO_LINE, body[0].call)
+        assertEquals(Opcode.MOVE_RESULT, body[1].opcode)
+        assertEquals(0, (body[1] as OneRegisterInstruction).registerA)
+        assertEquals(Opcode.IF_EQZ, body[2].opcode)
+        assertEquals("off draws Facebook's row", 5, row.target(2))
+        assertEquals(Opcode.CONST_4, body[3].opcode)
+        assertEquals("the hook answers null", 0, (body[3] as NarrowLiteralInstruction).narrowLiteral)
+        assertEquals(Opcode.RETURN_OBJECT, body[4].opcode)
+        assertEquals(0, (body[4] as OneRegisterInstruction).registerA)
+        assertEquals(15, body.size)
+
+        val noLocal = method(RENDER, listOf("Lfixture/Context;"), "Lfixture/Component;", 2, static = false, "return-object p1")
+        assertThrows(PatchException::class.java) { noLocal.returnNullWhen(HIDE_AUDIO_LINE) }
+    }
+
     @Test
     fun `a footer runnable returns first when the extension says so`() {
         val run = method("run", emptyList(), "V", 2, static = false,

@@ -33,6 +33,7 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 private const val DECLUTTER = "$EXTENSION_PACKAGE/reels/ReelDeclutter;"
 internal const val FILTER_CHIPS = "$DECLUTTER->filterChips(Ljava/lang/Object;)[Ljava/lang/Object;"
+internal const val HIDE_AUDIO_LINE = "$DECLUTTER->hideAudioLine()Z"
 internal const val HIDE_FOLLOW_BUTTON = "$DECLUTTER->hideFollowButton()Z"
 internal const val HIDE_FOLLOWING_BUTTON = "$DECLUTTER->hideFollowingButton()Z"
 internal const val SKIP_HOT_COMMENT = "$DECLUTTER->skipHotComment()Z"
@@ -56,7 +57,8 @@ private const val PATCH = "Clean up Reels"
  * eleventh, also off, opens a video tapped in the feed on its own, with no reels after it (see
  * FeedVideoAlone.kt). A twelfth, also off, leaves the speaker button out of the bottom of the
  * sidebar (see ReelSoundButton.kt). A thirteenth, also off, takes the line naming a reel's sound,
- * "Original audio" or a song, out of the same chip list the first switch filters (#200). With Debug
+ * "Original audio" or a song, out of the same chip list the first switch filters, and has the row
+ * the Reels tab draws it in on its own draw nothing (#200, see ReelAnchors.kt). With Debug
  * logging on, it also reports whether a reel that ends
  * is on the player the Reels auto-advance controller holds (see ReelBinding.kt), with no switch.
  *
@@ -82,6 +84,8 @@ val cleanUpReelsPatch = bytecodePatch(
 
     execute {
         filterChips()
+        // #200: the Reels tab draws the audio line in a row of its own, past the chip list.
+        hideReelsTabAudioLine()
         hideFollowButtons()
         skipFooterQueries()
         hideThreadsCards()
@@ -121,6 +125,36 @@ private fun BytecodePatchContext.filterChips() {
             "found ${builders.size}",
     )
     mutableClassDefBy(owner).methods.first { it.sameSignatureAs(builder) }.filterChipsBeforeEveryReturn()
+}
+
+/**
+ * The Reels tab's audio line row asks the extension first thing and answers null when it says so,
+ * Facebook's own answer for a reel with no sound line. Refuses unless exactly one render fits.
+ */
+private fun BytecodePatchContext.hideReelsTabAudioLine() {
+    val rows = classDefByStrings(SOUNDTRACK_CHIP, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+        .flatMap { classDef -> classDef.methods.filter(::isAudioLineRender).map { classDef.type to it } }
+    val (owner, row) = rows.singleOrNull() ?: throw PatchException(
+        "$PATCH: expected one render that picks $SOUNDTRACK_CHIP and answers null first, found ${rows.size}",
+    )
+    mutableClassDefBy(owner).methods.first { it.sameSignatureAs(row) }.returnNullWhen(HIDE_AUDIO_LINE)
+}
+
+/** Asks [hook] first thing and answers null when it says so. v0 is free there, as in [answerWhen]. */
+internal fun MutableMethod.returnNullWhen(hook: String) {
+    requireLocals(PATCH, 1)
+    addInstructionsWithLabels(
+        0,
+        """
+            invoke-static { }, $hook
+            move-result v0
+            if-eqz v0, :facebooks_row
+            const/4 v0, 0x0
+            return-object v0
+        """,
+        ExternalLabel("facebooks_row", getInstruction(0)),
+    )
 }
 
 /**

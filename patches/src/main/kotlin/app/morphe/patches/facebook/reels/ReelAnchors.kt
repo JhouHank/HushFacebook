@@ -89,6 +89,31 @@ internal val HIDDEN_CHIPS = listOf(
  */
 internal const val SOUNDTRACK_CHIP = "XFBFBShortsSoundtrackTitle"
 
+/*
+ * The Reels tab draws the audio line in a component of its own (#200; arm64 LX/8MN; on 583, read
+ * 2026-10-20). Its render gets the reel's attribution models from a general getter (LX/88g;->A02),
+ * walks them for the SOUNDTRACK_CHIP type and returns null when none is there, all before anything
+ * else, then builds "<artist> · <title>" from that model. The chip list builder never sees that list,
+ * so the chip filter alone left the line on the Reels tab. Three other renders hold the name
+ * (LX/9FP;, LX/WvP;, LX/Wuq;), and each either returns before it names the type or first returns a
+ * component it built.
+ */
+
+/**
+ * Whether [method] is the Reels tab's audio line row: a Litho `render` that reads a model's
+ * `getTypeName()` and loads [SOUNDTRACK_CHIP] before its first `return-object`, and whose first
+ * answer is the null constant, Facebook's own answer for a reel with no sound line.
+ */
+internal fun isAudioLineRender(method: Method): Boolean {
+    if (method.name != RENDER || AccessFlags.STATIC.isSet(method.accessFlags) || !method.returnType.startsWith("L")) return false
+    val body = method.body()
+    val named = body.indexOfFirst { it.string == SOUNDTRACK_CHIP }
+    val firstReturn = body.indexOfFirst { it.opcode == Opcode.RETURN_OBJECT }
+    if (named < 0 || firstReturn < named) return false
+    if (body.subList(0, named).none { it.methodReference?.name == "getTypeName" }) return false
+    return constantAt(body, firstReturn, (body[firstReturn] as OneRegisterInstruction).registerA) == 0
+}
+
 /** The chip the patch looks the builder up by. Two dozen methods hold it; one builds the list. */
 internal const val CHIP_ANCHOR = "XFBFBShortsRemixAttribution"
 
