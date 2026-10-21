@@ -1233,6 +1233,9 @@ Hides posts that share another post, with or without a caption. Original posts s
 Lock Facebook	Kunci Facebook
 Save crashes to Downloads	Simpan crash ke Download
 When Facebook crashes, the error goes in a text file in Download/Hushfacebook, so you can send it with a bug report even if Facebook won't open. Links and IDs are left out. The newest five are kept.	Saat Facebook crash, errornya disimpan sebagai file teks di Download/Hushfacebook, jadi kamu bisa mengirimnya bersama laporan bug meski Facebook tidak mau terbuka. Tautan dan ID tidak disertakan. Lima file terbaru disimpan.
+# context: switch title in Privacy: Facebook quits fully a few seconds after you switch away from it
+Close Facebook when you leave it	Tutup Facebook saat kamu keluar
+A few seconds after you leave Facebook, it closes all the way and leaves your recent apps, so it isn't running in the background. It waits for uploads and saves to finish first. Notifications may come late, or not until you open Facebook again.	Beberapa detik setelah kamu keluar dari Facebook, aplikasi ini tertutup sepenuhnya dan hilang dari aplikasi terbaru, jadi tidak berjalan di latar belakang. Unggahan dan penyimpanan diselesaikan dulu. Notifikasi bisa datang terlambat atau baru muncul saat kamu membuka Facebook lagi.
 # context: summary of the Lock Facebook switch; the time below is the Lock after row under it
 Facebook asks for your fingerprint, face or screen lock at startup and when you return after the time below. Your phone needs a screen lock.	Facebook meminta sidik jari, wajah, atau kunci layar saat dibuka dan saat kamu kembali setelah waktu di bawah. Ponselmu perlu kunci layar.
 # context: toast when Lock Facebook is turned on and the phone has no screen lock to ask for

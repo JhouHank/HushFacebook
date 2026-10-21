@@ -1233,6 +1233,9 @@ Hides posts that share another post, with or without a caption. Original posts s
 Lock Facebook	Khóa Facebook
 Save crashes to Downloads	Lưu sự cố vào thư mục Download
 When Facebook crashes, the error goes in a text file in Download/Hushfacebook, so you can send it with a bug report even if Facebook won't open. Links and IDs are left out. The newest five are kept.	Khi Facebook gặp sự cố, lỗi được ghi vào tệp văn bản trong Download/Hushfacebook, để bạn gửi kèm báo lỗi kể cả khi Facebook không mở được. Liên kết và ID được loại bỏ. Chỉ giữ năm tệp mới nhất.
+# context: switch title in Privacy: Facebook quits fully a few seconds after you switch away from it
+Close Facebook when you leave it	Đóng Facebook khi bạn thoát
+A few seconds after you leave Facebook, it closes all the way and leaves your recent apps, so it isn't running in the background. It waits for uploads and saves to finish first. Notifications may come late, or not until you open Facebook again.	Vài giây sau khi bạn rời Facebook, ứng dụng sẽ đóng hẳn và biến khỏi danh sách ứng dụng gần đây, nên không chạy ngầm. Nó chờ các lượt tải lên và lưu xong trước. Thông báo có thể đến trễ hoặc chỉ đến khi bạn mở lại Facebook.
 # context: summary of the Lock Facebook switch; the time below is the Lock after row under it
 Facebook asks for your fingerprint, face or screen lock at startup and when you return after the time below. Your phone needs a screen lock.	Facebook yêu cầu vân tay, khuôn mặt hoặc khóa màn hình khi khởi động và khi bạn quay lại sau khoảng thời gian bên dưới. Điện thoại của bạn cần có khóa màn hình.
 # context: toast when Lock Facebook is turned on and the phone has no screen lock to ask for

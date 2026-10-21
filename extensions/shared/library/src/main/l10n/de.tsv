@@ -1233,6 +1233,9 @@ Hides posts that share another post, with or without a caption. Original posts s
 Lock Facebook	Facebook sperren
 Save crashes to Downloads	Abstürze in Downloads speichern
 When Facebook crashes, the error goes in a text file in Download/Hushfacebook, so you can send it with a bug report even if Facebook won't open. Links and IDs are left out. The newest five are kept.	Wenn Facebook abstürzt, landet der Fehler als Textdatei in Download/Hushfacebook, damit du ihn mit einem Fehlerbericht schicken kannst, auch wenn Facebook nicht mehr startet. Links und IDs werden weggelassen. Die neuesten fünf bleiben erhalten.
+# context: switch title in Privacy: Facebook quits fully a few seconds after you switch away from it
+Close Facebook when you leave it	Facebook beim Verlassen schließen
+A few seconds after you leave Facebook, it closes all the way and leaves your recent apps, so it isn't running in the background. It waits for uploads and saves to finish first. Notifications may come late, or not until you open Facebook again.	Ein paar Sekunden nachdem du Facebook verlässt, wird es ganz geschlossen und verschwindet aus den zuletzt verwendeten Apps, damit es nicht im Hintergrund läuft. Uploads und Speichervorgänge werden vorher abgeschlossen. Benachrichtigungen können verspätet kommen oder erst, wenn du Facebook wieder öffnest.
 # context: summary of the Lock Facebook switch; the time below is the Lock after row under it
 Facebook asks for your fingerprint, face or screen lock at startup and when you return after the time below. Your phone needs a screen lock.	Facebook fragt beim Start und nach der unten gewählten Zeit nach deinem Fingerabdruck, Gesicht oder deiner Bildschirmsperre. Dein Telefon braucht eine Bildschirmsperre.
 # context: toast when Lock Facebook is turned on and the phone has no screen lock to ask for

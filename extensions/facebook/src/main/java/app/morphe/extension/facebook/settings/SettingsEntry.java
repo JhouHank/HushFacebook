@@ -55,6 +55,7 @@ import app.morphe.extension.facebook.menu.MenuLayoutDump;
 import app.morphe.extension.facebook.media.TapToPlay;
 import app.morphe.extension.facebook.misc.AppIcons;
 import app.morphe.extension.facebook.misc.AppLock;
+import app.morphe.extension.facebook.misc.CloseWhenLeft;
 import app.morphe.extension.facebook.misc.ScreenTransitions;
 import app.morphe.extension.facebook.misc.TextSize;
 import app.morphe.extension.facebook.navigation.HiddenStatusBar;
@@ -152,6 +153,8 @@ public final class SettingsEntry {
             // waits for a post, and covering() holds it back. A window Facebook opens later lands
             // above the cover, which then goes back on top (AppLock.Cover).
             AppLock.watch(context);
+            // Close Facebook when you leave it (#202): when the last screen goes to the background.
+            CloseWhenLeft.watch(context);
             ReturnRefresh.register(context);
             watchLauncherChanges(context);
             TextSize.application(context);

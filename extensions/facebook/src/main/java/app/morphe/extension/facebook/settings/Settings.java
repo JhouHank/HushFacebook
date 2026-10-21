@@ -1324,6 +1324,15 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting SAVE_CRASH_FILE =
             new BooleanSetting("hushfacebook_save_crash_file", TRUE);
 
+    /**
+     * A few seconds after you leave Facebook, its tasks leave the recent apps and its processes end
+     * ({@link app.morphe.extension.facebook.misc.CloseWhenLeft}, #202). The settings entry's own
+     * switch, so every build has it ({@link PatchFamily#ENTRY_SWITCHES}). Off by default: the next
+     * start is a cold one, and notifications that need Facebook running can wait for it.
+     */
+    public static final BooleanSetting CLOSE_WHEN_LEFT =
+            new BooleanSetting("hushfacebook_close_when_left", FALSE);
+
     static {
         // The crash handler is the shared library's, which can't name this class.
         CrashFile.useSwitch(SAVE_CRASH_FILE);

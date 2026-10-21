@@ -4,6 +4,10 @@ Changes in each Hushfacebook version, newest first.
 
 ## Unreleased
 
+### Added
+
+* **Facebook:** New switch under Privacy, `Close Facebook when you leave it`. Three seconds after you leave Facebook it closes all the way and drops out of your recent apps, so nothing of it keeps running in the background (issue #202, requested by @M7amma). It holds off while an upload, a call or a Hushfacebook save is still going, or while a file picker or camera Facebook opened is on screen, and turning the screen off with Facebook in front doesn't count as leaving. Notifications can come late, or not until you open Facebook again. It starts off.
+
 ### Fixed
 
 * **Facebook:** With `Leave calls and chats to Messenger` on, a message sent to you in Facebook's own Chats no longer shows up twice, once from Messenger and once from Facebook. Those messages reach your phone as Facebook's regular notifications rather than through its chat notifier, so they slipped past the switch. Facebook now leaves them to Messenger as well, while every other notification posts as before (issue #193). Checked in tests, not yet on a phone.

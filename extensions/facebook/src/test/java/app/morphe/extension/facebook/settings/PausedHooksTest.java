@@ -289,6 +289,8 @@ public class PausedHooksTest {
         probes.put(Settings.APP_LOCK, AppLockForTests::aStartLocks);
         // A crash that ends the app writes its file to Downloads.
         probes.put(Settings.SAVE_CRASH_FILE, app.morphe.extension.shared.settings.preference.CrashFileForTests::aCrashWritesAFile);
+        // Leaving Facebook ends its processes a few seconds later.
+        probes.put(Settings.CLOSE_WHEN_LEFT, app.morphe.extension.facebook.misc.CloseWhenLeftForTests::aLeaveCloses);
         return probes;
     }
 

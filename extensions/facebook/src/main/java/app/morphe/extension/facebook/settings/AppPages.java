@@ -541,6 +541,11 @@ final class AppPages {
         privacy.addPreference(toggle(context, Settings.SAVE_CRASH_FILE,
                 L10n.t("When Facebook crashes, the error goes in a text file in Download/Hushfacebook, so you can send it with a "
                         + "bug report even if Facebook won't open. Links and IDs are left out. The newest five are kept.")));
+        // The settings entry's own as well: it watches Facebook's screens from the application hook.
+        privacy.addPreference(toggle(context, Settings.CLOSE_WHEN_LEFT,
+                L10n.t("A few seconds after you leave Facebook, it closes all the way and leaves your recent apps, so it "
+                        + "isn't running in the background. It waits for uploads and saves to finish first. Notifications "
+                        + "may come late, or not until you open Facebook again.")));
         if (build.contains(PatchFamily.ANALYTICS_UPLOADS)) {
             // XAnalytics resumes its uploader once, as Facebook starts.
             privacy.addPreference(toggle(context, Settings.HOLD_ANALYTICS_UPLOADS,

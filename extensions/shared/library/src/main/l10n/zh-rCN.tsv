@@ -1229,6 +1229,9 @@ Hides posts that share another post, with or without a caption. Original posts s
 Lock Facebook	锁定 Facebook
 Save crashes to Downloads	将崩溃记录保存到“下载”
 When Facebook crashes, the error goes in a text file in Download/Hushfacebook, so you can send it with a bug report even if Facebook won't open. Links and IDs are left out. The newest five are kept.	Facebook 崩溃时，错误信息会存入 Download/Hushfacebook 中的文本文件，这样即使 Facebook 打不开，你也能随错误反馈一起发送。其中不含链接和 ID。会保留最新的五份。
+# context: switch title in Privacy: Facebook quits fully a few seconds after you switch away from it
+Close Facebook when you leave it	离开时关闭 Facebook
+A few seconds after you leave Facebook, it closes all the way and leaves your recent apps, so it isn't running in the background. It waits for uploads and saves to finish first. Notifications may come late, or not until you open Facebook again.	离开 Facebook 几秒后，它会完全关闭并从最近使用的应用中移除，不再在后台运行。它会先等上传和保存完成。通知可能会延迟，或要等你再次打开 Facebook 才收到。
 # context: summary of the Lock Facebook switch; the time below is the Lock after row under it
 Facebook asks for your fingerprint, face or screen lock at startup and when you return after the time below. Your phone needs a screen lock.	Facebook 会在启动时，以及你在下方设定的时间后返回时，要求验证你的指纹、面部或屏幕锁。你的手机需要设置屏幕锁。
 # context: toast when Lock Facebook is turned on and the phone has no screen lock to ask for

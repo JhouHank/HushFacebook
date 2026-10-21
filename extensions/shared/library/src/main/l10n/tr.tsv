@@ -1233,6 +1233,9 @@ Hides posts that share another post, with or without a caption. Original posts s
 Lock Facebook	Facebook'u kilitle
 Save crashes to Downloads	Çökmeleri İndirilenler'e kaydet
 When Facebook crashes, the error goes in a text file in Download/Hushfacebook, so you can send it with a bug report even if Facebook won't open. Links and IDs are left out. The newest five are kept.	Facebook çöktüğünde hata, Download/Hushfacebook klasörüne bir metin dosyası olarak kaydedilir, böylece Facebook açılmasa bile bir hata raporuyla gönderebilirsiniz. Bağlantılar ve kimlikler dahil edilmez. En yeni beş dosya saklanır.
+# context: switch title in Privacy: Facebook quits fully a few seconds after you switch away from it
+Close Facebook when you leave it	Çıkınca Facebook'u kapat
+A few seconds after you leave Facebook, it closes all the way and leaves your recent apps, so it isn't running in the background. It waits for uploads and saves to finish first. Notifications may come late, or not until you open Facebook again.	Facebook'tan çıktıktan birkaç saniye sonra tamamen kapanır ve son uygulamalardan kalkar, böylece arka planda çalışmaz. Önce yüklemelerin ve kaydetmelerin bitmesini bekler. Bildirimler geç gelebilir ya da Facebook'u yeniden açana kadar gelmeyebilir.
 # context: summary of the Lock Facebook switch; the time below is the Lock after row under it
 Facebook asks for your fingerprint, face or screen lock at startup and when you return after the time below. Your phone needs a screen lock.	Facebook, açılırken ve aşağıdaki süreden sonra geri döndüğünüzde parmak izi, yüz veya ekran kilidi ister. Telefonunuzda ekran kilidi olmalı.
 # context: toast when Lock Facebook is turned on and the phone has no screen lock to ask for
