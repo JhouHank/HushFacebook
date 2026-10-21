@@ -7,6 +7,7 @@ Changes in each Hushfacebook version, newest first.
 ### Fixed
 
 * **Facebook:** With `Leave calls and chats to Messenger` on, a message sent to you in Facebook's own Chats no longer shows up twice, once from Messenger and once from Facebook. Those messages reach your phone as Facebook's regular notifications rather than through its chat notifier, so they slipped past the switch. Facebook now leaves them to Messenger as well, while every other notification posts as before (issue #193). Checked in tests, not yet on a phone.
+* **Facebook:** `Hide Menu promotions` now holds in the side panel Menu for accounts Facebook gives its server-drawn Menu. 0.16.0 put Facebook's own Menu in that panel, but the Menu page inside it asks Facebook's server the same question again, and those accounts got the server's Menu right back with Upgrades and Also from Meta still in it (issue #184). Hushfacebook answers that second question too now. While any Menu switch is on, the panel and the Menu tab both show Facebook's own Menu with your hidden sections and shortcuts gone. Checked on a phone with Facebook's answer forced to the server-drawn Menu.
 
 ### Changed
 
