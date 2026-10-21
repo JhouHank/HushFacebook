@@ -21,17 +21,21 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * Lines between posts, an option of the AMOLED black theme (issue #206). Each row of the feed is a
  * LithoView whose content stops a few pixels short of the row's bottom, 6 px on a 1080 px S22 (583
  * {@code LoggingComponent(NewsFeedFeedUnitComponent)}, 1378 px tall over a 1372 px host, and the
- * stories tray's 641 over 635). That strip shows the page under the list. Facebook's dark style gives
- * the page and its feed gap one colour resource, #101011 ({@code FEED_GAP_VERTICAL} and {@code WASH}
- * both point at it), and route two writes the page's colour over it, so on AMOLED the strip is the
- * page's black and a post with no photo runs into the next one. No code asks for the gap's token, so
- * no colour route can tell it from the page.
+ * stories tray's 641 over 635). That strip shows the row's background, in the page's colour.
+ * Facebook's dark style gives the page and its feed gap one colour resource, #101011
+ * ({@code FEED_GAP_VERTICAL} and {@code WASH} both point at it), and route two writes the page's
+ * colour over it, so on AMOLED the strip is the page's black and a post with no photo runs into the
+ * next one. No code asks for the gap's token, so no colour route can tell it from the page.
  *
- * <p>The patch calls {@link #drawRow} first thing in each Litho host's {@code dispatchDraw}. A host
- * that is a row of a list ({@code android:id/list}) gets its bottom strip painted {@link #colour}
- * before its content draws, so a part of the post drawn there would still cover the line. The line
- * goes into the row's own drawing and moves with it as the list scrolls, which a line the list drew
- * wouldn't: a scroll moves each row's render node without drawing the list again.
+ * <p>The patch calls {@link #drawRow} last thing in each Litho host's {@code dispatchDraw}, before
+ * each return, so the line goes over whatever the host drew there, its children and the drawables
+ * Litho mounts beside them. A host that is a row of a list ({@code android:id/list}) gets its bottom
+ * strip painted {@link #colour}, where no child of it reaches. The line goes into the row's own
+ * drawing and moves with it as the list scrolls, which a line the list drew wouldn't: a scroll moves
+ * each row's render node without drawing the list again.
+ *
+ * <p>AMOLED's route three blackens each dark grey written in code, and {@link #LINE_STEP} is one. It
+ * skips the extension, or the line comes out black on black, as it first did on the S22.
  *
  * <p>Every Litho host draws through here, many each frame, so a host that isn't a list's row costs
  * a parent read and an id compare.

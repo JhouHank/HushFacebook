@@ -14,7 +14,6 @@ import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.extension.parameterRegisterNumber
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.extension.requireParameterIntact
-import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.bytecodePatch
@@ -25,6 +24,8 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import app.morphe.patcher.patch.resourcePatch
 import app.morphe.patcher.resource.ResourceType
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
+import app.morphe.patches.facebook.ads.affiliate.writesRegister
+import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.returnEarly
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
@@ -606,7 +607,7 @@ internal const val COMPONENT_HOST = "Lcom/facebook/litho/ComponentHost;"
 
 private const val CANVAS = "Landroid/graphics/Canvas;"
 
-/** Gets each Litho host and its canvas before the host draws its children, for Lines between posts (#206). */
+/** Gets each Litho host and its canvas once the host has drawn everything, for Lines between posts (#206). */
 internal const val FEED_GAP_ROW = "Lapp/morphe/extension/facebook/theme/FeedGaps;->drawRow(Landroid/view/ViewGroup;$CANVAS)V"
 
 /** Whether [method] is the host's own dispatchDraw(Canvas), which LithoView inherits. */
@@ -617,17 +618,27 @@ internal fun isHostDraw(method: Method) =
 
 /**
  * Issue #206: a feed row's content stops a few pixels above the row's bottom, and that strip shows
- * the page, which AMOLED makes black. [FEED_GAP_ROW] runs first in the host's dispatchDraw, so the
- * extension can paint the strip under the row's children. The name is Android's, so Redex keeps it.
+ * the row's own background, in the page's colour that AMOLED makes black. Litho draws a host's
+ * drawables inside its dispatchDraw, around and after its children, so [FEED_GAP_ROW] runs before
+ * each return, over all of it. The name is Android's, so Redex keeps it.
  */
 internal fun BytecodePatchContext.hookFeedGaps() {
     val host = mutableClassDefByOrNull(COMPONENT_HOST) ?: throw PatchException("This build has no Litho $COMPONENT_HOST")
     val draws = host.methods.filter(::isHostDraw)
     val draw = draws.singleOrNull()
         ?: throw PatchException("Expected $COMPONENT_HOST to declare one dispatchDraw($CANVAS)V, found ${draws.size}")
+    val code = draw.implementation!!.instructions.toList()
     // The host and the canvas are p0 and p1, next to each other, so the range form passes both
-    // without borrowing a register.
-    draw.addInstruction(0, "invoke-static/range { p0 .. p1 }, $FEED_GAP_ROW")
+    // without borrowing a register, as long as the method never reuses either.
+    val self = draw.implementation!!.registerCount - 2
+    code.firstOrNull { writesRegister(it, self) || writesRegister(it, self + 1) }?.let {
+        throw PatchException("$COMPONENT_HOST's dispatchDraw writes its host or canvas register with ${it.opcode.name}") // opcode-name-ok
+    }
+    val returns = code.indices.filter { code[it].opcode == Opcode.RETURN_VOID }
+    if (returns.isEmpty()) throw PatchException("$COMPONENT_HOST's dispatchDraw never returns")
+    // At the label, so a branch to the return draws the line too. Last first, as each insert moves
+    // the later indices.
+    returns.asReversed().forEach { draw.addInstructionsAtControlFlowLabel(it, "invoke-static/range { p0 .. p1 }, $FEED_GAP_ROW") }
 }
 
 /**
@@ -857,11 +868,16 @@ internal fun BytecodePatchContext.hookFdsColorsResolvers(target: String) {
  * colour the option asks for, except in the [systemBarColourMethods]. The sweep reads every class
  * and rewrites only the classes that hold one, which takes about 30 seconds. Answers how many it
  * rewrote.
+ *
+ * The extension is skipped: its greys are its own, set a step above the page on purpose. Swept,
+ * Lines between posts drew its #1D1E23 as black on black on the S22 (#206), and Black cards' button
+ * fill, #262627, became the page's colour (#191).
  */
 internal fun BytecodePatchContext.blackenColourLiterals(background: Int = BLACK): Int {
     val handsToBar = systemBarColourMethods()
     val owners = mutableSetOf<String>()
     classDefForEach { classDef ->
+        if (classDef.type.startsWith(EXTENSION_PACKAGE)) return@classDefForEach
         if (classDef.methods.any { it.hasDarkColor() }) owners += classDef.type
     }
     return owners.sumOf { type ->

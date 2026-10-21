@@ -65,7 +65,7 @@ public final class FeedGapsForTests {
         return row;
     }
 
-    /** Draws [row]'s gap, as the hook does first in its dispatchDraw, and gives back the canvas. */
+    /** Draws [row]'s gap, as the hook does last in its dispatchDraw, and gives back the canvas. */
     static RecordingCanvas draw(ViewGroup row) {
         RecordingCanvas canvas = new RecordingCanvas();
         FeedGaps.drawRow(row, canvas);
