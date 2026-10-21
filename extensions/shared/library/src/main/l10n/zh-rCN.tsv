@@ -1640,7 +1640,7 @@ Takes the speaker button off the bottom of the side of reels. A change shows fro
 # context: switch title under News feed; the reaction preview is the stack of reaction icons and the line with the number of reactions under a post
 Hide the reaction preview on posts	隐藏帖子上的回应预览
 # context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions
-Hides the stacked reaction icons and the reactions count under posts. The space stays, so a tap where they were still opens the list of reactions.	隐藏帖子下方叠放的回应图标和回应数量。空间仍保留，因此点按它们原来所在的位置仍会打开回应列表。
+Hides the stacked reaction icons and the reactions count under posts. The space stays, so a tap where they were still opens the list of reactions. To take the number off the Like button too, turn on Hide counts on posts.	隐藏帖子下方叠放的回应图标和回应数量。空间仍保留，因此点按它们原来所在的位置仍会打开回应列表。如果也要去掉“赞”按钮上的数字，请打开“隐藏帖子上的数字”。
 # context: switch title under Comments; the reaction preview is the stack of reaction icons in the corner of a comment
 Hide the reaction preview on comments	隐藏评论上的回应预览
 # context: summary of that switch; "reactions" are Facebook's Like, Love, Haha and other reactions
