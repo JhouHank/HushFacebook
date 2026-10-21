@@ -69,6 +69,7 @@ public class ReelDeclutterTest {
         Settings.HIDE_REEL_COUNTS.resetToDefault();
         Settings.HIDE_REEL_SAVE_BUTTON.resetToDefault();
         Settings.HIDE_REEL_SOUND_BUTTON.resetToDefault();
+        Settings.HIDE_REEL_AUDIO_LINE.resetToDefault();
         BaseSettings.DEBUG.resetToDefault();
         FeedFilterCounters.clear();
         HookStatus.clear();
@@ -146,6 +147,49 @@ public class ReelDeclutterTest {
         Settings.HIDE_REEL_CHIPS.save(false);
         assertNull(ReelDeclutter.filterChips(Arrays.asList(chip(REMIX), chip(STARS))));
         assertEquals(ReelDeclutter.CHIPS_ROUTE + ": 1 lists, 2 items, 0 removed", line(ReelDeclutter.CHIPS_ROUTE));
+    }
+
+    /**
+     * The audio line (#200), "Original audio" or a song: the chips switch leaves it, and its own
+     * switch takes it out alone, the other chips staying in the order they came. A reel with only
+     * the line gets an empty list, which the footer draws as nothing. Paused, it stays.
+     */
+    @Test
+    public void theAudioLineGoesOnlyWhileItsSwitchIsOn() {
+        assertFalse(Settings.HIDE_REEL_AUDIO_LINE.defaultValue);
+        assertEquals(SONG, ReelDeclutter.SOUNDTRACK_CHIP);
+        TypedFeedUnit remix = chip(REMIX);
+        TypedFeedUnit song = chip(SONG);
+        TypedFeedUnit location = chip(LOCATION);
+        assertNull("the chips switch took the audio line", ReelDeclutter.filterChips(Arrays.asList(song, location)));
+
+        Settings.HIDE_REEL_CHIPS.save(false);
+        Settings.HIDE_REEL_AUDIO_LINE.save(true);
+        assertArrayEquals("the audio line switch took another chip", new Object[]{remix, location},
+                ReelDeclutter.filterChips(Arrays.asList(remix, song, location)));
+        assertArrayEquals(new Object[0], ReelDeclutter.filterChips(Collections.singletonList(song)));
+        Settings.HIDE_REEL_CHIPS.save(true);
+        assertArrayEquals(new Object[]{location}, ReelDeclutter.filterChips(Arrays.asList(remix, song, location)));
+
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertNull("the audio line went while paused", ReelDeclutter.filterChips(Arrays.asList(song, location)));
+        PauseForTests.resume();
+        Settings.HIDE_REEL_AUDIO_LINE.save(false);
+        assertArrayEquals("turning the switch off didn't bring the audio line back", new Object[]{song, location},
+                ReelDeclutter.filterChips(Arrays.asList(remix, song, location)));
+    }
+
+    /** An audio line switch that can't be read keeps Facebook's list, and the report names the hook. */
+    @Test
+    public void anAudioLineSwitchThatCantBeReadKeepsFacebooksList() {
+        SettingReadsForTests.breakReads(Settings.HIDE_REEL_AUDIO_LINE);
+        try {
+            assertNull(ReelDeclutter.filterChips(Arrays.asList(chip(REMIX), chip(SONG))));
+        } finally {
+            SettingReadsForTests.mend(Settings.HIDE_REEL_AUDIO_LINE);
+        }
+        assertTrue(HookStatus.missing(FamilyNames.REEL_DECLUTTER).toString(), HookStatus.missing(FamilyNames.REEL_DECLUTTER)
+                .contains("a working 'reel chips' hook (it threw " + NullPointerException.class.getName() + ")"));
     }
 
     /** A list that throws while it's read is kept, and the report names the hook that threw. */

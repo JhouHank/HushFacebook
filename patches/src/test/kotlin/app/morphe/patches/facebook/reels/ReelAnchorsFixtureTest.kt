@@ -221,5 +221,9 @@ class ReelAnchorsFixtureTest {
             ?: throw AssertionError("ReelDeclutter.java has no HIDDEN_CHIPS array")
         val hidden = Regex(""""([A-Za-z]+)"""").findAll(array.groupValues[1]).map { it.groupValues[1] }.toList()
         assertEquals(HIDDEN_CHIPS, hidden)
+        // #200: the audio line the extension hides under its own switch is the one the builder must name.
+        val soundtrack = Regex("""SOUNDTRACK_CHIP\s*=\s*"([A-Za-z]+)"""").find(declutter.readText())
+            ?: throw AssertionError("ReelDeclutter.java has no SOUNDTRACK_CHIP")
+        assertEquals(SOUNDTRACK_CHIP, soundtrack.groupValues[1])
     }
 }

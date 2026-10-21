@@ -493,6 +493,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_reel_sound_button", FALSE);
 
     /**
+     * The line under a reel naming its sound, "Original audio" or a song, isn't drawn, and the other
+     * chips stay ({@link app.morphe.extension.facebook.reels.ReelDeclutter#filterChips}, #200). Off
+     * by default. A change shows from the next reel.
+     */
+    public static final BooleanSetting HIDE_REEL_AUDIO_LINE =
+            new BooleanSetting("hushfacebook_hide_reel_audio_line", FALSE);
+
+    /**
      * A video tapped in the feed opens in the full-screen player on its own, with no reels to swipe
      * to after it ({@link app.morphe.extension.facebook.reels.FeedVideoAlone}, #161). The player's
      * reels feed is told nothing more came. The Reels tab keeps scrolling. Off until it's turned on,

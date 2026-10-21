@@ -55,7 +55,9 @@ private const val PATCH = "Clean up Reels"
  * tenth, also off, leaves the Save button out of that sidebar (see ReelSaveButton.kt). An
  * eleventh, also off, opens a video tapped in the feed on its own, with no reels after it (see
  * FeedVideoAlone.kt). A twelfth, also off, leaves the speaker button out of the bottom of the
- * sidebar (see ReelSoundButton.kt). With Debug logging on, it also reports whether a reel that ends
+ * sidebar (see ReelSoundButton.kt). A thirteenth, also off, takes the line naming a reel's sound,
+ * "Original audio" or a song, out of the same chip list the first switch filters (#200). With Debug
+ * logging on, it also reports whether a reel that ends
  * is on the player the Reels auto-advance controller holds (see ReelBinding.kt), with no switch.
  *
  * Every anchor is a kept name or literal (see ReelAnchors.kt), and every one of them is required: a
@@ -71,7 +73,7 @@ val cleanUpReelsPatch = bytecodePatch(
     name = "Clean up Reels",
     description = "Hides clutter on reels, such as the Follow button, comment previews, Remix and Use template " +
         "buttons and Threads cards between reels, so more of the video shows, and can play each reel once " +
-        "instead of over and over, keep its original audio instead of a Meta AI dub, drop the search pills under the caption and over the comments, or hide the like, comment and share counts, the Save button or the speaker button. It can also open a video you tap in the feed on its own, with no reels after it. Starts off. Turn on the parts you want in Hushfacebook settings > Reels and Watch.",
+        "instead of over and over, keep its original audio instead of a Meta AI dub, drop the search pills under the caption and over the comments, or hide the like, comment and share counts, the Save button, the speaker button or the line naming the reel's sound. It can also open a video you tap in the feed on its own, with no reels after it. Starts off. Turn on the parts you want in Hushfacebook settings > Reels and Watch.",
 ) {
     category("Reels")
     dependsOn(settingsPatch)
@@ -115,7 +117,7 @@ private fun BytecodePatchContext.filterChips() {
     val builders = classDefByStrings(CHIP_ANCHOR, StringComparisonType.EQUALS)
         .flatMap { owner -> chipListBuilders(owner, tables).map { owner to it } }
     val (owner, builder) = builders.singleOrNull() ?: throw PatchException(
-        "$PATCH: expected one ImmutableList builder naming every hidden chip (${HIDDEN_CHIPS.joinToString()}), " +
+        "$PATCH: expected one ImmutableList builder naming every hidden chip (${(HIDDEN_CHIPS + SOUNDTRACK_CHIP).joinToString()}), " +
             "found ${builders.size}",
     )
     mutableClassDefBy(owner).methods.first { it.sameSignatureAs(builder) }.filterChipsBeforeEveryReturn()

@@ -1757,3 +1757,7 @@ Hides the For you searches Facebook suggests when you open search. Your recent s
 Don't save search history	No guardar el historial de búsqueda
 # context: summary of that switch; searches already in the history are the user's own past searches, which stay until the user deletes them
 What you search for isn't added to your Facebook search history. Searches already there stay until you delete them.	Lo que buscas no se añade a tu historial de búsqueda de Facebook. Las búsquedas que ya están ahí se quedan hasta que las borres.
+# context: switch title under Reels and Watch; the audio line is the scrolling line at the bottom of a reel naming its sound, like "Name · Original audio" or a song title
+Hide the audio line on reels	Ocultar la línea de audio en los reels
+# context: summary of that switch; "Original audio" is Facebook's own label, so use the wording Facebook shows in this language
+Takes the line with the reel's sound, "Original audio" or a song, off the bottom of reels. Other info stays. A change shows from the next reel.	Quita de la parte inferior de los reels la línea con el sonido del reel, «Audio original» o una canción. El resto de la información se queda. Un cambio se ve a partir del siguiente reel.

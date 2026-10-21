@@ -138,6 +138,10 @@ final class VideoPages {
             reels.addPreference(toggle(context, Settings.HIDE_REEL_SOUND_BUTTON,
                     L10n.t("Takes the speaker button off the bottom of the side of reels. "
                             + "A change shows from the next reel.")));
+            // The audio line is one of the chips, built as each reel's footer is.
+            reels.addPreference(toggle(context, Settings.HIDE_REEL_AUDIO_LINE,
+                    L10n.t("Takes the line with the reel's sound, \"Original audio\" or a song, off the bottom of "
+                            + "reels. Other info stays. A change shows from the next reel.")));
             // Asked as a feed video's player asks for more, so a change shows from the next feed video.
             reels.addPreference(toggle(context, Settings.FEED_VIDEOS_ALONE,
                     L10n.t("A video you tap in the feed opens full screen by itself, with no reels to swipe to after it. "

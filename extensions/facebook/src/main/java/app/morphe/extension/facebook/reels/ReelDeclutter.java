@@ -28,7 +28,10 @@ import app.morphe.extension.shared.settings.BaseSettings;
  *       builds the list of those it will draw. The patch hands that list here before each return,
  *       and {@link #filterChips} answers the chips to keep, or null to keep the list as it came.
  *       Each chip is a generated model that answers its GraphQL type with {@code getTypeName()},
- *       and only the types in {@link #HIDDEN_CHIPS} go. A type this doesn't know stays.
+ *       and only the types in {@link #HIDDEN_CHIPS} go. A type this doesn't know stays. The line
+ *       naming the reel's sound, "Original audio" or a song, is one of those chips, and it goes
+ *       under its own switch ({@link #SOUNDTRACK_CHIP}, #200). The footer draws nothing for a
+ *       list left empty.
  *   <li>The Follow button beside a reel's author is built only when Facebook's Follow check
  *       answers yes, and {@link #hideFollowButton} is asked first thing in that check. The author
  *       row asks it on every surface, the Reels tab included. So do the author rows of sponsored
@@ -73,6 +76,13 @@ public final class ReelDeclutter {
             "XFBFBShortsPartnerAppAttribution",
             "XFBFBShortsExternalLinkAttribution",
     };
+
+    /**
+     * The GraphQL type of the line naming a reel's sound, "Original audio" or a song, which the audio
+     * line switch hides on its own (#200). The chips switch leaves it, and the patch holds the builder
+     * to it as it does to the hidden chips.
+     */
+    static final String SOUNDTRACK_CHIP = "XFBFBShortsSoundtrackTitle";
 
     /** The diagnostic counter routes. */
     static final String CHIPS_ROUTE = "Reel chips";
@@ -137,7 +147,10 @@ public final class ReelDeclutter {
             if (!(chips instanceof List)) return null;
             List<?> list = (List<?>) chips;
             FeedFilterCounters.sawList(CHIPS_ROUTE, list.size());
-            if (list.isEmpty() || !Utils.settingsReady() || !Settings.HIDE_REEL_CHIPS.get()) return null;
+            if (list.isEmpty() || !Utils.settingsReady()) return null;
+            boolean hideChips = Settings.HIDE_REEL_CHIPS.get();
+            boolean audioLine = Settings.HIDE_REEL_AUDIO_LINE.get();
+            if (!hideChips && !audioLine) return null;
 
             List<Object> kept = new ArrayList<>(list.size());
             for (Object chip : list) {
@@ -146,7 +159,7 @@ public final class ReelDeclutter {
                 String type = FeedFilter.typeName(chip);
                 // The report names every chip type a reel carried, which is how a new one is found.
                 FeedFilterCounters.sawKind(CHIPS_ROUTE, type == null ? UNREADABLE : type);
-                if (isHiddenChip(type)) {
+                if ((hideChips && isHiddenChip(type)) || (audioLine && SOUNDTRACK_CHIP.equals(type))) {
                     FeedFilterCounters.removed(CHIPS_ROUTE, 1, type);
                     logOnce("chip " + type, () -> "Reel chips: hid " + type);
                     continue;
