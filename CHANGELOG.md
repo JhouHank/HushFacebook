@@ -6,7 +6,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
-* **Facebook:** Opening comments doesn't close Facebook any more. In 0.16.0, tapping a post's comment button, or the comments on a reel, crashed Facebook when `Comment sheet options` was patched in, even with every switch off or Hushfacebook paused. Phones and accounts that get Facebook's newer comment list hit it (issues #203, #204 and #208).
+* **Facebook:** Opening comments doesn't close Facebook any more. In 0.16.0, tapping a post's comment button, or the comments on a reel, crashed Facebook when `Comment sheet options` was patched in, even with every switch off or Hushfacebook paused. Phones and accounts that get Facebook's newer comment list hit it (issues #203, #204, #208 and #209).
 
 ## 0.16.0 (2026-10-21)
 
