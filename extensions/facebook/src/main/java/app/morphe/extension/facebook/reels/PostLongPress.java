@@ -259,14 +259,42 @@ public final class PostLongPress {
         return null;
     }
 
-    /** The deepest shown view at the screen point ([x], [y]) in [view], the last drawn first. */
+    /**
+     * The view at the screen point ([x], [y]) in [view] that the window gives the touch to: the last
+     * drawn first, passing over whatever takes no touches, as Android does. On the S22 an empty frame
+     * as big as the feed is drawn over it and takes nothing, so the deepest view there is never the
+     * post. With nothing there that takes a touch, the deepest view.
+     */
     @Nullable
     static View hit(View view, int x, int y) {
+        View taker = taker(view, x, y);
+        return taker != null ? taker : deepest(view, x, y);
+    }
+
+    /** The view at ([x], [y]) in [view] that takes the touch, or null when nothing there does. */
+    @Nullable
+    private static View taker(View view, int x, int y) {
         if (view.getVisibility() != View.VISIBLE || !contains(view, x, y)) return null;
         if (view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup) view;
             for (int i = group.getChildCount() - 1; i >= 0; i--) {
-                View found = hit(group.getChildAt(i), x, y);
+                View found = taker(group.getChildAt(i), x, y);
+                if (found != null) return found;
+            }
+        }
+        if (view.isClickable() || view.isLongClickable()) return view;
+        // A list or scroller takes a press anywhere in it to drag, so its own view under the finger counts.
+        return isNamed(view, LIST) || isScroller(view) ? deepest(view, x, y) : null;
+    }
+
+    /** The deepest shown view at ([x], [y]) in [view], the last drawn first. */
+    @Nullable
+    private static View deepest(View view, int x, int y) {
+        if (view.getVisibility() != View.VISIBLE || !contains(view, x, y)) return null;
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = group.getChildCount() - 1; i >= 0; i--) {
+                View found = deepest(group.getChildAt(i), x, y);
                 if (found != null) return found;
             }
         }

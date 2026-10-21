@@ -373,6 +373,29 @@ public class PostLongPressTest {
         assertSame("the same picture on its own is the photo", row, PostLongPress.rowAt(root, middleOf(wide)[0], middleOf(wide)[1]));
     }
 
+    /**
+     * On the S22 an empty frame as big as the feed is drawn over it. The window's touches go past a
+     * view that takes none, so a hold there is still the post's; a frame that takes touches keeps them.
+     */
+    @Test
+    public void anEmptyFrameDrawnOverTheFeedIsPassedOverLikeTheWindowDoes() {
+        FrameLayout cover = new FrameLayout(activity);
+        place(root, cover, 0, 100, 1080, 1953);
+        layOut();
+        int[] at = middleOf(name);
+        assertSame("the name line's row under the frame", row, PostLongPress.rowAt(root, at[0], at[1]));
+        assertSame("the photo under the frame", photo, PostLongPress.hit(root, middleOf(photo)[0], middleOf(photo)[1]));
+        send(event(MotionEvent.ACTION_DOWN, at));
+        holdLongEnough();
+        assertEquals(List.of("comment"), clicked);
+        assertEquals("the lift went on as a cancel", MotionEvent.ACTION_CANCEL,
+                send(event(MotionEvent.ACTION_UP, at)).getActionMasked());
+
+        cover.setClickable(true);
+        assertNull("a frame that takes touches", PostLongPress.rowAt(root, at[0], at[1]));
+        assertEquals(PostLongPress.NO_LIST, PostLongPress.passedOver);
+    }
+
     /** A window that lost focus before the time was up, to a call or a task switch, opens nothing. */
     @Test
     public void aWindowThatLostFocusMidPressOpensNothing() {
