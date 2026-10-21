@@ -238,6 +238,9 @@ public class ColdStartHooksTest {
         assertFalse(ReelDownload.showsButton());
         assertNull(ReelDeclutter.filterChips(Arrays.asList(new TypedFeedUnit("XFBFBShortsRemixAttribution"))));
         assertFalse("a Reels tab audio line drawn before the context came off", ReelDeclutter.hideAudioLine());
+        Object searchBar = new Object();
+        assertSame("a reel's search bar built before the context came off", searchBar,
+                ReelDeclutter.searchBarPart(searchBar));
         assertFalse(ReelDeclutter.hideFollowButton());
         assertFalse(ReelDeclutter.hideFollowingButton());
         assertFalse(ReelDeclutter.skipHotComment());

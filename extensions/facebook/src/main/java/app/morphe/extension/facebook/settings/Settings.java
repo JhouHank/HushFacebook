@@ -462,7 +462,9 @@ public class Settings extends BaseSettings {
      * query ({@link app.morphe.extension.facebook.reels.ReelDeclutter#hideSearchPill}, #173). The
      * component that draws it isn't built, and the comment sheet gets no prompt for the one over a
      * reel's comments ({@link app.morphe.extension.facebook.reels.ReelDeclutter#commentSearchPrompt},
-     * #197). Off until it's turned on, since the pill depends on a
+     * #197). The search bar and send button over a reel opened from a profile stay out of its header
+     * too ({@link app.morphe.extension.facebook.reels.ReelDeclutter#searchBarPart}, #201). Off until
+     * it's turned on, since the pill depends on a
      * server setting and nobody has seen it go on a signed-in Reels feed yet.
      */
     public static final BooleanSetting HIDE_REEL_SEARCH_PILL =

@@ -540,6 +540,8 @@ public class PausedHooksTest {
                 ReelDeclutter::hideSearchPill,
                 // So is the prompt over a reel's comments.
                 () -> ReelDeclutter.commentSearchPrompt(new Object()) == null,
+                // And the search bar over a reel opened from a profile.
+                () -> ReelDeclutter.searchBarPart(new Object()) == null,
                 // A sidebar button's count loses its number only while the patch runs.
                 () -> !"12".equals(ReelDeclutter.countText("12")),
                 // The sidebar's Save button is skipped only while the patch runs.

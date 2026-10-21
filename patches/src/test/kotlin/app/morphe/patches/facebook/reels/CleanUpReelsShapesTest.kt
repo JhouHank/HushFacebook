@@ -460,6 +460,58 @@ class CleanUpReelsShapesTest {
         assertThrows(PatchException::class.java) { noLocal.returnNullWhen(HIDE_AUDIO_LINE) }
     }
 
+    /** A reel header: p0 the row, p1 the search bar, p2 its send button, each wrapped and tagged when there is one. */
+    private fun header(add: String = "Lfixture/Row;->add(Lfixture/Component;)V", sendTag: String = SEARCH_BAR_SEND) = method(
+        "A00", listOf("Lfixture/Row;", "Lfixture/Component;", "Lfixture/Component;"), "Lfixture/Component;", 6, static = true, """
+            if-eqz p1, :add_bar
+            const-string v0, "$SEARCH_BAR"
+            invoke-static { p1, v0 }, Lfixture/Wrap;->tag(Lfixture/Component;Ljava/lang/String;)Lfixture/Component;
+            move-result-object p1
+            :add_bar
+            invoke-virtual { p0, p1 }, $add
+            if-eqz p2, :add_send
+            const-string v0, "$sendTag"
+            invoke-static { p2, v0 }, Lfixture/Wrap;->tag(Lfixture/Component;Ljava/lang/String;)Lfixture/Component;
+            move-result-object p2
+            :add_send
+            invoke-virtual { p0, p2 }, $add
+            invoke-virtual { p0 }, Lfixture/Row;->build()Lfixture/Component;
+            move-result-object v0
+            return-object v0
+        """,
+    )
+
+    /**
+     * The search bar over a reel opened from a profile and its send button (#201): the header is the
+     * builder holding both tags, each part's add is the first call after its tag that takes one
+     * component and returns nothing, and the hook takes that call's place, so the jump Facebook makes
+     * for a part it didn't wrap lands on the hook too, then the add follows with the answer.
+     */
+    @Test
+    fun `the search bar's parts go through the extension on their way into the header`() {
+        val row = header()
+        assertTrue(isSearchBarHeader(row))
+        assertTrue("a header without the send button's tag was taken", !isSearchBarHeader(header(sendTag = "fb_video_ghost_bar_sent")))
+        assertEquals(4, partAddAfter(row, SEARCH_BAR))
+        assertEquals(9, partAddAfter(row, SEARCH_BAR_SEND))
+        assertNull("an add answering something was taken", partAddAfter(header(add = "Lfixture/Row;->add(Lfixture/Component;)Lfixture/Row;"), SEARCH_BAR))
+        assertNull("an add taking something else was taken", partAddAfter(header(add = "Lfixture/Row;->add(Ljava/lang/Object;)V"), SEARCH_BAR))
+        assertNull("a literal the header doesn't hold found an add", partAddAfter(row, "fb_video_ghost_bar_sent"))
+
+        for (literal in listOf(SEARCH_BAR, SEARCH_BAR_SEND)) row.handPartFirst(partAddAfter(row, literal)!!)
+        val body = row.body()
+        assertEquals(19, body.size)
+        for ((hook, part) in listOf(4 to 4, 12 to 5)) {
+            assertEquals(SEARCH_BAR_PART, body[hook].call)
+            assertEquals(Opcode.MOVE_RESULT_OBJECT, body[hook + 1].opcode)
+            assertEquals("the answer goes back in the part's register", part, (body[hook + 1] as OneRegisterInstruction).registerA)
+            assertEquals(Opcode.CHECK_CAST, body[hook + 2].opcode)
+            assertEquals("Lfixture/Row;->add(Lfixture/Component;)V", body[hook + 3].call)
+        }
+        assertEquals("a bar Facebook didn't build skips to the hook", 4, row.target(0))
+        assertEquals("a button Facebook didn't build skips to the hook", 12, row.target(8))
+    }
+
     @Test
     fun `a footer runnable returns first when the extension says so`() {
         val run = method("run", emptyList(), "V", 2, static = false,

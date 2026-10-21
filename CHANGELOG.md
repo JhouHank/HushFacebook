@@ -23,6 +23,7 @@ Changes in each Hushfacebook version, newest first.
 ### Changed
 
 * **Facebook:** `Hide the search pill on reels` also takes the search suggestion off the top of a reel's comments. Comments start right at the top of the sheet, and the one under the caption stays hidden like before (#197).
+* **Facebook:** `Hide the search pill on reels` also takes the search bar off the top of reels you open from a profile, along with the paper plane button next to it that searches the suggested words. The back arrow stays (#201).
 * **Facebook:** `Keep the reel speed` and `Keep the video speed` remember the speed you picked after Facebook or the phone restarts, so the first reel or video you play starts at it. Pick normal speed and it's gone for good (#199).
 * **Facebook:** `Turn off screen transitions` also skips the zoom a photo opens and closes with. Tap a photo in the feed and it's full screen right away, and Back puts it away without shrinking it into the post. Dragging a photo away still follows your finger.
 * **Facebook:** `Turn off screen transitions` also skips the slides of screens Facebook opens inside the app, the ones that slide in from the side and back out to the right when you press Back. They just appear and go now.

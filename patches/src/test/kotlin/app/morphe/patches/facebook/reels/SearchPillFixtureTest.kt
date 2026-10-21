@@ -13,6 +13,8 @@ import app.morphe.patches.shared.compat.AppCompatibilities
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.OffsetInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
@@ -134,6 +136,84 @@ class SearchPillFixtureTest {
             }
         }
         assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    /** The indexes some branch in [code] lands on. */
+    private fun landings(code: List<Instruction>): Set<Int> {
+        var address = 0
+        val addresses = code.map { instruction -> address.also { address += instruction.codeUnits } }
+        return code.withIndex().filter { it.value is OffsetInstruction }
+            .map { addresses.indexOf(addresses[it.index] + (it.value as OffsetInstruction).codeOffset) }.toSet()
+    }
+
+    private val Instruction.call get() = ((this as ReferenceInstruction).reference as MethodReference).toString()
+
+    @Test
+    fun `each declared build's reel header hands its search bar and send button to the extension`() {
+        val versions = AppCompatibilities.facebook().single().targets.mapNotNull { it.version }.toSet()
+        val checked = mutableSetOf<String>()
+        for (version in versions) {
+            for (bundle in Fixtures.files { it.extension == "apkm" && it.name.contains("-$version-") }) {
+                val name = bundle.name
+                val headers = FixtureDex.methodsWhere(bundle, { true }, ::isSearchBarHeader)
+                    .filter { !it.definingClass.startsWith("L$EXTENSION_PACKAGE") }
+                assertEquals("$name: header builders holding $SEARCH_BAR and $SEARCH_BAR_SEND", 1, headers.size)
+                val header = headers.single()
+                val original = header.code()
+                val adds = listOf(SEARCH_BAR, SEARCH_BAR_SEND).map { literal ->
+                    partAddAfter(header, literal) ?: throw AssertionError("$name: nothing adds the part built after $literal")
+                }
+
+                // Positive controls: both parts go in through one call, which skips a null part first
+                // thing, and Facebook jumps straight to each add, so a hook put in front would be passed by.
+                val calls = adds.map { original[it].call }.toSet()
+                assertEquals("$name: the bar and the button go in through different calls", 1, calls.size)
+                val callee = (original[adds.first()] as ReferenceInstruction).reference as MethodReference
+                val row = FixtureDex.classes(bundle, setOf(callee.definingClass)).getValue(callee.definingClass)
+                val add = row.methods.single {
+                    it.name == callee.name && it.parameterTypes.map(CharSequence::toString) ==
+                        callee.parameterTypes.map(CharSequence::toString)
+                }
+                val first = add.code().first()
+                assertEquals("$name: the add doesn't test its part first", Opcode.IF_EQZ, first.opcode)
+                assertEquals("$name: the add's first test isn't of its part", add.implementation!!.registerCount - 1,
+                    (first as OneRegisterInstruction).registerA)
+                assertTrue("$name: no jump lands on the adds", adds.all { it in landings(original) })
+
+                val owner = FixtureDex.classes(bundle, setOf(header.definingClass)).getValue(header.definingClass)
+                val context = PatchContexts.of(listOf(owner))
+                context.hideSearchBar()
+                val patched = context.mutableClassDefBy(owner.type).methods.single {
+                    it.name == header.name && it.returnType == header.returnType &&
+                        it.parameterTypes.map(CharSequence::toString) == header.parameterTypes.map(CharSequence::toString)
+                }.code()
+                assertEquals("$name: three instructions added per part", original.size + 6, patched.size)
+                val hooks = adds.mapIndexed { n, at -> at + 3 * n }
+                for (hook in hooks) {
+                    assertEquals("$name: shape of the hook at $hook",
+                        listOf(Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT_OBJECT, Opcode.CHECK_CAST, Opcode.INVOKE_VIRTUAL),
+                        patched.subList(hook, hook + 4).map { it.opcode })
+                    assertEquals("$name: the extension is asked", SEARCH_BAR_PART, patched[hook].call)
+                    assertEquals("$name: and Facebook's add follows", calls.single(), patched[hook + 3].call)
+                }
+                assertTrue("$name: Facebook's jumps don't reach the hooks", hooks.all { it in landings(patched) })
+                val hookParts = hooks.flatMap { listOf(it, it + 1, it + 2) }.toSet()
+                assertEquals("$name: the rest is Facebook's", original.map { it.opcode },
+                    patched.filterIndexed { index, _ -> index !in hookParts }.map { it.opcode })
+                checked += version
+            }
+        }
+        assertEquals("a declared build has no fixture", versions, checked)
+    }
+
+    @Test
+    fun `the extension has the search bar hook`() {
+        val type = SEARCH_BAR_PART.substringBefore("->")
+        val hook = ExtensionDex.classDef(type).methods.singleOrNull { it.name == "searchBarPart" }
+        assertNotNull("the extension has no ReelDeclutter.searchBarPart", hook)
+        assertEquals("searchBarPart's shape", SEARCH_BAR_PART,
+            "${hook!!.definingClass}->${hook.name}(${hook.parameterTypes.joinToString("")})${hook.returnType}")
+        assertTrue("searchBarPart isn't static", AccessFlags.STATIC.isSet(hook.accessFlags))
     }
 
     @Test

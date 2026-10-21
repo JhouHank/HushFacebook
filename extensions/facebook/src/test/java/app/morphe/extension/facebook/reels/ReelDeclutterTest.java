@@ -359,6 +359,47 @@ public class ReelDeclutterTest {
     }
 
     /**
+     * And the search bar over a reel opened from a profile, with its send button (#201): each part
+     * comes back while off, paused and before the settings are ready, null while on, and a part
+     * Facebook didn't build stays missing and isn't counted.
+     */
+    @Test
+    public void theSearchBarGoesWithTheSearchPillSwitch() {
+        Object bar = new Object();
+        Object send = new Object();
+        assertSame(bar, ReelDeclutter.searchBarPart(bar));
+        Settings.HIDE_REEL_SEARCH_PILL.save(true);
+        assertNull(ReelDeclutter.searchBarPart(bar));
+        assertNull(ReelDeclutter.searchBarPart(send));
+        assertNull(ReelDeclutter.searchBarPart(null));
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        assertSame("the search bar went while paused", bar, ReelDeclutter.searchBarPart(bar));
+        PauseForTests.resume();
+        SettingsContextRule.withoutContext(() -> assertSame("the send button went before the settings were ready",
+                send, ReelDeclutter.searchBarPart(send)));
+        Settings.HIDE_REEL_SEARCH_PILL.save(false);
+        assertSame("the search bar didn't come back once the switch was off", bar, ReelDeclutter.searchBarPart(bar));
+        assertEquals(ReelDeclutter.SEARCH_ROUTE + ": 6 lists, 6 items, 2 removed. Last reason: "
+                        + ReelDeclutter.SEARCH_BAR + ". Removed: " + ReelDeclutter.SEARCH_BAR
+                        + " 2. Kinds: " + ReelDeclutter.SEARCH_BAR + " 6",
+                line(ReelDeclutter.SEARCH_ROUTE));
+    }
+
+    /** A search pill switch that can't be read keeps the search bar, and the report names the hook. */
+    @Test
+    public void aSearchBarSwitchThatCantBeReadKeepsTheBar() {
+        Object bar = new Object();
+        SettingReadsForTests.breakReads(Settings.HIDE_REEL_SEARCH_PILL);
+        try {
+            assertSame(bar, ReelDeclutter.searchBarPart(bar));
+        } finally {
+            SettingReadsForTests.mend(Settings.HIDE_REEL_SEARCH_PILL);
+        }
+        assertTrue(HookStatus.missing(FamilyNames.REEL_DECLUTTER).toString(), HookStatus.missing(FamilyNames.REEL_DECLUTTER)
+                .contains("a working '" + ReelDeclutter.SEARCH_BAR + "' hook (it threw " + NullPointerException.class.getName() + ")"));
+    }
+
+    /**
      * The sidebar counts (#180): the switch starts off, so every button keeps its text. On, a text
      * holding a number becomes one zero-width space, which keeps the text row and so the icons'
      * places, while a word, a missing text and an empty one stay as they came. Off again, the

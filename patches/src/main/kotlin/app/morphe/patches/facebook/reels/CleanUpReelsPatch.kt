@@ -51,7 +51,8 @@ private const val PATCH = "Clean up Reels"
  * sixth, also off, plays each reel once instead of starting it over at its end (see ReelLoop.kt,
  * whose hook is reelLoopPatch's). A seventh, also off, keeps reels and videos in the audio they
  * were made with instead of a Meta AI dub (see OriginalAudio.kt). An eighth, also off, takes the
- * search pill out from under a reel's caption and off the top of its comments (see SearchPill.kt). A ninth, also off, takes the
+ * search pill out from under a reel's caption and off the top of its comments, along with the search
+ * bar and send button over a reel opened from a profile (see SearchPill.kt). A ninth, also off, takes the
  * numbers away from under the sidebar's Like, Comment and Share icons (see ReelCounts.kt). A
  * tenth, also off, leaves the Save button out of that sidebar (see ReelSaveButton.kt). An
  * eleventh, also off, opens a video tapped in the feed on its own, with no reels after it (see
@@ -75,7 +76,7 @@ val cleanUpReelsPatch = bytecodePatch(
     name = "Clean up Reels",
     description = "Hides clutter on reels, such as the Follow button, comment previews, Remix and Use template " +
         "buttons and Threads cards between reels, so more of the video shows, and can play each reel once " +
-        "instead of over and over, keep its original audio instead of a Meta AI dub, drop the search pills under the caption and over the comments, or hide the like, comment and share counts, the Save button, the speaker button or the line naming the reel's sound. It can also open a video you tap in the feed on its own, with no reels after it. Starts off. Turn on the parts you want in Hushfacebook settings > Reels and Watch.",
+        "instead of over and over, keep its original audio instead of a Meta AI dub, drop the search suggestions under the caption, over the comments and at the top of a profile's reels, or hide the like, comment and share counts, the Save button, the speaker button or the line naming the reel's sound. It can also open a video you tap in the feed on its own, with no reels after it. Starts off. Turn on the parts you want in Hushfacebook settings > Reels and Watch.",
 ) {
     category("Reels")
     dependsOn(settingsPatch)
@@ -96,6 +97,8 @@ val cleanUpReelsPatch = bytecodePatch(
         hideSearchPill()
         // #197: the same switch, for the search pill over a reel's comments.
         hideCommentSearchPill()
+        // #201: and for the search bar and its send button over a reel opened from a profile.
+        hideSearchBar()
         // #180: the numbers under the sidebar's Like, Comment and Share icons.
         hideReelCounts()
         // #190: the sidebar's Save button, skipped as its icon type comes up.

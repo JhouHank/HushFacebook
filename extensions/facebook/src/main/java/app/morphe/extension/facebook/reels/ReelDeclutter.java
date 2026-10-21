@@ -94,6 +94,8 @@ public final class ReelDeclutter {
     static final String SEARCH_ROUTE = "Reel search pill";
     static final String SEARCH_PILL = "search pill";
     static final String COMMENT_SEARCH_PILL = "comment search pill";
+    /** The search bar over a reel opened from a profile, and its send button, each counted as it's handed in. */
+    static final String SEARCH_BAR = "search bar";
 
     /** Counted under its own name each time the Reels tab's audio line isn't drawn. */
     static final String AUDIO_ROUTE = "Reel audio line";
@@ -328,6 +330,31 @@ public final class ReelDeclutter {
             HookStatus.threw(FamilyNames.REEL_DECLUTTER, COMMENT_SEARCH_PILL, failure);
             Logger.printException(() -> "Reel search pill: could not read its switch for the comments", failure);
             return prompt;
+        }
+    }
+
+    /**
+     * Injection point, in place of the call that puts the search bar, or the send button beside it,
+     * into the header over a reel opened from a profile (#201). Null while the search pill switch is
+     * on, which that call skips, as it does a part Facebook didn't build. Never throws: off, paused,
+     * before the settings are ready or on a failure the part comes back as it was handed in.
+     *
+     * @param part Facebook's component for the bar or the button, or null when it built none.
+     */
+    public static Object searchBarPart(Object part) {
+        if (part == null) return null;
+        try {
+            HookStatus.invoked(FamilyNames.REEL_DECLUTTER);
+            FeedFilterCounters.sawList(SEARCH_ROUTE, 1);
+            FeedFilterCounters.sawKind(SEARCH_ROUTE, SEARCH_BAR);
+            if (!Utils.settingsReady() || !Settings.HIDE_REEL_SEARCH_PILL.get()) return part;
+            FeedFilterCounters.removed(SEARCH_ROUTE, 1, SEARCH_BAR);
+            logOnce(SEARCH_BAR, () -> "Reel search pill: no search bar over the reel");
+            return null;
+        } catch (Throwable failure) {
+            HookStatus.threw(FamilyNames.REEL_DECLUTTER, SEARCH_BAR, failure);
+            Logger.printException(() -> "Reel search pill: could not read its switch for the search bar", failure);
+            return part;
         }
     }
 

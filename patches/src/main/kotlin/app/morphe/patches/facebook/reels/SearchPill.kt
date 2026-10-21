@@ -8,6 +8,7 @@ import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
+import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
@@ -19,10 +20,12 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 
 /*
@@ -49,6 +52,17 @@ import com.android.tools.smali.dexlib2.iface.reference.TypeReference
  *   prompt isn't null (and only for the two reels surfaces, FB_SHORTS_VIEWER and
  *   FB_SHORTS_PROFILE_VIDEO_CHAINING). A null prompt is Facebook's own path past the whole row, and
  *   the register isn't read again after it, so the hook answers the prompt or null right there.
+ *
+ * And the search bar over a reel opened from a profile, with the send button that runs its
+ * suggested query (#201). Read from 583, 2026-10-21, arm64:
+ *
+ * - One static builder makes that header row (arm64 LX/UXK;->A00): the back button, then the bar
+ *   (LX/U1g;), then the send button (LX/ALf;). It's the only method holding the fb_video_ghost_bar
+ *   and fb_video_ghost_bar_send literals, the view tags of the logging wrapper each part may get.
+ * - Each part goes into the row through the first virtual call after its literal (arm64
+ *   LX/32h;->A3b), which takes one component and skips a null one: Facebook's own answer for a part
+ *   it didn't build. A missing query and a failed wrapper jump straight to that call, so the hook
+ *   takes the call's place, keeping those jumps, and the call follows with the extension's answer.
  */
 
 internal const val ELEVATED_CTA = "FbShortsSearchElevatedCTAComponent"
@@ -58,6 +72,10 @@ internal const val COMMENT_PIVOT = "fb_video_comment_search_pivot"
 internal const val SEARCH_PROMPT_PARAM = "Lcom/facebook/ufiservices/flyout/params/SearchPromptParam;"
 internal const val COMMENT_SEARCH_PROMPT =
     "$EXTENSION_PACKAGE/reels/ReelDeclutter;->commentSearchPrompt(Ljava/lang/Object;)Ljava/lang/Object;"
+internal const val SEARCH_BAR = "fb_video_ghost_bar"
+internal const val SEARCH_BAR_SEND = "fb_video_ghost_bar_send"
+internal const val SEARCH_BAR_PART =
+    "$EXTENSION_PACKAGE/reels/ReelDeclutter;->searchBarPart(Ljava/lang/Object;)Ljava/lang/Object;"
 
 private const val PATCH = "Clean up Reels"
 
@@ -186,4 +204,66 @@ internal fun BytecodePatchContext.hideCommentSearchPill() {
             check-cast v$register, $SEARCH_PROMPT_PARAM
         """,
     )
+}
+
+/** Whether [method] is the static builder of a reel's header with the search bar: it holds both of the bar's view tags. */
+internal fun isSearchBarHeader(method: Method): Boolean =
+    AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType.startsWith("L") &&
+        holdsString(method, SEARCH_BAR) && holdsString(method, SEARCH_BAR_SEND)
+
+/**
+ * The index of the call that puts the part [header] builds after [literal] into its row: the first
+ * invoke-virtual past the literal, which has to take one argument of the header's own return type
+ * and return nothing. Null when there's no such call.
+ */
+internal fun partAddAfter(header: Method, literal: String): Int? {
+    val code = header.implementation?.instructions?.toList() ?: return null
+    val named = code.indexOfFirst { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == literal }
+    if (named < 0) return null
+    val index = (named + 1 until code.size).firstOrNull { code[it].opcode == Opcode.INVOKE_VIRTUAL } ?: return null
+    val call = (code[index] as ReferenceInstruction).reference as MethodReference
+    val takesAPart = call.returnType == "V" && call.parameterTypes.map(CharSequence::toString) == listOf(header.returnType)
+    return index.takeIf { takesAPart }
+}
+
+/**
+ * Has the call at [index] hand its part to the extension and add what comes back. The hook takes the
+ * call's own place, so the jumps Facebook aims at the call reach the hook, and the call follows it.
+ */
+internal fun MutableMethod.handPartFirst(index: Int) {
+    val add = getInstruction<FiveRegisterInstruction>(index)
+    val call = (add as ReferenceInstruction).reference as MethodReference
+    val (row, part) = add.registerC to add.registerD
+    replaceInstruction(index, "invoke-static { v$part }, $SEARCH_BAR_PART")
+    addInstructions(
+        index + 1,
+        """
+            move-result-object v$part
+            check-cast v$part, ${call.parameterTypes.single()}
+            invoke-virtual { v$row, v$part }, $call
+        """,
+    )
+}
+
+/**
+ * Finds the header builder by the bar's two view tags, then the call that adds each part, and has
+ * each part go through the extension on its way in. Refuses unless each step finds exactly one.
+ */
+internal fun BytecodePatchContext.hideSearchBar() {
+    val headers = classDefByStrings(SEARCH_BAR_SEND, StringComparisonType.EQUALS)
+        .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
+        .flatMap { classDef -> classDef.methods.filter(::isSearchBarHeader) }
+    val header = headers.singleOrNull() ?: throw PatchException(
+        "$PATCH: expected one header builder holding $SEARCH_BAR and $SEARCH_BAR_SEND, found ${headers.size}",
+    )
+    val method = mutableClassDefBy(header.definingClass).methods.single {
+        it.name == header.name && it.returnType == header.returnType &&
+            it.parameterTypes.map(CharSequence::toString) == header.parameterTypes.map(CharSequence::toString)
+    }
+    for (literal in listOf(SEARCH_BAR, SEARCH_BAR_SEND)) {
+        val index = partAddAfter(method, literal) ?: throw PatchException(
+            "$PATCH: the header builder adds nothing it built after $literal with one component call",
+        )
+        method.handPartFirst(index)
+    }
 }
