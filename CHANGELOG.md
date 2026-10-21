@@ -6,12 +6,17 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
-* **Facebook:** Opening comments doesn't close Facebook any more. In 0.16.0, tapping a post's comment button, or the comments on a reel, crashed Facebook when `Comment sheet options` was patched in, even with every switch off or Hushfacebook paused. Phones and accounts that get Facebook's newer comment list hit it, opening a post from a notification included (issues #203, #204, #208, #209 and #210).
-* **Facebook:** Instant games download with Facebook's own downloader now. When Google Play had installed Facebook, Facebook could hand the game download to Play, which can't serve a patched build, so the game's loading screen closed right away. With Debug logging on, the report's module download line says when Play was skipped (issue #168).
+* **Facebook:** Opening comments doesn't close Facebook any more. In 0.16.0, tapping a post's comment button, or the comments on a reel, crashed Facebook when `Comment sheet options` was patched in, even with every switch off or Hushfacebook paused. Phones and accounts that get Facebook's newer comment list hit it, opening a post from a notification included (issues #203, #204, #208, #209 and #210). Android's own check of the patched app passes on a phone now, where 0.16.0 failed it. The phone I check on gets Facebook's older comment list, so it never crashed either way.
+* **Facebook:** Instant games download with Facebook's own downloader now. When Google Play had installed Facebook, Facebook could hand the game download to Play, which can't serve a patched build, so the game's loading screen closed right away. With Debug logging on, the report's module download line says when Play was skipped (issue #168). Checked in tests, not yet on a phone, since mine already had its games downloaded.
 
 ### Changed
 
 * **Tooling:** The patch check that runs before a release now catches the mistake behind 0.16.0's comment crash without a phone. A hook that hands back the extension's answer without casting it to the type Facebook's method returns gets refused, naming the method. Run against the published 0.16.0 build, it flags exactly the comment method that crashed.
+
+### Reported issues
+
+* **Facebook:** #203, #204, #208, #209 and #210 Facebook closing when comments open, a post from a notification included: fixed, with nothing to turn on or leave out.
+* **Facebook:** #168 Instant games closing on their loading screen: games download through Facebook itself now. Please say on the issue whether yours opens.
 
 ## 0.16.0 (2026-10-21)
 
