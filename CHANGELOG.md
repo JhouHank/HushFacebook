@@ -9,6 +9,10 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** Opening comments doesn't close Facebook any more. In 0.16.0, tapping a post's comment button, or the comments on a reel, crashed Facebook when `Comment sheet options` was patched in, even with every switch off or Hushfacebook paused. Phones and accounts that get Facebook's newer comment list hit it (issues #203, #204, #208 and #209).
 * **Facebook:** Instant games download with Facebook's own downloader now. When Google Play had installed Facebook, Facebook could hand the game download to Play, which can't serve a patched build, so the game's loading screen closed right away. With Debug logging on, the report's module download line says when Play was skipped (issue #168).
 
+### Changed
+
+* **Tooling:** The patch check that runs before a release now catches the mistake behind 0.16.0's comment crash without a phone. A hook that hands back the extension's answer without casting it to the type Facebook's method returns gets refused, naming the method. Run against the published 0.16.0 build, it flags exactly the comment method that crashed.
+
 ## 0.16.0 (2026-10-21)
 
 * **Facebook:** This release is mostly your requests again. You can keep your searches out of Facebook's history, hide posts from groups you haven't joined, take the For you list off search and hide the Find friends card where your friends' posts run out. Reels get switches for the audio line, Save and the speaker button, and a long press on a feed post can open its comments. Kept reel speeds now last through a restart, Black cards make the AMOLED theme fully black, and a Free stuff shortcut opens Marketplace's free listings. On the fix side, Hide Menu promotions reaches the side Menu, Default comment order works on a post's own page and the logo long press works in Arabic.
