@@ -2,6 +2,12 @@
 
 Changes in each Hushfacebook version, newest first.
 
+## Unreleased
+
+### Fixed
+
+* **Facebook:** Opening comments doesn't close Facebook any more. In 0.16.0, tapping a post's comment button, or the comments on a reel, crashed Facebook when `Comment sheet options` was patched in, even with every switch off or Hushfacebook paused. Phones and accounts that get Facebook's newer comment list hit it (issues #203, #204 and #208).
+
 ## 0.16.0 (2026-10-21)
 
 * **Facebook:** This release is mostly your requests again. You can keep your searches out of Facebook's history, hide posts from groups you haven't joined, take the For you list off search and hide the Find friends card where your friends' posts run out. Reels get switches for the audio line, Save and the speaker button, and a long press on a feed post can open its comments. Kept reel speeds now last through a restart, Black cards make the AMOLED theme fully black, and a Free stuff shortcut opens Marketplace's free listings. On the fix side, Hide Menu promotions reaches the side Menu, Default comment order works on a post's own page and the logo long press works in Arabic.
