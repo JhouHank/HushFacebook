@@ -45,6 +45,7 @@ import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.settings.BooleanSetting;
 import app.morphe.extension.shared.settings.HushfacebookPause;
 import app.morphe.extension.shared.settings.preference.ReopenSettingsAfterRestart;
+import app.morphe.extension.facebook.ads.AudienceNetwork;
 import app.morphe.extension.facebook.download.ClipboardLink;
 import app.morphe.extension.facebook.download.SaveLeftovers;
 import app.morphe.extension.facebook.download.SavedFileActions;
@@ -126,7 +127,8 @@ public final class SettingsEntry {
      * check, when it's on, asks at most once a day, on a worker, and where what a save cut short
      * by Android left behind is removed, on a worker too. Every process starts private push
      * observations. Other processes also start Lock Facebook's watch ({@link AppLock#watch}). The
-     * report's network count starts here too ({@link NetworkUsage}). A start that the settings
+     * report's network count starts here too ({@link NetworkUsage}), and any Audience Network
+     * component that's on goes back off ({@link AudienceNetwork#keepOff}). A start that the settings
      * screen's restart row asked for opens the screen again, on the page it was on.
      */
     public static void onApplicationCreate(Context context) {
@@ -164,6 +166,8 @@ public final class SettingsEntry {
             }
             // Open feed videos on their own, a Clean up Reels switch: which screen is in front.
             if (SettingsStatus.reelDeclutter()) FeedVideoAlone.watch(context);
+            // An Audience Network component an earlier install turned on goes back off (#168).
+            if (SettingsStatus.audienceNetwork()) AudienceNetwork.keepOff(context);
             // Last, so nothing above waits on it. The open itself waits for the first screen to resume.
             ReopenSettingsAfterRestart.reopenIfPending(SettingsEntry::reopenOn);
         } catch (Throwable ex) {
