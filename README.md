@@ -22,7 +22,7 @@ Each row in the [patch table](#patches) says how its switch starts. The ad filte
 
 This project has no connection to Meta or to the Morphe project. Neither endorses it, and neither wrote it.
 
-The latest release is [v0.15.0](https://github.com/SysAdminDoc/Hushfacebook/releases/tag/v0.15.0), with 93 patches. It includes all changes since v0.14.0, among them feed videos that open on their own, comments at full height or from a double tap, switches that hide the status bar, the Messenger button and the counts under posts and reels, settings in Simplified Chinese and a working Tap the bar to seek on 583, as the [changelog](CHANGELOG.md) describes.
+The latest release is [v0.16.0](https://github.com/SysAdminDoc/Hushfacebook/releases/tag/v0.16.0), with 94 patches. It includes all changes since v0.15.0, among them a switch that keeps searches out of Facebook's history, hiding posts from groups you're not in and the Find friends card, new reel switches for the audio line, Save and the speaker button, a long press that opens a feed post's comments, reel speeds that last through a restart and Black cards for the AMOLED theme, as the [changelog](CHANGELOG.md) describes.
 
 [Add to Morphe](https://morphe.software/add-source?github=SysAdminDoc%2FHushfacebook) | [Download a release](https://github.com/SysAdminDoc/Hushfacebook/releases/latest) | [Browse the patches](#patches)
 
