@@ -396,6 +396,7 @@ public class ColdStartHooksTest {
         assertFalse("a call push before the context was left to Messenger", MessengerHandoffForTests.dropsACallPush());
         assertFalse("a ring before the context was left to Messenger", MessengerHandoffForTests.dropsARing());
         assertFalse("a message before the context was left to Messenger", MessengerHandoffForTests.dropsAMessage());
+        assertFalse("a chat push before the context was left to Messenger", MessengerHandoffForTests.dropsAChatPush());
         assertTrue("a player start before the context was held",
                 TapToPlay.allowStart(new Object(), TapToPlayForTests.Trigger.BY_AUTOPLAY));
         assertTrue("an older player start before the context was held",

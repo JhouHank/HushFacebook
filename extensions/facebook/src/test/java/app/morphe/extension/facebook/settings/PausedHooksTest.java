@@ -776,12 +776,14 @@ public class PausedHooksTest {
                 () -> ChatList.metaAiButton(new Object()) == null,
                 () -> !ChatList.showsSearchMetaAiButton(true)));
         // With Messenger installed, a tap on the top bar's Messenger icon opens Messenger instead of
-        // Chats, and an incoming call's push, its ring and a new message are left to Messenger.
+        // Chats, and an incoming call's push, its ring and a new message, handed to the notifiers or
+        // posted as a push, are left to Messenger.
         probes.put(PatchFamily.MESSENGER_ICON, Arrays.asList(
                 MessengerIconForTests::opensMessenger,
                 MessengerHandoffForTests::dropsACallPush,
                 MessengerHandoffForTests::dropsARing,
-                MessengerHandoffForTests::dropsAMessage));
+                MessengerHandoffForTests::dropsAMessage,
+                MessengerHandoffForTests::dropsAChatPush));
         // The Menu's Upgrades and Also from Meta groups build nothing, in the section Facebook
         // draws and in the one carrying what the server sends, and the side panel gets Facebook's own
         // Menu instead of the Bloks one.
