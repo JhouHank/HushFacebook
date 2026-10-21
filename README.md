@@ -278,7 +278,7 @@ A few rows hand a link to another app instead of going online themselves. **Send
 | Minimum Android version | Android 11 |
 | Download | [APKMirror](https://www.apkmirror.com/apk/facebook-2/facebook/) |
 
-There are 93 patches for `com.facebook.katana`, and a release only goes out once every one of them has applied to both builds. Older Facebook versions like 582 and 581 aren't supported any more, so update Facebook before you patch. When a newer stable Facebook comes out, Hushfacebook moves to it and drops the one before. Meta's builds for Android 9 and 8 can't be patched at all, since their code sits in a compressed archive the patcher can't read.
+There are 94 patches for `com.facebook.katana`, and a release only goes out once every one of them has applied to both builds. Older Facebook versions like 582 and 581 aren't supported any more, so update Facebook before you patch. When a newer stable Facebook comes out, Hushfacebook moves to it and drops the one before. Meta's builds for Android 9 and 8 can't be patched at all, since their code sits in a compressed archive the patcher can't read.
 
 SHA-256 of the two .apkm files the release checks ran against:
 
