@@ -2,7 +2,9 @@
 
 Changes in each Hushfacebook version, newest first.
 
-## Unreleased
+## 0.16.1 (2026-10-21)
+
+* **Facebook:** A quick fix for 0.16.0, which closed Facebook whenever comments opened on a lot of phones, posts opened from a notification included. Comments open normally again with `Comment sheet options` patched in, so there's no need to leave it out anymore. Instant games also download through Facebook itself now, since Google Play can't deliver them to a patched Facebook.
 
 ### Fixed
 
