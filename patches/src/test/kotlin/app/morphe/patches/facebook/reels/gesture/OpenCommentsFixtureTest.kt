@@ -14,6 +14,7 @@ import app.morphe.patches.facebook.media.taptoplay.touchDispatches
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
+import app.morphe.patches.facebook.misc.extension.requireThisIntact
 import app.morphe.patches.facebook.reels.doubletap.GESTURE_REACTION
 import app.morphe.patches.facebook.reels.doubletap.HEART_RISE
 import app.morphe.patches.facebook.reels.doubletap.MUTATE_LIKE
@@ -32,6 +33,7 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
@@ -173,8 +175,16 @@ class OpenCommentsFixtureTest {
                 val builds = found.feedbackParams.methods.filter { it.name == "<init>" }
                 assertEquals("$name: FeedbackParams' constructors", 2, builds.size)
                 val build = builds.single { it.parameterTypes.map(CharSequence::toString) != listOf(PARCEL) }
-                assertTrue("$name: the builder constructor needs 1 to 14 locals", build.localRegisterCount() in 1..14)
-                assertTrue("$name: the builder constructor returns", build.code().any { it.opcode == Opcode.RETURN_VOID })
+                val store = keyboardStore(build, keyboard)
+                assertNotNull("$name: the builder constructor doesn't store ${keyboard.name} once from a register it drops", store)
+                assertTrue("$name: the store isn't on the object the constructor made",
+                    (build.code()[store!!] as TwoRegisterInstruction).registerB == build.localRegisterCount())
+                // The control: the constructor reuses the object's register before it returns, so a hook
+                // reading the flag back at a return verifies on no device, and the guard says so.
+                val returnAt = build.code().withIndex().filter { it.value.opcode == Opcode.RETURN_VOID }.map { it.index }
+                assertTrue("$name: the builder constructor never returns", returnAt.isNotEmpty())
+                assertTrue("$name: the builder constructor keeps its object to the end, so the control proves nothing",
+                    runCatching { build.requireThisIntact("control", returnAt) }.isFailure)
                 checked += version
             }
         }
@@ -206,6 +216,7 @@ class OpenCommentsFixtureTest {
                 val constructorBefore = anchors.constructor.code()
                 val dispatchBefore = anchors.dispatch.code()
                 val paramsBefore = anchors.params.code()
+                val storeBefore = keyboardStore(anchors.params, anchors.keyboard)!!
                 context.applyGestureAnchors(anchors)
 
                 fun patched(method: Method): Method =
@@ -262,22 +273,23 @@ class OpenCommentsFixtureTest {
                 assertEquals("$name: the rest of the dispatch is Facebook's", dispatchBefore.map { it.opcode },
                     touch.drop(1).map { it.opcode })
 
-                // The sheet's parameters: the keyboard flag read from the object, asked about and written back before every return.
-                val build = patched(anchors.params)
-                val params = build.code()
-                val paramReturns = paramsBefore.count { it.opcode == Opcode.RETURN_VOID }
-                assertEquals("$name: keyboard hooks", paramReturns, params.count { it.call.toString() == KEYBOARD })
-                assertEquals("$name: keyboard instructions added", paramsBefore.size + 4 * paramReturns, params.size)
-                val self = build.implementation!!.registerCount - 2
-                params.withIndex().filter { it.value.opcode == Opcode.RETURN_VOID }.forEach { (index, _) ->
-                    assertEquals("$name: shape of the keyboard hook",
-                        listOf(Opcode.IGET_BOOLEAN, Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IPUT_BOOLEAN),
-                        params.subList(index - 4, index).map { it.opcode })
-                    assertEquals("$name: the flag read", anchors.keyboard.toString(), params[index - 4].field.toString())
-                    assertEquals("$name: the flag written", anchors.keyboard.toString(), params[index - 1].field.toString())
-                    assertEquals("$name: read from the object", self, (params[index - 4] as TwoRegisterInstruction).registerB)
-                    assertEquals("$name: written to the object", self, (params[index - 1] as TwoRegisterInstruction).registerB)
-                }
+                // The sheet's parameters: the value the constructor stores in the keyboard flag, asked about
+                // right before the store, in the store's own register and no other.
+                val params = patched(anchors.params).code()
+                assertEquals("$name: keyboard hooks", 1, params.count { it.call.toString() == KEYBOARD })
+                assertEquals("$name: keyboard instructions added", paramsBefore.size + 2, params.size)
+                val hook = params.indexOfFirst { it.call.toString() == KEYBOARD }
+                assertEquals("$name: the hook sits where the store was", storeBefore, hook)
+                assertEquals("$name: shape of the keyboard hook", listOf(Opcode.INVOKE_STATIC, Opcode.MOVE_RESULT, Opcode.IPUT_BOOLEAN),
+                    params.subList(hook, hook + 3).map { it.opcode })
+                val value = (paramsBefore[storeBefore] as TwoRegisterInstruction).registerA
+                val ask = params[hook] as FiveRegisterInstruction
+                assertEquals("$name: the hook asks about the stored value alone", listOf(1, value), listOf(ask.registerCount, ask.registerC))
+                assertEquals("$name: the answer goes where the store reads", value, (params[hook + 1] as OneRegisterInstruction).registerA)
+                assertEquals("$name: the store is Facebook's", listOf(anchors.keyboard.toString(), value),
+                    listOf(params[hook + 2].field.toString(), (params[hook + 2] as TwoRegisterInstruction).registerA))
+                assertEquals("$name: the rest of the constructor is Facebook's", paramsBefore.map { it.opcode },
+                    (params.take(hook) + params.drop(hook + 2)).map { it.opcode })
 
                 // The stub in the extension presses the button's click handler.
                 val stub = context.mutableClassDefBy(REEL_GESTURES).methods.single { it.name == OPEN_STUB }.code()

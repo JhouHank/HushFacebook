@@ -40,8 +40,11 @@ import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
  *   (arm64 and armv7 A0u), which the sheet reads in FeedbackFragment.maybeShowKeyboardOnFirstLoad to
  *   focus the comment box with the keyboard up. Every reader reads the instance the builder made, and
  *   the Parcel constructor copies what writeToParcel wrote, so the one hook is the other constructor
- *   (it takes the builder, 5 registers in both builds): at each return the extension may set it to
- *   false, for the sheet a feed hold opened.
+ *   (it takes the builder, 5 registers in both builds): just before its one store of the flag the
+ *   extension may turn the value to false, for the sheet a feed hold opened. Not at its returns: by
+ *   then it has reused the object's register (v3) for a long, and reading the flag from there failed
+ *   verification on the S22, so every comment sheet crashed. The store's value register (v0) is
+ *   written again by the next instruction in both builds.
  *
  * What isn't covered: a feed post's double tap (every part of a post already reacts to a single tap,
  * so a second tap can't be waited for without delaying it), a reel whose Comment button object

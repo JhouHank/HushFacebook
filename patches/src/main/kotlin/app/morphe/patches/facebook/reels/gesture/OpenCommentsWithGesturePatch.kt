@@ -17,7 +17,9 @@ import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.parameterRegister
 import app.morphe.patches.facebook.misc.extension.requireLocals
+import app.morphe.patches.facebook.misc.extension.requireParameterIntact
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
+import app.morphe.patches.facebook.misc.extension.requireThisIntact
 import app.morphe.patches.facebook.media.taptoplay.FRAGMENT_ACTIVITY
 import app.morphe.patches.facebook.media.taptoplay.touchDispatches
 import app.morphe.patches.facebook.misc.settings.settingsPatch
@@ -35,12 +37,14 @@ import app.morphe.patches.facebook.reels.hold.isLongPressHandler
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.findMutableMethodOf
+import app.morphe.util.readsAfter
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 
@@ -124,12 +128,15 @@ internal fun BytecodePatchContext.findGestureAnchors(): GestureAnchors {
     val items = constructor.parameterTypes.withIndex().filter { it.value.toString() == itemType }
     val itemParameter = items.singleOrNull()?.index
         ?: refuse("expected ${button.type}'s constructor to take the reel ($itemType) once, found ${items.size}")
-    val returns = constructor.implementation!!.instructions.count { it.opcode == Opcode.RETURN_VOID }
-    if (returns == 0) refuse("${button.type}'s constructor never returns")
+    val returns = constructor.implementation!!.instructions.withIndex().filter { it.value.opcode == Opcode.RETURN_VOID }.map { it.index }
+    if (returns.isEmpty()) refuse("${button.type}'s constructor never returns")
     // The hook reads the object ({@code p0}) in a 4-bit register next to the scratch v0, which needs 1 local.
     if (constructor.localRegisterCount() !in 1..14) {
         refuse("${button.type}'s constructor has ${constructor.localRegisterCount()} local register(s), needs 1 to 14")
     }
+    // Facebook's constructors reuse a register once they're done with what it held, the object's included.
+    constructor.requireThisIntact(GESTURE_PATCH, returns)
+    constructor.requireParameterIntact(GESTURE_PATCH, itemParameter, returns)
 
     val components = classDefByStrings(GESTURE_REACTION, StringComparisonType.EQUALS).filter(::isGestureReactionComponent)
     val component = components.singleOrNull()
@@ -161,11 +168,8 @@ internal fun BytecodePatchContext.findGestureAnchors(): GestureAnchors {
     val builds = feedbackParams.methods.filter { it.name == "<init>" && it.parameterTypes.map(CharSequence::toString) != listOf(PARCEL) }
     val params = builds.singleOrNull()
         ?: refuse("expected $FEEDBACK_PARAMS to have one constructor besides the Parcel one, found ${builds.size}")
-    if (params.implementation!!.instructions.none { it.opcode == Opcode.RETURN_VOID }) refuse("$FEEDBACK_PARAMS's constructor never returns")
-    // The hook reads and writes the object ({@code p0}) in a 4-bit register next to the scratch v0, which needs 1 local.
-    if (params.localRegisterCount() !in 1..14) {
-        refuse("$FEEDBACK_PARAMS's constructor has ${params.localRegisterCount()} local register(s), needs 1 to 14")
-    }
+    keyboardStore(params, keyboard)
+        ?: refuse("expected $FEEDBACK_PARAMS's constructor to store ${keyboard.name} once, from a register nothing reads after the store")
     return GestureAnchors(button, click, constructor, itemParameter, doubleTapLike, heart, handlers, dispatch, params, keyboard)
 }
 
@@ -247,23 +251,36 @@ internal fun BytecodePatchContext.applyGestureAnchors(anchors: GestureAnchors) {
     mutableClassDefBy(FRAGMENT_ACTIVITY).findMutableMethodOf(anchors.dispatch)
         .addInstruction(0, "invoke-static/range { p0 .. p1 }, $FEED_PRESS")
 
-    // Whether each comment sheet raises the keyboard when it first loads, at every return of the
-    // constructor that builds its parameters: the sheet a feed hold opened keeps it down.
-    val keyboard = anchors.keyboard
-    val flag = "${keyboard.definingClass}->${keyboard.name}:${keyboard.type}"
+    // Whether each comment sheet raises the keyboard when it first loads, as the constructor that builds
+    // its parameters stores it: the sheet a feed hold opened keeps it down. Only the register the store
+    // reads changes; the constructor reuses the object's register before it returns.
     val params = mutableClassDefBy(FEEDBACK_PARAMS).findMutableMethodOf(anchors.params)
-    params.implementation!!.instructions.withIndex().filter { it.value.opcode == Opcode.RETURN_VOID }.map { it.index }
-        .asReversed().forEach { index ->
-            params.addInstructionsAtControlFlowLabel(
-                index,
-                """
-                    iget-boolean v0, p0, $flag
-                    invoke-static { v0 }, $KEYBOARD
-                    move-result v0
-                    iput-boolean v0, p0, $flag
-                """,
-            )
-        }
+    val store = keyboardStore(params, anchors.keyboard)
+        ?: refuse("$FEEDBACK_PARAMS's constructor no longer stores ${anchors.keyboard.name} once from a register it drops")
+    val value = (params.implementation!!.instructions[store] as TwoRegisterInstruction).registerA
+    params.addInstructionsAtControlFlowLabel(
+        store,
+        """
+            invoke-static { v$value }, $KEYBOARD
+            move-result v$value
+        """,
+    )
+}
+
+/**
+ * The index of [params]' one store of [flag], when nothing reads the register it stores from once
+ * the store has run, so a hook just before it can change that register for the store alone; null otherwise.
+ */
+internal fun keyboardStore(params: Method, flag: FieldReference): Int? {
+    val code = params.implementation?.instructions?.toList() ?: return null
+    val stores = code.indices.filter { index ->
+        val field = (code[index] as? ReferenceInstruction)?.reference as? FieldReference
+        code[index].opcode == Opcode.IPUT_BOOLEAN && field != null &&
+            field.definingClass == flag.definingClass && field.name == flag.name && field.type == flag.type
+    }
+    val store = stores.singleOrNull() ?: return null
+    val value = (code[store] as TwoRegisterInstruction).registerA
+    return store.takeIf { params.readsAfter(store, value).isEmpty() }
 }
 
 /** The boolean field [params]' toString appends after [KEYBOARD_LABEL], the flag that raises the comment sheet's keyboard. */
