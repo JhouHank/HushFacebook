@@ -14,7 +14,6 @@ import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.Window;
 import android.widget.HorizontalScrollView;
-import android.widget.ImageView;
 import android.widget.ScrollView;
 
 import androidx.annotation.Nullable;
@@ -39,18 +38,25 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * With the switch on, a finger that goes down starts a timer of the system's long-press length, and
  * moving past the touch slop, a second finger, a lift or a cancel stops it. When it runs out, the
  * press must sit in a feed post: a row of a list that scrolls up and down, not a full-size page like
- * a reel's, with nothing between the finger and the row that has a long press of its own (the post
- * text and the profile pictures do, as do a carousel's tiles) and no carousel or pager in the way.
- * The one exception is a picture as wide as the row: the S22's feed photo has a long press that
- * shows nothing, so it counts as the photo, and its pending long press is cancelled before the click.
+ * a reel's, with no carousel or pager in the way. Litho draws a post's parts as plain hosts, and
+ * only the accessibility class uiautomator reports tells a photo from text, so a long press of
+ * its own on the way is judged by how wide it's drawn. The S22's feed photo spans the row edge to
+ * edge and its long press shows nothing, so it counts as the photo, and its pending long press is
+ * cancelled before the click. The post text copies itself on a long press and is drawn inside the
+ * post's side margins (its host hangs past them, so only the clipped width differs), and a
+ * profile picture, Like or grid tile is narrower still: those, and a long press inside another,
+ * stay Facebook's.
  *
  * <p>The row's Comment button is found by the footer's order, since its label is translated and
  * 583 has no resource names: the lowest line of three or more clickable views sharing one top and
  * bottom, the first three touching, in reading order (right to left in RTL). Like comes first and
- * Comment second. Clickable views are taken whole and nested lists and scrollers aren't searched,
- * so a People You May Know carousel's Add friend buttons are never candidates. The button is
- * clicked, and the rest of the gesture goes to Facebook as a cancel so the lift doesn't also open
- * the photo it landed on. A post without that footer line is left to Facebook.
+ * Comment second. The innermost clickable views count, since the S22 draws the footer as one
+ * clickable bar holding its buttons, and nested lists and scrollers aren't searched, so a People
+ * You May Know carousel's Add friend buttons are never candidates. Litho mounts only what's on
+ * screen, so a post running past the bottom of the feed has no footer yet: the feed is scrolled up
+ * by what's under and the footer looked for again over the next frames. The button is clicked, and
+ * the rest of the gesture goes to Facebook as a cancel so the lift doesn't also open the photo it
+ * landed on. A post without that footer line is left to Facebook.
  *
  * <p>A post whose author turned comments off has no Comment button, so its second footer button is
  * whatever follows Like there (Share or Send), which opens its own sheet and posts nothing. With the
@@ -68,17 +74,19 @@ public final class PostLongPress {
     static final String OPENED = "feed post comments opened";
     /** Counted for each held post with no footer line to find the Comment button in. */
     static final String NO_BUTTON = "no Comment button in the row";
+    /** Counted for each held post scrolled up to bring its unmounted footer on screen. */
+    static final String SCROLLED = "feed post scrolled to its footer";
     /** Counted for each press held to the long-press time, before anything about it is checked. */
     static final String TIMED = "feed press held to the time";
     /** Counted for a press lifted after the long-press time whose timer hadn't run yet. */
     static final String LIFTED_LATE = "feed press lifted before its timer ran";
     // Why a held press was left to Facebook.
     static final String LOST_FOCUS = "feed hold passed: window not focused";
-    static final String OWN_LONG_PRESS = "feed hold passed: its own long press";
+    static final String OWN_LONG_PRESS = "feed hold passed: its own long press, inside another";
     static final String NO_LIST = "feed hold passed: in no feed list";
     static final String STILL_LIST = "feed hold passed: list doesn't scroll up and down";
     static final String FULL_PAGE = "feed hold passed: full-size page";
-    static final String NARROW_PICTURE = "feed hold passed: picture narrower than the row";
+    static final String NARROW_LONG_PRESS = "feed hold passed: its own long press, narrower than the row";
     static final String SCROLLER = "feed hold passed: in a scroller or pager";
     static final String ON_FOOTER = "feed hold passed: on or under the footer";
 
@@ -90,6 +98,9 @@ public final class PostLongPress {
     private static final int TOUCHING = 2;
     /** The fewest buttons a footer line has: Like, Comment and Share. */
     private static final int FOOTER = 3;
+    /** How many more times, and how many milliseconds apart, a scrolled post's footer is looked for. */
+    private static final int SHOW_TRIES = 3;
+    private static final long SHOW_WAIT = 50L;
 
     private static Handler main;
     private static WeakReference<View> pressedRoot = new WeakReference<>(null);
@@ -99,6 +110,8 @@ public final class PostLongPress {
     private static boolean timing;
     /** The press opened comments, so every later event of the gesture becomes a cancel. */
     private static boolean swallowing;
+    /** Counts finger-downs, so a footer looked for after a scroll is only clicked for the same press. */
+    private static int presses;
     /** Why the last {@link #rowAt} found no row, one of the passed labels above. */
     @Nullable static String passedOver;
     private static final Runnable FIRE = PostLongPress::fire;
@@ -123,6 +136,7 @@ public final class PostLongPress {
     static void touch(@Nullable View root, MotionEvent event) {
         int action = event.getActionMasked();
         if (action == MotionEvent.ACTION_DOWN) {
+            presses++;
             swallowing = false;
             stop();
             if (root == null || !Utils.settingsReady() || !Settings.LONG_PRESS_OPENS_COMMENTS.get()) return;
@@ -180,25 +194,82 @@ public final class PostLongPress {
             }
             HookStatus.counted(FAMILY, HELD);
             if (comment == null) {
-                HookStatus.counted(FAMILY, NO_BUTTON);
-                Logger.printDebug(() -> "Feed long press: " + NO_BUTTON);
+                // Litho mounts only what's on screen, so a post running past the bottom of the feed
+                // has no footer yet. Scrolling it up by what's under brings the footer in.
+                View list = (View) row.getParent();
+                int under = under(row);
+                if (under <= 0 || !list.canScrollVertically(1)) {
+                    noButton(row);
+                    return;
+                }
+                cancelLongPresses(root, row);
+                swallowing = true;
+                list.scrollBy(0, under);
+                HookStatus.counted(FAMILY, SCROLLED);
+                Logger.printDebug(() -> "Feed long press: " + SCROLLED + ", " + under + " px");
+                openOnceShown(row, presses, SHOW_TRIES);
                 return;
             }
-            // The photo's own long press was timed from the same touch, so it would run next.
-            for (View on = hit(root, Math.round(downX), Math.round(downY)); on != null && on != row.getParent();
-                    on = on.getParent() instanceof View ? (View) on.getParent() : null) {
-                on.cancelLongPress();
-            }
-            if (!comment.performClick()) {
-                HookStatus.threw(FAMILY, "feed long press", new IllegalStateException("the Comment button took no click"));
-                return;
-            }
-            swallowing = true;
-            HookStatus.counted(FAMILY, OPENED);
-            Logger.printDebug(() -> "Feed long press: " + OPENED);
+            cancelLongPresses(root, row);
+            if (open(comment)) swallowing = true;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "feed long press", failure);
         }
+    }
+
+    /** The photo's own long press was timed from the same touch, so it would run next: cancels it. */
+    private static void cancelLongPresses(View root, View row) {
+        for (View on = hit(root, Math.round(downX), Math.round(downY)); on != null && on != row.getParent();
+                on = on.getParent() instanceof View ? (View) on.getParent() : null) {
+            on.cancelLongPress();
+        }
+    }
+
+    /** Clicks [comment], counting it, and says whether it took the click. */
+    private static boolean open(View comment) {
+        if (!comment.performClick()) {
+            HookStatus.threw(FAMILY, "feed long press", new IllegalStateException("the Comment button took no click"));
+            return false;
+        }
+        HookStatus.counted(FAMILY, OPENED);
+        Logger.printDebug(() -> "Feed long press: " + OPENED);
+        return true;
+    }
+
+    /**
+     * Clicks the Comment button of [row], just scrolled up, once its footer is mounted, looking again
+     * [tries] more times on later frames. A new press or a row taken off the screen stops it.
+     */
+    private static void openOnceShown(View row, int press, int tries) {
+        try {
+            if (press != presses || !row.isAttachedToWindow()) return;
+            View comment = commentButton(row);
+            if (comment != null) {
+                open(comment);
+            } else if (tries > 0) {
+                main().postDelayed(() -> openOnceShown(row, press, tries - 1), SHOW_WAIT);
+            } else {
+                noButton(row);
+            }
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "feed long press", failure);
+        }
+    }
+
+    /** Counts a held post with no footer line and logs what the row held, for a phone's report. */
+    private static void noButton(View row) {
+        HookStatus.counted(FAMILY, NO_BUTTON);
+        List<View> clickables = new ArrayList<>();
+        collect(row, clickables);
+        int under = under(row);
+        Logger.printDebug(() -> "Feed long press: " + NO_BUTTON + ", " + clickables.size() + " clickable, row "
+                + row.getHeight() + " px tall, " + Math.max(0, under) + " px under the feed");
+    }
+
+    /** How far [row] runs past the bottom of its list, in pixels; zero or less when it ends on screen. */
+    private static int under(View row) {
+        View list = (View) row.getParent();
+        return topOf(row) + row.getHeight() - topOf(list) - list.getHeight();
     }
 
     /** Counts [why] the hold was left to Facebook and logs it with the view under the finger in [root]. */
@@ -223,8 +294,9 @@ public final class PostLongPress {
 
     /**
      * The feed row under the screen point ([x], [y]) inside [root], or null when the press there is
-     * Facebook's: on something with its own long press, inside a carousel, pager or scroller, on a
-     * full-size page, or in no list at all. A null leaves the reason in {@link #passedOver}.
+     * Facebook's: on something with its own long press other than the photo, inside a carousel,
+     * pager or scroller, on a full-size page, or in no list at all. A null leaves the reason in
+     * {@link #passedOver}.
      */
     @Nullable
     static View rowAt(View root, int x, int y) {
@@ -234,8 +306,8 @@ public final class PostLongPress {
         while (view != null) {
             if (view.isLongClickable()) {
                 // On the S22 the post's photo has a long press that shows nothing. It's still the
-                // photo when it's the only one on the path and spans the row, unlike a grid tile.
-                if (picture != null || !(view instanceof ImageView)) return pass(OWN_LONG_PRESS);
+                // photo when it's the only one on the path and shows as wide as the row.
+                if (picture != null) return pass(OWN_LONG_PRESS);
                 picture = view;
             }
             ViewParent parent = view.getParent();
@@ -244,7 +316,7 @@ public final class PostLongPress {
             if (isNamed(up, LIST)) {
                 if (!up.canScrollVertically(1) && !up.canScrollVertically(-1)) return pass(STILL_LIST);
                 if (view.getWidth() == up.getWidth() && view.getHeight() == up.getHeight()) return pass(FULL_PAGE);
-                if (picture != null && picture.getWidth() < view.getWidth()) return pass(NARROW_PICTURE);
+                if (picture != null && shownWidth(picture, view) < view.getWidth()) return pass(NARROW_LONG_PRESS);
                 return view;
             }
             if (isScroller(up)) return pass(SCROLLER);
@@ -257,6 +329,25 @@ public final class PostLongPress {
     private static View pass(String why) {
         passedOver = why;
         return null;
+    }
+
+    /**
+     * How wide [view] shows inside [row]: its span cut to each parent's on the way up. The post
+     * text's host is as wide as the row but hangs past the margins of the box it sits in.
+     */
+    private static int shownWidth(View view, View row) {
+        int[] at = new int[2];
+        view.getLocationOnScreen(at);
+        int left = at[0];
+        int right = at[0] + view.getWidth();
+        for (ViewParent parent = view.getParent(); parent instanceof View; parent = parent.getParent()) {
+            View up = (View) parent;
+            up.getLocationOnScreen(at);
+            left = Math.max(left, at[0]);
+            right = Math.min(right, at[0] + up.getWidth());
+            if (up == row) break;
+        }
+        return Math.max(0, right - left);
     }
 
     /**
@@ -341,18 +432,21 @@ public final class PostLongPress {
         return found;
     }
 
-    /** The shown clickable views under [group], each taken whole, outside nested lists and scrollers. */
+    /**
+     * The shown clickable views under [group], innermost: a clickable view holding clickable views
+     * gives way to them, as the S22's footer bar does to its buttons. Nested lists and scrollers
+     * aren't searched.
+     */
     private static void collect(View group, List<View> into) {
         if (!(group instanceof ViewGroup)) return;
         ViewGroup parent = (ViewGroup) group;
         for (int i = 0; i < parent.getChildCount(); i++) {
             View child = parent.getChildAt(i);
             if (child.getVisibility() != View.VISIBLE || child.getWidth() <= 0 || child.getHeight() <= 0) continue;
-            if (child.isClickable()) {
-                into.add(child);
-            } else if (!isScroller(child) && !isNamed(child, LIST)) {
-                collect(child, into);
-            }
+            if (isScroller(child) || isNamed(child, LIST)) continue;
+            int before = into.size();
+            collect(child, into);
+            if (child.isClickable() && into.size() == before) into.add(child);
         }
     }
 
