@@ -7,6 +7,7 @@ Changes in each Hushfacebook version, newest first.
 ### Fixed
 
 * **Facebook:** Opening comments doesn't close Facebook any more. In 0.16.0, tapping a post's comment button, or the comments on a reel, crashed Facebook when `Comment sheet options` was patched in, even with every switch off or Hushfacebook paused. Phones and accounts that get Facebook's newer comment list hit it (issues #203, #204, #208 and #209).
+* **Facebook:** Instant games download with Facebook's own downloader now. When Google Play had installed Facebook, Facebook could hand the game download to Play, which can't serve a patched build, so the game's loading screen closed right away. With Debug logging on, the report's module download line says when Play was skipped (issue #168).
 
 ## 0.16.0 (2026-10-21)
 
