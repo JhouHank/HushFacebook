@@ -16,6 +16,7 @@ import android.view.ViewParent;
 import android.view.Window;
 import android.widget.HorizontalScrollView;
 import android.widget.ScrollView;
+import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
@@ -39,14 +40,17 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * With the switch on, a finger that goes down starts a timer of the system's long-press length, and
  * moving past the touch slop, a second finger, a lift or a cancel stops it. When it runs out, the
  * press must sit in a feed post: a row of a list that scrolls up and down, not a full-size page like
- * a reel's, with no carousel or pager in the way. Litho draws a post's parts as plain hosts, and
- * only the accessibility class uiautomator reports tells a photo from text, so a long press of
- * its own on the way is judged by how wide it's drawn. The S22's feed photo spans the row edge to
- * edge and its long press shows nothing, so it counts as the photo, and its pending long press is
- * cancelled before the click. The post text copies itself on a long press and is drawn inside the
- * post's side margins (its host hangs past them, so only the clipped width differs), and a
- * profile picture, Like or grid tile is narrower still: those, and a long press inside another,
- * stay Facebook's.
+ * a reel's, with no carousel or pager in the way. Litho draws a post's parts as plain hosts, and a
+ * host lists the text it draws (ComponentHost.getTextContent, which 583 keeps by name), so a long
+ * press of its own on the way that draws text, or holds a host that does, is the post text, which
+ * copies itself, and stays Facebook's. Anything else is judged by how wide it's drawn. The S22's
+ * feed photo spans the row edge to edge and its long press shows nothing, so it counts as the
+ * photo, and its pending long press is cancelled before the click. A shared post's photo sits
+ * inside the shared box's side margins, as the text does (the text's host hangs past them, so
+ * only the clipped width shows), so a Litho host that draws no text counts as the photo when it
+ * shows across nine tenths of the row; a host whose text can't be read keeps the edge-to-edge
+ * rule. A profile picture, Like or grid tile is narrower still: those, and a long press inside
+ * another, stay Facebook's.
  *
  * <p>The row's Comment button is found by the footer's order, since its label is translated and
  * 583 has no resource names: the lowest line of three or more clickable views sharing one top and
@@ -92,6 +96,7 @@ public final class PostLongPress {
     static final String STILL_LIST = "feed hold passed: list doesn't scroll up and down";
     static final String FULL_PAGE = "feed hold passed: full-size page";
     static final String NARROW_LONG_PRESS = "feed hold passed: its own long press, narrower than the row";
+    static final String ON_TEXT = "feed hold passed: its own long press, on text";
     static final String SCROLLER = "feed hold passed: in a scroller or pager";
     static final String ON_FOOTER = "feed hold passed: on or under the footer";
 
@@ -338,7 +343,8 @@ public final class PostLongPress {
         while (view != null) {
             if (view.isLongClickable()) {
                 // On the S22 the post's photo has a long press that shows nothing. It's still the
-                // photo when it's the only one on the path and shows as wide as the row.
+                // photo when it's the only one on the path, draws no text and shows as wide as the
+                // row, or nearly so inside a shared post's box.
                 if (picture != null) return pass(OWN_LONG_PRESS);
                 picture = view;
             }
@@ -348,7 +354,13 @@ public final class PostLongPress {
             if (isNamed(up, LIST)) {
                 if (!up.canScrollVertically(1) && !up.canScrollVertically(-1)) return pass(STILL_LIST);
                 if (view.getWidth() == up.getWidth() && view.getHeight() == up.getHeight()) return pass(FULL_PAGE);
-                if (picture != null && shownWidth(picture, view) < view.getWidth()) return pass(NARROW_LONG_PRESS);
+                if (picture != null) {
+                    Boolean text = drawsText(picture);
+                    if (Boolean.TRUE.equals(text)) return pass(ON_TEXT);
+                    int shown = shownWidth(picture, view);
+                    boolean inset = Boolean.FALSE.equals(text) && shown * 10 >= view.getWidth() * 9;
+                    if (shown < view.getWidth() && !inset) return pass(NARROW_LONG_PRESS);
+                }
                 return view;
             }
             if (isScroller(up)) return pass(SCROLLER);
@@ -361,6 +373,40 @@ public final class PostLongPress {
     private static View pass(String why) {
         passedOver = why;
         return null;
+    }
+
+    /**
+     * Whether [view] or a view inside it draws text: true when a Litho host there lists text it
+     * draws or a TextView is there, false when [view] is a Litho host and nothing inside draws
+     * text, and null when [view]'s text can't be read.
+     */
+    @Nullable
+    static Boolean drawsText(View view) {
+        Boolean own = textContent(view);
+        if (own == null) return null;
+        return own || holdsText(view);
+    }
+
+    /** Whether a view inside [view] draws text, as {@link #drawsText} reads it. */
+    private static boolean holdsText(View view) {
+        if (!(view instanceof ViewGroup)) return false;
+        ViewGroup group = (ViewGroup) view;
+        for (int i = 0; i < group.getChildCount(); i++) {
+            View child = group.getChildAt(i);
+            if (child instanceof TextView || Boolean.TRUE.equals(textContent(child)) || holdsText(child)) return true;
+        }
+        return false;
+    }
+
+    /** Whether the Litho host [view] lists text it draws, or null when it isn't one or the list can't be read. */
+    @Nullable
+    private static Boolean textContent(View view) {
+        try {
+            Object content = view.getClass().getMethod("getTextContent").invoke(view);
+            return content instanceof List ? !((List<?>) content).isEmpty() : null;
+        } catch (ReflectiveOperationException | SecurityException e) {
+            return null;
+        }
     }
 
     /**

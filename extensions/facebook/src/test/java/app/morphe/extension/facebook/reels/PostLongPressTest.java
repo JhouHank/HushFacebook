@@ -12,6 +12,7 @@ import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
 import android.app.Activity;
+import android.content.Context;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.view.Gravity;
@@ -476,6 +477,73 @@ public class PostLongPressTest {
         assertEquals(PostLongPress.OWN_LONG_PRESS, PostLongPress.passedOver);
         wrapper.setLongClickable(false);
         assertSame("the same picture on its own is the photo", row, PostLongPress.rowAt(root, middleOf(wide)[0], middleOf(wide)[1]));
+    }
+
+    /** Stands in for Litho's ComponentHost, which lists the text drawn in it. */
+    public static final class LithoHost extends FrameLayout {
+        final List<Object> drawn = new ArrayList<>();
+
+        public LithoHost(Context context) {
+            super(context);
+        }
+
+        public List<Object> getTextContent() {
+            return drawn;
+        }
+    }
+
+    /**
+     * A shared post draws the post it shares in a box inside the side margins, so its photo shows
+     * no wider than the text does. On the S22 that photo's host was 1080 px wide and showed 1012 px.
+     * A Litho host drawing no text is the photo there; one drawing text, or holding a host that
+     * does, is text wherever it sits, a text post on a colored background included; a narrow one
+     * is still a tile.
+     */
+    @Test
+    public void aSharedPostsPhotoInsideItsBoxOpensCommentsAndTextStillCopies() {
+        ViewGroup post = (ViewGroup) photo.getParent();
+        post.removeView(photo);
+        FrameLayout box = new FrameLayout(activity);
+        place(post, box, 34, 304, 1046, 688);
+        LithoHost inset = new LithoHost(activity);
+        inset.setOnLongClickListener(v -> facebook.add("photo long"));
+        place(box, inset, -34, 0, 1046, 384);
+        layOut();
+        int[] at = middleOf(box);
+        assertSame("the shared post's photo", row, PostLongPress.rowAt(root, at[0], at[1]));
+        deliver(event(MotionEvent.ACTION_DOWN, at));
+        holdLongEnough();
+        assertEquals(List.of("comment"), clicked);
+        deliver(event(MotionEvent.ACTION_UP, at));
+        assertTrue("the photo ran nothing: " + facebook, facebook.isEmpty());
+
+        inset.drawn.add("text");
+        assertNull("a host drawing text", PostLongPress.rowAt(root, at[0], at[1]));
+        assertEquals(PostLongPress.ON_TEXT, PostLongPress.passedOver);
+        inset.drawn.clear();
+        LithoHost line = new LithoHost(activity);
+        line.drawn.add("text");
+        place(inset, line, 34, 0, 1046, 100);
+        layOut();
+        assertNull("a host holding one that draws text", PostLongPress.rowAt(root, at[0], at[1]));
+        assertEquals(PostLongPress.ON_TEXT, PostLongPress.passedOver);
+
+        box.removeView(inset);
+        LithoHost tile = new LithoHost(activity);
+        tile.setLongClickable(true);
+        place(box, tile, 0, 0, 506, 384);
+        layOut();
+        assertNull("a tile in the box", PostLongPress.rowAt(root, middleOf(tile)[0], middleOf(tile)[1]));
+        assertEquals(PostLongPress.NARROW_LONG_PRESS, PostLongPress.passedOver);
+
+        post.removeView(box);
+        LithoHost colored = new LithoHost(activity);
+        colored.setLongClickable(true);
+        colored.drawn.add("text");
+        place(post, colored, 0, 304, 1080, 688);
+        layOut();
+        assertNull("a text post on a colored background", PostLongPress.rowAt(root, middleOf(colored)[0], middleOf(colored)[1]));
+        assertEquals(PostLongPress.ON_TEXT, PostLongPress.passedOver);
     }
 
     /**
