@@ -430,6 +430,9 @@ A long press on Like doesn't open the reactions. A tap still likes.	Tocar e segu
 Hide GIF and sticker buttons	Ocultar os botões de GIF e figurinhas
 # context: summary of that switch; the comment box is where you type a comment
 The comment box loses its GIF and sticker buttons. Typing, photos and posting work as before.	A caixa de comentário perde os botões de GIF e figurinhas. Digitar, enviar fotos e publicar continuam como antes.
+# context: switch title under Comments: hides the Add a comment field at the bottom of the full-screen video viewer
+Hide the video comment box	Ocultar a caixa de comentário dos vídeos
+The Add a comment box under a full-screen video goes away. Comment boxes on posts stay.	A caixa para comentar embaixo de um vídeo em tela cheia some. As caixas de comentário nas publicações continuam.
 # context: switch title under Comments; a reply thread is the replies under a comment, which Facebook folds behind View replies
 Open every reply thread	Abrir todas as respostas
 # context: summary of that switch; View replies is the link Facebook shows under a comment that has replies

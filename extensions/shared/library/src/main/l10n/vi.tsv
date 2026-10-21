@@ -465,6 +465,9 @@ A long press on Like doesn't open the reactions. A tap still likes.	Nhấn giữ
 Hide GIF and sticker buttons	Ẩn nút GIF và nhãn dán
 # context: summary of that switch; the comment box is where you type a comment
 The comment box loses its GIF and sticker buttons. Typing, photos and posting work as before.	Ô bình luận không còn nút GIF và nhãn dán. Nhập chữ, thêm ảnh và đăng vẫn hoạt động như trước.
+# context: switch title under Comments: hides the Add a comment field at the bottom of the full-screen video viewer
+Hide the video comment box	Ẩn ô bình luận của video
+The Add a comment box under a full-screen video goes away. Comment boxes on posts stay.	Ô bình luận bên dưới video toàn màn hình biến mất. Ô bình luận trên bài viết vẫn giữ nguyên.
 # context: switch title under Comments; a reply thread is the replies under a comment, which Facebook folds behind View replies
 Open every reply thread	Mở mọi chuỗi phản hồi
 # context: summary of that switch; View replies is the link Facebook shows under a comment that has replies

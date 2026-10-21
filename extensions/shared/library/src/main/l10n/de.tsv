@@ -465,6 +465,9 @@ A long press on Like doesn't open the reactions. A tap still likes.	Langes Drüc
 Hide GIF and sticker buttons	GIF- und Sticker-Schaltflächen ausblenden
 # context: summary of that switch; the comment box is where you type a comment
 The comment box loses its GIF and sticker buttons. Typing, photos and posting work as before.	Das Kommentarfeld verliert seine GIF- und Sticker-Schaltflächen. Schreiben, Fotos und Posten funktionieren wie bisher.
+# context: switch title under Comments: hides the Add a comment field at the bottom of the full-screen video viewer
+Hide the video comment box	Kommentarfeld bei Videos ausblenden
+The Add a comment box under a full-screen video goes away. Comment boxes on posts stay.	Das Kommentarfeld unter einem Video im Vollbild verschwindet. Kommentarfelder bei Beiträgen bleiben.
 # context: switch title under Comments; a reply thread is the replies under a comment, which Facebook folds behind View replies
 Open every reply thread	Alle Antwort-Threads öffnen
 # context: summary of that switch; View replies is the link Facebook shows under a comment that has replies

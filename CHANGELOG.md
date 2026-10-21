@@ -7,6 +7,7 @@ Changes in each Hushfacebook version, newest first.
 ### Added
 
 * **Facebook:** New switch under Privacy, `Close Facebook when you leave it`. Three seconds after you leave Facebook it closes all the way and drops out of your recent apps, so nothing of it keeps running in the background (issue #202, requested by @M7amma). It holds off while an upload, a call or a Hushfacebook save is still going, or while a file picker or camera Facebook opened is on screen, and turning the screen off with Facebook in front doesn't count as leaving. Notifications can come late, or not until you open Facebook again. It starts off.
+* **Facebook:** New switch under Comments, `Hide the video comment box`. The Add a comment box under a full-screen video goes away, while comment boxes on posts stay (issue #213, from a patch by @dijitalcozum). It starts off.
 
 ### Fixed
 
@@ -17,6 +18,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Changed
 
+* **Settings:** A settings file can now be up to 96 KB, up from 88 KB, so a file with every list full still fits now that there are more switches.
 * **Tooling:** No release goes out now until the whole app has been walked, on a phone or an emulator, with the exact bundle being published. `scripts/device-audit.ps1` leaves a `walk-receipt.json` saying how the walk ended, where it ran and which patch build the app reported, and the release script's publish step takes it as `-Walk`. Anything short of a full pass with no crash on that same bundle stops it before the tag.
 
 ## 0.16.1 (2026-10-21)

@@ -345,6 +345,44 @@ class CommentSheetOptionsFixtureTest {
             patched.drop(at + 5).map { it.opcode })
     }
 
+    private fun videoComposer(bundle: File) {
+        val found = viewerButtons(holders(bundle, VIEWER_GIF))
+        val render = found.render
+        val where = "${bundle.name}: ${render.descriptor()}"
+        val bar = FixtureDex.classes(bundle, setOf(render.definingClass)).values.single()
+        val context = PatchContexts.of(listOf(bar))
+        val method = context.mutableClassDefBy(bar.type).methods.single { it.descriptor() == render.descriptor() }
+        val original = method.implementation!!.instructions.toList()
+        val returnCount = original.count { it.opcode == Opcode.RETURN_OBJECT }
+        assertTrue("$where has no object return to hook", returnCount > 0)
+
+        method.hideVideoCommentComposer()
+        val patched = method.implementation!!.instructions.toList()
+        assertEquals("$where gains four instructions before each object return",
+            original.size + returnCount * 4, patched.size)
+        val hooks = patched.indices.filter {
+            patched[it].opcode == Opcode.INVOKE_STATIC && patched[it].reference() == HIDES_VIDEO_COMMENT_COMPOSER
+        }
+        assertEquals("$where hooks every object return", returnCount, hooks.size)
+        for (index in hooks) {
+            assertEquals("$where asks for the setting", Opcode.MOVE_RESULT, patched[index + 1].opcode)
+            assertEquals("$where checks the setting", Opcode.IF_EQZ, patched[index + 2].opcode)
+            assertTrue("$where clears the result only on a yes",
+                patched[index + 3].opcode in setOf(Opcode.CONST_4, Opcode.CONST_16))
+            assertEquals("$where branches back to its original return", index + 4,
+                (patched[index + 2] as BuilderOffsetInstruction).target.location.index)
+            assertEquals("$where preserves the original return", Opcode.RETURN_OBJECT, patched[index + 4].opcode)
+            assertEquals("$where clears the returned register",
+                (patched[index + 4] as OneRegisterInstruction).registerA,
+                (patched[index + 3] as OneRegisterInstruction).registerA)
+        }
+    }
+
+    @Test
+    fun `each declared build can hide the full-screen video comment composer`() = bundles { bundle ->
+        videoComposer(bundle)
+    }
+
     @Test
     fun `each declared build keeps the GIF and sticker buttons out of the video viewer's comment bar`() = bundles { bundle ->
         viewer(bundle)

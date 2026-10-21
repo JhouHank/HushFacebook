@@ -23,6 +23,7 @@ import app.morphe.patches.facebook.feed.methodsHolding
 import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
+import app.morphe.patches.facebook.misc.extension.freeLocalsAt
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
@@ -104,6 +105,7 @@ private const val OBJECTS = "[Ljava/lang/Object;"
 internal const val COMMENT_SHEET_OPTIONS = "$EXTENSION_PACKAGE/comments/CommentSheetOptions;"
 internal const val HOLDS_BUTTON = "$COMMENT_SHEET_OPTIONS->holdsButton(Ljava/lang/String;)Z"
 internal const val HOLDS_VIEWER_BUTTONS = "$COMMENT_SHEET_OPTIONS->holdsViewerButtons()Z"
+internal const val HIDES_VIDEO_COMMENT_COMPOSER = "$COMMENT_SHEET_OPTIONS->hidesVideoCommentComposer()Z"
 internal const val HOLDS_BOTTOM_CONTENT = "$COMMENT_SHEET_OPTIONS->holdsBottomContent(Ljava/lang/String;)Z"
 internal const val SKIP_PICKER = "$COMMENT_SHEET_OPTIONS->skipReactionPicker()Z"
 internal const val OPEN_REPLY_THREADS = "$COMMENT_SHEET_OPTIONS->openReplyThreads(Z)Z"
@@ -227,8 +229,10 @@ val commentSheetOptionsPatch = bytecodePatch(
             .hideComments(drawn)
         mutableClassDefBy(replyList.build.definingClass).methods.single { it.descriptor() == replyList.build.descriptor() }
             .loadWholeReplyThreads(replyList)
-        mutableClassDefBy(viewer.render.definingClass).methods.single { it.descriptor() == viewer.render.descriptor() }
-            .holdViewerButtons(viewer)
+        val viewerRender = mutableClassDefBy(viewer.render.definingClass).methods
+            .single { it.descriptor() == viewer.render.descriptor() }
+        viewerRender.holdViewerButtons(viewer)
+        viewerRender.hideVideoCommentComposer()
         enableStatus("commentSheetOptions")
     }
 }
@@ -750,4 +754,35 @@ internal fun MutableMethod.holdViewerButtons(buttons: ViewerButtons) {
         """,
         ExternalLabel("bar", getInstruction(buttons.at)),
     )
+}
+
+/**
+ * On a yes, the video viewer's comment bar renders nothing, so the Add a comment box under a
+ * full-screen video is gone (#213, from @dijitalcozum's patch). The check goes in front of each
+ * of the render's object returns and clears the returned register. Its answer needs a local
+ * nothing reads from there, which `move-result` and `if-eqz` can name up to v255; the returned
+ * register itself is read by the return, so it's never the one picked.
+ */
+internal fun MutableMethod.hideVideoCommentComposer() {
+    if (!returnType.startsWith("L")) refuse("${descriptor()} doesn't return an object")
+    val original = implementation!!.instructions.toList()
+    val returns = original.indices.filter { original[it].opcode == Opcode.RETURN_OBJECT }
+    if (returns.isEmpty()) refuse("${descriptor()} has no object return")
+
+    // From the last return back, so the earlier indices still hold.
+    for (index in returns.asReversed()) {
+        val returned = getInstruction<OneRegisterInstruction>(index).registerA
+        val free = freeLocalsAt("hide the video comment box", index, 1, listOf(index), highest = 255).single()
+        val clear = if (returned < 16) "const/4 v$returned, 0x0" else "const/16 v$returned, 0x0"
+        addInstructionsWithLabels(
+            index,
+            """
+                invoke-static {}, $HIDES_VIDEO_COMMENT_COMPOSER
+                move-result v$free
+                if-eqz v$free, :keep$index
+                $clear
+            """,
+            ExternalLabel("keep$index", getInstruction(index)),
+        )
+    }
 }

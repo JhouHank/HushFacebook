@@ -465,6 +465,9 @@ A long press on Like doesn't open the reactions. A tap still likes.	长按“赞
 Hide GIF and sticker buttons	隐藏 GIF 和贴纸按钮
 # context: summary of that switch; the comment box is where you type a comment
 The comment box loses its GIF and sticker buttons. Typing, photos and posting work as before.	评论框不再显示 GIF 和贴纸按钮。输入、照片和发布照常使用。
+# context: switch title under Comments: hides the Add a comment field at the bottom of the full-screen video viewer
+Hide the video comment box	隐藏视频评论框
+The Add a comment box under a full-screen video goes away. Comment boxes on posts stay.	全屏视频下方的评论框会消失。帖子里的评论框不受影响。
 # context: switch title under Comments; a reply thread is the replies under a comment, which Facebook folds behind View replies
 Open every reply thread	展开所有回复
 # context: summary of that switch; View replies is the link Facebook shows under a comment that has replies

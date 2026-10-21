@@ -465,6 +465,9 @@ A long press on Like doesn't open the reactions. A tap still likes.	Menekan lama
 Hide GIF and sticker buttons	Sembunyikan tombol GIF dan stiker
 # context: summary of that switch; the comment box is where you type a comment
 The comment box loses its GIF and sticker buttons. Typing, photos and posting work as before.	Kotak komentar tidak lagi menampilkan tombol GIF dan stiker. Mengetik, foto, dan mengirim tetap berfungsi seperti biasa.
+# context: switch title under Comments: hides the Add a comment field at the bottom of the full-screen video viewer
+Hide the video comment box	Sembunyikan kotak komentar video
+The Add a comment box under a full-screen video goes away. Comment boxes on posts stay.	Kotak komentar di bawah video layar penuh hilang. Kotak komentar di postingan tetap ada.
 # context: switch title under Comments; a reply thread is the replies under a comment, which Facebook folds behind View replies
 Open every reply thread	Buka semua utas balasan
 # context: summary of that switch; View replies is the link Facebook shows under a comment that has replies

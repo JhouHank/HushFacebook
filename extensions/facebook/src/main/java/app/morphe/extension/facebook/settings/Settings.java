@@ -725,6 +725,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_comment_gif_sticker_buttons", FALSE);
 
     /**
+     * The comment composer at the bottom of Facebook's full-screen video viewer is omitted from
+     * the viewer's render method ({@link app.morphe.extension.facebook.comments.CommentSheetOptions}).
+     * Comment boxes on ordinary posts are unchanged. Off by default.
+     */
+    public static final BooleanSetting HIDE_VIDEO_COMMENT_COMPOSER =
+            new BooleanSetting("hushfacebook_hide_video_comment_composer", FALSE);
+
+    /**
      * Every comment starts with its reply thread open, as if View replies had been tapped
      * ({@link app.morphe.extension.facebook.comments.CommentSheetOptions}). Off by default. A
      * change shows on the next comments drawn.
