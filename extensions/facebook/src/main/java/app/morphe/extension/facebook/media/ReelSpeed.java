@@ -36,7 +36,8 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * remembers a speed per video, so the next reel's player starts at normal speed. The patch hands this
  * class every speed set on a player ({@link #speedSet}), the toast's speed ({@link #picked}), the
  * gear sheet's ({@link #gearPicked}), which is kept only when it's picked on a reel, and each start
- * of playback ({@link #started}).
+ * of playback ({@link #started}). When the gear sheet can't find its player, it asks
+ * {@link #gearSheetSpeed} which speed to check.
  *
  * <p>A picked speed is kept for the viewer the reel was playing in, its PlayerOrigin's origin:
  * fb_shorts_viewer for the Reels viewer, video_home where an account's Reels live in the Video
@@ -141,6 +142,9 @@ public final class ReelSpeed {
 
         /** Whether [params]' video is live now, by its isLiveNow. */
         boolean live(Object params);
+
+        /** The speed the player plays at, by the getter the gear menu's speed sheet reads. */
+        float currentSpeed(Object player);
     }
 
     static final Player PATCHED = new Player() {
@@ -172,6 +176,11 @@ public final class ReelSpeed {
         @Override
         public boolean live(Object params) {
             return liveNow(params);
+        }
+
+        @Override
+        public float currentSpeed(Object player) {
+            return playerSpeed(player);
         }
     };
 
@@ -241,6 +250,11 @@ public final class ReelSpeed {
         return false;
     }
 
+    /** Filled in by the patch: the speed getter the gear menu's speed sheet reads. Only a player may be passed. */
+    public static float playerSpeed(Object player) {
+        return NORMAL;
+    }
+
     // ------------------------------------------------------------------ hooks
 
     /**
@@ -278,6 +292,35 @@ public final class ReelSpeed {
      */
     public static void gearPicked(float speed) {
         pick(speed, true, "gear speed picked");
+    }
+
+    /**
+     * The hook where the gear menu's speed sheet couldn't find its player and takes [speed], normal
+     * speed, as the one to check. It can't find a reel's player on some accounts, so a kept speed
+     * showed as Normal, and the checked row can't be picked, which left no way to pick normal speed
+     * and forget the kept one (#199). The speed of the player on screen comes back instead, so the
+     * row it plays at is checked and Normal can be picked. Off, paused, no player started yet, or
+     * anything here failing, [speed] comes back.
+     */
+    public static float gearSheetSpeed(float speed) {
+        try {
+            HookStatus.invoked(FAMILY);
+            if (!same(speed, NORMAL) || !on()) return speed;
+            Object onScreen;
+            synchronized (LOCK) {
+                onScreen = lastStartedPlayer == null ? null : lastStartedPlayer.get();
+            }
+            if (onScreen == null) return speed;
+            float playing = access.currentSpeed(onScreen);
+            if (Float.isNaN(playing) || playing <= 0 || same(playing, speed)) return speed;
+            HookStatus.bound(FAMILY, "gear speed sheet");
+            Logger.printDebug(() -> "Reel speed: the gear menu found no player, so it checks the "
+                    + playing + "x the one on screen plays at");
+            return playing;
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "gear speed sheet", failure);
+            return speed;
+        }
     }
 
     /**

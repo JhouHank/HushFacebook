@@ -154,6 +154,11 @@ public class ReelSpeedTest {
         public boolean live(Object params) {
             return video(params).live;
         }
+
+        @Override
+        public float currentSpeed(Object player) {
+            return (float) speed(player);
+        }
     }
 
     private FakePlayers players;
@@ -270,6 +275,36 @@ public class ReelSpeedTest {
         play(players.player(VIDEO_TAB));
         assertEquals("normal speed in the gear sheet didn't go back to Facebook's reset",
                 List.of(VIDEO_TAB + " 1.5"), players.set);
+    }
+
+    /**
+     * On some accounts the gear sheet can't find a reel's player, so it checks Normal, and the checked
+     * row can't be picked: a kept speed couldn't be undone there (#199). It checks the speed the reel
+     * on screen plays at instead, so Normal can be picked, and that forgets the kept speed. A speed
+     * the sheet found itself stays, and so does Normal with the switch off or nothing started yet.
+     */
+    @Test
+    public void theGearSheetChecksTheSpeedTheReelOnScreenPlaysAt() {
+        assertEquals("nothing started yet, and the sheet's normal speed changed", 1f, ReelSpeed.gearSheetSpeed(1f), 0f);
+        Object reel = players.player(REELS);
+        play(reel);
+        players.setSpeed(reel, 1.5f);
+        ReelSpeed.gearPicked(1.5f);
+        assertEquals(1.5f, ReelSpeed.kept(REELS), 0f);
+        Object next = players.player(REELS);
+        play(next);
+        assertEquals("the sheet didn't check the kept speed the reel on screen plays at", 1.5f, ReelSpeed.gearSheetSpeed(1f), 0f);
+        assertEquals("a speed the sheet found was changed", 2f, ReelSpeed.gearSheetSpeed(2f), 0f);
+        Settings.KEEP_REEL_SPEED.save(false);
+        assertEquals("with the switch off, the sheet's normal speed changed", 1f, ReelSpeed.gearSheetSpeed(1f), 0f);
+        Settings.KEEP_REEL_SPEED.save(true);
+
+        players.setSpeed(next, 1f);
+        ReelSpeed.gearPicked(1f);
+        assertEquals("normal speed picked in the sheet didn't forget the kept speed", 1f, ReelSpeed.kept(REELS), 0f);
+        assertEquals(1f, ReelSpeed.gearSheetSpeed(1f), 0f);
+        play(players.player(REELS));
+        assertEquals(List.of(REELS + " 1.5", REELS + " 1.5", REELS + " 1.0"), players.set);
     }
 
     /** A Watch video's gear menu has the same sheet; a speed picked there stays with that video. */

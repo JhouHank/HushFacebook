@@ -63,6 +63,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** `Menu tiles to hide` now hides Feeds, Reels, Memories, Birthdays, Dating and Pages, which it missed on 583, and tiles you ticked before carry over. The list shows the tiles your own Menu has, by the names Facebook gives them, so Crisis response, Community Notes, Pokes and the rest can go too (issue #153).
 * **Facebook:** A video whose best file is over 512 MB saves the next smaller one instead of nothing, and the message at the end says which quality you got. A two hour reel's 720p file was 645 MB and the save just failed, though Facebook also had it at 480p.
 * **Facebook:** A long press on the Facebook logo opens the Hushfacebook settings with Facebook in Arabic too. In some languages Facebook gives the logo nothing to do when it's tapped, and the long press never got set up there (issue #12).
+* **Facebook:** Where a reel's More menu opens the gear menu's speed sheet, the sheet marks the speed the reel really plays at, so you can pick `1 (Normal)` to drop a kept speed (issue #199). Facebook couldn't find the reel's player there and always marked Normal, and a tap on the marked row does nothing, so a kept speed stayed until you turned `Keep the reel speed` off.
 
 ## 0.15.0 (2026-10-18)
 
