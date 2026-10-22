@@ -152,6 +152,15 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/StoryCardShape.java"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook from Facebook 583 (#207): with Debug logging on, logs a value-free outline of a story card's trees and its media fields' kinds when a story save finds no video, so a report shows where a shared video's address sits."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/DownloadQuality.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/FileNameTemplate.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/OpenInAnotherApp.java",
