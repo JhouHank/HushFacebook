@@ -2,7 +2,9 @@
 
 Changes in each Hushfacebook version, newest first.
 
-## Unreleased
+## 0.17.0 (2026-10-22)
+
+* **Facebook:** Hushfacebook moves to Facebook 584 and Morphe's new 2.0 patcher, so update Morphe Manager to 2.0.0 or newer before you patch. It's 64-bit only for now, since Facebook hasn't put out a 32-bit 584 yet. New switches can close Facebook when you leave it, hide the video comment box and draw thin lines between posts on the black theme, and a new patch keeps feed videos muted. Black cards buttons, the comment gestures in clean mode and Menu promotions in the side panel work again too.
 
 ### Added
 
@@ -20,7 +22,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** `Block Instant Games ads` now covers games that open inside Facebook's main screen too. Those games talk to Facebook through a bridge of their own, so their ad requests went around the patch and some showed ads between levels anyway (issue #168). They get the same no-ad answer now, and with `Answer rewarded game ads as watched` on, a rewarded video still counts as watched. Checked on a phone with a game played to its map.
 * **Facebook:** `Disable Audience Network` stays off now. Facebook switched those parts back on after an install or update, and one of its startup tasks lets the server turn three of them on again (issue #168). Both are held off, and any an earlier install left on go back off when Facebook starts. Checked on a phone.
 * **Tooling:** The device audit can now put back the switches from a backup an older Hushfacebook build left on the phone. Switches added after that build weren't in the backup, so they kept the audit's all-on values, the restore never matched, and the audit folder stayed behind. Those switches go back to their defaults first now, and everything else comes from the backup. Checked on a phone.
-* **Tooling:** The device audit gets its report and opens the settings pages even when the walk ends on a reel or another full-screen page, and the phone smoke walk reaches the settings there too. Android quietly dropped those requests there, so the audit stopped with no report. The audit was checked on a phone, the smoke walk by its tests.
+* **Tooling:** The device audit gets its report and opens the settings pages even when the walk ends on a reel or another full-screen page, and the phone smoke walk reaches the settings there too. Android dropped those requests without saying so, and the audit stopped with no report. The audit was checked on a phone, the smoke walk by its tests.
 * **Tooling:** The device audit no longer stops halfway when another tool reads the phone's lease file at the same moment. It waits a few seconds and tries again. A missing lease or one held by someone else still stops it.
 * **Tooling:** A baseline the device audit writes on Windows now has the same line endings as the copy in the repo, so promoting one doesn't leave the file looking half changed.
 
