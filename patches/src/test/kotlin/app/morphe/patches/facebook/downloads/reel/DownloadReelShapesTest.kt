@@ -281,6 +281,54 @@ class DownloadReelShapesTest {
         assertTrue("no call to the builder", !rendersThrough(noCall, builder))
     }
 
+    private val handler = "Lkotlin/jvm/functions/Function1;"
+    private val factory = "Lfixture/Factory;->make($session$handler$handler$handler$handler)Lfixture/Button;"
+
+    /** A static of the sidebar's class taking the button's kind, with [code] as its body. */
+    private fun buttonMaker(code: String, type: String = "Lfixture/Sidebar;", static: Boolean = true) =
+        method(type, "button", listOf("I"), "Lfixture/Button;", code, static)
+
+    /** A render naming the sidebar, when [named], and calling [call]. */
+    private fun sidebarRender(call: String, named: Boolean = true) = method(
+        "Lfixture/Sidebar;", "render", listOf("Lfixture/Scope;"), "Lfixture/Component;",
+        (if (named) "const-string v0, \"UDDSideBarComponent\"\n" else "") +
+            "const/4 v1, 0x0\ninvoke-static { v1 }, $call\nmove-result-object v0\nreturn-object v0",
+    )
+
+    /**
+     * Up to 583 the sidebar's builder calls the button factory, the call taking the session and
+     * four handlers, itself. 584's render (LX/AF0;->A0l) calls a static of its own class instead
+     * (LX/AF0;->A01), which calls the factory (LX/2Uj;->A00), so that static is read for it.
+     */
+    @Test
+    fun `the sidebar's builder calls the button factory itself or through a static of its class`() {
+        val makesButton = "invoke-static { v0, v1, v2, v3, v4 }, $factory\nmove-result-object v0\nreturn-object v0"
+        val inline = method("Lfixture/Spec;", "build", listOf("Lfixture/Scope;"), "Lfixture/Button;",
+            "const-string v0, \"UDDSideBarComponent\"\n$makesButton")
+        assertTrue(isSidebarBuilder(inline, listOf(inline)))
+        assertEquals(listOf(inline), buttonFactoryCallers(inline, listOf(inline)))
+
+        val maker = buttonMaker(makesButton)
+        val render = sidebarRender("Lfixture/Sidebar;->button(I)Lfixture/Button;")
+        assertTrue(isSidebarBuilder(render, listOf(render, maker)))
+        assertEquals(listOf(maker), buttonFactoryCallers(render, listOf(render, maker)))
+
+        // Without the sidebar's name it's some other component's render.
+        val unnamed = sidebarRender("Lfixture/Sidebar;->button(I)Lfixture/Button;", named = false)
+        assertTrue("no sidebar name", !isSidebarBuilder(unnamed, listOf(unnamed, maker)))
+        // A static of another class with the same name and signature isn't one of the siblings.
+        val elsewhere = sidebarRender("Lfixture/Other;->button(I)Lfixture/Button;")
+        assertTrue("another class's static", !isSidebarBuilder(elsewhere, listOf(elsewhere, maker)))
+        // The static has to call the factory: four handlers without the session first is 582's
+        // FDSBottomSheet, not a button.
+        val sheet = buttonMaker("invoke-static { v0, v1, v2, v3 }, Lfixture/Sheet;->make($handler$handler$handler$handler)Lfixture/Button;\n" +
+            "move-result-object v0\nreturn-object v0")
+        assertTrue("a sibling making a sheet", !isSidebarBuilder(render, listOf(render, sheet)))
+        // And it has to be the static the render calls, not an instance method of the same shape.
+        val instance = buttonMaker(makesButton, static = false)
+        assertTrue("an instance method", !isSidebarBuilder(render, listOf(render, instance)))
+    }
+
     /**
      * 583's arm64 builder asks for each button's marker itself. Its armeabi-v7a one hands the icon,
      * the button and the three lists to a static Redex outlined from the loop body, which asks for

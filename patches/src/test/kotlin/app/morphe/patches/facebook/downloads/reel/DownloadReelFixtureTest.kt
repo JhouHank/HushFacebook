@@ -76,6 +76,20 @@ class DownloadReelFixtureTest {
         } == true
     } == true
 
+    /**
+     * Where [method] gets its buttons made: itself when it calls the factory, as up to 583, or the
+     * one static of [owner], its class, that it calls and that calls the factory, as on 584.
+     */
+    private fun factoryCaller(method: Method, owner: ClassDef): Method? = if (callsButtonFactory(method)) method else {
+        val called = (method.implementation?.instructions ?: emptyList()).mapNotNull {
+            ((it as? ReferenceInstruction)?.reference as? MethodReference)?.takeIf { call -> call.definingClass == owner.type }
+        }.map { "${it.name}${it.parameterTypes.joinToString("", "(", ")")}${it.returnType}" }.toSet()
+        owner.methods.singleOrNull { sibling ->
+            "${sibling.name}${sibling.parameterTypes.joinToString("", "(", ")")}${sibling.returnType}" in called &&
+                callsButtonFactory(sibling)
+        }
+    }
+
     /** Every class the builder names: the owners of what it calls and reads, and the types it makes or casts to. */
     private fun namedBy(method: Method): Set<String> = method.implementation!!.instructions.mapNotNull { instruction ->
         when (val reference = (instruction as? ReferenceInstruction)?.reference) {
@@ -103,16 +117,17 @@ class DownloadReelFixtureTest {
                     ?: throw AssertionError("${bundle.name} has no pin")
                 val holders = FixtureDex.classesHolding(bundle, sidebarName)
                 val (builderClass, builder) = holders.flatMap { classDef ->
-                    classDef.methods.filter { holdsString(it, sidebarName) && callsButtonFactory(it) }.map { classDef to it }
+                    classDef.methods.filter { holdsString(it, sidebarName) && factoryCaller(it, classDef) != null }.map { classDef to it }
                 }.single()
+                val buttonMaker = factoryCaller(builder, builderClass)!!
                 // The component's render: the builder itself up to 582, the one handing it the
                 // scoped context on 583. The component declares itself by name, so it's a holder too.
                 val (component, render) = if (builder.parameterTypes.size == 1) builderClass to builder else {
                     holders.flatMap { classDef -> classDef.methods.filter { rendersThrough(it, builder) }.map { classDef to it } }.single()
                 }
 
-                val types = namedBy(builder) + component.fields.map { it.type } + builder.parameterTypes.map { it.toString() } +
-                    setOf(function1, "Lcom/facebook/video/engine/api/VideoDataSource;")
+                val types = namedBy(builder) + namedBy(buttonMaker) + component.fields.map { it.type } +
+                    builder.parameterTypes.map { it.toString() } + setOf(function1, "Lcom/facebook/video/engine/api/VideoDataSource;")
                 val classes = mutableMapOf<String, ClassDef>()
                 FixtureDex.classes(bundle, types).forEach { (type, classDef) -> classes[type] = classDef }
                 FixtureDex.classesHolding(bundle, "fds_control_download_video").forEach { classes.putIfAbsent(it.type, it) }

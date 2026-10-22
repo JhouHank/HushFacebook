@@ -52,7 +52,7 @@ class ReelSaveButtonFixtureTest {
                 val name = bundle.name
                 val builders = FixtureDex.classesHolding(bundle, SIDEBAR)
                     .filterNot { it.type.startsWith(EXTENSION_PACKAGE) }.distinctBy { it.type }
-                    .flatMap { classDef -> classDef.methods.filter(::isSidebarBuilder).map { classDef to it } }
+                    .flatMap { classDef -> classDef.methods.filter { isSidebarBuilder(it, classDef.methods) }.map { classDef to it } }
                 assertEquals("$name: sidebar builders", 1, builders.size)
                 val (builderClass, builder) = builders.single()
 

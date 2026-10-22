@@ -191,7 +191,7 @@ val downloadReelPatch = bytecodePatch(
                     otherRenders += classDef.type to method
                 }
 
-                if (isSidebarBuilder(method)) sidebars += classDef.type to method.name
+                if (isSidebarBuilder(method, classDef.methods)) sidebars += classDef.type to method.name
             }
         }
 
@@ -205,6 +205,13 @@ val downloadReelPatch = bytecodePatch(
         val sidebar = builderClass.methods.filter { it.name == sidebarName }
             .singleOrPatchException("$PATCH: the one method named $sidebarName on $sidebarClass")
         val instructions = sidebar.instructions()
+
+        // Up to 583 the builder calls the button factory itself. 584 calls it from a static of the
+        // component instead (LX/AF0;->A01, which the render LX/AF0;->A0l calls before and in its
+        // button loop), so the factory, its mode constant and the icon wrapper are read there.
+        val factoryCaller = buttonFactoryCallers(sidebar, builderClass.methods)
+            .singleOrPatchException("$PATCH: the one method of $sidebarClass calling the button factory for $sidebarName")
+        val factoryCalls = factoryCaller.instructions()
 
         // ---- the render ---------------------------------------------------------------------------
         //
@@ -255,17 +262,14 @@ val downloadReelPatch = bytecodePatch(
 
         // ---- the button factory -----------------------------------------------------------------
         //
-        // One call here takes four handlers. That is the factory, and its own parameter list then
+        // One call there takes four handlers. That is the factory, and its own parameter list then
         // names every wrapper the button needs, so none of them has to be searched for separately.
-        val factories = instructions.mapNotNull { it.methodReference() }
-            .filter { reference ->
-                reference.parameterTypes.count { it.toString() == FUNCTION1 } == 4 &&
-                    reference.parameterTypes.firstOrNull()?.toString() == FB_USER_SESSION
-            }
+        val factories = factoryCalls.mapNotNull { it.methodReference() }
+            .filter(::isButtonFactory)
             .distinctBy { "${it.definingClass}->${it.name}" }
 
         check(factories.size == 1) {
-            "Expected 1 button factory in $sidebarClass->$sidebarName, found ${factories.size}"
+            "Expected 1 button factory in $sidebarClass->${factoryCaller.name}, found ${factories.size}"
         }
 
         val factory = factories.single()
@@ -284,17 +288,17 @@ val downloadReelPatch = bytecodePatch(
         val labelType = parameters[3]
         val iconType = parameters[5]
 
-        // The mode constant this method already uses for its own buttons.
-        val mode = instructions.firstNotNullOfOrNull { instruction ->
+        // The mode constant that method already uses for its own buttons.
+        val mode = factoryCalls.firstNotNullOfOrNull { instruction ->
             instruction.fieldReference()?.takeIf {
                 instruction.opcode == Opcode.SGET_OBJECT && it.type == modeType
             }
         }
 
-        check(mode != null) { "No constant of $modeType is used in $sidebarName" }
+        check(mode != null) { "No constant of $modeType is used in ${factoryCaller.name}" }
 
         // The icon is wrapped by a class that extends the icon parameter and takes the enum.
-        val iconWrapper = instructions.firstNotNullOfOrNull { instruction ->
+        val iconWrapper = factoryCalls.firstNotNullOfOrNull { instruction ->
             instruction.methodReference()?.takeIf {
                 it.name == "<init>" &&
                     it.parameterTypes.size == 1 &&
@@ -302,7 +306,7 @@ val downloadReelPatch = bytecodePatch(
             }
         }
 
-        check(iconWrapper != null) { "No wrapper of $iconType is built in $sidebarName" }
+        check(iconWrapper != null) { "No wrapper of $iconType is built in ${factoryCaller.name}" }
 
         val iconEnumType = iconWrapper.parameterTypes.single().toString()
 
@@ -921,16 +925,44 @@ private fun handlers(hd: String, sd: String, manifest: String) = (0..6).joinToSt
  * call taking the session and four handlers. 582 merges a lambda naming the sidebar with one
  * building an FDSBottomSheet (four handlers, no session first) into LX/VrR;->invoke, so the
  * session is what tells the button apart. On 583 it's the spec's method the render calls
- * (arm64 LX/APP;->A02, armeabi-v7a LX/AR8;->A02), not the render; see [rendersThrough].
+ * (arm64 LX/APP;->A02, armeabi-v7a LX/AR8;->A02), not the render; see [rendersThrough]. On 584
+ * it's the render again (LX/AF0;->A0l), which builds its buttons through a static of its own
+ * class; see [buttonFactoryCallers]. [siblings] are the methods of [method]'s class.
  */
-internal fun isSidebarBuilder(method: Method): Boolean {
-    val list = method.instructions()
-    return list.any { it.stringReference() == SIDEBAR } && list.any { instruction ->
-        instruction.methodReference()?.parameterTypes?.let { parameters ->
-            parameters.count { it.toString() == FUNCTION1 } == 4 && parameters.firstOrNull()?.toString() == FB_USER_SESSION
-        } == true
+internal fun isSidebarBuilder(method: Method, siblings: Iterable<Method>): Boolean =
+    method.instructions().any { it.stringReference() == SIDEBAR } && buttonFactoryCallers(method, siblings).isNotEmpty()
+
+/**
+ * The methods that call the button factory for [builder]: [builder] itself up to 583, or the
+ * statics among [siblings], the methods of its own class, that it calls and that call the factory.
+ * 584's render (LX/AF0;->A0l) builds some of its buttons through LX/AF0;->A01, which takes the
+ * button's kind and calls the factory (LX/2Uj;->A00) for it, and leaves the rest to a builder
+ * shared with the FbShorts sidebar (LX/93I;->A06), which makes the button component (LX/93B)
+ * itself.
+ */
+internal fun buttonFactoryCallers(builder: Method, siblings: Iterable<Method>): List<Method> {
+    if (callsButtonFactory(builder)) return listOf(builder)
+    val called = builder.instructions()
+        .filter { it.opcode == Opcode.INVOKE_STATIC || it.opcode == Opcode.INVOKE_STATIC_RANGE }
+        .mapNotNull { it.methodReference() }
+        .filter { it.definingClass == builder.definingClass }
+    return siblings.filter { sibling ->
+        AccessFlags.STATIC.isSet(sibling.accessFlags) &&
+            called.any { call ->
+                call.name == sibling.name && call.returnType == sibling.returnType &&
+                    call.parameterTypes.map(CharSequence::toString) == sibling.parameterTypes.map(CharSequence::toString)
+            } &&
+            callsButtonFactory(sibling)
     }
 }
+
+/** The button factory: a call taking the session first and four handlers. */
+private fun isButtonFactory(reference: MethodReference): Boolean =
+    reference.parameterTypes.count { it.toString() == FUNCTION1 } == 4 &&
+        reference.parameterTypes.firstOrNull()?.toString() == FB_USER_SESSION
+
+private fun callsButtonFactory(method: Method): Boolean =
+    method.instructions().any { instruction -> instruction.methodReference()?.let(::isButtonFactory) == true }
 
 /** The local a call argument was copied from, so adding to it adds to the same object. */
 private fun traceSource(instructions: List<Instruction>, callIndex: Int, argument: Int): Int? =
