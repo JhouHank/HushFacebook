@@ -17,16 +17,19 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * the feed: off, each one starts silent, and on, each one starts with its sound. A tap on a
  * video's speaker button flips it, and so does a lot that isn't you. Every new app session sets it
  * again from Facebook's own pick ({@link #sessionSound}), which can turn it back on after you leave
- * Facebook for a while and come back, and the phone leaving silent mode, other apps' sound
- * stopping and Facebook's own checks can all turn it on too ({@link #soundChange}).
+ * Facebook for a while and come back, and Facebook asks for sound for reasons of its own as well
+ * ({@link #soundChange}): on a phone, twice with BY_ANDROID as it starts, and with
+ * BY_NF_TO_VH_DEEPLINK when a feed video is opened full screen.
  *
  * <p>While the switch is on, each session starts muted, and only you turn the sound on: a tap or
- * gesture on a video (Facebook's reasons starting with {@link #BY_USER}) or the volume up key,
- * which Facebook handles inside an activity's onKeyUp or, for a volume change from outside the
+ * gesture on a video's sound (Facebook's reasons starting with {@link #BY_USER}) or the volume up
+ * key, which Facebook handles inside an activity's onKeyUp or, for a volume change from outside the
  * app, in a method it names {@link #VOLUME_INCREASE}. Anything else asking for sound gets the flag
- * it already has, so a sound you turned on stays on and a muted feed stays muted. Muting always
- * goes through. Nothing here may throw into Facebook's player: off, paused, before the settings
- * are ready or when anything here fails, Facebook's own answer goes through.
+ * it already has, so a sound you turned on stays on and a muted feed stays muted. A video opened
+ * from the feed starts muted too, its speaker showing: letting the open turn the sound on would
+ * leave it on for the feed after it. Muting always goes through. Nothing here may throw into
+ * Facebook's player: off, paused, before the settings are ready or when anything here fails,
+ * Facebook's own answer goes through.
  */
 public final class FeedSound {
     /** Counted under the patch's name each time a new session's sound starts off instead of on. */

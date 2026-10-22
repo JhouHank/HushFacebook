@@ -35,7 +35,7 @@ public class FeedSoundTest {
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 
     /** Stand-ins for Facebook's enum of sound change reasons, whose names it keeps. */
-    private enum Reason { BY_USER, BY_USER_GESTURE, BY_ANDROID, BY_PLAYER }
+    private enum Reason { BY_USER, BY_USER_GESTURE, BY_ANDROID, BY_PLAYER, BY_NF_TO_VH_DEEPLINK }
 
     @Before
     public void start() {
@@ -85,11 +85,13 @@ public class FeedSoundTest {
     @Test
     public void onASoundOnThatIsntYoursKeepsTheFlag() {
         Settings.KEEP_FEED_VIDEOS_MUTED.save(true);
-        assertFalse("the ringer turned the feed's sound on", FeedSound.soundChange(Reason.BY_ANDROID, true, false));
+        assertFalse("Facebook's start turned the feed's sound on", FeedSound.soundChange(Reason.BY_ANDROID, true, false));
         assertFalse("the player turned the feed's sound on", FeedSound.soundChange(Reason.BY_PLAYER, true, false));
+        assertFalse("opening a feed video turned the sound on",
+                FeedSound.soundChange(Reason.BY_NF_TO_VH_DEEPLINK, true, false));
         assertFalse("a reason that isn't an enum turned the sound on", FeedSound.soundChange(null, true, false));
         String line = statusLine();
-        assertTrue(line, line.contains(FeedSound.KEPT_MUTED + " 3"));
+        assertTrue(line, line.contains(FeedSound.KEPT_MUTED + " 4"));
     }
 
     @Test
@@ -116,7 +118,7 @@ public class FeedSoundTest {
     @Test
     public void offPausedOrColdFacebooksSoundGoesThrough() {
         assertTrue("off, a session started muted", FeedSound.sessionSound(true));
-        assertTrue("off, the ringer's sound-on was kept off", FeedSound.soundChange(Reason.BY_ANDROID, true, false));
+        assertTrue("off, Facebook's own sound-on was kept off", FeedSound.soundChange(Reason.BY_ANDROID, true, false));
 
         Settings.KEEP_FEED_VIDEOS_MUTED.save(true);
         for (HushfacebookPause.Reason reason : new HushfacebookPause.Reason[] {
