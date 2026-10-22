@@ -636,7 +636,9 @@ function Restore-AuditState {
 function Get-Report([string]$Path) {
     if (-not $Entry) { throw 'The launcher entry was not resolved. No report request was sent.' }
     Invoke-Adb shell rm -f "$AuditDir/report.txt" | Out-Null
-    Invoke-Adb shell am start -W -n $Entry --ez "$Extra.AUDIT_REPORT" true | Out-Null
+    # The request matches the task's root intent (extras don't count), so with another screen on
+    # top Android only brings the task forward and drops it. Clearing to the launcher delivers it.
+    Invoke-Adb shell am start -W --activity-clear-top -n $Entry --ez "$Extra.AUDIT_REPORT" true | Out-Null
     for ($wait = 0; $wait -lt 20; $wait++) {
         Start-Sleep -Seconds 1
         $there = (Invoke-Adb shell "ls $AuditDir/report.txt 2>/dev/null; true") -join ''
@@ -698,7 +700,7 @@ function Save-SettingsPages([string]$Pass, [string]$RequestedLocale = '') {
         $name = if ($page) { ($page -replace "[^A-Za-z0-9]+", '-').Trim('-').ToLowerInvariant() } else { 'home' }
         Close-Settings
         Invoke-Adb shell rm -f "$AuditDir/page.json" | Out-Null
-        $command = "am start -W -n $Entry --ez $Extra.OPEN_SETTINGS true"
+        $command = "am start -W --activity-clear-top -n $Entry --ez $Extra.OPEN_SETTINGS true"
         if ($page) { $command += " --es $Extra.AUDIT_PAGE $(Format-Shell $page)" }
         Invoke-Adb shell $command | Out-Null
         Start-Sleep -Seconds $SettleSeconds

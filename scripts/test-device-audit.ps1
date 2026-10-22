@@ -573,6 +573,8 @@ try {
         Assert-That (@($starts | Where-Object { $_ -notlike "* -n $Package/$launcher*" }).Count -eq 0) "A launch or extra missed the active launcher $launcher."
         Assert-That (@($starts | Where-Object { $_ -like '*OPEN_SETTINGS true*' -and $_ -like "* -n $Package/$launcher *" }).Count -ge 1) "OPEN_SETTINGS did not go to $launcher."
         Assert-That (@($starts | Where-Object { $_ -like '*AUDIT_REPORT true*' -and $_ -like "* -n $Package/$launcher *" }).Count -ge 1) "AUDIT_REPORT did not go to $launcher."
+        # Without it, an intent matching the task's root is dropped whenever another screen sits on top.
+        Assert-That (@($starts | Where-Object { ($_ -like '*AUDIT_REPORT true*' -or $_ -like '*OPEN_SETTINGS true*') -and $_ -notlike '*--activity-clear-top*' }).Count -eq 0) "A report or settings request to $launcher could be dropped under another screen."
         Assert-That (-not @($script:adbCalls | Where-Object { $_ -match 'pm (enable|disable)|setEnabledSetting|cmd package (enable|disable)' }).Count) 'The audit changed a component state.'
     }
     $Entry = $null
