@@ -122,15 +122,26 @@ internal object FlexBannerFingerprint : Fingerprint(
  * calls `Window.setNavigationBarColor`, and on Android 15 and newer paints Facebook's own navigation
  * bar view instead. Its class has a Redex name, so the fingerprint uses the shape and the framework
  * call.
+ *
+ * 584 (LX/2LF;->A00) takes its own class as a third parameter, (Activity, Window, LX/2LF, int): the
+ * Kotlin object's instance, passed in once the companion was inlined. The colour is the last
+ * parameter either way ([navigationBarColourIndex]).
  */
 internal object NavigationBarPainterFingerprint : Fingerprint(
     accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.STATIC, AccessFlags.FINAL),
     returnType = "V",
-    parameters = listOf("Landroid/app/Activity;", "Landroid/view/Window;", "I"),
     filters = listOf(
         methodCall(definingClass = "Landroid/view/Window;", name = "setNavigationBarColor"),
     ),
+    custom = { method, _ ->
+        val parameters = method.parameterTypes.map(CharSequence::toString)
+        parameters.size in 3..4 && parameters[0] == "Landroid/app/Activity;" && parameters[1] == "Landroid/view/Window;" &&
+            parameters.last() == "I" && (parameters.size == 3 || parameters[2] == method.definingClass)
+    },
 )
+
+/** The register-parameter index of the colour in the navigation bar's painter: its last parameter (2 up to 583, 3 on 584). */
+internal fun navigationBarColourIndex(painter: Method): Int = painter.parameterTypes.size - 1
 
 /**
  * The Mig dark scheme resolver. The return type and the interface call remove the three sibling

@@ -763,12 +763,12 @@ internal fun BytecodePatchContext.hookStatusBarColour(darkCheck: String, target:
     statusBarPainter().hookBarColour("Status bar colour", window = 0, colour = 1, darkCheck, target)
 
 /**
- * The same for the [navigationBarPainter], whose window and colour are its second and third
- * parameters. [target] is AmoledTheme.navigationBar here, MaterialYouTheme.navigationBar when
+ * The same for the [navigationBarPainter], whose window is its second parameter and colour its last
+ * parameter. [target] is AmoledTheme.navigationBar here, MaterialYouTheme.navigationBar when
  * Material You is in the build without AMOLED.
  */
 internal fun BytecodePatchContext.hookNavigationBarColour(darkCheck: String, target: String = NAVIGATION_BAR) =
-    navigationBarPainter().hookBarColour("Navigation bar colour", window = 1, colour = 2, darkCheck, target)
+    navigationBarPainter().let { it.hookBarColour("Navigation bar colour", window = 1, colour = navigationBarColourIndex(it), darkCheck, target) }
 
 /**
  * Puts the bar hook first in this painter: the colour in parameter [colour] goes through [target]
