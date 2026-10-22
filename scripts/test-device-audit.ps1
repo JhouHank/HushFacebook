@@ -540,6 +540,8 @@ try {
     $SkipPages = $false
     Assert-That (Publish-AuditBaseline $candidate) 'Successful full audit did not promote its baseline.'
     Assert-That ((Get-Content -Raw $Expectations | ConvertFrom-Json).schema -eq 2) 'Promoted baseline was not schema 2.'
+    # The baselines are committed as LF. ConvertTo-Json writes CRLF on Windows.
+    Assert-That (-not [IO.File]::ReadAllText($Expectations).Contains("`r")) 'The promoted baseline has CR line endings.'
 
     function Start-Sleep { param([int]$Seconds, [int]$Milliseconds) }
     function Get-SettingsPages { return 'News feed' }

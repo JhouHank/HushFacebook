@@ -511,7 +511,8 @@ function Publish-AuditBaseline($Candidate) {
     $destination = [IO.Path]::GetFullPath($Expectations)
     $temporary = $destination + '.' + [Guid]::NewGuid().ToString('N') + '.candidate'
     try {
-        [IO.File]::WriteAllText($temporary, ($Candidate | ConvertTo-Json -Depth 6) + "`n")
+        # The baselines are committed as LF, and ConvertTo-Json writes CRLF on Windows.
+        [IO.File]::WriteAllText($temporary, (($Candidate | ConvertTo-Json -Depth 6) -replace "`r`n", "`n") + "`n")
         if (Test-Path -LiteralPath $destination) { [IO.File]::Replace($temporary, $destination, [NullString]::Value) }
         else { [IO.File]::Move($temporary, $destination) }
     } finally {

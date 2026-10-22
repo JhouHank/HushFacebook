@@ -22,6 +22,7 @@ Changes in each Hushfacebook version, newest first.
 * **Tooling:** The device audit can now put back the switches from a backup an older Hushfacebook build left on the phone. Switches added after that build weren't in the backup, so they kept the audit's all-on values, the restore never matched, and the audit folder stayed behind. Those switches go back to their defaults first now, and everything else comes from the backup. Checked on a phone.
 * **Tooling:** The device audit gets its report and opens the settings pages even when the walk ends on a reel or another full-screen page, and the phone smoke walk reaches the settings there too. Android quietly dropped those requests there, so the audit stopped with no report. The audit was checked on a phone, the smoke walk by its tests.
 * **Tooling:** The device audit no longer stops halfway when another tool reads the phone's lease file at the same moment. It waits a few seconds and tries again. A missing lease or one held by someone else still stops it.
+* **Tooling:** A baseline the device audit writes on Windows now has the same line endings as the copy in the repo, so promoting one doesn't leave the file looking half changed.
 
 ### Changed
 
