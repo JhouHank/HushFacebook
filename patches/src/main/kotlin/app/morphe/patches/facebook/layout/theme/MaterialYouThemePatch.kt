@@ -475,6 +475,16 @@ val materialYouThemePatch = bytecodePatch(
  */
 internal const val LINK_BOX_COLOUR_CONFIG = 0x1030747000203a7L
 
+/**
+ * The same config on 584, renumbered to `0x1030741000203a6` (`LX/5BP;->A00` and the renders read it
+ * through `MobileConfigUnsafeContext.A0H`, the String reader, which 583 had as `A0C`). Each declared
+ * build lists the id its readers load.
+ */
+internal const val LINK_BOX_COLOUR_CONFIG_584 = 0x1030741000203a6L
+
+/** Every id the declared builds give the link box's colour config. */
+internal val LINK_BOX_COLOUR_CONFIGS: Set<Long> = setOf(LINK_BOX_COLOUR_CONFIG, LINK_BOX_COLOUR_CONFIG_584)
+
 /** Where the parse of [LINK_BOX_COLOUR_CONFIG]'s string goes instead of route four's parser. */
 internal const val PARSE_LINK_BOX = "$MATERIAL_YOU->parseLinkBox(Ljava/lang/String;)I"
 
@@ -498,9 +508,9 @@ internal fun BytecodePatchContext.asksDarkCheck(method: Method, darkCheck: Strin
             } == true
     } == true
 
-/** Whether [method] loads [LINK_BOX_COLOUR_CONFIG]. */
+/** Whether [method] loads one of the [LINK_BOX_COLOUR_CONFIGS]. */
 internal fun readsLinkBoxColour(method: Method): Boolean =
-    method.implementation?.instructions?.any { (it as? WideLiteralInstruction)?.wideLiteral == LINK_BOX_COLOUR_CONFIG } == true
+    method.implementation?.instructions?.any { (it as? WideLiteralInstruction)?.wideLiteral in LINK_BOX_COLOUR_CONFIGS } == true
 
 /**
  * In each method that reads [LINK_BOX_COLOUR_CONFIG], sends its one call to route four's parser to
