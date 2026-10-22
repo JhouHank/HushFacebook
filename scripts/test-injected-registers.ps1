@@ -884,8 +884,8 @@ try {
         'Lcom/facebook/graphql/model/GraphQLFeedUnitEdge;)Z holding eof_edge_added_to_ui FeedEdgeAddedToUi'
     $swapHook = 'Lapp/morphe/extension/facebook/feed/FeedFilter;->hideSwappedEdge(Ljava/lang/Object;Ljava/lang/Object;)Z'
     $swapRun = 'Lfixture/EdgeSwap;->run()V'
-    $swapHeld = '"sizeBefore" and "sizeAfter" with the shape instance ()V'
-    $swapRule = "once-call $swapHook in instance ()V holding sizeBefore sizeAfter"
+    $swapHeld = '"sizeBefore" and "sizeAfter" with the shape instance ()*'
+    $swapRule = "once-call $swapHook in instance ()* holding sizeBefore sizeAfter"
     $readHook = 'Lapp/morphe/extension/facebook/chats/ReadReceipts;->holdsChatRead()Z'
     $readSite = 'Lfixture/Mailbox;->markRead()V'
     $readRule = "once-call $readHook holding markAsReadThreadWithThreadIdentifier"
