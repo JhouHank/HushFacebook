@@ -549,6 +549,32 @@ function Get-AuditLocales {
     return $locales
 }
 
+# Whether $Restored puts back every switch $Original holds, and holds each switch $Original has
+# no entry for (one added after the build that wrote it) at its value in $Defaults.
+function Test-AuditSettingsRestored([string]$Original, [string]$Restored, [string]$Defaults) {
+    try {
+        $before = $Original | ConvertFrom-Json -AsHashtable
+        $after = $Restored | ConvertFrom-Json -AsHashtable
+        $reset = $Defaults | ConvertFrom-Json -AsHashtable
+    } catch { return $false }
+    foreach ($snapshot in @($before, $after, $reset)) {
+        if ($snapshot -isnot [hashtable] -or $snapshot.settings -isnot [hashtable]) { return $false }
+    }
+    foreach ($field in @(@($before.Keys) + @($after.Keys) | Sort-Object -Unique | Where-Object { $_ -cne 'settings' })) {
+        if ((ConvertTo-Json -InputObject $before[$field] -Compress) -cne (ConvertTo-Json -InputObject $after[$field] -Compress)) { return $false }
+    }
+    foreach ($key in $before.settings.Keys) {
+        if (-not $after.settings.ContainsKey($key)) { return $false }
+        if ((ConvertTo-Json -InputObject $before.settings[$key] -Compress) -cne (ConvertTo-Json -InputObject $after.settings[$key] -Compress)) { return $false }
+    }
+    foreach ($key in $after.settings.Keys) {
+        if ($before.settings.ContainsKey($key)) { continue }
+        if (-not $reset.settings.ContainsKey($key)) { return $false }
+        if ((ConvertTo-Json -InputObject $reset.settings[$key] -Compress) -cne (ConvertTo-Json -InputObject $after.settings[$key] -Compress)) { return $false }
+    }
+    return $true
+}
+
 function Restore-AuditState {
     $restored = $true
     # Each part must run even if another fails. Keep both backups until all parts are verified.
@@ -561,11 +587,22 @@ function Restore-AuditState {
                     if (-not (Test-Path -LiteralPath $backup)) {
                         Invoke-Adb pull "$AuditDir/before.json" $backup | Out-Null
                     }
-                    $restore = Send-Profile ([IO.File]::ReadAllText($backup))
+                    $original = [IO.File]::ReadAllText($backup)
+                    $restore = Send-Profile $original
                     if ($restore -cnotmatch '\Aapplied [0-9]+\z') { throw "Settings restore was not applied: $restore" }
                     $confirmed = Join-Path $OutDir 'restored.json'
                     Invoke-Adb pull "$AuditDir/applied.json" $confirmed | Out-Null
-                    if ([IO.File]::ReadAllText($confirmed).Trim() -cne [IO.File]::ReadAllText($backup).Trim()) {
+                    if ([IO.File]::ReadAllText($confirmed).Trim() -ceq $original.Trim()) { break }
+                    # A backup an older build wrote has no entry for a switch added since, which then
+                    # keeps its all-on value. Put every switch at its default, then the backup over it.
+                    $reset = Send-Profile '{"format":"hushfacebook-audit","profile":"defaults"}'
+                    if ($reset -cnotmatch '\Aapplied [0-9]+\z') { throw "The defaults profile was not applied: $reset" }
+                    $defaults = Join-Path $OutDir 'defaults.json'
+                    Invoke-Adb pull "$AuditDir/applied.json" $defaults | Out-Null
+                    $restore = Send-Profile $original
+                    if ($restore -cnotmatch '\Aapplied [0-9]+\z') { throw "Settings restore was not applied: $restore" }
+                    Invoke-Adb pull "$AuditDir/applied.json" $confirmed | Out-Null
+                    if (-not (Test-AuditSettingsRestored $original ([IO.File]::ReadAllText($confirmed)) ([IO.File]::ReadAllText($defaults)))) {
                         throw 'The applied settings snapshot does not match the original backup.'
                     }
                 }
