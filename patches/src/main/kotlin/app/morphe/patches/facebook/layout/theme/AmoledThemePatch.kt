@@ -315,6 +315,8 @@ private fun amoledThemeResourcePatch(background: () -> Int) = resourcePatch {
         val rewrittenAtNight = mutableSetOf<String>()
         val references = mutableMapOf<String, String>()
 
+        // Patcher 2.0 decodes only the files a patch asks for: an undecoded file does not exist yet.
+        decode(DEFAULT_COLORS, NIGHT_COLORS)
         listOf(DEFAULT_COLORS, NIGHT_COLORS)
             .filter { get(it, false).exists() }
             .forEach { path ->

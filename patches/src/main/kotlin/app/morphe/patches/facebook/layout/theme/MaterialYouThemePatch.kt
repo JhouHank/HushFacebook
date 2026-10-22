@@ -283,6 +283,9 @@ private val materialYouResourcePatch = resourcePatch {
     // After every patch's own work, so AMOLED's black has gone in first and stays: black is no
     // tone this recolours.
     finalize {
+        // Patcher 2.0 decodes only the files a patch asks for: an undecoded file does not exist yet, so
+        // the state list check below needs its folder decoded too.
+        decode("res/values*/colors.xml", "res/values*/style*.xml", NIGHT_V31_STATE_LISTS)
         check(get(NIGHT_COLORS, false).exists()) { "Facebook has no night colours, so text would keep its grey" }
         val dynamic = get(NIGHT_V31_COLORS, false)
         if (!dynamic.exists()) {

@@ -272,7 +272,10 @@ try {
         $archive.Dispose()
     }
     $dependencyReport = [pscustomobject]@{
-        patchingSteps = @([pscustomobject]@{ success = $true })
+        success = $true
+        stepResults = @(
+            [pscustomobject]@{ step = 'PATCHING'; success = $true },
+            [pscustomobject]@{ step = 'REBUILDING'; success = $true })
         appliedPatches = @($allNames + $allDependencies | ForEach-Object {
             [pscustomobject]@{ name = $_ }
         })
@@ -285,6 +288,26 @@ try {
         -ExpectedPackageName $target.PackageName -ExpectedPackageVersion $target.PackageVersion
     Assert-True $reportValidation.Valid `
         "A complete result with a declared dependency was rejected: $($reportValidation.Reason)"
+    # The 1.18 CLI's step list name still reads, and a result with no step list is invalid, not an error.
+    $olderReport = $dependencyReport | Select-Object * -ExcludeProperty success, stepResults
+    $olderReport | Add-Member -NotePropertyName patchingSteps -NotePropertyValue @([pscustomobject]@{ success = $true })
+    $olderValidation = Test-PatchingReport -Report $olderReport -ExpectedNames $allNames `
+        -AllowedDependencyNames $allDependencies -OutputPath $reportApk `
+        -ExpectedPackageName $target.PackageName -ExpectedPackageVersion $target.PackageVersion
+    Assert-True $olderValidation.Valid "A 1.18 CLI result was rejected: $($olderValidation.Reason)"
+    $stepless = $dependencyReport | Select-Object * -ExcludeProperty stepResults
+    $steplessValidation = Test-PatchingReport -Report $stepless -ExpectedNames $allNames `
+        -AllowedDependencyNames $allDependencies -OutputPath $reportApk `
+        -ExpectedPackageName $target.PackageName -ExpectedPackageVersion $target.PackageVersion
+    Assert-True (-not $steplessValidation.Valid -and $steplessValidation.Reason -match 'step') `
+        "A result with no step list passed: $($steplessValidation.Reason)"
+    $failedStep = $dependencyReport | Select-Object *
+    $failedStep.stepResults = @([pscustomobject]@{ step = 'PATCHING'; success = $true },
+        [pscustomobject]@{ step = 'REBUILDING'; success = $false })
+    $failedStepValidation = Test-PatchingReport -Report $failedStep -ExpectedNames $allNames `
+        -AllowedDependencyNames $allDependencies -OutputPath $reportApk `
+        -ExpectedPackageName $target.PackageName -ExpectedPackageVersion $target.PackageVersion
+    Assert-True (-not $failedStepValidation.Valid) 'A result whose rebuild step failed passed.'
 
     $fakeAdb = Join-Path $caseRoot 'adb.cmd'
     $log = Join-Path $caseRoot 'adb.log'
@@ -5695,7 +5718,8 @@ try {
         # The report the CLI writes: every patch and the internal dependencies applied, one step,
         # and the input's own version, which is what the CLI reports.
         Set-Content -LiteralPath "$apkm.result.json" -Encoding ASCII -Value ([ordered]@{
-            patchingSteps = @([ordered]@{ success = $true })
+            success = $true
+            stepResults = @([ordered]@{ step = 'PATCHING'; success = $true })
             appliedPatches = @(@($releaseNames) + @($dependencyNamesHere) | ForEach-Object { [ordered]@{ name = $_ } })
             failedPatches = @()
             packageName = $releaseTarget.PackageName
