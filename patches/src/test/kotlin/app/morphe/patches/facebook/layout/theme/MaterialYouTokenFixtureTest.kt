@@ -110,7 +110,7 @@ class MaterialYouTokenFixtureTest {
          * pill bar below reads the same array in its constructor, under a name Redex leaves alone
          * on both ABIs, where the Litho component and the array's holder are renamed per build.
          */
-        val LIKES_LINE_ATTRIBUTE = mapOf("583.0.0.39.55" to 0x7f040fd6, "584.0.0.51.56" to 0x7f040fcf)
+        val LIKES_LINE_ATTRIBUTE = mapOf("584.0.0.51.56" to 0x7f040fcf)
         /**
          * The seven tokens 584 dropped from 583's 324 (all of them named in MaterialYouTheme's
          * tables or the AMOLED roles at some point), so a listed name missing from a build's enum is
@@ -186,42 +186,6 @@ class MaterialYouTokenFixtureTest {
                     "LX/QTH;->A04(LX/QTH;LX/QgX;)V@9",
                     "LX/Qab;-><init>(Landroid/content/Context;)V@116",
                     "LX/Qab;->A0e()V@35",
-                ),
-            ),
-            "583.0.0.39.55" to mapOf(
-                "arm64-v8a" to MAPBOX + setOf(
-                    "LX/9Sj;->A0Q(Ljava/lang/Integer;)V@16",
-                    "LX/CTX;->A02(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/Integer;@88",
-                    "LX/PBh;->F3q(LX/Qqc;)V@155",
-                    "LX/PBh;->F3q(LX/Qqc;)V@169",
-                    "LX/PBh;->F3q(LX/Qqc;)V@54",
-                    "LX/PBh;->F3q(LX/Qqc;)V@67",
-                    "LX/PBh;->F3q(LX/Qqc;)V@79",
-                    "LX/PBh;->F3q(LX/Qqc;)V@82",
-                    "LX/PEA;->DFh(LX/6Ei;I)V@169",
-                    "LX/PEA;->DFh(LX/6Ei;I)V@226",
-                    "LX/PEA;->DFh(LX/6Ei;I)V@32",
-                    "LX/PoM;->A04(LX/PoM;LX/Pur;)V@9",
-                    "LX/Pq0;-><init>(Landroid/content/Context;)V@122",
-                    "LX/Pq0;->A0f()V@35",
-                    "LX/nJl;->A00(Landroid/content/Context;Lcom/facebook/react/bridge/ReadableMap;)Landroid/graphics/drawable/Drawable;@20",
-                ),
-                "armeabi-v7a" to MAPBOX + setOf(
-                    "LX/9Tq;->A0Q(Ljava/lang/Integer;)V@16",
-                    "LX/CVG;->A02(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/Integer;@88",
-                    "LX/ipx;->F3d(LX/krO;)V@155",
-                    "LX/ipx;->F3d(LX/krO;)V@169",
-                    "LX/ipx;->F3d(LX/krO;)V@54",
-                    "LX/ipx;->F3d(LX/krO;)V@67",
-                    "LX/ipx;->F3d(LX/krO;)V@79",
-                    "LX/ipx;->F3d(LX/krO;)V@82",
-                    "LX/irr;->DFS(LX/6F1;I)V@171",
-                    "LX/irr;->DFS(LX/6F1;I)V@228",
-                    "LX/irr;->DFS(LX/6F1;I)V@33",
-                    "LX/jcv;->A04(LX/jcv;LX/jzT;)V@11",
-                    "LX/jsb;-><init>(Landroid/content/Context;)V@112",
-                    "LX/jsb;->A0f()V@36",
-                    "LX/nZb;->A00(Landroid/content/Context;Lcom/facebook/react/bridge/ReadableMap;)Landroid/graphics/drawable/Drawable;@20",
                 ),
             ),
         )

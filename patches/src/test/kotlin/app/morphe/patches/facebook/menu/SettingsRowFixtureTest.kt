@@ -38,7 +38,6 @@ import org.junit.Test
 class SettingsRowFixtureTest {
     /** How many row loggers each declared build's tap class has, by ABI. 582's 32-bit build dropped both. */
     private val loggerCount = mapOf(
-        "583.0.0.39.55" to mapOf("arm64-v8a" to 2, "armeabi-v7a" to 0),
         "584.0.0.51.56" to mapOf("arm64-v8a" to 2),
     )
 

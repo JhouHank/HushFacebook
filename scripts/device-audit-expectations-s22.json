@@ -1,6 +1,6 @@
 {
   "schema": 2,
-  "facebook": "583.0.0.39.55",
+  "facebook": "584.0.0.51.56",
   "written": "2026-10-21",
   "patchBuild": "sha256=a793e643cea4b34c60e200cd9758b07f2428c69449a9d190500c437c222d5f71; source=clean:1d7c8d0286dc10d66ca8aaa1b444814047f99c55; tree=5da49f4f7e722893349e0a74cd094a99b58a7c09; inputs=3cf8b13407be586071e38cd9da386ee43ffe738ae29e7bda8c99a6efcce48dc2",
   "installedApkSha256": "66768b755d77a0f1bcecd86c8ae888a3dfd484b082627a8db0698c72a11bd319",

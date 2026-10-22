@@ -95,8 +95,8 @@ class ReelSaveButtonFixtureTest {
             }
         }
         assertEquals("a declared build has no fixture", versions, checked)
-        // Redex names the builder's class separately per ABI, so both builds have to resolve.
-        assertEquals("an ABI went unchecked", setOf("arm64-v8a", "armeabi-v7a"), abis)
+        // Redex names the builder's class separately per ABI, so every declared build has to resolve.
+        assertEquals("an ABI went unchecked", Fixtures.declaredAbis(), abis)
     }
 
     @Test

@@ -22,6 +22,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Changed
 
+* **Facebook:** Hushfacebook now targets Facebook 584.0.0.51.56 only, the newest stable release. That's build 475817393 for 64-bit phones (the arm64-v8a 480dpi Android 11+ bundle). Facebook hasn't released a 32-bit build of 584 yet, so none is declared for now. If you're on 583.0.0.39.55, update Facebook to 584 before you patch.
 * **Facebook:** The description of `Hide the reaction preview on posts` now says where the number on the Like button goes. That count belongs to `Hide counts on posts`, so the preview switch alone leaves it showing (issue #158).
 * **Settings:** A settings file can now be up to 96 KB, up from 88 KB, so a file with every list full still fits now that there are more switches.
 * **Tooling:** No release goes out now until the whole app has been walked, on a phone or an emulator, with the exact bundle being published. `scripts/device-audit.ps1` leaves a `walk-receipt.json` saying how the walk ended, where it ran and which patch build the app reported, and the release script's publish step takes it as `-Walk`. Anything short of a full pass with no crash on that same bundle stops it before the tag.

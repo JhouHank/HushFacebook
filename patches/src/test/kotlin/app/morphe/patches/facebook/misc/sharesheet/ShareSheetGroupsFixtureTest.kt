@@ -69,7 +69,6 @@ class ShareSheetGroupsFixtureTest {
     private companion object {
         /** Per build, the footer's Send to group label and the label that takes the number of picks. */
         val LABELS = mapOf(
-            "583.0.0.39.55" to (0x7f144794 to 0x7f144795),
             "584.0.0.51.56" to (0x7f144857 to 0x7f144858),
         )
     }

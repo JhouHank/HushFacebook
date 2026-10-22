@@ -34,7 +34,6 @@ import org.junit.Test
 class MenuPanelFixtureTest {
     /** The MobileConfig flag the panel asks per build, read from 583's arm64 and armv7 dex and 584's arm64. */
     private val bloksPanelFlags = mapOf(
-        "583.0.0.39.55" to 0x10101a200581627L,
         "584.0.0.51.56" to 0x10101a20058164cL,
     )
 

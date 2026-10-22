@@ -371,7 +371,7 @@ try {
     Assert-That ($script:actualLocale -ceq '') 'KeepSettings failed to restore an originally empty locale.'
     Assert-That (-not @($script:adbCalls | Where-Object { $_ -like '* rm -rf *' }).Count) 'KeepSettings deleted retained recovery data.'
 
-    $version = '583.0.0.39.55'
+    $version = '584.0.0.51.56'
     $installedHash = 'a' * 64
     $installedAbi = 'arm64-v8a'
     $sdk = 36
