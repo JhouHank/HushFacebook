@@ -106,7 +106,11 @@ Assert-That (Test-LauncherRefused @("  $pkg/.LoginActivity", "  $pkg/$alias")) '
 $smokeText = [IO.File]::ReadAllText((Join-Path $PSScriptRoot 'phone-smoke.ps1'))
 Assert-That (-not $smokeText.Contains('/.LoginActivity"')) 'phone-smoke.ps1 hardcodes the default launcher again.'
 Assert-That ($smokeText.IndexOf('Select-AndroidLauncher') -lt $smokeText.IndexOf('am force-stop')) 'The launcher is not resolved before Facebook is started.'
-Assert-That ([regex]::Matches($smokeText, 'am start -W -n \$Entry').Count -eq 2) 'A launch in phone-smoke.ps1 bypasses the resolved launcher.'
+Assert-That ([regex]::Matches($smokeText, 'am start -W (--activity-clear-top )?-n \$Entry').Count -eq 2) 'A launch in phone-smoke.ps1 bypasses the resolved launcher.'
+# The walk can end on a reel or another full-screen page, and a launcher intent that only adds an
+# extra matches the task's root, so Android drops it there unless the screens above are cleared.
+Assert-That ([regex]::IsMatch($smokeText, 'am start -W --activity-clear-top -n \$Entry --ez app\.morphe\.extension\.facebook\.OPEN_SETTINGS true')) `
+    'The settings request after the walk can be dropped under another screen.'
 if ($failures.Count -gt 0) {
     $failures | ForEach-Object { Write-Host "[phone-smoke] FAIL $_" }
     throw "$($failures.Count) phone-smoke report check(s) failed."
