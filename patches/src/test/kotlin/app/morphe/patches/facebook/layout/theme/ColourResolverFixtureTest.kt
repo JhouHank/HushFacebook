@@ -73,7 +73,8 @@ class ColourResolverFixtureTest {
      * wrapper, the view resolver's class and the class of the resolver the view resolver asks.
      */
     private fun routeOneClasses(bundle: File): Map<String, ClassDef> {
-        val named = FixtureDex.classes(bundle, setOf(DARK_COLOR_SCHEME, FDS_COLORS, FDS_COLOR_SCHEME))
+        val named = FixtureDex.classes(bundle, setOf(DARK_COLOR_SCHEME, FDS_COLOR_SCHEME)) +
+            fdsColorsOf(bundle).let { mapOf(it.type to it) }
         val view = viewResolver(named.getValue(FDS_COLOR_SCHEME))
         val viewClass = FixtureDex.classes(bundle, setOf(view.definingClass))
         val asked = intCalls(viewClass.getValue(view.definingClass).methods.single { it.descriptor() == view.toString() }).single()

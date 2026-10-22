@@ -839,19 +839,16 @@ internal fun BytecodePatchContext.systemBarColourMethods(): (Method) -> Boolean 
  * `Integer` from a Context, the token and a palette.
  */
 internal fun BytecodePatchContext.hookFdsColorsResolvers(target: String) {
-    val colors = mutableClassDefBy(FDS_COLORS)
-    val source = colors.methods.singleOrNull { method ->
-        AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "Ljava/lang/Integer;" &&
-            method.parameterTypes.size == 3 && method.parameterTypes[0].toString() == "Landroid/content/Context;"
-    } ?: error("FDSColors has no single Integer colour source taking a Context, a token and a palette")
-    val tokenType = source.parameterTypes[1].toString()
+    val type = fdsColors()
+    val colors = mutableClassDefBy(type)
+    val tokenType = fdsColourSource(colors)!!.parameterTypes[1].toString()
 
     val resolvers = colors.methods.filter { method ->
         !AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "I" &&
             method.parameterTypes.any { it.toString() == tokenType } &&
             method.implementation?.instructions?.any { instruction ->
                 val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
-                reference != null && reference.definingClass == FDS_COLORS && reference.returnType == "Ljava/lang/Integer;"
+                reference != null && reference.definingClass == type && reference.returnType == "Ljava/lang/Integer;"
             } == true
     }
     check(resolvers.isNotEmpty()) { "No FDSColors resolver asks the Integer colour source" }

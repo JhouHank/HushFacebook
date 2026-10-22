@@ -11,8 +11,15 @@ import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.fieldAccess
 import app.morphe.patcher.methodCall
 import app.morphe.patcher.opcode
+import app.morphe.patcher.patch.BytecodePatchContext
+import app.morphe.patcher.patch.PatchException
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.ClassDef
+import com.android.tools.smali.dexlib2.iface.Method
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import java.util.WeakHashMap
 
 /**
  * The four resolvers, which answer the first of the four routes that a colour takes.
@@ -24,16 +31,54 @@ import com.android.tools.smali.dexlib2.Opcode
  *
  * R8 keeps the owner class names but renames the methods on every release. Thus each fingerprint
  * uses the class, the return type, the parameters and the shape of the body, and never a name.
+ * 584 renamed `FDSColors` too, so it's found by its shape ([fdsColors]).
  */
 
 internal const val DARK_COLOR_SCHEME = "Lcom/facebook/mig/scheme/schemes/DarkColorScheme;"
-internal const val FDS_COLORS = "Lcom/facebook/fds/core/theme/component/FDSColors;"
 internal const val FDS_COLOR_SCHEME = "Lcom/facebook/mig/scheme/schemes/fds/FdsColorScheme;"
 internal const val STATUS_BAR_UTIL = "Lcom/facebook/navigation/statusbar/StatusBarUtil;"
 internal const val SET_STATUS_BAR_COLOR = "Landroid/view/Window;->setStatusBarColor(I)V"
 internal const val SYSTEM_BARS_CONTROLLER = "Lcom/facebook/navigation/statusbar/controller/SystemBarsController;"
 
 internal const val THEME_PREFERENCES_STATE = "Lcom/facebook/prefs/theme/ThemePreferences\$State;"
+
+private val fdsColorsTypes = WeakHashMap<BytecodePatchContext, String>()
+
+/**
+ * `FDSColors`, the class answering Litho's colour tokens. Redex kept its name up to 583
+ * (`Lcom/facebook/fds/core/theme/component/FDSColors;`) and renamed it on 584 (`LX/29y`), so it's
+ * found by its shape ([fdsColourSource]), which hasn't moved. One class has it, or the lookup fails.
+ */
+internal fun BytecodePatchContext.fdsColors(): String = fdsColorsTypes.getOrPut(this) {
+    val found = mutableListOf<String>()
+    classDefForEach { classDef ->
+        if (!classDef.type.startsWith(EXTENSION_PACKAGE) && fdsColourSource(classDef) != null) found += classDef.type
+    }
+    found.singleOrNull() ?: throw PatchException(
+        "expected one FDSColors (a singleton whose static Integer colour source hands a token to its own switch), found $found",
+    )
+}
+
+/**
+ * The static `Integer` colour source of [classDef] when the class is `FDSColors`, else null. The
+ * class holds a singleton of its own type, and the source takes a Context, a token and a palette and
+ * hands the token on to a static method of the same class taking the token, an int and a boolean
+ * (583 `A04` to `A05`, 584 `A05` to `A06`). The token type is the source's second parameter.
+ */
+internal fun fdsColourSource(classDef: ClassDef): Method? {
+    if (classDef.fields.none { AccessFlags.STATIC.isSet(it.accessFlags) && it.type == classDef.type }) return null
+    return classDef.methods.singleOrNull { method ->
+        val parameters = method.parameterTypes.map { it.toString() }
+        AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "Ljava/lang/Integer;" &&
+            parameters.size == 3 && parameters[0] == "Landroid/content/Context;" &&
+            method.implementation?.instructions?.any { instruction ->
+                val call = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+                instruction.opcode == Opcode.INVOKE_STATIC && call?.definingClass == classDef.type &&
+                    call.returnType == "Ljava/lang/Integer;" &&
+                    call.parameterTypes.map { it.toString() } == listOf(parameters[1], "I", "Z")
+            } == true
+    }
+}
 
 /**
  * Facebook's dark mode controller answering whether its dark mode is on, for the whole app: the

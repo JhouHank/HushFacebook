@@ -8,7 +8,6 @@ import app.morphe.Fixtures
 import app.morphe.RepoFiles
 import app.morphe.patches.facebook.layout.theme.tokenAttributes as patchTokenAttributes
 import app.morphe.patches.shared.compat.AppCompatibilities
-import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.DexFileFactory
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.Opcodes
@@ -832,10 +831,7 @@ class MaterialYouTokenFixtureTest {
         for (name in container.dexEntryNames) {
             for (classDef in container.getEntry(name)!!.dexFile.classes) classes.putIfAbsent(classDef.type, classDef)
         }
-        val source = classes.getValue(FDS_COLORS).methods.single { method ->
-            AccessFlags.STATIC.isSet(method.accessFlags) && method.returnType == "Ljava/lang/Integer;" &&
-                method.parameterTypes.size == 3 && method.parameterTypes[0].toString() == "Landroid/content/Context;"
-        }
+        val source = classes.values.mapNotNull { fdsColourSource(it) }.single()
         val tokenType = source.parameterTypes[1].toString()
         return classes.getValue(tokenType).methods.single { it.name == "<clinit>" } to tokenType
     }
