@@ -1041,6 +1041,10 @@ When Facebook also sends an HDR video in SDR at the same size, play that version
 Skip silent parts	Lewati bagian yang hening
 # context: summary of that switch; how-tos are tutorial videos
 Videos, reels and stories jump past the quiet stretches in their sound, so talks and how-tos get to the point sooner.	Video, reel, dan cerita melompati bagian yang hening dalam suaranya, jadi ceramah dan tutorial lebih cepat sampai ke intinya.
+# context: switch title under Playback; feed videos stay silent until the user turns their sound on
+Keep feed videos muted	Tetap bisukan video di Kabar Beranda
+# context: summary of that switch; the speaker is the sound button on a video, volume up is the phone's key
+Videos in your feed start with the sound off every time you open Facebook, and only you turn it on. Tap a video's speaker or press volume up to hear it.	Video di Kabar Beranda selalu mulai tanpa suara setiap kali kamu membuka Facebook, dan hanya kamu yang menyalakannya. Ketuk ikon speaker video atau tekan tombol volume naik untuk mendengarnya.
 # context: switch title under Playback; keeps a video's progress bar (the line showing how far it has played) on screen
 Keep the progress bar	Pertahankan bilah progres
 # context: summary of that switch; a reel is a short vertical video

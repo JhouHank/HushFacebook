@@ -1041,6 +1041,10 @@ When Facebook also sends an HDR video in SDR at the same size, play that version
 Skip silent parts	Saltar las partes en silencio
 # context: summary of that switch; how-tos are tutorial videos
 Videos, reels and stories jump past the quiet stretches in their sound, so talks and how-tos get to the point sooner.	Los vídeos, reels e historias saltan los tramos en silencio del sonido, así las charlas y los tutoriales van antes al grano.
+# context: switch title under Playback; feed videos stay silent until the user turns their sound on
+Keep feed videos muted	Mantener sin sonido los vídeos del feed
+# context: summary of that switch; the speaker is the sound button on a video, volume up is the phone's key
+Videos in your feed start with the sound off every time you open Facebook, and only you turn it on. Tap a video's speaker or press volume up to hear it.	Los vídeos de tu feed empiezan sin sonido cada vez que abres Facebook, y solo tú lo activas. Toca el altavoz de un vídeo o pulsa la tecla de subir volumen para oírlo.
 # context: switch title under Playback; keeps a video's progress bar (the line showing how far it has played) on screen
 Keep the progress bar	Mantener la barra de progreso
 # context: summary of that switch; a reel is a short vertical video

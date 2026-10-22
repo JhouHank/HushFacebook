@@ -832,6 +832,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/media/FeedSound.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/media/feedsound/KeepFeedVideosMutedPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: Keep feed videos muted, a Reddit request, from Facebook 583. Facebook's feed sound state is the one class with a kept-name startNewSession method, which hands a flag to a setter of its own taking a reason enum and a flag. The same class has one setter taking that reason, a String and a flag, which first reads the sound flag both setters store and compares it with the one it's asked for. The patch asks the extension for the session setter's flag before anything reads it, and for the reasoned setter's flag right after its read, each answer going back in the flag's own register. While the switch is on a new session starts muted, and a sound-on whose reason name doesn't start with BY_USER, and that doesn't come through onKeyUp or the kept-name maybeUnmuteOnDeviceVolumeIncrease, keeps the flag the state holds."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/stories/StoryUpload.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/stories/upload/UploadStoriesInHdPatch.kt"
       ],

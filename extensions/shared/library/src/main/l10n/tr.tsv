@@ -1041,6 +1041,10 @@ When Facebook also sends an HDR video in SDR at the same size, play that version
 Skip silent parts	Sessiz kısımları atla
 # context: summary of that switch; how-tos are tutorial videos
 Videos, reels and stories jump past the quiet stretches in their sound, so talks and how-tos get to the point sooner.	Videolar, Reels ve hikayeler sesteki sessiz bölümleri atlar, böylece konuşmalar ve nasıl yapılır videoları sadede daha çabuk gelir.
+# context: switch title under Playback; feed videos stay silent until the user turns their sound on
+Keep feed videos muted	Akıştaki videoları sessiz tut
+# context: summary of that switch; the speaker is the sound button on a video, volume up is the phone's key
+Videos in your feed start with the sound off every time you open Facebook, and only you turn it on. Tap a video's speaker or press volume up to hear it.	Akışındaki videolar Facebook'u her açtığında sessiz başlar ve sesi yalnızca sen açarsın. Duymak için videonun hoparlör simgesine dokun veya ses açma tuşuna bas.
 # context: switch title under Playback; keeps a video's progress bar (the line showing how far it has played) on screen
 Keep the progress bar	İlerleme çubuğunu koru
 # context: summary of that switch; a reel is a short vertical video
