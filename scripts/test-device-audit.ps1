@@ -123,6 +123,18 @@ try {
     $held = [IO.File]::Open($leasePath, [IO.FileMode]::Open, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
     try { Assert-Throws { Invoke-Adb shell input tap 10 10 } 'A locked lease permitted input.' }
     finally { $held.Dispose() }
+    # Another session waiting for the phone can be reading the lease at the moment a call checks it.
+    $script:briefReader = [IO.File]::Open($leasePath, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::Read)
+    $script:adbCalls.Clear()
+    $briefReadStopped = $false
+    try {
+        & {
+            function Start-Sleep { if ($script:briefReader) { $script:briefReader.Dispose(); $script:briefReader = $null } }
+            Invoke-Adb shell cmd uimode night | Out-Null
+        }
+    } catch { $briefReadStopped = $true }
+    finally { if ($script:briefReader) { $script:briefReader.Dispose() } }
+    Assert-That (-not $briefReadStopped -and $script:adbCalls.Count -eq 1) 'A lease another process read for a moment stopped the audit.'
 
     foreach ($unsafe in @('tap:Like', 'tap:Follow', 'tap:Add friend', 'tap:Send', 'tap:Alice', 'fb://friends', 'fb://messaging_thread', 'fb://feed; input tap 1 1')) {
         $Visit = @($unsafe)

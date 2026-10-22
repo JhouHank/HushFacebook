@@ -133,8 +133,19 @@ function Assert-AuditLease {
     $token = [IO.File]::ReadAllText([IO.Path]::GetFullPath($LeaseTokenFile)).Trim()
     if ([string]::IsNullOrWhiteSpace($token)) { throw 'The lease token is empty.' }
     $leasePath = Join-Path $LeaseDirectory "$Serial.json"
-    # Keep ownership validation and renewal under the same exclusive file handle.
-    $stream = [IO.File]::Open($leasePath, [IO.FileMode]::Open, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
+    # Keep ownership validation and renewal under the same exclusive file handle. Another session
+    # waiting for the phone may be reading the lease right now, so a sharing violation is retried
+    # for a few seconds. A missing lease or a lock that outlasts the retries still stops the audit.
+    $stream = $null
+    foreach ($delay in @(100, 250, 500, 1000, 2000, 0)) {
+        try {
+            $stream = [IO.File]::Open($leasePath, [IO.FileMode]::Open, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
+            break
+        } catch [IO.IOException] {
+            if (($_.Exception.GetBaseException().HResult -band 0xFFFF) -notin 32, 33 -or $delay -eq 0) { throw }
+            Start-Sleep -Milliseconds $delay
+        }
+    }
     try {
         $reader = [IO.StreamReader]::new($stream, [Text.Encoding]::UTF8, $true, 1024, $true)
         try { $lease = $reader.ReadToEnd() | ConvertFrom-Json } finally { $reader.Dispose() }
