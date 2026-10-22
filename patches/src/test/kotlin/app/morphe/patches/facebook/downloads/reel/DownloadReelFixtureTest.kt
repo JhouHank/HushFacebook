@@ -35,9 +35,10 @@ import org.junit.Test
 
 /**
  * Download any reel run whole on each declared build's own sidebar and the classes it reaches: the
- * block goes in at most three instructions before the assembly call, borrowing v0 to v2, and a
- * fourth local for the story when its argument register is above v15, each proved free there by the
- * liveness of the whole builder, and each register it reads unchanged up to the call. The build's
+ * block goes in before the assembly call where v0 to v2 are free and the parked player is still in
+ * its register, borrowing v0 to v2, and a fourth local for the story when its register is outside
+ * v3 to v15, each proved free there by the liveness of the whole builder, and each register it
+ * reads followed back from the call's own arguments. The build's
  * one FbShortsSideBarComponent render, which the button can't go in, gets a counter as its first
  * instruction and nothing else (#18). And the More sheet's builder asks for a Download row first
  * thing, through a helper on its class, with the handler made to take the row's click interface
@@ -59,15 +60,15 @@ class DownloadReelFixtureTest {
     private data class Pin(val before: Int, val story: Int)
 
     /**
-     * Each declared bundle's pick, by the end of its file name. 583 keeps the builder in the
-     * sidebar's spec and copies three lambdas out of v0 to v2 just before the call's last boolean,
-     * so the block goes in one instruction before the call. The story, the call's second argument
-     * (v43 on arm64, v35 on armeabi-v7a), is copied to the lowest local from v3 that nothing reads
-     * after: v4 on arm64, which reads v3 once the sidebar is assembled, and v3 on armeabi-v7a.
+     * Each declared bundle's pick, by the end of its file name. 584's render (LX/AF0;->A0l) parks
+     * the scoped context over the player in v29 at instruction 549, so the block goes in at 532,
+     * where the button loop ends and the call's straight run starts, 38 instructions before the
+     * call. The story, the call's second argument, is still in v14 there, which the helper call
+     * names as it is. 584 has no armeabi-v7a fixture yet, so one that arrives fails here for want
+     * of its pin.
      */
     private val pins = mapOf(
-        "${AppCompatibilities.FACEBOOK_TARGET_VERSION}-arm64-v8a.apkm" to Pin(before = 1, story = 4),
-        "${AppCompatibilities.FACEBOOK_TARGET_VERSION}-armeabi-v7a.apkm" to Pin(before = 1, story = 3),
+        "${AppCompatibilities.FACEBOOK_TARGET_VERSION}-arm64-v8a.apkm" to Pin(before = 38, story = 14),
     )
 
     private fun callsButtonFactory(method: Method) = method.implementation?.instructions?.any { instruction ->
