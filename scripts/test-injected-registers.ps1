@@ -1047,6 +1047,7 @@ try {
         'bad-watch-execute-left' = 'contract'
         'bad-watch-hook-other-registers' = 'contract'
         'bad-watch-two-flushes' = 'contract'
+        'bad-watch-input-unnamed' = 'contract'
         'bad-swap-hook-missing' = 'contract'
         'bad-swap-hook-decoy' = 'contract'
         'bad-swap-hook-also-elsewhere' = 'contract'
@@ -1136,7 +1137,8 @@ try {
 
     # Each watch-history build fails on the sole-call rule alone, for its own reason: no stand-in,
     # one in another method holding the mutation's name, one there as well as in the flush, two,
-    # Facebook's call left beside it, one on the registers the wrong way round, or a second flush.
+    # Facebook's call left beside it, one on the registers the wrong way round, a second flush, or a
+    # flush whose input's constructor no longer loads the input field (584 loads it there).
     $watchDescribe = 'Lfixture/SeenStateBatcher;->describe()V'
     $watchFails = [ordered]@{
         'bad-watch-hook-missing' = "[diff] FAIL: contract: $watchSend is not called in $watchFlush, the one method holding $watchHeld"
@@ -1150,6 +1152,8 @@ try {
             "clean build calls $watchExecute there on v2, v1"
         'bad-watch-two-flushes' = "[diff] FAIL: contract: 2 methods hold $watchHeld, and exactly one must, so the rule " +
             "can't say which one calls ${watchSend}: $watchFlush, Lfixture/SeenStateBatcher;->flushAgain()V"
+        'bad-watch-input-unnamed' = "[diff] FAIL: contract: 0 methods hold $watchHeld, and exactly one must, so the rule " +
+            "can't say which one calls $watchSend"
     }
     foreach ($case in $watchFails.GetEnumerator()) {
         $fails = @((Get-Findings $badResults[$case.Key]).Fails)

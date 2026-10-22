@@ -126,8 +126,9 @@ next-call Lapp/morphe/extension/facebook/settings/SettingsEntry;->setLogoTouchLi
 # watched reels: the one Executor.execute call in the batcher's flush becomes ReelWatchHistory.send,
 # on the executor's and the send's registers in that order. The flush is the one method holding the
 # mutation's name and its input field, an instance method taking nothing (on 580 and 577 no other
-# method holds the mutation's name). Left out or left beside the stand-in, the batch goes out; on
-# other registers, the stand-in gets the send as its executor.
+# method holds the mutation's name). 584 loads the field name in the input class's constructor
+# (LX/7nD;), which the flush calls, and that counts as holding it. Left out or left beside the
+# stand-in, the batch goes out; on other registers, the stand-in gets the send as its executor.
 sole-call Lapp/morphe/extension/facebook/reels/ReelWatchHistory;->send(Ljava/util/concurrent/Executor;Ljava/lang/Runnable;)V replacing Ljava/util/concurrent/Executor;->execute(Ljava/lang/Runnable;)V in instance ()V holding FbShortsSeenStateMutation video_ids
 # The tab bar asks its jewel controller for each tab's new count through one static method, which
 # loads the controller's getTrackedCountWithLogging name. Hide the Reels tab dot asks the extension
