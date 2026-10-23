@@ -9,11 +9,21 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.content.res.Resources;
+import android.content.res.loader.ResourcesLoader;
+
+import java.util.List;
+
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
+
+import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.shared.SettingsContextRule;
 
 /**
  * The Background color row (issue #214): the table of resources route two wrote over, read as
@@ -24,11 +34,45 @@ import org.robolectric.annotation.Config;
 public class AmoledResourcesTest {
     private static final int NAVY = 0xFF0D1117;
     private static final int PAGE_ID = 0x7f060020;
+    private static final AmoledResources.LoaderMaker MAKER = AmoledResources.maker;
+
+    @Rule
+    public final SettingsContextRule settingsContext = new SettingsContextRule();
 
     @After
     public void forget() {
         AmoledResources.useTable(null);
+        AmoledResources.maker = MAKER;
         AmoledTheme.useBackground(0xFF000000);
+        Settings.AMOLED_BACKGROUND.resetToDefault();
+    }
+
+    /**
+     * Facebook builds Home's feed as it starts, on the application's resources, before its first
+     * activity. A loader given to each activity as it was created came too late for the feed, and
+     * its page, its composer and the Reels row kept the patch's colour on a phone, so the row's
+     * colour reaches the application's assets as the row is read.
+     */
+    @Test
+    public void theApplicationsResourcesTakeTheRowsColourAsFacebookStarts() throws Exception {
+        AmoledResources.useTable("7f060002=ff242526/p;7f060010=p");
+        ResourcesLoader made = new ResourcesLoader();
+        AmoledResources.maker = table -> made;
+        Resources application = RuntimeEnvironment.getApplication().getResources();
+
+        AmoledTheme.load();
+        assertFalse("a blank row keeps the patch's colour", loaders(application).contains(made));
+
+        Settings.AMOLED_BACKGROUND.save("#0D1117");
+        AmoledTheme.load();
+        assertEquals(NAVY, AmoledTheme.background());
+        assertTrue(loaders(application).contains(made));
+    }
+
+    /** The loaders on {@code resources}' assets: hidden in the SDK, public in the framework Robolectric runs. */
+    @SuppressWarnings("unchecked")
+    private static List<ResourcesLoader> loaders(Resources resources) throws ReflectiveOperationException {
+        return (List<ResourcesLoader>) Resources.class.getMethod("getLoaders").invoke(resources);
     }
 
     @Test

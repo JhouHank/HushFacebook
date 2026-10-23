@@ -702,7 +702,8 @@ public final class AmoledTheme {
 
     /**
      * Reads the Background color row (issue #214), once, as Facebook's application starts: the patch
-     * calls this right after the extension gets its context, before Facebook sets itself up. A blank
+     * calls this right after the extension gets its context, before Facebook sets itself up, and the
+     * application's resources take the row's colour from here ({@link AmoledResources}). A blank
      * row, a paused Facebook, a colour the row's rule refuses and a build with Material You keep the
      * patch's colour. Material You recolours the same greys, and its resources aren't this table's.
      */
@@ -719,6 +720,8 @@ public final class AmoledTheme {
             if (stored.isEmpty() || colour == null || colour == written) return;
             use(colour, AmoledBackground.lightestStep(colour));
             Logger.printDebug(() -> "AMOLED: Background color " + stored + " in place of the patch's");
+            Context context = Utils.getContext();
+            if (context != null) AmoledResources.recolour(context);
         } catch (Throwable failure) {
             // Throwable, as in every hook: this runs as the application starts.
             Logger.printException(() -> "AMOLED: could not read the Background color row", failure);

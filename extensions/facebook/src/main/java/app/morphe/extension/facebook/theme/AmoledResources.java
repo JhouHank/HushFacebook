@@ -20,8 +20,8 @@ import app.morphe.extension.shared.Logger;
 /**
  * Route two for the Background color row (issue #214). The patch wrote its colour over Facebook's
  * dark greys in the colour resources, and a view Facebook inflates from layout XML reads those
- * inside the framework, where no hook sees it. So when the row asks for another colour, each
- * activity's resources get a resource table ({@link ColourTable}) that answers for those same
+ * inside the framework, where no hook sees it. So when the row asks for another colour, the
+ * application's resources and each activity's get a resource table ({@link ColourTable}) that answers for those same
  * resources with the row's colour, as Accent color's route five does for its blues
  * ({@link AccentResources}, whose Resources on each set of assets this shares, so both tables sit
  * in the assets together).
@@ -59,6 +59,14 @@ public final class AmoledResources {
     private static ResourcesLoader loader;
 
     private static boolean watching;
+
+    /** Makes a loader from a resource table's bytes. */
+    interface LoaderMaker {
+        ResourcesLoader make(byte[] table) throws Exception;
+    }
+
+    /** Package-visible for tests, which have no memory files ({@link AccentResources#loaderFor}) to read a table from. */
+    static LoaderMaker maker = table -> AccentResources.loaderFor("hushfacebook-amoled.arsc", table);
 
     private AmoledResources() {}
 
@@ -173,31 +181,37 @@ public final class AmoledResources {
         watching = true;
     }
 
-    /** Gives the assets behind {@code activity}'s resources the row's colour, as {@link AccentResources#recolour} does. */
-    static void recolour(Activity activity) {
+    /**
+     * Gives the assets behind {@code context}'s resources the row's colour, as
+     * {@link AccentResources#recolour} does: each activity's as it's created, and the application's
+     * as soon as {@link AmoledTheme#load} has the row's colour. Facebook builds Home's feed while it
+     * starts, before its first activity, on the application's assets, and every activity shares
+     * those, so the feed's page, its composer and the Reels row kept the patch's colour (#214).
+     */
+    static void recolour(Context context) {
         try {
             int colour = AmoledTheme.background();
-            if (colour == AmoledTheme.written()) return;
-            ResourcesLoader wanted = loader(activity, colour);
-            if (wanted != null) AccentResources.onAssets(activity.getResources()).addLoaders(wanted);
+            if (colour == AmoledTheme.written() || table.ids.length == 0) return;
+            ResourcesLoader wanted = loader(context, colour);
+            if (wanted != null) AccentResources.onAssets(context.getResources()).addLoaders(wanted);
         } catch (Throwable failure) {
-            // Throwable, as in every hook: this runs as each activity is created.
+            // Throwable, as in every hook: this runs as Facebook starts and as each activity is created.
             Logger.printException(() -> "AMOLED: could not give the resources the Background color", failure);
         }
     }
 
     /** The loader for {@code colour}, made the first time. */
     @Nullable
-    private static ResourcesLoader loader(Activity activity, int colour) throws Exception {
+    private static ResourcesLoader loader(Context context, int colour) throws Exception {
         ResourcesLoader known = loader;
         if (known != null) return known;
-        int[][] given = colours(table, colour, AmoledTheme.pageColour(activity));
+        int[][] given = colours(table, colour, AmoledTheme.pageColour(context));
         int[] ids = given[0];
         if (ids.length == 0) return null;
         boolean[] hasNight = new boolean[ids.length];
         for (int i = 0; i < ids.length; i++) hasNight[i] = given[3][i] == 1;
-        byte[] bytes = ColourTable.write(activity.getPackageName(), ids, given[1], given[2], hasNight);
-        ResourcesLoader made = AccentResources.loaderFor("hushfacebook-amoled.arsc", bytes);
+        byte[] bytes = ColourTable.write(context.getPackageName(), ids, given[1], given[2], hasNight);
+        ResourcesLoader made = maker.make(bytes);
         loader = made;
         Logger.printDebug(() -> "AMOLED: " + ids.length + " colour resources take the Background color");
         return made;
