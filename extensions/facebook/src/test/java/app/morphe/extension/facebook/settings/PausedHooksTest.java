@@ -448,7 +448,9 @@ public class PausedHooksTest {
                 PostPrompts::hidePostCounts,
                 // The reaction preview is left undrawn only while the patch runs.
                 PostPrompts::hideReactionPreview,
-                () -> PostPrompts.hideReactionPreview(true)));
+                () -> PostPrompts.hideReactionPreview(true),
+                // So is the count beside a post's faces.
+                () -> PostPrompts.reactionCount("56").isEmpty()));
         // A post the store remembers is dropped by the feed guard while the switch is on.
         probes.put(PatchFamily.SEEN_POSTS, Collections.singletonList(SeenPostsForTests::hidesARememberedPost));
         // The pill socket's yes for Meta AI's questions is answered as a no, so it draws no row for
