@@ -831,6 +831,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/media/PinchZoom.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/media/pinch/PinchToZoomPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: Pinch to zoom, for issue #220, from Facebook 584. The patch puts a call first in FbFragmentActivity.dispatchTouchEvent, the override every Facebook screen shares and the one Tap to play already finds, and first in the kept-name ProfileFragment.onViewCreated(View, Bundle), which hands the extension each profile's root view. The extension zooms only in the story viewer, known by its kept class name, and under a registered profile root, since the news feed has its own pinch in the same activity. When a second finger lands on the topmost ImageView with a picture, TextureView, SurfaceView or Litho host that mounts no text and no child views, looking past clear views on top of it, it copies that view with PixelCopy (a SurfaceView from its own surface) or draws it, lays the copy over a dim scrim in the window's decor view, follows the fingers' span and midpoint up to four times, and turns the rest of the gesture into a cancel for Facebook. Once fewer than two fingers are down the copy eases back over 200 ms to where the photo sits and goes."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/media/SkipSilence.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/media/silence/SkipSilentPartsPatch.kt"
       ],

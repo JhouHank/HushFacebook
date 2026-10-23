@@ -862,6 +862,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_frame_step", FALSE);
 
     /**
+     * Two fingers on a profile's photo or a story zoom it in place, and it springs back when they
+     * lift ({@link app.morphe.extension.facebook.media.PinchZoom}, #220). Starts off. Asked as each
+     * second finger lands, so a change shows from the next pinch. Off or paused, every touch goes to
+     * Facebook as before.
+     */
+    public static final BooleanSetting PINCH_TO_ZOOM =
+            new BooleanSetting("hushfacebook_pinch_to_zoom", FALSE);
+
+    /**
      * Videos, reels and video stories start at the quality in {@link #PLAYBACK_QUALITY}, through
      * the same per-video choice Facebook's own quality menu makes
      * ({@link app.morphe.extension.facebook.media.QualityChoice}). A pick in that menu still wins

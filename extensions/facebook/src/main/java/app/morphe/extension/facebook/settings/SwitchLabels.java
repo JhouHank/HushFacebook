@@ -73,6 +73,7 @@ final class SwitchLabels {
         if (setting == Settings.VIEW_STORIES_ANONYMOUSLY) return L10n.t("View stories anonymously");
         if (setting == Settings.MARK_STORIES_SEEN) return L10n.t("Mark as seen button");
         if (setting == Settings.UPLOAD_STORIES_IN_HD) return L10n.t("Upload Stories in HD");
+        if (setting == Settings.PINCH_TO_ZOOM) return L10n.t("Pinch to zoom");
         if (setting == Settings.DOWNLOAD_STORIES) return L10n.t("Save any story");
         if (setting == Settings.SAVE_STORY_PHOTOS) return L10n.t("Save photo on more stories");
         if (setting == Settings.DEFAULT_COMMENT_ORDER) return L10n.t("Default comment order");

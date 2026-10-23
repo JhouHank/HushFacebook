@@ -1598,6 +1598,10 @@ Shows a small button at the left edge of a reel or video that has the window rea
 Upload Stories in HD	以高清上传快拍
 # context: summary of that switch; standard is the normal upload quality, high the better one
 Videos you post to your Story ask Facebook for its high upload quality instead of standard. Applies to the next Story you post.	你发布到快拍的视频会向 Facebook 请求高画质上传，而不是标准画质。对你下次发布的快拍生效。
+# context: switch title under Stories; two fingers spread apart on a story or a profile photo make it bigger
+Pinch to zoom	双指缩放
+# context: summary of that switch; "let go" means lifting your fingers off the screen
+Pinch a story or a photo on someone's profile to zoom in. It goes back when you let go.	在快拍或别人个人主页上的照片上用双指张开即可放大。松开手指后恢复原样。
 No ads downloaded in advance	不提前下载广告
 No ad tracking	不进行广告跟踪
 No Facebook ads in other apps	其他应用中没有 Facebook 广告

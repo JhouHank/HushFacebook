@@ -318,7 +318,8 @@ final class FeedPages {
             Set<PatchFamily> build) {
         if (build.contains(PatchFamily.SPONSORED_STORIES) || build.contains(PatchFamily.SUGGESTED_STORIES)
                 || build.contains(PatchFamily.STORY_AUTO_ADVANCE) || build.contains(PatchFamily.STORY_SEEN)
-                || build.contains(PatchFamily.STORY_DOWNLOAD) || build.contains(PatchFamily.STORY_UPLOAD_HD)) {
+                || build.contains(PatchFamily.STORY_DOWNLOAD) || build.contains(PatchFamily.STORY_UPLOAD_HD)
+                || build.contains(PatchFamily.PINCH_TO_ZOOM)) {
             PreferenceCategory stories = category(screen, L10n.t("Stories"));
             if (build.contains(PatchFamily.SPONSORED_STORIES)) {
                 stories.addPreference(toggle(context, Settings.HIDE_SPONSORED_STORIES,
@@ -368,6 +369,11 @@ final class FeedPages {
                 stories.addPreference(toggle(context, Settings.UPLOAD_STORIES_IN_HD,
                         L10n.t("Videos you post to your Story ask Facebook for its high upload quality instead of "
                                 + "standard. Applies to the next Story you post.")));
+            }
+            if (build.contains(PatchFamily.PINCH_TO_ZOOM)) {
+                // Asked as each second finger lands, so a change shows from the next pinch.
+                stories.addPreference(toggle(context, Settings.PINCH_TO_ZOOM,
+                        L10n.t("Pinch a story or a photo on someone's profile to zoom in. It goes back when you let go.")));
             }
         }
     }

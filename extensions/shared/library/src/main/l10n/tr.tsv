@@ -1603,6 +1603,10 @@ Shows a small button at the left edge of a reel or video that has the window rea
 Upload Stories in HD	Hikayeleri HD yükle
 # context: summary of that switch; standard is the normal upload quality, high the better one
 Videos you post to your Story ask Facebook for its high upload quality instead of standard. Applies to the next Story you post.	Hikayenizde paylaştığınız videolar Facebook'tan standart yerine yüksek yükleme kalitesi ister. Paylaşacağınız bir sonraki hikayeden itibaren geçerlidir.
+# context: switch title under Stories; two fingers spread apart on a story or a profile photo make it bigger
+Pinch to zoom	Yakınlaştırmak için kıstır
+# context: summary of that switch; "let go" means lifting your fingers off the screen
+Pinch a story or a photo on someone's profile to zoom in. It goes back when you let go.	Bir hikayeyi veya birinin profilindeki bir fotoğrafı iki parmakla açarak yakınlaştır. Bıraktığında eski haline döner.
 No ads downloaded in advance	Önceden indirilen reklam yok
 No ad tracking	Reklam takibi yok
 No Facebook ads in other apps	Diğer uygulamalarda Facebook reklamı yok

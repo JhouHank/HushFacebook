@@ -1495,6 +1495,10 @@ Shows a small button at the left edge of a reel or video that has the window rea
 Upload Stories in HD	Enviar Stories em HD
 # context: summary of that switch; standard is the normal upload quality, high the better one
 Videos you post to your Story ask Facebook for its high upload quality instead of standard. Applies to the next Story you post.	Vídeos que você posta no seu Story pedem ao Facebook a qualidade de envio alta em vez da padrão. Vale a partir do próximo Story que você postar.
+# context: switch title under Stories; two fingers spread apart on a story or a profile photo make it bigger
+Pinch to zoom	Pinçar para dar zoom
+# context: summary of that switch; "let go" means lifting your fingers off the screen
+Pinch a story or a photo on someone's profile to zoom in. It goes back when you let go.	Faça o movimento de pinça em um story ou em uma foto no perfil de alguém para dar zoom. Volta ao normal quando você solta.
 No ads downloaded in advance	Sem anúncios baixados antes da hora
 No ad tracking	Sem rastreamento de anúncios
 No Facebook ads in other apps	Sem anúncios do Facebook em outros apps

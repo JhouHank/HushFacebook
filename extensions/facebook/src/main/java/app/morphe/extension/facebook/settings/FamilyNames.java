@@ -62,6 +62,7 @@ public final class FamilyNames {
     public static final String TAP_TO_PLAY = "Tap to play";
     public static final String RESUME_LONG_VIDEOS = "Resume long videos";
     public static final String FRAME_STEP = "Frame step";
+    public static final String PINCH_TO_ZOOM = "Pinch to zoom";
     public static final String PLAYBACK_QUALITY = "Default playback quality";
     public static final String PICTURE_IN_PICTURE = "Picture-in-picture";
     public static final String HDR_BRIGHTNESS = "Turn off HDR brightness";

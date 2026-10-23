@@ -66,6 +66,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean pinchToZoom() {
+        return false;
+    }
+
     public static boolean sponsoredReels() {
         return false;
     }
