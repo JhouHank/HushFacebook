@@ -7,7 +7,7 @@ Changes in each Hushfacebook version, newest first.
 ### Added
 
 * **Facebook:** New switch under Search, `Hide "People you may know" in search`. When you open search, the People you may know row Facebook puts there before you type doesn't show. Your recent searches stay, and For you keeps its own switch. It's part of `Hide suggested and promoted posts` and starts off (issue #80, found from @MF-Debug's diagnostic report). Checked in tests, not yet on a phone.
-* **Facebook:** New switch under Comments, `Tap anywhere on View more replies`. On some accounts only a tap right on the words of a View more replies row in a post's comments opens the replies. Facebook picks per account which of two layouts that row gets, and the switch gives every account the one where the whole row takes the tap. That layout spaces the row a little differently (issue #219, requested by @pseudoparenchymatous). It starts off. Checked in tests, and on an emulator where a tap at the far end of the row opened the replies.
+* **Facebook:** New switch under Comments, `Tap anywhere on View more replies`. On some accounts only a tap right on the words of a View more replies row opens the replies, both in a post's comments and in the comments shown under a post in the feed. Facebook picks per account which of two layouts that row gets, and the switch gives every account the one where the whole row takes the tap. That layout spaces the row a little differently (issue #219, requested by @pseudoparenchymatous). It starts off. Checked in tests, and in a post's comments on an emulator, where a tap at the far end of the row opened the replies. The row under feed posts is checked in tests only so far.
 
 ### Fixed
 

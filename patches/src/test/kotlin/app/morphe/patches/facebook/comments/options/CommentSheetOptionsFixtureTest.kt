@@ -318,8 +318,8 @@ class CommentSheetOptionsFixtureTest {
         assertEquals("$where: the code before the hook runs into it", listOf(write), ControlFlow.of(method).normal[write - 1])
     }
 
-    private fun replyRow(bundle: File) {
-        val found = replyRowTap(holders(bundle, VIEW_MORE_REPLIES))
+    private fun replyRow(bundle: File, name: String): ReplyRowTap {
+        val found = replyRowTap(holders(bundle, name), name)
         val render = found.render
         val where = "${bundle.name}: ${render.descriptor()}"
         val row = FixtureDex.classes(bundle, setOf(render.definingClass)).values.single()
@@ -348,6 +348,7 @@ class CommentSheetOptionsFixtureTest {
         assertEquals("$where: Facebook's code after its answer stays", original.drop(kept + 1).opcodes(),
             patched.drop(kept + 3).opcodes())
         assertEquals("$where: Facebook's answer runs into the hook", listOf(kept + 1), ControlFlow.of(method).normal[kept])
+        return found
     }
 
     private fun viewer(bundle: File) {
@@ -423,8 +424,19 @@ class CommentSheetOptionsFixtureTest {
 
     @Test
     fun `each declared build asks before View more replies picks which part of it takes a tap`() = bundles { bundle ->
-        replyRow(bundle)
+        replyRow(bundle, VIEW_MORE_REPLIES)
     }
+
+    @Test
+    fun `each declared build asks before the View more replies row under a feed post picks which part of it takes a tap`() =
+        bundles { bundle ->
+            val row = replyRow(bundle, FEED_VIEW_MORE_REPLIES)
+            val sheet = replyRowTap(holders(bundle, VIEW_MORE_REPLIES))
+            assertTrue("${bundle.name}: the feed row isn't the comment sheet's", row.render.definingClass != sheet.render.definingClass)
+            val sheetAsks = sheet.render.implementation!!.instructions.toList()[sheet.kept - 1].reference()
+            val feedAsks = row.render.implementation!!.instructions.toList()[row.kept - 1].reference()
+            assertEquals("${bundle.name}: both rows read the same server answer", sheetAsks, feedAsks)
+        }
 
     @Test
     fun `each declared build asks before an open reply thread's list decides whether it pages on by itself`() = bundles { bundle ->

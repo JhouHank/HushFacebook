@@ -104,6 +104,12 @@ internal const val COMMENT_LIST = "CommentListSection"
 /** The name the View more replies row gives its render, a string in it. */
 internal const val VIEW_MORE_REPLIES = "ViewMoreRepliesComponent.render"
 
+/**
+ * The name the View more replies row under a feed post's inline comments gives itself, in its
+ * constructor, its render and one other method.
+ */
+internal const val FEED_VIEW_MORE_REPLIES = "FeedViewMoreRepliesComponent"
+
 private const val VIEW = "Landroid/view/View;"
 
 private const val OBJECTS = "[Ljava/lang/Object;"
@@ -189,6 +195,11 @@ internal const val GRAPHQL_COMMENT = "Lcom/facebook/graphql/model/GraphQLComment
  * same load-more handler (584 `LX/CiR`) the tap. The same boolean also picks a few paddings and the row's height. Right after Facebook
  * reads it, the extension is handed it, and while the switch is on the answer is false, so the
  * row is built the way Facebook builds it for everyone the flag is off for.
+ * The row under a feed post's inline comments names [FEED_VIEW_MORE_REPLIES] (584 `LX/5yr;->A0l`)
+ * and reads the same boolean (into v21). True, it wraps the icon and words in the tap target and
+ * finishes the outer row bare; false, it finishes the row and wraps all of it. The call on either
+ * side of that check is the row's finishing call (584 `LX/4B4;->A0K`), the words' side again first,
+ * so the same search finds it and the same hook goes in.
  *
  * Hide comments with shop links and Hide comments with your words (#118): the same comment section
  * draws its one comment, with its replies, in the one method of it besides the constructor that
@@ -237,6 +248,7 @@ val commentSheetOptionsPatch = bytecodePatch(
         val drawn = commentDraw(holders(COMMENT_SECTION))
         val replyList = replyList(holders(EXPANDED_REPLIES), holders(COMMENT_LIST))
         val replyRow = replyRowTap(holders(VIEW_MORE_REPLIES))
+        val feedReplyRow = replyRowTap(holders(FEED_VIEW_MORE_REPLIES), FEED_VIEW_MORE_REPLIES)
         val viewer = viewerButtons(holders(VIEWER_GIF))
         val videoBar = videoCommentBar(holders(VIDEO_COMMENT_BAR), viewer.render)
 
@@ -255,6 +267,9 @@ val commentSheetOptionsPatch = bytecodePatch(
             .loadWholeReplyThreads(replyList)
         mutableClassDefBy(replyRow.render.definingClass).methods.single { it.descriptor() == replyRow.render.descriptor() }
             .tapWholeReplyRow(replyRow)
+        mutableClassDefBy(feedReplyRow.render.definingClass).methods
+            .single { it.descriptor() == feedReplyRow.render.descriptor() }
+            .tapWholeReplyRow(feedReplyRow)
         mutableClassDefBy(viewer.render.definingClass).methods.single { it.descriptor() == viewer.render.descriptor() }
             .holdViewerButtons(viewer)
         mutableClassDefBy(videoBar.definingClass).methods.single { it.descriptor() == videoBar.descriptor() }
@@ -709,19 +724,22 @@ internal fun MutableMethod.loadWholeReplyThreads(list: ReplyList) {
 internal class ReplyRowTap(val render: Method, val kept: Int, val flag: Int)
 
 /**
- * The View more replies row, from [holders], the classes loading [VIEW_MORE_REPLIES]. Its render
- * is the one method naming it. It builds its tap target with one static call made in two places,
- * one on each side of checks of the same boolean: an `if-eqz` that falls through to the call (the
- * words alone) and an `if-eqz` that jumps to it (the whole row), the words' call coming first in
- * the method. That boolean reaches both checks
+ * A View more replies row, from [holders], the classes loading [name] ([VIEW_MORE_REPLIES] or
+ * [FEED_VIEW_MORE_REPLIES]). Its render is the one method naming it that answers an object, the
+ * constructor and the feed row's other method answering nothing. It finishes the row with one
+ * static call made in two places, one on each side of checks of the same boolean: an `if-eqz`
+ * that falls through to the call (the boolean true, where only the words take a tap) and an
+ * `if-eqz` that jumps to it (the boolean false, where the whole row is wrapped as the tap
+ * target), the fall-through's call coming first in the method. That boolean reaches both checks
  * from one write only, the `move-result` of a call answering it, and the hook goes right after
  * that write, so the write must run straight into the next instruction and nothing may jump
  * there. Refuses unless each holds.
  */
-internal fun replyRowTap(holders: List<ClassDef>): ReplyRowTap {
-    val renders = holders.flatMap { methodsHolding(it, VIEW_MORE_REPLIES) }.distinctBy { it.descriptor() }
+internal fun replyRowTap(holders: List<ClassDef>, name: String = VIEW_MORE_REPLIES): ReplyRowTap {
+    val renders = holders.flatMap { methodsHolding(it, name) }.filter { it.returnType.startsWith("L") }
+        .distinctBy { it.descriptor() }
     val render = renders.singleOrNull()
-        ?: refuse("expected one method naming \"$VIEW_MORE_REPLIES\", found ${renders.size}")
+        ?: refuse("expected one method naming \"$name\" that answers an object, found ${renders.size}")
     val where = render.descriptor()
     val code = render.implementation!!.instructions.toList()
     val flow = ControlFlow.of(render)
