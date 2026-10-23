@@ -253,7 +253,7 @@ public final class PostDetails {
         return isTree(value) ? value : null;
     }
 
-    private static List<?> trees(Object model, int field) {
+    static List<?> trees(Object model, int field) {
         if (!isLiveTree(model)) return null;
         Object value = call(model, "getTreeList", field);
         return value instanceof List ? (List<?>) value : null;

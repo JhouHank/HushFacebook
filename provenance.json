@@ -152,6 +152,15 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/StoryOverlayVideo.java"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook from Facebook 584 (#207): reads the reel a story reshares from the story tree's overlays, so Save on that still card takes the reel's video."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/download/StoryCardShape.java"
       ],
       "origin": "original",
