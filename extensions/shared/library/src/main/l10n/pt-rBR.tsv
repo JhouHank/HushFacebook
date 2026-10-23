@@ -1586,6 +1586,8 @@ Birthdays	Aniversários
 Fundraisers	Arrecadações
 # context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; job listings
 Jobs	Empregos
+# context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; the Finds shopping tab, a product name Facebook keeps in English
+Finds	Finds
 # context: a Menu tile's name in the list of tiles to hide; Facebook's own name for it; Facebook's dating feature
 Dating	Encontros
 # context: import preview and toast, no Menu tile will be in that list after the import

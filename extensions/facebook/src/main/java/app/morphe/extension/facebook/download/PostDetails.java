@@ -247,7 +247,11 @@ public final class PostDetails {
         return name == null || name.trim().isEmpty() ? null : name;
     }
 
-    static Object tree(Object model, int field) {
+    /**
+     * The tree in [model]'s [field], or null when it holds none or [model] isn't live. Public for
+     * the Menu's tiles, which read a bookmark's node this way.
+     */
+    public static Object tree(Object model, int field) {
         if (!isLiveTree(model)) return null;
         Object value = call(model, "getTree", field);
         return isTree(value) ? value : null;
