@@ -17,6 +17,7 @@ import androidx.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
@@ -159,6 +160,13 @@ public final class AmoledTheme {
     private static final int MAX_SPREAD = 8;
 
     /**
+     * The smallest value each channel of a light grey route one moves in light mode has
+     * ({@link #light}). Facebook's light WASH, #C9CCD1, is its darkest background grey, and no dark
+     * style gives a background token one this light (MaterialYouTokenFixtureTest).
+     */
+    static final int LIGHT_MIN_CHANNEL = 0xC0;
+
+    /**
      * The largest value that a channel of a status bar colour can have and still turn black. The
      * bar is chrome, so it goes further than {@link #MAX_CHANNEL}: the Video tab asks for
      * {@code #333334}, and Facebook's lightest dark chrome grey is {@code #3A3B3C}. The Material
@@ -208,6 +216,16 @@ public final class AmoledTheme {
                     "TAB_BAR_BACKGROUND",
                     "BACKGROUND_BANNER",
                     "BACKGROUND_PRIMARY_UI")));
+
+    /**
+     * Light grey fills that light mode's Light background color moves as well ({@link #light}): the
+     * composer's bar and the grey buttons. Dark mode leaves them, so they aren't {@link #BACKGROUND_TOKENS}.
+     */
+    private static final Set<String> LIGHT_BACKGROUND_TOKENS = Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList(
+                    "TEXT_INPUT_BAR_BACKGROUND",
+                    "SECONDARY_BUTTON_BACKGROUND",
+                    "SECONDARY_BUTTON_BACKGROUND_OPAQUE")));
 
     /**
      * How far above the background colour the lightest surface route one makes sits: an input's
@@ -296,6 +314,20 @@ public final class AmoledTheme {
     private static double textSurface = textSurface(background, step);
 
     /**
+     * The Light background color row's colour (issue #214), or 0 while it's blank: what route one
+     * gives Facebook's white backgrounds in its light mode ({@link #light}). Volatile and written
+     * after {@link #lightTextSurface}, so a thread that sees the colour sees its surface too.
+     */
+    private static volatile int lightBackground;
+
+    /**
+     * With {@link #lightBackground}, the luminance of the grey text sits on in light mode
+     * ({@link AmoledLightBackground#textSurface}), which the light theme's text roles keep
+     * {@link #TEXT_CONTRAST} against.
+     */
+    private static double lightTextSurface;
+
+    /**
      * Route two's rewrites, sorted by resource id, and the colour Facebook had at each:
      * {@link #routeTwoColours} as the patch filled it in.
      */
@@ -324,10 +356,15 @@ public final class AmoledTheme {
      * comes back stronger ({@link #unreadRow}). On a lighter Background colour the steps are
      * smaller ({@link #scaled}) and a text role comes back lifted ({@link #foreground}). With Black
      * cards on, a raised surface comes back as the background colour and a secondary button's fill
-     * as {@link #buttonFill}.
+     * as {@link #buttonFill}. In light mode a Light background color takes Facebook's whites
+     * ({@link #light}).
      */
     public static int apply(int color, Object token) {
         HookStatus.invoked(FamilyNames.AMOLED_THEME);
+        // Every rule below waits for dark mode, so light mode has only the Light background color's.
+        if (lightBackground != 0 && !DarkMode.on()) {
+            return token instanceof Enum ? light(color, ((Enum<?>) token).name()) : color;
+        }
         // A background whose resource still holds the patch's colour, read past AmoledResources'
         // table, takes the row's (#214). Before the grey test: the patch's colour needn't be grey.
         // Not when the patch wrote black: Facebook's own black reads the same, and stays black.
@@ -435,6 +472,48 @@ public final class AmoledTheme {
         green += ((0xFF - green) * amount + 0x7F) / 0xFF;
         blue += ((0xFF - blue) * amount + 0x7F) / 0xFF;
         return (color & 0xFF000000) | red << 16 | green << 8 | blue;
+    }
+
+    /**
+     * Route one in Facebook's light mode with a Light background color (issue #214). A background
+     * token's white or light grey ({@link #isLightNeutral}) takes the row's colour as far below it
+     * as the grey sits below white, no lower than a grey button ({@link AmoledLightBackground#fill}).
+     * A text role in Facebook's light colours comes back darkened toward black where it would fall
+     * under {@link #TEXT_CONTRAST} on that button ({@link AmoledLightBackground#held}), so a blue link
+     * stays blue. The Video tab,
+     * which stays dark in light mode, keeps its colours: its backgrounds are dark greys, and its
+     * text comes with dark mode's colours, which no FDS token has in light mode
+     * ({@link LightTheme}).
+     */
+    static int light(int color, String token) {
+        if ((color >>> 24) != 0xFF) return color;
+        if (BACKGROUND_TOKENS.contains(token) || LIGHT_BACKGROUND_TOKENS.contains(token)) {
+            return isLightNeutral(color) ? AmoledLightBackground.fill(lightBackground, color) : color;
+        }
+        if (!TEXT_TOKENS.contains(token) || !LightTheme.text(token, color)) return color;
+        return AmoledLightBackground.held(color, lightTextSurface);
+    }
+
+    /**
+     * Which text colours are Facebook's light theme's, read from Material You's table the first
+     * time light mode asks. Not through MaterialYouTheme, whose start binds the wallpaper palette.
+     */
+    private static final class LightTheme {
+        private static final Map<String, int[]> LIGHT = FdsTokens.parse(MaterialYouTheme.FDS_LIGHT);
+
+        /**
+         * Whether {@code color} is the one {@link MaterialYouTheme#FDS_LIGHT} gives {@code token}.
+         * Mig's names never are: route one hooks only Mig's dark scheme, so in light mode its colours
+         * are a dark surface's, such as the Video tab's.
+         */
+        static boolean text(String token, int color) {
+            int[] light = LIGHT.get(token);
+            if (light == null) return false;
+            for (int value : light) {
+                if (value == color) return true;
+            }
+            return false;
+        }
     }
 
     /**
@@ -721,10 +800,17 @@ public final class AmoledTheme {
      * application's resources take the row's colour from here ({@link AmoledResources}). A blank
      * row, a paused Facebook, a colour the row's rule refuses and a build with Material You keep the
      * patch's colour. Material You recolours the same greys, and its resources aren't this table's.
+     * The Light background color row is read here too ({@link #loadLight}).
      */
     public static void load() {
         try {
             if (!Utils.settingsReady() || SettingsStatus.materialYouTheme()) return;
+            try {
+                loadLight();
+            } catch (Throwable failure) {
+                // Its own catch, so a failure here still leaves the Background color row read.
+                Logger.printException(() -> "AMOLED: could not read the Light background color row", failure);
+            }
             String text = Settings.AMOLED_BACKGROUND.get();
             String stored = AmoledBackground.stored(text);
             if (stored == null) {
@@ -741,6 +827,32 @@ public final class AmoledTheme {
             // Throwable, as in every hook: this runs as the application starts.
             Logger.printException(() -> "AMOLED: could not read the Background color row", failure);
         }
+    }
+
+    /**
+     * The Light background color row's part of {@link #load} (issue #214). A blank row and a colour
+     * its rule refuses leave Facebook's own light colours.
+     */
+    private static void loadLight() {
+        String text = Settings.AMOLED_LIGHT_BACKGROUND.get();
+        String stored = AmoledLightBackground.stored(text);
+        if (stored == null) {
+            Logger.printInfo(() -> "AMOLED: Light background color " + text + " can't be used, so Facebook's white stays");
+            return;
+        }
+        Integer colour = AmoledLightBackground.colour(stored);
+        if (stored.isEmpty() || colour == null) return;
+        useLight(colour);
+        Logger.printDebug(() -> "AMOLED: Light background color " + stored + " in light mode");
+    }
+
+    /**
+     * Puts the Light background color row's {@code colour} in use for route one in light mode, or
+     * none with 0. Package-visible for tests.
+     */
+    static void useLight(int colour) {
+        lightTextSurface = colour == 0 ? 0 : AmoledLightBackground.textSurface(colour);
+        lightBackground = colour;
     }
 
     /**
@@ -865,5 +977,17 @@ public final class AmoledTheme {
         int high = Math.max(red, Math.max(green, blue));
         int low = Math.min(red, Math.min(green, blue));
         return high <= maxChannel && high - low <= MAX_SPREAD;
+    }
+
+    /** True for an opaque grey with each channel at or above {@link #LIGHT_MIN_CHANNEL}, white included. */
+    static boolean isLightNeutral(int color) {
+        if ((color >>> 24) != 0xFF) return false;
+
+        int red = (color >> 16) & 0xFF;
+        int green = (color >> 8) & 0xFF;
+        int blue = color & 0xFF;
+        int high = Math.max(red, Math.max(green, blue));
+        int low = Math.min(red, Math.min(green, blue));
+        return low >= LIGHT_MIN_CHANNEL && high - low <= MAX_SPREAD;
     }
 }

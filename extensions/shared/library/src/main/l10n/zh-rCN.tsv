@@ -1812,3 +1812,21 @@ Dark mode's backgrounds use %1$s. Restart Facebook to see the change.	深色模�
 If your patched Facebook includes the AMOLED black theme, dark mode's backgrounds will be the color it was patched with.	如果你修补的 Facebook 包含“AMOLED 纯黑主题”，深色模式背景将使用修补时设定的颜色。
 # context: import preview sentence: the file sets AMOLED's Background color row; %1$s is a color code like #0D1117; "AMOLED black theme" is the patch's name, keep it as translated for that patch
 If your patched Facebook includes the AMOLED black theme, dark mode's backgrounds will be %1$s.	如果你修补的 Facebook 包含“AMOLED 纯黑主题”，深色模式背景将变为 %1$s。
+# context: title of the row on the Appearance page, with AMOLED in the build, that takes a color code for light mode's backgrounds in place of white; also its dialog's title
+Light background color	浅色背景颜色
+# context: message in that row's dialog; %1$s is a gray color code like #A6A6A6; keep #RRGGBB and #FFF8E7 as they are
+A color code (#RRGGBB) for light mode's backgrounds in place of white, like #FFF8E7. Grays down to about %1$s work, and text gets darker where it needs to. Leave it blank for Facebook's own white.	浅色模式背景用来代替白色的颜色代码（#RRGGBB），例如 #FFF8E7。最深可用到约 %1$s 的灰色，必要时文字会自动加深。留空则使用 Facebook 自带的白色。
+# context: summary of that row while it's blank, so Facebook's light mode keeps its own white backgrounds
+Uses Facebook's own white. Type a color code to change it.	使用 Facebook 自带的白色。输入颜色代码即可更改。
+# context: summary of that row once a color is saved; %1$s is the color code
+Light mode's backgrounds use %1$s. Restart Facebook to see the change.	浅色模式背景使用 %1$s。重启 Facebook 后可看到更改。
+# context: shown when Save is tapped on that row with text that isn't a color code; %1$s is what was typed; keep #RRGGBB and #FFF8E7 as they are
+"%1$s" isn't a color. Type a six-digit color code (#RRGGBB), like #FFF8E7, or leave it blank for Facebook's own white.	“%1$s”不是颜色。请输入六位颜色代码（#RRGGBB），例如 #FFF8E7，或留空以使用 Facebook 自带的白色。
+# context: shown when Save is tapped on that row with an eight-digit code that isn't fully opaque; %1$s is what was typed; keep #RRGGBB and #FFF8E7 as they are
+%1$s is see-through. Type a solid six-digit color code (#RRGGBB), like #FFF8E7.	%1$s 是半透明的。请输入不透明的六位颜色代码（#RRGGBB），例如 #FFF8E7。
+# context: shown when Save is tapped on that row with a color too dark for light mode's dark text; %1$s is what was typed, %2$s a gray color code like #A6A6A6
+%1$s is too dark for Facebook's light mode text to stay readable. Pick a lighter color. Grays down to about %2$s work.	%1$s 太深，Facebook 浅色模式的文字会难以看清。请选择更浅的颜色。最深可用到约 %2$s 的灰色。
+# context: import preview sentence: the file sets AMOLED's Light background color row back to blank; "AMOLED black theme" is the patch's name, keep it as translated for that patch
+If your patched Facebook includes the AMOLED black theme, light mode's backgrounds will be Facebook's own white.	如果你修补的 Facebook 包含“AMOLED 纯黑主题”，浅色模式背景将使用 Facebook 自带的白色。
+# context: import preview sentence: the file sets AMOLED's Light background color row; %1$s is a color code like #FFF8E7; "AMOLED black theme" is the patch's name, keep it as translated for that patch
+If your patched Facebook includes the AMOLED black theme, light mode's backgrounds will be %1$s.	如果你修补的 Facebook 包含“AMOLED 纯黑主题”，浅色模式背景将变为 %1$s。

@@ -398,6 +398,7 @@ public class SettingsBackupPreference extends Preference {
             if (snapshot.menuTilesChange() != null) parts.add(menuTilesSentence(snapshot.menuTilesChange()));
             if (snapshot.homeFeedChange() != null) parts.add(homeFeedSentence(snapshot.homeFeedChange()));
             if (snapshot.backgroundChange() != null) parts.add(backgroundSentence(snapshot.backgroundChange()));
+            if (snapshot.lightBackgroundChange() != null) parts.add(lightBackgroundSentence(snapshot.lightBackgroundChange()));
             if (snapshot.seenKeep != null && snapshot.changes().containsKey(SettingsBackup.SEEN_KEEP)) {
                 parts.add(L10n.f("Posts you've seen will stay hidden for %1$s.",
                         HushfacebookPreferenceFragment.seenKeepLabel(snapshot.seenKeep)));
@@ -593,6 +594,16 @@ public class SettingsBackupPreference extends Preference {
                     + "the color it was patched with.");
         }
         return L10n.f("If your patched Facebook includes the AMOLED black theme, dark mode's backgrounds will be %1$s.",
+                L10n.isolate(background));
+    }
+
+    /** The sentence that says which color light mode's backgrounds will take after an import, [background] blank or a code. */
+    static String lightBackgroundSentence(String background) {
+        if (background.isEmpty()) {
+            return L10n.t("If your patched Facebook includes the AMOLED black theme, light mode's backgrounds will be "
+                    + "Facebook's own white.");
+        }
+        return L10n.f("If your patched Facebook includes the AMOLED black theme, light mode's backgrounds will be %1$s.",
                 L10n.isolate(background));
     }
 
@@ -900,7 +911,8 @@ public class SettingsBackupPreference extends Preference {
                     + (snapshot.shareItemsChange() == null ? "" : " " + shareItemsSentence(snapshot.shareItemsChange()))
                     + (snapshot.menuTilesChange() == null ? "" : " " + menuTilesSentence(snapshot.menuTilesChange()))
                     + (snapshot.homeFeedChange() == null ? "" : " " + homeFeedSentence(snapshot.homeFeedChange()))
-                    + (snapshot.backgroundChange() == null ? "" : " " + backgroundSentence(snapshot.backgroundChange()));
+                    + (snapshot.backgroundChange() == null ? "" : " " + backgroundSentence(snapshot.backgroundChange()))
+                    + (snapshot.lightBackgroundChange() == null ? "" : " " + lightBackgroundSentence(snapshot.lightBackgroundChange()));
             accepted = Utils.runOnBackgroundThread(() -> {
                 try {
                     SettingsBackup.apply(snapshot);

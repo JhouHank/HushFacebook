@@ -14,6 +14,7 @@ import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragm
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.fitAboveKeyboard;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.folderSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.homeFeedSummary;
+import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.lightBackgroundSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.lockAfterSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.photoNameSummary;
 import static app.morphe.extension.facebook.settings.HushfacebookPreferenceFragment.seenKeepSummary;
@@ -71,6 +72,7 @@ import app.morphe.extension.facebook.misc.AppLock;
 import app.morphe.extension.facebook.misc.TextSize;
 import app.morphe.extension.facebook.theme.AccentColor;
 import app.morphe.extension.facebook.theme.AmoledBackground;
+import app.morphe.extension.facebook.theme.AmoledLightBackground;
 import app.morphe.extension.facebook.navigation.FeedsSubtab;
 import app.morphe.extension.facebook.navigation.StartTab;
 import app.morphe.extension.facebook.notifications.QuietHour;
@@ -654,22 +656,31 @@ final class ValueRows {
     }
 
     /**
-     * AMOLED's Background color row (#214). Its summary follows its text, whoever sets it, and Save
-     * turns down a colour {@link AmoledBackground} refuses with the dialog still open, so what was
-     * typed can be fixed rather than typed again.
+     * AMOLED's Background color row (#214), or its Light background color row. Its summary follows
+     * its text, whoever sets it, and Save turns down a colour {@link AmoledBackground} (or
+     * {@link AmoledLightBackground}) refuses with the dialog still open, so what was typed can be
+     * fixed rather than typed again.
      */
     static final class BackgroundRow extends EditTextPreference {
         /** Says why Save was refused. The page sets it, since its dialogs close with it. */
         @Nullable Consumer<String> refused;
 
+        /** Whether it's the Light background color row. */
+        final boolean light;
+
         BackgroundRow(Context context) {
+            this(context, false);
+        }
+
+        BackgroundRow(Context context, boolean light) {
             super(context);
+            this.light = light;
         }
 
         @Override
         public void setText(String text) {
             super.setText(text);
-            setSummary(backgroundSummary(text));
+            setSummary(light ? lightBackgroundSummary(text) : backgroundSummary(text));
         }
 
         @Override
@@ -688,7 +699,8 @@ final class ValueRows {
                 AlertDialog dialog = (AlertDialog) getDialog();
                 ScreenColors.dialog(dialog);
                 dialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(button -> {
-                    String why = AmoledBackground.problem(getEditText().getText().toString());
+                    String typed = getEditText().getText().toString();
+                    String why = light ? AmoledLightBackground.problem(typed) : AmoledBackground.problem(typed);
                     if (why != null) {
                         if (refused != null) refused.accept(why);
                         return;

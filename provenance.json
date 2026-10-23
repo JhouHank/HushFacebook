@@ -976,6 +976,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/theme/AmoledLightBackground.java",
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/theme/FdsTokens.java"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook, for issue #214: the AMOLED theme's Light background color row, which swaps light mode's white for a light colour after patching. AmoledLightBackground takes a colour only when Facebook's light secondary text can be darkened to 4.5:1 on it and still stay apart from the primary text, and moves Facebook's light greys down from it by as much as they sit below white. FdsTokens parses the FDS colour tables MaterialYouTheme declares, so the AMOLED theme can read them without loading Material You's class."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/misc/Screenshots.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/misc/screenshots/AllowScreenshotsAnchors.kt",
         "patches/src/main/kotlin/app/morphe/patches/facebook/misc/screenshots/AllowScreenshotsPatch.kt"

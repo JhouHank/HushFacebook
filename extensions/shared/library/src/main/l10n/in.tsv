@@ -1817,3 +1817,21 @@ Dark mode's backgrounds use %1$s. Restart Facebook to see the change.	Latar mode
 If your patched Facebook includes the AMOLED black theme, dark mode's backgrounds will be the color it was patched with.	Jika Facebook yang kamu patch menyertakan Tema hitam AMOLED, latar mode gelap akan memakai warna yang dipilih saat ditambal.
 # context: import preview sentence: the file sets AMOLED's Background color row; %1$s is a color code like #0D1117; "AMOLED black theme" is the patch's name, keep it as translated for that patch
 If your patched Facebook includes the AMOLED black theme, dark mode's backgrounds will be %1$s.	Jika Facebook yang kamu patch menyertakan Tema hitam AMOLED, latar mode gelap akan menjadi %1$s.
+# context: title of the row on the Appearance page, with AMOLED in the build, that takes a color code for light mode's backgrounds in place of white; also its dialog's title
+Light background color	Warna latar terang
+# context: message in that row's dialog; %1$s is a gray color code like #A6A6A6; keep #RRGGBB and #FFF8E7 as they are
+A color code (#RRGGBB) for light mode's backgrounds in place of white, like #FFF8E7. Grays down to about %1$s work, and text gets darker where it needs to. Leave it blank for Facebook's own white.	Kode warna (#RRGGBB) untuk latar mode terang sebagai pengganti putih, misalnya #FFF8E7. Abu-abu hingga sekitar %1$s bisa dipakai, dan teks dibuat lebih gelap jika perlu. Biarkan kosong untuk putih bawaan Facebook.
+# context: summary of that row while it's blank, so Facebook's light mode keeps its own white backgrounds
+Uses Facebook's own white. Type a color code to change it.	Memakai putih bawaan Facebook. Ketik kode warna untuk mengubahnya.
+# context: summary of that row once a color is saved; %1$s is the color code
+Light mode's backgrounds use %1$s. Restart Facebook to see the change.	Latar mode terang memakai %1$s. Mulai ulang Facebook untuk melihat perubahannya.
+# context: shown when Save is tapped on that row with text that isn't a color code; %1$s is what was typed; keep #RRGGBB and #FFF8E7 as they are
+"%1$s" isn't a color. Type a six-digit color code (#RRGGBB), like #FFF8E7, or leave it blank for Facebook's own white.	“%1$s” bukan warna. Ketik kode warna enam digit (#RRGGBB), misalnya #FFF8E7, atau biarkan kosong untuk putih bawaan Facebook.
+# context: shown when Save is tapped on that row with an eight-digit code that isn't fully opaque; %1$s is what was typed; keep #RRGGBB and #FFF8E7 as they are
+%1$s is see-through. Type a solid six-digit color code (#RRGGBB), like #FFF8E7.	%1$s tembus pandang. Ketik kode warna enam digit yang solid (#RRGGBB), misalnya #FFF8E7.
+# context: shown when Save is tapped on that row with a color too dark for light mode's dark text; %1$s is what was typed, %2$s a gray color code like #A6A6A6
+%1$s is too dark for Facebook's light mode text to stay readable. Pick a lighter color. Grays down to about %2$s work.	%1$s terlalu gelap sehingga teks mode terang Facebook sulit dibaca. Pilih warna yang lebih terang. Abu-abu hingga sekitar %2$s bisa dipakai.
+# context: import preview sentence: the file sets AMOLED's Light background color row back to blank; "AMOLED black theme" is the patch's name, keep it as translated for that patch
+If your patched Facebook includes the AMOLED black theme, light mode's backgrounds will be Facebook's own white.	Jika Facebook yang kamu patch menyertakan Tema hitam AMOLED, latar mode terang akan memakai putih bawaan Facebook.
+# context: import preview sentence: the file sets AMOLED's Light background color row; %1$s is a color code like #FFF8E7; "AMOLED black theme" is the patch's name, keep it as translated for that patch
+If your patched Facebook includes the AMOLED black theme, light mode's backgrounds will be %1$s.	Jika Facebook yang kamu patch menyertakan Tema hitam AMOLED, latar mode terang akan menjadi %1$s.

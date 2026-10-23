@@ -45,6 +45,31 @@ public class AmoledResourcesTest {
         AmoledResources.maker = MAKER;
         AmoledTheme.useBackground(0xFF000000);
         Settings.AMOLED_BACKGROUND.resetToDefault();
+        AmoledTheme.useLight(0);
+        Settings.AMOLED_LIGHT_BACKGROUND.resetToDefault();
+        DarkMode.answer(true);
+    }
+
+    /**
+     * Issue #214: the Light background color row is read with the Background color row as Facebook
+     * starts, and a colour its rule refuses, kept from before or written by hand, leaves Facebook's
+     * white.
+     */
+    @Test
+    public void theLightRowIsReadAsFacebookStartsAndARefusedColourLeavesWhite() {
+        DarkMode.answer(false);
+        Settings.AMOLED_LIGHT_BACKGROUND.save("#000000");
+        AmoledTheme.load();
+        assertEquals("black is refused", 0xFFFFFFFF, AmoledTheme.apply(0xFFFFFFFF, AmoledThemeTest.Token.CARD_BACKGROUND));
+
+        Settings.AMOLED_LIGHT_BACKGROUND.save("#A5A5A5");
+        AmoledTheme.load();
+        assertEquals("one step under the darkest grey is refused", 0xFFFFFFFF,
+                AmoledTheme.apply(0xFFFFFFFF, AmoledThemeTest.Token.CARD_BACKGROUND));
+
+        Settings.AMOLED_LIGHT_BACKGROUND.save("#FFF8E7");
+        AmoledTheme.load();
+        assertEquals(0xFFFFF8E7, AmoledTheme.apply(0xFFFFFFFF, AmoledThemeTest.Token.CARD_BACKGROUND));
     }
 
     /**

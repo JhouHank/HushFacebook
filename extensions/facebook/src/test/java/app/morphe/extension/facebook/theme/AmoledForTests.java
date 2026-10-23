@@ -14,8 +14,14 @@ public final class AmoledForTests {
         AmoledTheme.use(colour, AmoledBackground.lightestStep(colour));
     }
 
-    /** Back to the black the patch fills in. */
+    /** Puts the Light background color row's {@code colour} in use, as {@link AmoledTheme#load} does. */
+    public static void useLightBackground(int colour) {
+        AmoledTheme.useLight(colour);
+    }
+
+    /** Back to the black the patch fills in, and no Light background color. */
     public static void reset() {
         AmoledTheme.useBackground(0xFF000000);
+        AmoledTheme.useLight(0);
     }
 }

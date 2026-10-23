@@ -48,6 +48,7 @@ import app.morphe.extension.facebook.misc.TextSize;
 import app.morphe.extension.facebook.feed.ReactionCeiling;
 import app.morphe.extension.facebook.theme.AccentColor;
 import app.morphe.extension.facebook.theme.AmoledBackground;
+import app.morphe.extension.facebook.theme.AmoledLightBackground;
 import app.morphe.extension.facebook.navigation.FeedsSubtab;
 import app.morphe.extension.facebook.navigation.StartTab;
 import app.morphe.extension.facebook.feed.SeenPosts;
@@ -449,6 +450,9 @@ public final class SettingsBackup {
      */
     static final StringSetting BACKGROUND = Settings.AMOLED_BACKGROUND;
 
+    /** AMOLED's Light background color, held and refused the same way, by {@link AmoledLightBackground}'s rule. */
+    static final StringSetting LIGHT_BACKGROUND = Settings.AMOLED_LIGHT_BACKGROUND;
+
     /**
      * The order comment sheets ask for, held in a file as its {@link CommentOrder#fileValue}.
      * Anything else refuses the whole file, as a tab does.
@@ -525,7 +529,7 @@ public final class SettingsBackup {
 
     /** The settings a file carries that aren't switches, in the order Settings declares them. */
     static final List<Setting<?>> VALUES = Collections.unmodifiableList(
-            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, CEILING, SHARE_ITEMS, MENU_TILES, HOME_FEED, BACKGROUND, SEEN_KEEP, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
+            Arrays.<Setting<?>>asList(HIDDEN, KEPT, SOURCES, CEILING, SHARE_ITEMS, MENU_TILES, HOME_FEED, BACKGROUND, LIGHT_BACKGROUND, SEEN_KEEP, TO, FOLDER, VIDEO_SUBFOLDER, PHOTO_SUBFOLDER, QUALITY,
                     FILE_NAME, PHOTO_NAME, ACTION, APP, START, SUBTAB, ORDER, PLAYBACK, REELS_QUALITY, STORIES_QUALITY,
                     QUIET_FROM, QUIET_UNTIL, LOCK_AFTER, TEXT_SIZE, ACCENT));
 
@@ -636,6 +640,7 @@ public final class SettingsBackup {
         private static final String MENU_TILES_NAME = "hidden_menu_tiles";
         private static final String HOME_FEED_NAME = "home_feed";
         private static final String BACKGROUND_NAME = "amoled_background";
+        private static final String LIGHT_BACKGROUND_NAME = "amoled_light_background";
 
         /** In {@link #ALLOWLIST} order, and only the switches the file named. */
         final Map<BooleanSetting, Boolean> values;
@@ -726,6 +731,9 @@ public final class SettingsBackup {
         /** The Background color the file holds, blank or {@code #RRGGBB}, or null when it names none. Set once, as it's read. */
         @Nullable
         String background;
+        /** The Light background color the file holds, the same way. */
+        @Nullable
+        String lightBackground;
         /** Names the file holds that aren't settings this build knows. They're left out. */
         final int unknown;
 
@@ -944,6 +952,8 @@ public final class SettingsBackup {
             if (homeFeedChange != null) changes.put(HOME_FEED, homeFeedChange);
             String backgroundChange = backgroundChange();
             if (backgroundChange != null) changes.put(BACKGROUND, backgroundChange);
+            String lightBackgroundChange = lightBackgroundChange();
+            if (lightBackgroundChange != null) changes.put(LIGHT_BACKGROUND, lightBackgroundChange);
             SendLink.Action actionChange = actionChange();
             if (actionChange != null) changes.put(ACTION, actionChange);
             String appChange = appChange();
@@ -1145,6 +1155,13 @@ public final class SettingsBackup {
             return background.equals(BACKGROUND.savedValue()) ? null : background;
         }
 
+        /** The Light background color this file sets, or null when it names none or the one already set. */
+        @Nullable
+        String lightBackgroundChange() {
+            if (lightBackground == null) return null;
+            return lightBackground.equals(LIGHT_BACKGROUND.savedValue()) ? null : lightBackground;
+        }
+
         /** The feed Home shows after this file, or null when it names none or the one already set. */
         @Nullable
         FeedsSubtab homeFeedChange() {
@@ -1194,6 +1211,7 @@ public final class SettingsBackup {
             if (menuTiles != null) state.putString(MENU_TILES_NAME, menuTiles);
             if (homeFeed != null) state.putString(HOME_FEED_NAME, homeFeed.fileValue);
             if (background != null) state.putString(BACKGROUND_NAME, background);
+            if (lightBackground != null) state.putString(LIGHT_BACKGROUND_NAME, lightBackground);
             state.putInt(UNKNOWN, unknown);
             return state;
         }
@@ -1256,6 +1274,8 @@ public final class SettingsBackup {
             read.homeFeed = FeedsSubtab.fromFile(state.get(HOME_FEED_NAME));
             Object background = state.get(BACKGROUND_NAME);
             read.background = isBackground(background) ? (String) background : null;
+            Object lightBackground = state.get(LIGHT_BACKGROUND_NAME);
+            read.lightBackground = isLightBackground(lightBackground) ? (String) lightBackground : null;
             return read;
         }
     }
@@ -1325,6 +1345,8 @@ public final class SettingsBackup {
             // The colour as the row keeps it, so a file never carries one an import would refuse.
             String background = AmoledBackground.stored(of(BACKGROUND));
             switches.put(BACKGROUND.key, background == null ? "" : background);
+            String lightBackground = AmoledLightBackground.stored(of(LIGHT_BACKGROUND));
+            switches.put(LIGHT_BACKGROUND.key, lightBackground == null ? "" : lightBackground);
             return new JSONObject()
                     .put(FORMAT_NAME, FORMAT)
                     .put(SCHEMA_NAME, SCHEMA)
@@ -1450,6 +1472,7 @@ public final class SettingsBackup {
         String menuTiles = null;
         FeedsSubtab homeFeed = null;
         String background = null;
+        String lightBackground = null;
         JSONObject values = (JSONObject) settings;
         for (Iterator<String> names = values.keys(); names.hasNext(); ) {
             String name = names.next();
@@ -1523,6 +1546,12 @@ public final class SettingsBackup {
                 Object value = values.opt(name);
                 if (!isBackground(value)) throw new Rejected(Reason.VALUE, "Not a Background color: " + name);
                 background = (String) value;
+                continue;
+            }
+            if (LIGHT_BACKGROUND.key.equals(name)) {
+                Object value = values.opt(name);
+                if (!isLightBackground(value)) throw new Rejected(Reason.VALUE, "Not a Light background color: " + name);
+                lightBackground = (String) value;
                 continue;
             }
             if (ORDER.key.equals(name)) {
@@ -1666,12 +1695,18 @@ public final class SettingsBackup {
         read.menuTiles = menuTiles;
         read.homeFeed = homeFeed;
         read.background = background;
+        read.lightBackground = lightBackground;
         return read;
     }
 
     /** A Background color as the row keeps it: blank, or {@code #RRGGBB} in capitals that {@link AmoledBackground} takes. */
     static boolean isBackground(@Nullable Object value) {
         return value instanceof String && value.equals(AmoledBackground.stored((String) value));
+    }
+
+    /** A Light background color as its row keeps it, which {@link AmoledLightBackground} takes. */
+    static boolean isLightBackground(@Nullable Object value) {
+        return value instanceof String && value.equals(AmoledLightBackground.stored((String) value));
     }
 
     /**

@@ -69,9 +69,12 @@ public final class AmoledBackground {
         return colour == null ? null : String.format(Locale.ROOT, "#%06X", colour & 0xFFFFFF);
     }
 
-    /** The opaque colour {@code text} gives, black when it's blank, before its contrast is judged. */
+    /**
+     * The opaque colour {@code text} gives, black when it's blank, before its contrast is judged.
+     * {@link AmoledLightBackground} reads a typed colour this way too.
+     */
     @Nullable
-    private static Integer parsed(@Nullable String text) {
+    static Integer parsed(@Nullable String text) {
         String hex = hex(text);
         if (hex.isEmpty()) return BLACK;
         if (!looksLikeAColour(hex)) return null;
@@ -79,13 +82,13 @@ public final class AmoledBackground {
         return (int) (0xFF000000L | Long.parseLong(hex.substring(hex.length() - 6), 16));
     }
 
-    private static String hex(@Nullable String text) {
+    static String hex(@Nullable String text) {
         String hex = text == null ? "" : text.trim();
         return hex.startsWith("#") ? hex.substring(1) : hex;
     }
 
     /** Six or eight hex digits, ASCII only. */
-    private static boolean looksLikeAColour(String hex) {
+    static boolean looksLikeAColour(String hex) {
         if (hex.length() != 6 && hex.length() != 8) return false;
         for (int i = 0; i < hex.length(); i++) {
             char c = hex.charAt(i);

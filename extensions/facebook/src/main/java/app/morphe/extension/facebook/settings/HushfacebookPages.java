@@ -188,8 +188,12 @@ final class HushfacebookPages {
                             + "switch. Restart Facebook to see the change.")));
         }
         if (build.contains(PatchFamily.AMOLED_THEME)) {
-            // Read once as Facebook starts (#214). Material You recolours the same greys, so it has no row there.
-            if (!build.contains(PatchFamily.MATERIAL_YOU_THEME)) appearance.addPreference(page.backgroundRow(context));
+            // Read once as Facebook starts (#214). Material You recolours the same greys, light mode's too,
+            // so it has neither row there.
+            if (!build.contains(PatchFamily.MATERIAL_YOU_THEME)) {
+                appearance.addPreference(page.backgroundRow(context));
+                appearance.addPreference(page.lightBackgroundRow(context));
+            }
             // Colours Facebook asks for as each screen builds, so a change shows fully after a restart.
             appearance.addPreference(toggle(context, Settings.AMOLED_FLAT_CARDS,
                     L10n.t("Cards and menus take the page's own color instead of the near black that sets them apart. "

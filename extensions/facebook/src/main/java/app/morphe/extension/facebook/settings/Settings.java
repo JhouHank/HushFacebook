@@ -1735,6 +1735,15 @@ public class Settings extends BaseSettings {
             new StringSetting("hushfacebook_amoled_background", "", true);
 
     /**
+     * With the AMOLED black theme, the light colour Facebook's light mode backgrounds take in place of
+     * its white, as {@code #RRGGBB} ({@link app.morphe.extension.facebook.theme.AmoledTheme#load},
+     * issue #214). Blank keeps Facebook's own, and so does a paused Facebook. Read once as Facebook
+     * starts, so a change brings up the restart row. Not a switch.
+     */
+    public static final StringSetting AMOLED_LIGHT_BACKGROUND =
+            new StringSetting("hushfacebook_amoled_light_background", "", true);
+
+    /**
      * The strip some posts carry ("Are you interested in this post?", "Show less", who recently
      * commented, follow and chat suggestions) goes, and so does the room kept for it
      * ({@link app.morphe.extension.facebook.feed.PostPrompts}). A change shows on the posts drawn

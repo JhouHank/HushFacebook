@@ -62,6 +62,7 @@ import app.morphe.extension.facebook.misc.ShareSheetItems;
 import app.morphe.extension.facebook.misc.TextSize;
 import app.morphe.extension.facebook.theme.AccentColor;
 import app.morphe.extension.facebook.theme.AmoledBackground;
+import app.morphe.extension.facebook.theme.AmoledLightBackground;
 import app.morphe.extension.facebook.theme.AmoledTheme;
 import app.morphe.extension.facebook.navigation.HiddenTabs;
 import app.morphe.extension.facebook.navigation.FeedsSubtab;
@@ -1614,6 +1615,51 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
                     L10n.isolate(patchedBackground()));
         }
         return L10n.f("Dark mode's backgrounds use %1$s. Restart Facebook to see the change.", L10n.isolate(stored));
+    }
+
+    /**
+     * AMOLED's Light background color (#214): a color code light mode's white backgrounds take, read
+     * as Facebook starts. Save turns down a color {@link AmoledLightBackground} refuses with the
+     * dialog still open, and what's saved is the code in capitals.
+     */
+    BackgroundRow lightBackgroundRow(Context context) {
+        BackgroundRow row = new BackgroundRow(context, true);
+        row.setKey(Settings.AMOLED_LIGHT_BACKGROUND.key);
+        String title = L10n.t("Light background color");
+        row.setTitle(title);
+        row.setDialogTitle(title);
+        row.setDialogMessage(L10n.f("A color code (#RRGGBB) for light mode's backgrounds in place of white, like #FFF8E7. "
+                + "Grays down to about %1$s work, and text gets darker where it needs to. Leave it blank for "
+                + "Facebook's own white.", AmoledLightBackground.DARKEST_ADMITTED_GREY));
+        row.setPositiveButtonText(L10n.t("Save"));
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        EditText field = row.getEditText();
+        keepEditorInDialog(field, false);
+        field.setHint("#FFF8E7");
+        row.setText(Settings.AMOLED_LIGHT_BACKGROUND.savedValue());
+        row.refused = why -> show(new AlertDialog.Builder(row.getContext())
+                .setTitle(title)
+                .setMessage(why)
+                .setPositiveButton(L10n.t("OK"), null));
+        row.setOnPreferenceChangeListener((preference, typed) -> {
+            String raw = typed == null ? "" : typed.toString();
+            String clean = AmoledLightBackground.stored(raw);
+            if (clean == null) return false;
+            if (clean.equals(raw)) return true;
+            // Keeps the code as it's saved in place of what was typed, as the Background color row does.
+            ((BackgroundRow) preference).setText(clean);
+            return false;
+        });
+        return row;
+    }
+
+    /** What the Light background color row says for [text], the code typed there. One it refuses keeps Facebook's white. */
+    static String lightBackgroundSummary(String text) {
+        String stored = AmoledLightBackground.stored(text);
+        if (stored == null || stored.isEmpty()) {
+            return L10n.t("Uses Facebook's own white. Type a color code to change it.");
+        }
+        return L10n.f("Light mode's backgrounds use %1$s. Restart Facebook to see the change.", L10n.isolate(stored));
     }
 
     /**

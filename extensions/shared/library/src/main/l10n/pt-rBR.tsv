@@ -1709,3 +1709,21 @@ Dark mode's backgrounds use %1$s. Restart Facebook to see the change.	Os fundos 
 If your patched Facebook includes the AMOLED black theme, dark mode's backgrounds will be the color it was patched with.	Se o seu Facebook com patch incluir o Tema preto AMOLED, os fundos do modo escuro terão a cor escolhida ao aplicar os patches.
 # context: import preview sentence: the file sets AMOLED's Background color row; %1$s is a color code like #0D1117; "AMOLED black theme" is the patch's name, keep it as translated for that patch
 If your patched Facebook includes the AMOLED black theme, dark mode's backgrounds will be %1$s.	Se o seu Facebook com patch incluir o Tema preto AMOLED, os fundos do modo escuro serão %1$s.
+# context: title of the row on the Appearance page, with AMOLED in the build, that takes a color code for light mode's backgrounds in place of white; also its dialog's title
+Light background color	Cor de fundo clara
+# context: message in that row's dialog; %1$s is a gray color code like #A6A6A6; keep #RRGGBB and #FFF8E7 as they are
+A color code (#RRGGBB) for light mode's backgrounds in place of white, like #FFF8E7. Grays down to about %1$s work, and text gets darker where it needs to. Leave it blank for Facebook's own white.	Um código de cor (#RRGGBB) para os fundos do modo claro no lugar do branco, como #FFF8E7. Tons de cinza até cerca de %1$s funcionam, e o texto fica mais escuro onde precisa. Deixe em branco para usar o branco do próprio Facebook.
+# context: summary of that row while it's blank, so Facebook's light mode keeps its own white backgrounds
+Uses Facebook's own white. Type a color code to change it.	Usa o branco do próprio Facebook. Digite um código de cor para mudar.
+# context: summary of that row once a color is saved; %1$s is the color code
+Light mode's backgrounds use %1$s. Restart Facebook to see the change.	Os fundos do modo claro usam %1$s. Reinicie o Facebook para ver a mudança.
+# context: shown when Save is tapped on that row with text that isn't a color code; %1$s is what was typed; keep #RRGGBB and #FFF8E7 as they are
+"%1$s" isn't a color. Type a six-digit color code (#RRGGBB), like #FFF8E7, or leave it blank for Facebook's own white.	“%1$s” não é uma cor. Digite um código de cor de seis dígitos (#RRGGBB), como #FFF8E7, ou deixe em branco para usar o branco do próprio Facebook.
+# context: shown when Save is tapped on that row with an eight-digit code that isn't fully opaque; %1$s is what was typed; keep #RRGGBB and #FFF8E7 as they are
+%1$s is see-through. Type a solid six-digit color code (#RRGGBB), like #FFF8E7.	%1$s é transparente. Digite um código de cor sólida de seis dígitos (#RRGGBB), como #FFF8E7.
+# context: shown when Save is tapped on that row with a color too dark for light mode's dark text; %1$s is what was typed, %2$s a gray color code like #A6A6A6
+%1$s is too dark for Facebook's light mode text to stay readable. Pick a lighter color. Grays down to about %2$s work.	%1$s é escuro demais para o texto do modo claro do Facebook continuar legível. Escolha uma cor mais clara. Tons de cinza até cerca de %2$s funcionam.
+# context: import preview sentence: the file sets AMOLED's Light background color row back to blank; "AMOLED black theme" is the patch's name, keep it as translated for that patch
+If your patched Facebook includes the AMOLED black theme, light mode's backgrounds will be Facebook's own white.	Se o seu Facebook com patch incluir o Tema preto AMOLED, os fundos do modo claro usarão o branco do próprio Facebook.
+# context: import preview sentence: the file sets AMOLED's Light background color row; %1$s is a color code like #FFF8E7; "AMOLED black theme" is the patch's name, keep it as translated for that patch
+If your patched Facebook includes the AMOLED black theme, light mode's backgrounds will be %1$s.	Se o seu Facebook com patch incluir o Tema preto AMOLED, os fundos do modo claro serão %1$s.
