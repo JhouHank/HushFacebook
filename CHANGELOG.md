@@ -8,6 +8,10 @@ Changes in each Hushfacebook version, newest first.
 
 * **Facebook:** New switch under Search, `Hide "People you may know" in search`. When you open search, the People you may know row Facebook puts there before you type doesn't show. Your recent searches stay, and For you keeps its own switch. It's part of `Hide suggested and promoted posts` and starts off (issue #80, found from @MF-Debug's diagnostic report). Checked in tests, not yet on a phone.
 
+### Fixed
+
+* **Tooling:** The device audit no longer refuses to start when the phone holds a settings backup from an older audit or the settings tool with no locale and theme saved beside it. It copies that folder off the phone first, takes the locale and theme the phone has now, and puts the backup's switches back at the end, the same as for a run that never finished. Twice on 2026-10-22 that backup had to be fixed by hand before a walk could run. Checked in tests, and the folder copy on a phone.
+
 ### Changed
 
 * **Tooling:** A push or a fixture check with a morphe-desktop CLI on the wrong patcher stops right away now. The 0.17.0 push ran its whole 17-minute gate with an old 1.18.1 CLI still set in the shell and only failed at the last step, because a bundle built on the 2.0 patcher won't load in a 1.x CLI. `scripts/pre-push.ps1` and `scripts/verify-all-patches.ps1` read which patcher the jar carries before anything heavy runs, and the message names the jar, both versions and, when it applies, the newer jar your user settings already point to.
