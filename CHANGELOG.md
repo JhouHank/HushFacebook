@@ -10,6 +10,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Fixed
 
+* **Facebook:** `Turn off HDR brightness` no longer makes the phone's own video service crash and restart on a Samsung phone with a Snapdragon chip. HDR reels set off a tone-mapping step in that chip's video decoder, and that step is what crashed, so the decoder isn't asked to tone-map anymore. HLG reels still go over at the usual brightness, and PQ videos on that decoder play as Facebook set them up. Checked in tests, and on a phone over 30 reels with two HLG ones and no crash.
 * **Tooling:** The device audit no longer refuses to start when the phone holds a settings backup from an older audit or the settings tool with no locale and theme saved beside it. It copies that folder off the phone first, takes the locale and theme the phone has now, and puts the backup's switches back at the end, the same as for a run that never finished. Twice on 2026-10-22 that backup had to be fixed by hand before a walk could run. Checked in tests, and the folder copy on a phone.
 
 ### Changed
