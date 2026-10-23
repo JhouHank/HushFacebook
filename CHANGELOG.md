@@ -20,6 +20,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** With `Don't save search history` on, a search no longer sits at the top of search's Recent list until Facebook restarts. It already stayed out of your saved history, but Facebook still kept it in Recent for the rest of that session. Checked in tests, not yet on a phone.
 * **Facebook:** `Hide the reaction preview on posts` also takes away the "Name and 55 others" line beside the reaction faces, or the plain number Facebook puts there on some layouts. Only the faces went before. TalkBack still reads it. The number on the Like button stays until `Hide counts on posts` is on too, as its description says (issue #158). Checked in tests, not yet on a phone.
 * **Tooling:** A focused test run that names fixture tests after `:patches:fixtureTest` runs them again. Those filters used to be dropped, and the run passed without running a single fixture test.
+* **Facebook:** The `Mark as seen button` also shows when Facebook opens a story in one of its other story screens. Facebook 584 has three more besides the usual one, and the button only looked for that one. Checked in tests.
 
 ### Changed
 

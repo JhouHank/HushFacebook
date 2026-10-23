@@ -157,8 +157,12 @@ public class PinchZoomTest {
 
     /** The story viewer showing one story card the size of the screen. */
     private static Activity storyViewer() {
-        Activity viewer = Robolectric.buildActivity(
-                com.facebook.stories.viewer.activity.StoryViewerActivity.class).setup().get();
+        return storyViewer(com.facebook.stories.viewer.activity.StoryViewerActivity.class);
+    }
+
+    /** [kind] of story viewer showing one story card the size of the screen. */
+    private static Activity storyViewer(Class<? extends Activity> kind) {
+        Activity viewer = Robolectric.buildActivity(kind).setup().get();
         FrameLayout card = new FrameLayout(viewer);
         ImageView story = new ImageView(viewer);
         story.setImageDrawable(new ColorDrawable(Color.GREEN));
@@ -539,6 +543,19 @@ public class PinchZoomTest {
         ViewGroup card = (ViewGroup) ((ViewGroup) viewer.findViewById(android.R.id.content)).getChildAt(0);
         assertSame(card.getChildAt(0), PinchZoom.mediaUnder(viewer, viewer.getWindow().getDecorView(), 540, 700));
         assertNull("an activity that isn't the story viewer counted", PinchZoom.mediaUnder(activity, decor(), 300, 300));
+    }
+
+    /** 584 opens the story viewer as one of its empty subclasses as well, and that one holds Facebook's finger too. */
+    @Test
+    public void aStoryViewerSubclassIsTheStoryViewer() {
+        PinchZoom.resetForTests();
+        Activity viewer = storyViewer(com.facebook.stories.viewer.activity.StoryViewerDefaultNavBarActivity.class);
+        ViewGroup card = (ViewGroup) ((ViewGroup) viewer.findViewById(android.R.id.content)).getChildAt(0);
+        assertSame(card.getChildAt(0), PinchZoom.mediaUnder(viewer, viewer.getWindow().getDecorView(), 540, 700));
+        assertFalse(PinchZoom.touch(viewer, event(MotionEvent.ACTION_DOWN, new float[][] {{500, 700}})));
+        assertTrue("the second finger reached Facebook", PinchZoom.touch(viewer,
+                event(pointer(MotionEvent.ACTION_POINTER_DOWN, 1), new float[][] {{500, 700}, {600, 700}})));
+        assertNotNull(PinchZoom.zoom());
     }
 
     /**

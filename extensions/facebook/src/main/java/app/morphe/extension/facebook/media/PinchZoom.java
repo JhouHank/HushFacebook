@@ -75,7 +75,7 @@ public final class PinchZoom {
     static final long SETTLE_MILLIS = 200;
     /** A view smaller than this many dp either way, an icon or a button, isn't zoomed. */
     static final int SMALLEST_DP = 64;
-    /** The story viewer's activity, a kept class name. */
+    /** The story viewer's activity, a kept class name. 584 opens it as one of its subclasses too ({@link #storyViewer}). */
     static final String STORY_VIEWER = "com.facebook.stories.viewer.activity.StoryViewerActivity";
 
     /** The root views ProfileFragment made, weakly held. Main thread. */
@@ -173,7 +173,7 @@ public final class PinchZoom {
         Zoom started = new Zoom((ViewGroup) root, area, event);
         zoom = started;
         swallowing = true;
-        holding = STORY_VIEWER.equals(activity.getClass().getName());
+        holding = storyViewer(activity);
         if (!holding) event.setAction(MotionEvent.ACTION_CANCEL);
         snapshots.take(activity, target, area, copy -> {
             try {
@@ -223,6 +223,18 @@ public final class PinchZoom {
         }
     }
 
+    /**
+     * True for the story viewer. 584 opens it as StoryViewerActivity or as one of its empty
+     * subclasses (DefaultNavBar, BlackNavBar, Floating), so the kept name is looked for up the class's
+     * parents.
+     */
+    static boolean storyViewer(Activity activity) {
+        for (Class<?> type = activity.getClass(); type != null; type = type.getSuperclass()) {
+            if (STORY_VIEWER.equals(type.getName())) return true;
+        }
+        return false;
+    }
+
     /** [target]'s bounds in [root]'s window, cut to what [root] shows, or null when that's empty. */
     @Nullable
     static Rect area(View root, View target) {
@@ -250,7 +262,7 @@ public final class PinchZoom {
     @Nullable
     static View mediaUnder(Activity activity, View root, float x, float y) {
         int smallest = Math.round(SMALLEST_DP * root.getResources().getDisplayMetrics().density);
-        return mediaUnder(root, x, y, STORY_VIEWER.equals(activity.getClass().getName()), smallest, new int[2], new boolean[1]);
+        return mediaUnder(root, x, y, storyViewer(activity), smallest, new int[2], new boolean[1]);
     }
 
     /** [open] comes back true when the view found is a Litho host the next media under it still decides on. */
