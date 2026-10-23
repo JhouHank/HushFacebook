@@ -442,7 +442,7 @@ final class HushfacebookPages {
         text.setLineSpacing(Math.round(2 * context.getResources().getDisplayMetrics().density), 1.04f);
         ScrollView scroll = new ScrollView(context);
         scroll.addView(text);
-        ScreenColors colors = ScreenColors.shown == null ? ScreenColors.DEFAULT : ScreenColors.shown;
+        ScreenColors colors = ScreenColors.current();
         text.setTextColor(colors.summary);
         text.setLinkTextColor(colors.heading);
         Linkify.addLinks(text, Linkify.WEB_URLS);

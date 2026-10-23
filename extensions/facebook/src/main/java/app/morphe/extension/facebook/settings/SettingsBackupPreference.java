@@ -435,7 +435,7 @@ public class SettingsBackupPreference extends Preference {
         if (message == null || !(message.getParent() instanceof ViewGroup)) return;
         LinearLayout details = new LinearLayout(dialog.getContext());
         details.setOrientation(LinearLayout.VERTICAL);
-        ScreenColors colors = ScreenColors.shown == null ? ScreenColors.DEFAULT : ScreenColors.shown;
+        ScreenColors colors = ScreenColors.current();
         for (Map.Entry<BooleanSetting, Boolean> entry : snapshot.values.entrySet()) {
             BooleanSetting setting = entry.getKey();
             boolean current = setting.savedValue();

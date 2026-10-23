@@ -399,6 +399,21 @@ public final class AmoledTheme {
         double needs = TEXT_CONTRAST * (textSurface + 0.05) - 0.05;
         double luminance = TonePalette.luminance(color);
         if (luminance >= needs || luminance <= textSurface) return color;
+        return lifted(color, needs);
+    }
+
+    /**
+     * {@code color}, or the first step from it toward white that reads at {@code ratio} or more on
+     * the opaque {@code surface}: white when none does. The Hushfacebook settings page lifts its
+     * text and switches this way over a lighter Background colour (issue #214).
+     */
+    public static int readable(int color, int surface, double ratio) {
+        double needs = ratio * (TonePalette.luminance(surface) + 0.05) - 0.05;
+        return TonePalette.luminance(color) >= needs ? color : lifted(color, needs);
+    }
+
+    /** The first step of {@code color} toward white whose luminance is {@code needs} or more. */
+    private static int lifted(int color, double needs) {
         // White passes on every surface the patch lets through, and each step toward it is at least
         // as light as the one before, so the lightest passing step is the first.
         int low = 0;
@@ -748,6 +763,15 @@ public final class AmoledTheme {
     /** The background colour in use: the Background color row's, or {@link #backgroundColour} as the patch filled it in. */
     public static int background() {
         return background;
+    }
+
+    /**
+     * The background colour in use and the surfaces route one makes on it, darkest first: page,
+     * card, popover and input fill ({@link AmoledBackground#surfaces}). The Hushfacebook settings
+     * page takes its colours from these when the background isn't black (issue #214).
+     */
+    public static int[] surfaces() {
+        return AmoledBackground.surfaces(background, step);
     }
 
     /** Package-visible for tests: puts a background colour of {@link #backgroundColour}'s kind in use. */

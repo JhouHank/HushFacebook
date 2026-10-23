@@ -221,7 +221,7 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
             // before it got that far kept an earlier screen's colours, or none, and a light Material
             // You error page drew its dark message on black.
             ScreenColors colors = ScreenColors.forScreen(getContext());
-            list.setBackgroundColor(colors == null ? Color.BLACK : colors.background);
+            list.setBackgroundColor((colors == null ? ScreenColors.black() : colors).background);
         }
     }
 
@@ -491,9 +491,8 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
     private Preference statusCard(Context context) {
         Row card = new Row(context);
         card.setPersistent(false);
-        ScreenColors colors = ScreenColors.shown;
         boolean paused = HushfacebookPause.isPaused();
-        ScreenColors palette = colors == null ? ScreenColors.DEFAULT : colors;
+        ScreenColors palette = ScreenColors.current();
         card.setIcon(SettingsIcons.icon(context, paused ? SettingsIcons.PAUSE : SettingsIcons.PATCHED,
                 paused ? palette.summary : palette.heading));
         statusCard = card;
@@ -783,7 +782,7 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
                 L10n.t("Hides ads, suggestions, promos and prompts, and stops nagging notifications."),
                 L10n.t("Holds back usage reports and camera roll scans, removes link tracking, and hides your typing and screenshots."),
                 L10n.t("Puts every feature switch but Lock Facebook back the way it started.")};
-        ScreenColors colors = ScreenColors.shown == null ? ScreenColors.DEFAULT : ScreenColors.shown;
+        ScreenColors colors = ScreenColors.current();
         AlertDialog dialog = show(new AlertDialog.Builder(themed(context))
                 .setTitle(L10n.t("Quick setups"))
                 .setAdapter(new ChoiceCards(colors, names, details),
@@ -2323,7 +2322,7 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
     }
 
     static Preference mark(Preference row, String icon) {
-        ScreenColors colors = ScreenColors.shown == null ? ScreenColors.DEFAULT : ScreenColors.shown;
+        ScreenColors colors = ScreenColors.current();
         row.setIcon(SettingsIcons.icon(row.getContext(), icon, colors.heading));
         return row;
     }

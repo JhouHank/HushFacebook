@@ -238,7 +238,7 @@ final class ValueRows {
          */
         @Override protected View onCreateDialogView() {
             Context context = getContext();
-            ScreenColors colors = ScreenColors.shown == null ? ScreenColors.DEFAULT : ScreenColors.shown;
+            ScreenColors colors = ScreenColors.current();
             TextView help = new TextView(context);
             help.setId(android.R.id.message);
             help.setText(getDialogMessage());
@@ -356,7 +356,7 @@ final class ValueRows {
 
         @Override protected View onCreateDialogView() {
             Context context = getContext();
-            ScreenColors colors = ScreenColors.shown == null ? ScreenColors.DEFAULT : ScreenColors.shown;
+            ScreenColors colors = ScreenColors.current();
             TextView help = new TextView(context);
             help.setId(android.R.id.message);
             help.setText(getDialogMessage());
@@ -452,7 +452,7 @@ final class ValueRows {
 
         @Override protected View onCreateDialogView() {
             Context context = getContext();
-            ScreenColors colors = ScreenColors.shown == null ? ScreenColors.DEFAULT : ScreenColors.shown;
+            ScreenColors colors = ScreenColors.current();
             int pad = Math.round(20 * context.getResources().getDisplayMetrics().density);
             TextView label = new TextView(context);
             label.setText(L10n.t("Example without post details"));
