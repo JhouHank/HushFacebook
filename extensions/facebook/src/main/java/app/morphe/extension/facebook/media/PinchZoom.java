@@ -12,6 +12,7 @@ import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
@@ -28,8 +29,11 @@ import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.window.OnBackInvokedCallback;
+import android.window.OnBackInvokedDispatcher;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 
 import java.util.List;
 import java.util.Map;
@@ -73,10 +77,11 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * <p>With Stay zoomed on (#220), dropping to one finger drags the copy instead of ending the zoom,
  * and a zoom past {@link #KEPT_LEAST} stays where the fingers left it when they all lift. A touch
  * on it then steers it, one finger dragging and two pinching, and Facebook gets none of that touch.
- * It springs back on a tap, on a touch that ends it near 1x, on Back (the layer takes focus while
- * kept, and 584 hands Back to the focused view as a key, having no back callback), or when the
- * window loses focus. A story's held finger stays held while it's kept, so the story stays paused,
- * and lets go as a cancel when the zoom does.
+ * It springs back on a tap, on a touch that ends it near 1x, on Back, or when the window loses
+ * focus. Back comes two ways: 584 targets Android 16, which hands Back to the window's back callbacks
+ * and no view sees it as a key, so the kept zoom registers one above Facebook's; older Android hands
+ * Back to the focused view as a key, so the layer takes focus too. A story's held finger stays held
+ * while it's kept, so the story stays paused, and lets go as a cancel when the zoom does.
  */
 public final class PinchZoom {
     private static final String FAMILY = FamilyNames.PINCH_TO_ZOOM;
@@ -586,6 +591,9 @@ public final class PinchZoom {
         boolean pinched;
         /** What had focus before the kept zoom took it for Back. */
         @Nullable private View focusedBefore;
+        /** The back callback the kept zoom registered, an OnBackInvokedCallback, and its dispatcher (Android 13 and newer). */
+        @Nullable Object backCallback;
+        @Nullable private Object backDispatcher;
         float scale = 1f;
         private float baseScale = 1f;
         private float startSpan;
@@ -616,13 +624,18 @@ public final class PinchZoom {
         /** Back while kept lets go of the zoom and goes no further. */
         final View.OnKeyListener back = (view, code, key) -> {
             if (code != KeyEvent.KEYCODE_BACK) return false;
+            if (key.getAction() == KeyEvent.ACTION_UP && !key.isCanceled()) backPressed();
+            return true;
+        };
+
+        /** Back reached the kept zoom, as a key or through its back callback. */
+        void backPressed() {
             try {
-                if (key.getAction() == KeyEvent.ACTION_UP && !key.isCanceled() && zoom == this) release();
+                if (zoom == this) release();
             } catch (Throwable failure) {
                 HookStatus.threw(FAMILY, "pinch back", failure);
             }
-            return true;
-        };
+        }
         /** The window losing focus, to the shade, another app or a dialog, lets go of a kept zoom. */
         final ViewTreeObserver.OnWindowFocusChangeListener focusLost = hasFocus -> {
             try {
@@ -717,7 +730,11 @@ public final class PinchZoom {
             return keep && !settling && !blank && shown() && scale > KEPT_LEAST;
         }
 
-        /** The fingers lifted and the zoom stays. The layer takes focus, so Back reaches it as a key. */
+        /**
+         * The fingers lifted and the zoom stays. A back callback above Facebook's takes Back where the
+         * window hands it to callbacks, and the layer takes focus, so Back reaches it where it comes
+         * as a key.
+         */
         void park() {
             parked = true;
             focusedBefore = root.findFocus();
@@ -726,12 +743,14 @@ public final class PinchZoom {
             layer.setOnKeyListener(back);
             layer.requestFocus();
             root.getViewTreeObserver().addOnWindowFocusChangeListener(focusLost);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) BackCallbacks.register(this);
         }
 
         /** No longer kept: Back and focus go back to Facebook's views. */
         private void unpark() {
             if (!parked) return;
             parked = false;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) BackCallbacks.unregister(this);
             layer.setOnKeyListener(null);
             ViewTreeObserver observer = root.getViewTreeObserver();
             if (observer.isAlive()) observer.removeOnWindowFocusChangeListener(focusLost);
@@ -826,6 +845,33 @@ public final class PinchZoom {
                 counted++;
             }
             return counted == 0 ? 0f : 2f * total / counted;
+        }
+    }
+
+    /**
+     * A kept zoom's back callback, on Android 13 and newer. Overlay priority puts it above every
+     * callback of Facebook's, so Back lets go of the zoom and closes nothing. Where the window hands
+     * Back to views as a key instead, the dispatcher doesn't take the callback, and the layer's key
+     * listener answers. Its own class, so the callback types load only where they exist.
+     */
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    private static final class BackCallbacks {
+        static void register(Zoom kept) {
+            OnBackInvokedDispatcher dispatcher = kept.root.findOnBackInvokedDispatcher();
+            if (dispatcher == null) return;
+            OnBackInvokedCallback callback = kept::backPressed;
+            dispatcher.registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_OVERLAY, callback);
+            kept.backDispatcher = dispatcher;
+            kept.backCallback = callback;
+        }
+
+        static void unregister(Zoom kept) {
+            Object dispatcher = kept.backDispatcher;
+            Object callback = kept.backCallback;
+            kept.backDispatcher = null;
+            kept.backCallback = null;
+            if (dispatcher == null || callback == null) return;
+            ((OnBackInvokedDispatcher) dispatcher).unregisterOnBackInvokedCallback((OnBackInvokedCallback) callback);
         }
     }
 }

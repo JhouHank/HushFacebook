@@ -7,11 +7,13 @@ package app.morphe.extension.facebook.media;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
+import android.content.pm.ApplicationInfo;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -26,6 +28,8 @@ import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.window.OnBackInvokedCallback;
+import android.window.OnBackInvokedDispatcher;
 
 import org.junit.After;
 import org.junit.Before;
@@ -34,6 +38,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
 import java.lang.reflect.Method;
@@ -81,6 +86,20 @@ public class PinchZoomTest {
         HookStatus.clear();
         PinchZoom.resetForTests();
         Settings.PINCH_TO_ZOOM.save(true);
+        openProfile();
+        PinchZoom.snapshots = (screen, target, area, done) -> {
+            if (noCopy) {
+                done.accept(null);
+                return;
+            }
+            Bitmap copy = Bitmap.createBitmap(area.width(), area.height(), Bitmap.Config.ARGB_8888);
+            copies.add(copy);
+            done.accept(copy);
+        };
+    }
+
+    /** A screen with a photo, a plain view and an icon, whose root is handed over as ProfileFragment does. */
+    private void openProfile() {
         activity = Robolectric.buildActivity(BackCounter.class).setup().get();
         FrameLayout content = new FrameLayout(activity);
         photo = new ImageView(activity);
@@ -99,15 +118,6 @@ public class PinchZoomTest {
         layOut(activity);
         // As ProfileFragment.onViewCreated hands its root over.
         PinchZoom.profile(content);
-        PinchZoom.snapshots = (screen, target, area, done) -> {
-            if (noCopy) {
-                done.accept(null);
-                return;
-            }
-            Bitmap copy = Bitmap.createBitmap(area.width(), area.height(), Bitmap.Config.ARGB_8888);
-            copies.add(copy);
-            done.accept(copy);
-        };
     }
 
     @After
@@ -893,6 +903,60 @@ public class PinchZoomTest {
         back(decor());
         assertTrue("Back didn't let go of the kept zoom", zoom.settling);
         assertEquals("Back went on to the screen under the kept zoom", 0, screen.backs);
+    }
+
+    /**
+     * 584 targets Android 16, which hands Back to the window's back callbacks, and no view sees it as
+     * a key: on an Android 16 emulator Back closed the Page under a kept zoom. The kept zoom's
+     * callback sits on top, so Back lets go of it and closes nothing, and once the zoom goes the
+     * callback goes with it.
+     */
+    @Test
+    @Config(sdk = 36)
+    public void backThroughTheWindowsCallbacksLetsGoOfAKeptZoom() throws ReflectiveOperationException {
+        backCallbacks(true);
+        openProfile();
+        PinchZoom.Zoom zoom = keptZoom();
+        BackCounter screen = (BackCounter) activity;
+        OnBackInvokedCallback top = topBackCallback();
+        assertNotNull("the kept zoom registered no back callback", zoom.backCallback);
+        assertSame("the kept zoom's back callback isn't the one Back goes to", zoom.backCallback, top);
+        top.onBackInvoked();
+        assertTrue("Back didn't let go of the kept zoom", zoom.settling);
+        assertEquals("Back went on to the screen under the kept zoom", 0, screen.backs);
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(1));
+        assertNull(PinchZoom.zoom());
+        assertNull(zoom.backCallback);
+        assertNotSame("the zoom's back callback outlived it", top, topBackCallback());
+    }
+
+    /** Android 13 to 15 hand Facebook's Back to the focused view as a key, and the kept zoom takes it there. */
+    @Test
+    @Config(sdk = 34)
+    public void backAsAKeyStillLetsGoWhereTheWindowTakesNoCallbacks() throws ReflectiveOperationException {
+        backCallbacks(false);
+        openProfile();
+        PinchZoom.Zoom zoom = keptZoom();
+        BackCounter screen = (BackCounter) activity;
+        back(decor());
+        assertTrue("Back didn't let go of the kept zoom", zoom.settling);
+        assertEquals("Back went on to the screen under the kept zoom", 0, screen.backs);
+    }
+
+    /** Whether this app's windows hand Back to back callbacks, as an app targeting Android 16 gets. */
+    private static void backCallbacks(boolean on) throws ReflectiveOperationException {
+        ApplicationInfo info = RuntimeEnvironment.getApplication().getApplicationInfo();
+        Method set = ApplicationInfo.class.getDeclaredMethod("setEnableOnBackInvokedCallback", boolean.class);
+        set.setAccessible(true);
+        set.invoke(info, on);
+    }
+
+    /** The callback the window hands the next Back to. */
+    private OnBackInvokedCallback topBackCallback() throws ReflectiveOperationException {
+        OnBackInvokedDispatcher dispatcher = decor().findOnBackInvokedDispatcher();
+        assertNotNull("the window has no back dispatcher", dispatcher);
+        Method top = dispatcher.getClass().getMethod("getTopCallback");
+        return (OnBackInvokedCallback) top.invoke(dispatcher);
     }
 
     @Test
