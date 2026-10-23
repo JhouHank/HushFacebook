@@ -8,6 +8,10 @@ Changes in each Hushfacebook version, newest first.
 
 * **Facebook:** New switch under Search, `Hide "People you may know" in search`. When you open search, the People you may know row Facebook puts there before you type doesn't show. Your recent searches stay, and For you keeps its own switch. It's part of `Hide suggested and promoted posts` and starts off (issue #80, found from @MF-Debug's diagnostic report). Checked in tests, not yet on a phone.
 
+### Changed
+
+* **Tooling:** A push or a fixture check with a morphe-desktop CLI on the wrong patcher stops right away now. The 0.17.0 push ran its whole 17-minute gate with an old 1.18.1 CLI still set in the shell and only failed at the last step, because a bundle built on the 2.0 patcher won't load in a 1.x CLI. `scripts/pre-push.ps1` and `scripts/verify-all-patches.ps1` read which patcher the jar carries before anything heavy runs, and the message names the jar, both versions and, when it applies, the newer jar your user settings already point to.
+
 ## 0.17.0 (2026-10-22)
 
 * **Facebook:** Hushfacebook moves to Facebook 584 and Morphe's new 2.0 patcher, so update Morphe Manager to 2.0.0 or newer before you patch. It's 64-bit only for now, since Facebook hasn't put out a 32-bit 584 yet. New switches can close Facebook when you leave it, hide the video comment box and draw thin lines between posts on the black theme, and a new patch keeps feed videos muted. Black cards buttons, the comment gestures in clean mode and Menu promotions in the side panel work again too.
