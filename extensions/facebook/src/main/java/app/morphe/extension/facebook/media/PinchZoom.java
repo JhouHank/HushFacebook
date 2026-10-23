@@ -10,6 +10,8 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Rect;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.MotionEvent;
@@ -215,40 +217,109 @@ public final class PinchZoom {
      * The topmost shown view under ([x], [y]) that draws media, a view {@link #isMedia} names at least
      * {@link #SMALLEST_DP} each way, in the story viewer or inside a profile, and the deepest such one
      * where they nest. Inside a profile or the story viewer, a view on top that holds none, like the
-     * story viewer's clear overlay for taps, is looked past to the views under it. Above them only the
-     * topmost view is followed, so a screen Facebook opens over a profile, leaving the profile shown
-     * under it, never hands a pinch to a photo it covers. Anywhere else, null.
+     * story viewer's clear overlay for taps, is looked past to the views under it, and a Litho host on
+     * top yields to the media right under it only when that's a picture spanning all of the host, like
+     * the band a profile's cover draws over its photo. Above them a view is looked past only when it
+     * draws nothing at the point, like the empty layer Facebook keeps over every screen, so a screen
+     * Facebook opens over a profile, leaving the profile shown under it, never hands a pinch to a photo
+     * it covers. Anywhere else, null.
      */
     @Nullable
     static View mediaUnder(Activity activity, View root, float x, float y) {
         int smallest = Math.round(SMALLEST_DP * root.getResources().getDisplayMetrics().density);
-        return mediaUnder(root, x, y, STORY_VIEWER.equals(activity.getClass().getName()), smallest, new int[2]);
+        return mediaUnder(root, x, y, STORY_VIEWER.equals(activity.getClass().getName()), smallest, new int[2], new boolean[1]);
     }
 
+    /** [open] comes back true when the view found is a Litho host the next media under it still decides on. */
     @Nullable
-    private static View mediaUnder(View view, float x, float y, boolean zoomable, int smallest, int[] at) {
+    private static View mediaUnder(View view, float x, float y, boolean zoomable, int smallest, int[] at, boolean[] open) {
+        open[0] = false;
         if (!zoomable && profiles.containsKey(view)) zoomable = true;
         if (view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup) view;
+            // An open host found on top, kept until the next media under it decides.
+            View host = null;
             // The child drawn last is on top.
             for (int i = group.getChildCount() - 1; i >= 0; i--) {
                 View child = group.getChildAt(i);
-                if (child.getVisibility() != View.VISIBLE || child.getAlpha() <= 0f) continue;
-                child.getLocationInWindow(at);
-                if (x < at[0] || x >= at[0] + child.getWidth() * child.getScaleX()
-                        || y < at[1] || y >= at[1] + child.getHeight() * child.getScaleY()) continue;
-                View found = mediaUnder(child, x, y, zoomable, smallest, at);
-                if (found != null || !zoomable) return found;
+                if (!under(child, x, y, at)) continue;
+                View found = mediaUnder(child, x, y, zoomable, smallest, at, open);
+                if (found == null) {
+                    if (!zoomable && covers(child, x, y, at)) return null;
+                    continue;
+                }
+                if (!zoomable) return found;
+                if (host == null) {
+                    if (!open[0]) return found;
+                    host = found;
+                    continue;
+                }
+                open[0] = false;
+                return isPicture(found) && holds(found, host, at) ? found : host;
+            }
+            if (host != null) {
+                open[0] = true;
+                return host;
             }
         }
-        if (zoomable && isMedia(view) && view.getWidth() >= smallest && view.getHeight() >= smallest) return view;
+        if (zoomable && isMedia(view) && view.getWidth() >= smallest && view.getHeight() >= smallest) {
+            open[0] = !isPicture(view);
+            return view;
+        }
         return null;
+    }
+
+    /** True when [view] is shown and ([x], [y]) is inside it. */
+    private static boolean under(View view, float x, float y, int[] at) {
+        if (view.getVisibility() != View.VISIBLE || view.getAlpha() <= 0f) return false;
+        view.getLocationInWindow(at);
+        return x >= at[0] && x < at[0] + view.getWidth() * view.getScaleX()
+                && y >= at[1] && y < at[1] + view.getHeight() * view.getScaleY();
+    }
+
+    /** True when [outer] spans all of [inner] on screen. */
+    private static boolean holds(View outer, View inner, int[] at) {
+        inner.getLocationInWindow(at);
+        float left = at[0], top = at[1];
+        float right = left + inner.getWidth() * inner.getScaleX(), bottom = top + inner.getHeight() * inner.getScaleY();
+        outer.getLocationInWindow(at);
+        return at[0] <= left && at[1] <= top
+                && at[0] + outer.getWidth() * outer.getScaleX() >= right
+                && at[1] + outer.getHeight() * outer.getScaleY() >= bottom;
+    }
+
+    /**
+     * True when [view] draws anything at ([x], [y]), which hides whatever lies under it there: a
+     * background or foreground that isn't clear, a view that isn't a bare {@link View}, a layout that
+     * draws itself (Litho's hosts do), or a shown child under the point that does.
+     */
+    static boolean covers(View view, float x, float y, int[] at) {
+        if (!clear(view.getBackground()) || !clear(view.getForeground())) return true;
+        if (!(view instanceof ViewGroup)) return view.getClass() != View.class;
+        if (!view.willNotDraw()) return true;
+        ViewGroup group = (ViewGroup) view;
+        for (int i = group.getChildCount() - 1; i >= 0; i--) {
+            View child = group.getChildAt(i);
+            if (under(child, x, y, at) && covers(child, x, y, at)) return true;
+        }
+        return false;
+    }
+
+    /** No drawable, or a color with no alpha. */
+    private static boolean clear(@Nullable Drawable drawable) {
+        return drawable == null || drawable instanceof ColorDrawable && ((ColorDrawable) drawable).getAlpha() == 0;
+    }
+
+    /** A video surface or an ImageView with a picture: media that is a view of its own. */
+    static boolean isPicture(View view) {
+        if (view instanceof TextureView || view instanceof SurfaceView) return true;
+        return view instanceof ImageView && ((ImageView) view).getDrawable() != null;
     }
 
     /** A video surface, an ImageView with a picture, or a Litho host with no child view that draws no text. */
     static boolean isMedia(View view) {
-        if (view instanceof TextureView || view instanceof SurfaceView) return true;
-        if (view instanceof ImageView) return ((ImageView) view).getDrawable() != null;
+        if (isPicture(view)) return true;
+        if (view instanceof ImageView) return false;
         if (!(view instanceof ViewGroup) || ((ViewGroup) view).getChildCount() != 0) return false;
         try {
             Object content = view.getClass().getMethod("getTextContent").invoke(view);

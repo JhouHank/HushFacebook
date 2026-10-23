@@ -22,6 +22,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import org.junit.After;
 import org.junit.Before;
@@ -396,6 +397,7 @@ public class PinchZoomTest {
     public void aScreenOverAProfileHidesItsPhotos() {
         ViewGroup frame = (ViewGroup) ((View) photo.getParent()).getParent();
         FrameLayout post = new FrameLayout(activity);
+        post.setBackgroundColor(Color.WHITE);
         post.addView(new View(activity), new FrameLayout.LayoutParams(600, 200));
         frame.addView(post, new FrameLayout.LayoutParams(1080, 1920));
         layOut(activity);
@@ -404,6 +406,98 @@ public class PinchZoomTest {
         assertEquals(MotionEvent.ACTION_POINTER_DOWN,
                 touch(event(pointer(MotionEvent.ACTION_POINTER_DOWN, 1), new float[][] {{250, 300}, {350, 300}})));
         assertNull(PinchZoom.zoom());
+
+        // A screen Litho draws, with no background of its own, hides it just the same.
+        frame.removeView(post);
+        LithoHost drawn = new LithoHost(activity);
+        drawn.setWillNotDraw(false);
+        frame.addView(drawn, new FrameLayout.LayoutParams(1080, 1920));
+        layOut(activity);
+        assertNull("a photo under a Litho screen counted", PinchZoom.mediaUnder(activity, decor(), 300, 300));
+    }
+
+    /**
+     * Facebook keeps an empty layer over every screen, a frame whose only child is gone, so a
+     * profile always sits under one. It draws nothing there, so the photo under it is what shows.
+     */
+    @Test
+    public void anEmptyLayerOverAProfileIsLookedPast() {
+        ViewGroup frame = (ViewGroup) ((View) photo.getParent()).getParent();
+        FrameLayout layer = new FrameLayout(activity);
+        View gone = new View(activity);
+        gone.setVisibility(View.GONE);
+        layer.addView(gone);
+        frame.addView(layer, new FrameLayout.LayoutParams(1080, 1700));
+        layOut(activity);
+        assertSame("the photo under an empty layer was missed", photo, PinchZoom.mediaUnder(activity, decor(), 300, 300));
+        layer.setBackgroundColor(Color.TRANSPARENT);
+        View bare = new View(activity);
+        layer.addView(bare, new FrameLayout.LayoutParams(1080, 1700));
+        layOut(activity);
+        assertSame("a clear background or a bare view counted", photo, PinchZoom.mediaUnder(activity, decor(), 300, 300));
+        TextView hidden = new TextView(activity);
+        hidden.setText("Hidden");
+        hidden.setVisibility(View.INVISIBLE);
+        layer.addView(hidden, new FrameLayout.LayoutParams(1080, 1700));
+        View faded = new ImageView(activity);
+        faded.setAlpha(0f);
+        layer.addView(faded, new FrameLayout.LayoutParams(1080, 1700));
+        layOut(activity);
+        assertSame("a hidden or faded view in the layer counted", photo, PinchZoom.mediaUnder(activity, decor(), 300, 300));
+        touch(event(MotionEvent.ACTION_DOWN, new float[][] {{250, 300}}));
+        assertEquals(MotionEvent.ACTION_CANCEL,
+                touch(event(pointer(MotionEvent.ACTION_POINTER_DOWN, 1), new float[][] {{250, 300}, {350, 300}})));
+        assertNotNull(PinchZoom.zoom());
+
+        // Text shown in the layer over the photo hides it.
+        hidden.setVisibility(View.VISIBLE);
+        layOut(activity);
+        assertNull("a photo under shown text counted", PinchZoom.mediaUnder(activity, decor(), 300, 300));
+        // So does a foreground drawn over a clear frame.
+        layer.removeView(hidden);
+        layer.setForeground(new ColorDrawable(0x80000000));
+        layOut(activity);
+        assertNull("a photo under a dark foreground counted", PinchZoom.mediaUnder(activity, decor(), 300, 300));
+    }
+
+    /**
+     * A cover photo's Litho band drawn over part of its ImageView yields to the picture under it,
+     * which holds all of it. A host the picture doesn't hold, a grid cell over a smaller one say, stays.
+     */
+    @Test
+    public void aBandDrawnOverAPictureYieldsToThePicture() {
+        FrameLayout content = (FrameLayout) photo.getParent();
+        LithoHost band = new LithoHost(activity);
+        FrameLayout.LayoutParams across = new FrameLayout.LayoutParams(600, 200);
+        across.topMargin = 200;
+        content.addView(band, across);
+        layOut(activity);
+        assertSame("the band over the cover won", photo, PinchZoom.mediaUnder(activity, decor(), 300, 300));
+        content.removeView(band);
+        content.addView(band, new FrameLayout.LayoutParams(700, 200));
+        layOut(activity);
+        assertSame("a host wider than the picture under it lost", band, PinchZoom.mediaUnder(activity, decor(), 300, 100));
+
+        // Only the media right under the band decides: a smaller picture between them keeps the band.
+        content.removeView(band);
+        ImageView between = new ImageView(activity);
+        between.setImageDrawable(new ColorDrawable(Color.GREEN));
+        FrameLayout.LayoutParams middle = new FrameLayout.LayoutParams(300, 300);
+        middle.leftMargin = 150;
+        middle.topMargin = 150;
+        content.addView(between, middle);
+        content.addView(band, across);
+        layOut(activity);
+        assertSame("the photo under a picture under the band won", band, PinchZoom.mediaUnder(activity, decor(), 300, 300));
+        content.removeView(between);
+
+        // A band Litho nests a level deeper still yields to the picture under it.
+        content.removeView(band);
+        FrameLayout wrap = new FrameLayout(activity);
+        wrap.addView(band, across);
+        content.addView(wrap, new FrameLayout.LayoutParams(1080, 1920));
+        layOut(activity);
+        assertSame("a nested band over the cover won", photo, PinchZoom.mediaUnder(activity, decor(), 300, 300));
     }
 
     /**
