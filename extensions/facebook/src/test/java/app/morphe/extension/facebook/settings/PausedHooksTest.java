@@ -833,8 +833,12 @@ public class PausedHooksTest {
                 MetaAiSearchForTests::hidesAnswer,
                 MetaAiSearchForTests::dropsPrompts,
                 MetaAiSearchForTests::stopsSuggestionRoute));
-        // A search Facebook would add to your history is kept out.
-        probes.put(PatchFamily.SEARCH_HISTORY, Collections.singletonList(() -> SearchHistory.skipSave(false)));
+        // A search Facebook would add to your history is kept out, and off the Recent list.
+        probes.put(PatchFamily.SEARCH_HISTORY, Arrays.asList(() -> SearchHistory.skipSave(false), () -> {
+            Map<Object, Object> recent = new LinkedHashMap<>();
+            SearchHistory.keepRecent(recent, "filter", "list");
+            return recent.isEmpty();
+        }));
         // XAnalytics' upload and uploader resume are skipped, and the Papaya job finishes unrun.
         probes.put(PatchFamily.ANALYTICS_UPLOADS, Arrays.asList(
                 AnalyticsUploads::holdXAnalyticsUpload,

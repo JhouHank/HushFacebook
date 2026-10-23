@@ -33,7 +33,9 @@ import org.robolectric.annotation.Config;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import app.morphe.extension.facebook.ads.GameAds;
 import app.morphe.extension.facebook.ads.MarketplaceAdFilterForTests;
@@ -392,6 +394,9 @@ public class ColdStartHooksTest {
         assertFalse("a suggestion parsed before the context lost its Meta AI route",
                 MetaAiSearchForTests.stopsSuggestionRoute());
         assertFalse("a search saved before the context was kept out of the history", SearchHistory.skipSave(false));
+        Map<Object, Object> recent = new HashMap<>();
+        SearchHistory.keepRecent(recent, "filter", "list");
+        assertEquals("a search saved before the context was kept off Recent", "list", recent.get("filter"));
         // A push can start Facebook, so the notification hook can run this early.
         assertFalse("a trending video push before the context was blocked", NotificationKindsForTests.blocksTrendingVideo());
         assertFalse("a birthday push before the context was blocked", NotificationKindsForTests.blocksBirthday());
