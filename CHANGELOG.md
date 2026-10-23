@@ -24,6 +24,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** `Hide the reaction preview on posts` also takes away the "Name and 55 others" line beside the reaction faces, or the plain number Facebook puts there on some layouts. Only the faces went before. TalkBack still reads it. The number on the Like button stays until `Hide counts on posts` is on too, as its description says (issue #158). Checked in tests, not yet on a phone.
 * **Tooling:** A focused test run that names fixture tests after `:patches:fixtureTest` runs them again. Those filters used to be dropped, and the run passed without running a single fixture test.
 * **Facebook:** The `Mark as seen button` also shows when Facebook opens a story in one of its other story screens. Facebook 584 has three more besides the usual one, and the button only looked for that one. Checked in tests.
+* **Facebook:** A copy of Facebook made with `Clone app` could close right after it opened when the regular Facebook was installed beside it. It was asking the regular app for a saved value instead of asking itself, and Android doesn't let one app into the other's storage like that, so it closed the copy. Now every one of those requests goes to the copy's own storage (issue #16). Checked on an emulator.
 
 ### Changed
 
