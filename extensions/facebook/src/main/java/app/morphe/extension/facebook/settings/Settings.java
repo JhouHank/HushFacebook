@@ -896,9 +896,10 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_pinch_to_zoom_keep", FALSE, Setting.parent(PINCH_TO_ZOOM));
 
     /**
-     * Pinch to zoom's third switch (#220): two quick taps on a profile photo that does nothing when
-     * tapped zoom it to twice its size about the tap, and two more put it back. Never in the story
-     * viewer or on a photo a tap opens. Starts off. Asked on each tap, so a change shows from the next one.
+     * Pinch to zoom's third switch (#220): two quick taps on a profile photo zoom it to twice its size
+     * about the tap, and two more put it back. The first tap waits the double tap time, so a lone tap
+     * still opens the photo, just that much later. Never in the story viewer. Starts off. Asked on
+     * each tap, so a change shows from the next one.
      */
     public static final BooleanSetting PINCH_TO_ZOOM_DOUBLE_TAP =
             new BooleanSetting("hushfacebook_pinch_to_zoom_double_tap", FALSE, Setting.parent(PINCH_TO_ZOOM));

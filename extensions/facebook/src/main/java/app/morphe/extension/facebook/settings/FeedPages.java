@@ -380,8 +380,7 @@ final class FeedPages {
                         .needs(Settings.PINCH_TO_ZOOM));
                 stories.addPreference(toggle(context, Settings.PINCH_TO_ZOOM_DOUBLE_TAP,
                         L10n.t("With Pinch to zoom on, double tap a photo on a profile to zoom in where you tapped, "
-                                + "and double tap again to put it back. It skips stories and any photo that opens "
-                                + "when you tap it, so it works on few photos."))
+                                + "and double tap again to put it back. A single tap still opens the photo, a moment later."))
                         .needs(Settings.PINCH_TO_ZOOM));
             }
         }

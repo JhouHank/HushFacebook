@@ -1618,7 +1618,7 @@ With Pinch to zoom on, the photo or story stays zoomed when you let go, and a st
 # context: switch title under Stories, right below Stay zoomed; two quick taps on a photo zoom it in where you tapped
 Double tap to zoom	Yakınlaştırmak için çift dokun
 # context: summary of that switch; "Pinch to zoom" is the label of the switch two rows above it, so use its translation; a story is the full-screen picture or video someone shares for a day
-With Pinch to zoom on, double tap a photo on a profile to zoom in where you tapped, and double tap again to put it back. It skips stories and any photo that opens when you tap it, so it works on few photos.	Yakınlaştırmak için kıstır açıkken profildeki bir fotoğrafa çift dokunarak dokunduğun yere yakınlaşırsın, tekrar çift dokununca eski haline döner. Hikayeler ve dokununca açılan fotoğraflar atlanır, bu yüzden az sayıda fotoğrafta çalışır.
+With Pinch to zoom on, double tap a photo on a profile to zoom in where you tapped, and double tap again to put it back. A single tap still opens the photo, a moment later.	Yakınlaştırmak için kıstır açıkken profildeki bir fotoğrafa çift dokunarak dokunduğun yere yakınlaşırsın, tekrar çift dokununca eski haline döner. Tek dokunuş fotoğrafı yine açar, sadece bir an sonra.
 No ads downloaded in advance	Önceden indirilen reklam yok
 No ad tracking	Reklam takibi yok
 No Facebook ads in other apps	Diğer uygulamalarda Facebook reklamı yok

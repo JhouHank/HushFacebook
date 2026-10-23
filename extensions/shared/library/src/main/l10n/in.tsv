@@ -1618,7 +1618,7 @@ With Pinch to zoom on, the photo or story stays zoomed when you let go, and a st
 # context: switch title under Stories, right below Stay zoomed; two quick taps on a photo zoom it in where you tapped
 Double tap to zoom	Ketuk dua kali untuk zoom
 # context: summary of that switch; "Pinch to zoom" is the label of the switch two rows above it, so use its translation; a story is the full-screen picture or video someone shares for a day
-With Pinch to zoom on, double tap a photo on a profile to zoom in where you tapped, and double tap again to put it back. It skips stories and any photo that opens when you tap it, so it works on few photos.	Saat Cubit untuk zoom aktif, ketuk dua kali foto di profil untuk memperbesar di tempat yang kamu ketuk, lalu ketuk dua kali lagi untuk mengembalikannya. Cerita dan foto yang terbuka saat diketuk dilewati, jadi fitur ini hanya berfungsi di sedikit foto.
+With Pinch to zoom on, double tap a photo on a profile to zoom in where you tapped, and double tap again to put it back. A single tap still opens the photo, a moment later.	Saat Cubit untuk zoom aktif, ketuk dua kali foto di profil untuk memperbesar di tempat yang kamu ketuk, lalu ketuk dua kali lagi untuk mengembalikannya. Ketuk sekali tetap membuka foto, hanya sesaat lebih lambat.
 No ads downloaded in advance	Tanpa iklan yang diunduh lebih dulu
 No ad tracking	Tanpa pelacakan iklan
 No Facebook ads in other apps	Tanpa iklan Facebook di aplikasi lain

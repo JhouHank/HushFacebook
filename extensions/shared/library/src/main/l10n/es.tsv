@@ -1618,7 +1618,7 @@ With Pinch to zoom on, the photo or story stays zoomed when you let go, and a st
 # context: switch title under Stories, right below Stay zoomed; two quick taps on a photo zoom it in where you tapped
 Double tap to zoom	Tocar dos veces para hacer zoom
 # context: summary of that switch; "Pinch to zoom" is the label of the switch two rows above it, so use its translation; a story is the full-screen picture or video someone shares for a day
-With Pinch to zoom on, double tap a photo on a profile to zoom in where you tapped, and double tap again to put it back. It skips stories and any photo that opens when you tap it, so it works on few photos.	Con Pellizcar para hacer zoom activado, toca dos veces una foto de un perfil para ampliar donde tocaste, y toca dos veces otra vez para devolverla. No funciona en historias ni en fotos que se abren al tocarlas, así que sirve en pocas fotos.
+With Pinch to zoom on, double tap a photo on a profile to zoom in where you tapped, and double tap again to put it back. A single tap still opens the photo, a moment later.	Con Pellizcar para hacer zoom activado, toca dos veces una foto de un perfil para ampliar donde tocaste, y toca dos veces otra vez para devolverla. Un solo toque sigue abriendo la foto, un momento después.
 No ads downloaded in advance	Sin anuncios descargados por adelantado
 No ad tracking	Sin seguimiento de anuncios
 No Facebook ads in other apps	Sin anuncios de Facebook en otras apps

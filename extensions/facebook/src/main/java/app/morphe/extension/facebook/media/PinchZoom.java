@@ -35,6 +35,8 @@ import android.window.OnBackInvokedDispatcher;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -85,11 +87,14 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  *
  * <p>With Double tap to zoom on (#220), two quick taps on a photo {@link #places} names zoom it to
  * {@link #DOUBLE_TAP_SCALE} about the tap, as a kept zoom, and a second double tap on it lets it go.
- * Taps are only watched, never held back or changed, so Facebook gets each one at once. Because the
- * first tap reaches Facebook, the zoom starts only where a tap does nothing ({@link #tapFree}):
- * a photo that opens a viewer on tap, a profile picture and a cover are all left alone, and so is
- * the story viewer, where a tap moves the story on. A lone tap on a double tap zoom does nothing, so
- * the second tap of the pair that lets it go never reaches Facebook as a tap on the photo.
+ * A profile's photos open on a tap, so a finger landing on one is held from Facebook: when a second
+ * tap comes within the double tap time, Facebook sees neither and the photo zooms. Otherwise the held
+ * events reach Facebook as they came ({@link #replayHeld}), so a lone tap opens the photo a moment
+ * later, a finger that moves past the slop or gains a second finger is handed on at once as a scroll
+ * or a pinch, and one still down after the double tap time is handed on too, so a hold still opens
+ * Facebook's menu. A second touch that turns out not to be a tap is handed on from its own start.
+ * The story viewer is left out, where a tap moves the story on and mustn't wait. A lone tap on a
+ * double tap zoom does nothing, so the second tap of the pair that lets it go never reaches Facebook.
  */
 public final class PinchZoom {
     private static final String FAMILY = FamilyNames.PINCH_TO_ZOOM;
@@ -135,15 +140,20 @@ public final class PinchZoom {
     /** This touch landed on a kept zoom and steers it, so Facebook gets none of it. */
     private static boolean steering;
     @Nullable private static Zoom zoom;
-    /** A one-finger touch that may turn out to be a tap is being watched (Double tap to zoom). */
-    private static boolean tracking;
-    private static float tapDownX;
-    private static float tapDownY;
-    private static long tapDownTime;
-    /** When and where the last tap lifted, or 0 for none. */
-    private static long lastTapTime;
-    private static float lastTapX;
-    private static float lastTapY;
+    /** Double tap to zoom: the first tap's events, held from Facebook until it's clear no second tap follows. */
+    private static final List<MotionEvent> held = new ArrayList<>();
+    @Nullable private static WeakReference<Activity> heldFrom;
+    /** The held tap lifted, and waits for the double tap time to see whether a second one comes. */
+    private static boolean heldUp;
+    private static long heldUpTime;
+    private static float firstX;
+    private static float firstY;
+    /** The second tap of a double tap is down, and Facebook gets none of it unless it stops being a tap. */
+    @Nullable private static MotionEvent secondDown;
+    /** Held events are going to Facebook, which this hands on untouched. */
+    private static boolean replaying;
+    private static final Handler later = new Handler(Looper.getMainLooper());
+    private static final Runnable replayLater = PinchZoom::replayHeld;
 
     private PinchZoom() {
     }
@@ -179,6 +189,7 @@ public final class PinchZoom {
 
     /** True when Facebook shouldn't get [event] at all. */
     static boolean handle(Activity activity, MotionEvent event) {
+        if (replaying) return false;
         int action = event.getActionMasked();
         if (action == MotionEvent.ACTION_DOWN) {
             steering = false;
@@ -197,8 +208,7 @@ public final class PinchZoom {
             drop();
             swallowing = false;
             holding = false;
-            watchTap(activity, event);
-            return false;
+            return tapDown(activity, event);
         }
         if (steering) return steer(event, action);
         if (swallowing) {
@@ -219,7 +229,11 @@ public final class PinchZoom {
             event.setAction(MotionEvent.ACTION_CANCEL);
             return false;
         }
-        if (tracking) followTap(activity, event, action);
+        if (secondDown != null) {
+            if (followSecond(activity, event, action)) return true;
+        } else if (!held.isEmpty() && !heldUp) {
+            if (followHeld(activity, event, action)) return true;
+        }
         if (action != MotionEvent.ACTION_POINTER_DOWN || event.getPointerCount() != 2) return false;
         if (!Utils.settingsReady() || !Settings.PINCH_TO_ZOOM.get()) return false;
         HookStatus.invoked(FAMILY);
@@ -318,70 +332,146 @@ public final class PinchZoom {
         return Utils.settingsReady() && Settings.PINCH_TO_ZOOM.get() && Settings.PINCH_TO_ZOOM_DOUBLE_TAP.get();
     }
 
+    /** Drops any held tap and second tap without handing them on. */
     private static void forgetTaps() {
-        tracking = false;
-        lastTapTime = 0;
+        later.removeCallbacks(replayLater);
+        for (MotionEvent event : held) event.recycle();
+        held.clear();
+        heldFrom = null;
+        heldUp = false;
+        MotionEvent second = secondDown;
+        secondDown = null;
+        if (second != null) second.recycle();
     }
 
     /**
-     * A finger landed (Double tap to zoom): watch it for a tap. Nothing here holds an event back or
-     * changes it, so Facebook gets every tap at once, and the story viewer is left out, where a tap
-     * moves the story on.
+     * A finger landed. When it's the second tap of a double tap on a held photo, Facebook gets none
+     * of it. A held tap it doesn't pair with goes to Facebook first. With Double tap to zoom on, a
+     * finger on a photo outside the story viewer is held. True keeps [event] from Facebook.
      */
-    private static void watchTap(Activity activity, MotionEvent event) {
-        tracking = false;
-        if (!doubleTapOn() || storyViewer(activity)) {
-            lastTapTime = 0;
-            return;
+    private static boolean tapDown(Activity activity, MotionEvent event) {
+        if (heldUp && heldFrom != null && heldFrom.get() == activity && pairs(activity, event)) {
+            forgetTaps();
+            secondDown = MotionEvent.obtain(event);
+            return true;
         }
-        tracking = true;
-        tapDownX = event.getX();
-        tapDownY = event.getY();
-        tapDownTime = event.getEventTime();
+        replayHeld();
+        forgetTaps();
+        if (!doubleTapOn() || storyViewer(activity)) return false;
+        Window window = activity.getWindow();
+        View root = window == null ? null : window.getDecorView();
+        if (!(root instanceof ViewGroup) || places.target(activity, root, event.getX(), event.getY()) == null) return false;
+        HookStatus.invoked(FAMILY);
+        held.add(MotionEvent.obtain(event));
+        heldFrom = new WeakReference<>(activity);
+        firstX = event.getX();
+        firstY = event.getY();
+        // Still down after the double tap time, it's no tap: Facebook gets it, and its hold opens a menu.
+        later.postDelayed(replayLater, ViewConfiguration.getDoubleTapTimeout());
+        return true;
     }
 
-    /** One more event of a watched finger: a second finger or a drag past the slop makes it no tap. */
-    private static void followTap(Activity activity, MotionEvent event, int action) {
-        ViewConfiguration config = ViewConfiguration.get(activity);
-        if (action == MotionEvent.ACTION_MOVE) {
-            if (event.getPointerCount() == 1
-                    && Math.hypot(event.getX() - tapDownX, event.getY() - tapDownY) <= config.getScaledTouchSlop()) return;
-            forgetTaps();
-            return;
-        }
-        if (action != MotionEvent.ACTION_UP) {
-            forgetTaps();
-            return;
-        }
-        tracking = false;
-        if (event.getEventTime() - tapDownTime > ViewConfiguration.getLongPressTimeout()) {
-            lastTapTime = 0;
-            return;
-        }
-        boolean second = lastTapTime != 0 && tapDownTime - lastTapTime <= ViewConfiguration.getDoubleTapTimeout()
-                && Math.hypot(tapDownX - lastTapX, tapDownY - lastTapY) <= config.getScaledDoubleTapSlop();
-        if (!second) {
-            lastTapTime = event.getEventTime();
-            lastTapX = tapDownX;
-            lastTapY = tapDownY;
-            return;
-        }
-        lastTapTime = 0;
-        zoomAtTap(activity, tapDownX, tapDownY, event);
+    /** True when [event], a finger landing, is close enough in time and place to the held tap to be its second. */
+    private static boolean pairs(Activity activity, MotionEvent event) {
+        return event.getEventTime() - heldUpTime <= ViewConfiguration.getDoubleTapTimeout()
+                && Math.hypot(event.getX() - firstX, event.getY() - firstY)
+                <= ViewConfiguration.get(activity).getScaledDoubleTapSlop();
     }
 
     /**
-     * The second tap of a double tap lifted at ([x], [y]): the photo under it, if a tap does nothing
-     * to it, zooms to {@link #DOUBLE_TAP_SCALE} about the tap and stays until a second double tap,
-     * Back or the window losing focus, through the same kept zoom Stay zoomed uses.
+     * One more event of the held finger. A move within the slop and the lift are held too, the lift
+     * then waiting the double tap time for a second tap. A move past the slop or a second finger
+     * hands the held events to Facebook, and [event] after them. True keeps [event] from Facebook.
+     */
+    private static boolean followHeld(Activity activity, MotionEvent event, int action) {
+        if (action == MotionEvent.ACTION_CANCEL) {
+            forgetTaps();
+            return true;
+        }
+        if (action == MotionEvent.ACTION_MOVE && event.getPointerCount() == 1
+                && Math.hypot(event.getX() - firstX, event.getY() - firstY)
+                <= ViewConfiguration.get(activity).getScaledTouchSlop()) {
+            held.add(MotionEvent.obtain(event));
+            return true;
+        }
+        if (action == MotionEvent.ACTION_UP) {
+            held.add(MotionEvent.obtain(event));
+            heldUp = true;
+            heldUpTime = event.getEventTime();
+            later.removeCallbacks(replayLater);
+            later.postDelayed(replayLater, ViewConfiguration.getDoubleTapTimeout());
+            return true;
+        }
+        replayHeld();
+        return false;
+    }
+
+    /**
+     * One more event of the second tap. Its lift zooms the photo, and Facebook gets nothing of either
+     * tap. A move past the slop or a second finger makes it no tap: Facebook gets it from its own
+     * start, and [event] after that. True keeps [event] from Facebook.
+     */
+    private static boolean followSecond(Activity activity, MotionEvent event, int action) {
+        MotionEvent second = secondDown;
+        if (second == null) return false;
+        if (action == MotionEvent.ACTION_CANCEL) {
+            forgetTaps();
+            return true;
+        }
+        float x = second.getX();
+        float y = second.getY();
+        if (action == MotionEvent.ACTION_MOVE && event.getPointerCount() == 1
+                && Math.hypot(event.getX() - x, event.getY() - y)
+                <= ViewConfiguration.get(activity).getScaledTouchSlop()) {
+            return true;
+        }
+        if (action == MotionEvent.ACTION_UP) {
+            forgetTaps();
+            zoomAtTap(activity, x, y, event);
+            return true;
+        }
+        secondDown = null;
+        held.add(second);
+        heldFrom = new WeakReference<>(activity);
+        replayHeld();
+        return false;
+    }
+
+    /**
+     * The held events go to Facebook as they came, through the activity's own dispatch, which this
+     * hands on untouched. Dropped instead when the activity is gone or another window has the focus.
+     */
+    static void replayHeld() {
+        later.removeCallbacks(replayLater);
+        if (held.isEmpty()) return;
+        Activity activity = heldFrom == null ? null : heldFrom.get();
+        List<MotionEvent> events = new ArrayList<>(held);
+        held.clear();
+        heldFrom = null;
+        heldUp = false;
+        try {
+            if (activity == null || activity.isFinishing() || !activity.hasWindowFocus()) return;
+            replaying = true;
+            for (MotionEvent event : events) activity.dispatchTouchEvent(event);
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, "double tap replay", failure);
+        } finally {
+            replaying = false;
+            for (MotionEvent event : events) event.recycle();
+        }
+    }
+
+    /**
+     * The second tap of a double tap lifted at ([x], [y]): the photo under it zooms to {@link
+     * #DOUBLE_TAP_SCALE} about the tap and stays until a second double tap, Back or the window losing
+     * focus, through the same kept zoom Stay zoomed uses.
      */
     private static void zoomAtTap(Activity activity, float x, float y, MotionEvent event) {
         Window window = activity.getWindow();
         View root = window == null ? null : window.getDecorView();
         if (!(root instanceof ViewGroup)) return;
-        HookStatus.invoked(FAMILY);
         View target = places.target(activity, root, x, y);
-        if (target == null || !tapFree(target, root)) return;
+        if (target == null) return;
         Rect area = area(root, target);
         if (area == null) return;
         HookStatus.bound(FAMILY, "double tap");
@@ -401,19 +491,6 @@ public final class PinchZoom {
                 started.remove();
             }
         });
-    }
-
-    /**
-     * True when a tap on [view] does nothing of Facebook's own: neither it nor any view above it up
-     * to [root] takes clicks. A photo that opens a viewer, a profile picture and a cover all do, so
-     * a double tap there would open it on the first tap before it could zoom.
-     */
-    static boolean tapFree(View view, View root) {
-        for (View at = view; ; ) {
-            if (at.isClickable() || at.hasOnClickListeners()) return false;
-            if (at == root || !(at.getParent() instanceof View)) return true;
-            at = (View) at.getParent();
-        }
     }
 
     /** A kept zoom springs back, and a story's held finger lets go with [event], a cancel to Facebook. */
@@ -689,6 +766,7 @@ public final class PinchZoom {
         holding = false;
         steering = false;
         forgetTaps();
+        replaying = false;
         profiles.clear();
         snapshots = PinchZoom::snapshot;
         places = PinchZoom::mediaUnder;
