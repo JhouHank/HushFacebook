@@ -839,11 +839,13 @@ public final class ProgressBar {
      * hidden and nothing is written, as the scrubber's position and length are the last reel's.
      *
      * <p>Being asked at all means the update drew the reel, which ends the label's watch from {@link
-     * #mounts}, whatever the switches.
+     * #mounts}, whatever the switches. It also hands {@link CaptionRoom} the label, since the first
+     * reel after a start gets no light mount (#96).
      */
     public static boolean refreshesTime(ViewGroup label, @Nullable View bar) {
         try {
             if (label == null) return false;
+            CaptionRoom.updated(label);
             // Facebook found the reel's position and length and moved the bar: the update draws.
             Watch watch = watches.remove(label);
             if (watch != null && watch.runs > 0) {

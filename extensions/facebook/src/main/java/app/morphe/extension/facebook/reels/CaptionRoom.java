@@ -37,11 +37,14 @@ import app.morphe.extension.shared.settings.Setting;
  * room for what hangs below. When Litho takes the row off the screen it's clipped again, so a host
  * Litho hands to something else comes back as Facebook left it.
  *
- * <p>Every reel's scrubber runs a light mount as it takes the reel ({@link
+ * <p>The scrubber runs a light mount as it takes a reel ({@link
  * app.morphe.extension.facebook.media.ProgressBar#mounts}), whatever the progress bar switches say,
  * often before that reel's footer is laid out. So {@link #mounted} looks through the page the
  * scrubber sits in (its nearest LithoView) and keeps looking after each layout of the window while
- * that page shows. Pause Hushfacebook leaves every row as Facebook made it.
+ * that page shows. The first reel after a start gets no light mount, as Facebook's registry holds
+ * no scrubber for it yet (S22, 2026-10-23: five cold starts, the row clipped and never looked at),
+ * but its bar still moves, so the scrubber's progress update hands over its label too ({@link
+ * #updated}). Pause Hushfacebook leaves every row as Facebook made it.
  */
 public final class CaptionRoom {
     private static final String FAMILY = FamilyNames.PROGRESS_BAR;
@@ -61,48 +64,41 @@ public final class CaptionRoom {
     private static final Map<View, Boolean> watched = new WeakHashMap<>();
     /** The rows unclipped here, each clipped again when it leaves the window. */
     private static final Map<View, Boolean> unclipped = new WeakHashMap<>();
-    /** The labels mounted off the window, waiting to attach. */
-    private static final Map<View, Boolean> waiting = new WeakHashMap<>();
 
     private CaptionRoom() {
     }
 
-    /**
-     * From the scrubber's light mount, with its time label. The first reel's mount runs before the
-     * scrubber joins the page, so a label off the window is looked at again when it attaches.
-     */
+    /** From the scrubber's light mount, with its time label. */
     public static void mounted(@Nullable View label) {
         try {
             if (label == null || !Utils.settingsReady() || Setting.isPaused()) return;
-            if (!label.isAttachedToWindow()) {
-                afterAttach(label);
-                return;
-            }
             View page = pageOf(label);
             if (page == null) return;
-            HookStatus.invoked(FAMILY);
-            watch(page);
-            roomIn(page);
+            lookThrough(page, "light mount");
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, HOOK, failure);
         }
     }
 
-    /** Runs {@link #mounted} again once [label] attaches, with one wait per label. */
-    private static void afterAttach(View label) {
-        if (waiting.put(label, Boolean.TRUE) != null) return;
-        label.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
-            @Override
-            public void onViewAttachedToWindow(View view) {
-                view.removeOnAttachStateChangeListener(this);
-                waiting.remove(view);
-                mounted(view);
-            }
+    /**
+     * From each run of the scrubber's progress update that moved the bar, with its time label. It
+     * runs many times a second, so only a page on screen that nothing watches yet is looked through.
+     */
+    public static void updated(@Nullable View label) {
+        try {
+            if (label == null || !Utils.settingsReady() || Setting.isPaused() || !label.isAttachedToWindow()) return;
+            View page = pageOf(label);
+            if (page == null || watched.containsKey(page)) return;
+            lookThrough(page, "progress update");
+        } catch (Throwable failure) {
+            HookStatus.threw(FAMILY, HOOK, failure);
+        }
+    }
 
-            @Override
-            public void onViewDetachedFromWindow(View view) {
-            }
-        });
+    private static void lookThrough(View page, String from) {
+        HookStatus.invoked(FAMILY);
+        if (watch(page)) Logger.printDebug(() -> "Reel caption: the scrubber's " + from + " found the reel page");
+        roomIn(page);
     }
 
     /** [view]'s nearest LithoView ancestor, or null. */
@@ -117,11 +113,14 @@ public final class CaptionRoom {
         return null;
     }
 
-    /** Looks through [page] again after each layout of its window, until the page is gone. */
-    private static void watch(View page) {
-        if (watched.containsKey(page) || !page.isAttachedToWindow()) return;
+    /**
+     * Looks through [page] again after each layout of its window, until the page is gone. Answers
+     * whether this started the watch.
+     */
+    private static boolean watch(View page) {
+        if (watched.containsKey(page) || !page.isAttachedToWindow()) return false;
         ViewTreeObserver tree = page.getViewTreeObserver();
-        if (!tree.isAlive()) return;
+        if (!tree.isAlive()) return false;
         watched.put(page, Boolean.TRUE);
         WeakReference<View> held = new WeakReference<>(page);
         tree.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
@@ -139,6 +138,7 @@ public final class CaptionRoom {
                 }
             }
         });
+        return true;
     }
 
     /** Unclips every footer row in [page] whose caption hangs past its column. Answers how many. */
@@ -206,10 +206,9 @@ public final class CaptionRoom {
         });
     }
 
-    /** Forgets every watched page, unclipped row and waiting label, for tests. */
+    /** Forgets every watched page and unclipped row, for tests. */
     static void reset() {
         watched.clear();
         unclipped.clear();
-        waiting.clear();
     }
 }

@@ -115,21 +115,43 @@ public class CaptionRoomTest {
     }
 
     @Test
-    public void waitsForALabelMountedBeforeItJoinsThePage() {
+    public void theFirstReelAfterAStartGetsItsRoomFromTheProgressUpdate() {
         block(column, -17, 201);
+        layOut();
+
+        CaptionRoom.updated(label);
+
+        assertFalse(row.getClipChildren());
+        assertTrue(reported(CaptionRoom.UNCLIPPED));
+    }
+
+    @Test
+    public void aProgressUpdateLeavesAWatchedPageToItsLayouts() {
+        CaptionRoom.updated(label);
+        block(column, -17, 201);
+
+        CaptionRoom.updated(label);
+        assertTrue(row.getClipChildren());
+
+        layOut();
+        assertFalse(row.getClipChildren());
+    }
+
+    @Test
+    public void aProgressUpdateOffTheWindowWaitsForOneOnIt() {
+        block(column, -17, 201);
+        layOut();
         FrameLayout scrubber = new FrameLayout(activity);
         View early = new FrameLayout(activity);
         place(scrubber, early, 0, 918, 291, 1080);
 
-        CaptionRoom.mounted(early);
-        CaptionRoom.mounted(early);
+        CaptionRoom.updated(early);
         assertTrue(row.getClipChildren());
 
         place(page, scrubber, 0, 893, 1080, 1973);
-        layOut();
+        CaptionRoom.updated(early);
 
         assertFalse(row.getClipChildren());
-        assertTrue(reported(CaptionRoom.UNCLIPPED));
     }
 
     @Test
@@ -199,6 +221,7 @@ public class CaptionRoomTest {
         layOut();
 
         CaptionRoom.mounted(label);
+        CaptionRoom.updated(label);
         layOut();
 
         assertTrue(row.getClipChildren());
