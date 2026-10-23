@@ -1795,6 +1795,10 @@ What you search for isn't added to your Facebook search history. Searches alread
 Hide the audio line on reels	Reels'te ses satırını gizle
 # context: summary of that switch; "Original audio" is Facebook's own label, so use the wording Facebook shows in this language
 Takes the line with the reel's sound, "Original audio" or a song, off the bottom of reels. Other info stays. A change shows from the next reel.	Reels'in altındaki, reel'in sesini gösteren satırı ("Orijinal ses" veya bir şarkı) kaldırır. Diğer bilgiler kalır. Değişiklik bir sonraki reel'den itibaren görünür.
+# context: switch title under Reels and Watch; the message is Facebook's own "This is taking a while. Try checking your network connection." that pops up while a video or GIF loads slowly
+Hide the slow connection message	Yavaş bağlantı mesajını gizle
+# context: summary of that switch; "This is taking a while" is Facebook's own message, so use the wording Facebook shows in this language
+Stops the "This is taking a while" message about your network connection when a video or GIF is slow to load. It keeps loading as before.	Bir video veya GIF yavaş yüklenirken ağ bağlantınızla ilgili "Bu biraz zaman alıyor" mesajını durdurur. Yüklenmeye her zamanki gibi devam eder.
 # context: title of the row on the Appearance page, with AMOLED in the build, that takes a color code for dark mode's backgrounds; also its dialog's title
 Background color	Arka plan rengi
 # context: text in that row's dialog above the field; %1$s is the lightest gray code it takes, %2$s the color code the patch wrote, both like #0D1117; keep #RRGGBB and #0D1117 as they are

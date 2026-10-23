@@ -471,7 +471,7 @@ public class PatchFamilyTest {
                         + "color, Restore screens on re-signed builds, Start on x86 devices, Install beside Meta's "
                         + "apps, Hushfacebook in the Menu"),
                 running);
-        // Clean up Reels has thirteen switches, all off to start, and the report names each one.
+        // Clean up Reels has fourteen switches, all off to start, and the report names each one.
         Settings.HIDE_REEL_FOLLOW_BUTTON.save(true);
         assertEquals("Clean up Reels: on (hushfacebook_hide_reel_chips=off, hushfacebook_hide_reel_follow_button=on, "
                         + "hushfacebook_hide_reel_social_footer=off, hushfacebook_hide_reel_threads_cards=off, "
@@ -479,7 +479,7 @@ public class PatchFamilyTest {
                         + "hushfacebook_original_audio=off, hushfacebook_hide_reel_search_pill=off, "
                         + "hushfacebook_hide_reel_counts=off, hushfacebook_hide_reel_save_button=off, "
                         + "hushfacebook_hide_reel_sound_button=off, hushfacebook_hide_reel_audio_line=off, "
-                        + "hushfacebook_feed_videos_alone=off)",
+                        + "hushfacebook_hide_slow_connection_message=off, hushfacebook_feed_videos_alone=off)",
                 PatchFamily.reportLines(EnumSet.of(PatchFamily.REEL_DECLUTTER), false).get(0));
         // Share sheet items is set by its list, and its group switch is saved beside it.
         Settings.HIDE_SHARE_GROUP_BUTTONS.save(true);

@@ -503,6 +503,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_reel_audio_line", FALSE);
 
     /**
+     * The "This is taking a while. Try checking your network connection." message a video shows
+     * when it's slow to load isn't shown
+     * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#hideSlowConnectionMessage}, #222).
+     * The video keeps loading as before. Off by default. A change shows the next time a video stalls.
+     */
+    public static final BooleanSetting HIDE_SLOW_CONNECTION_MESSAGE =
+            new BooleanSetting("hushfacebook_hide_slow_connection_message", FALSE);
+
+    /**
      * A video tapped in the feed opens in the full-screen player on its own, with no reels to swipe
      * to after it ({@link app.morphe.extension.facebook.reels.FeedVideoAlone}, #161). The player's
      * reels feed is told nothing more came. The Reels tab keeps scrolling. Off until it's turned on,

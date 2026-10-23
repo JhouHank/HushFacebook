@@ -130,6 +130,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_REEL_SAVE_BUTTON) return L10n.t("Hide Save on reels");
         if (setting == Settings.HIDE_REEL_SOUND_BUTTON) return L10n.t("Hide the speaker button on reels");
         if (setting == Settings.HIDE_REEL_AUDIO_LINE) return L10n.t("Hide the audio line on reels");
+        if (setting == Settings.HIDE_SLOW_CONNECTION_MESSAGE) return L10n.t("Hide the slow connection message");
         if (setting == Settings.FEED_VIDEOS_ALONE) return L10n.t("Open feed videos on their own");
         if (setting == Settings.DONT_SEND_REEL_WATCH_HISTORY) return L10n.t("Don't send reel watch history");
         if (setting == Settings.NEWEST_REELS_FIRST) return L10n.t("Newest reels first");
