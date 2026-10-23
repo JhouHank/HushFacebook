@@ -450,7 +450,7 @@ public class PausedHooksTest {
                 PostPrompts::hideReactionPreview,
                 () -> PostPrompts.hideReactionPreview(true),
                 // So is the count beside a post's faces.
-                () -> PostPrompts.reactionCount("56").isEmpty()));
+                () -> PostPrompts.reactionCount("56") == null));
         // A post the store remembers is dropped by the feed guard while the switch is on.
         probes.put(PatchFamily.SEEN_POSTS, Collections.singletonList(SeenPostsForTests::hidesARememberedPost));
         // The pill socket's yes for Meta AI's questions is answered as a no, so it draws no row for

@@ -6,6 +6,7 @@ package app.morphe.extension.facebook.feed;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.After;
@@ -245,15 +246,15 @@ public class PostPromptsTest {
 
     /**
      * The count beside a post's faces (#158) answers to the post switch: off it's Facebook's text,
-     * on it's empty and counted, and a text Facebook left empty, or none, comes back as it was.
+     * on it's null and counted, and a text Facebook left empty, or none, comes back as it was.
      */
     @Test
     public void theReactionCountIsShownUntilThePostSwitchIsOn() {
         assertEquals("a count went with the switch off", "56", PostPrompts.reactionCount("56"));
 
         Settings.HIDE_POST_REACTIONS.save(true);
-        assertEquals("a count stayed with the switch on", "", PostPrompts.reactionCount("56"));
-        assertEquals("the summary line stayed with the switch on", "", PostPrompts.reactionCount("Sam and 55 others"));
+        assertNull("a count stayed with the switch on", PostPrompts.reactionCount("56"));
+        assertNull("the summary line stayed with the switch on", PostPrompts.reactionCount("Sam and 55 others"));
         assertTrue("the status line doesn't count the hidden counts",
                 statusLine().contains(PostPrompts.COUNT_HIDDEN + " 2"));
         assertEquals("an empty text was counted or changed", "", PostPrompts.reactionCount(""));
@@ -276,7 +277,7 @@ public class PostPromptsTest {
         }
         SettingsContextRule.withoutContext(() ->
                 assertEquals("before the settings were ready, the count went", "56", PostPrompts.reactionCount("56")));
-        assertEquals("resumed, the count didn't go again", "", PostPrompts.reactionCount("56"));
+        assertNull("resumed, the count didn't go again", PostPrompts.reactionCount("56"));
     }
 
     /** The reactions switch answers for nothing else, and the counts switch doesn't answer for it. */

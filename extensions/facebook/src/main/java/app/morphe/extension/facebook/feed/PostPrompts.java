@@ -198,12 +198,14 @@ public final class PostPrompts {
     /**
      * The hook, just before the reaction summary beside a post's buttons is built, handed its text:
      * the count next to the faces in Facebook's inline layout ("56"), or "Name and 55 others" in the
-     * other one. With the post switch on it answers an empty text, so nothing is drawn there, while
-     * the description TalkBack reads and the tap on the row stay (#158). Otherwise, and for a text
-     * Facebook already left empty, Facebook's own text comes back.
+     * other one. With the post switch on it answers null, the text Facebook itself builds the
+     * summary with when it has none, so nothing is drawn there, while the description TalkBack reads
+     * and the tap on the row stay (#158). Otherwise, and for a text Facebook already left empty,
+     * Facebook's own text comes back.
      */
     public static String reactionCount(String text) {
         try {
+            HookStatus.invoked(FAMILY);
             HookStatus.bound(FAMILY, "reaction count");
             if (text == null || text.isEmpty()) return text;
             if (!Utils.settingsReady() || !Settings.HIDE_POST_REACTIONS.get()) return text;
@@ -212,7 +214,7 @@ public final class PostPrompts {
                 countLogged = true;
                 Logger.printDebug(() -> "Post prompts: a post's reaction count was left out");
             }
-            return "";
+            return null;
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "reaction count", failure);
             return text;

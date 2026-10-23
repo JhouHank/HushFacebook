@@ -17,6 +17,7 @@ import app.morphe.patches.facebook.misc.extension.EXTENSION_PACKAGE
 import app.morphe.patches.facebook.layout.theme.INLINE_REACTIONS
 import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.reels.watchhistory.callRegisters
+import app.morphe.util.RegisterLiveness
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
@@ -122,17 +123,25 @@ private const val STRING = "Ljava/lang/String;"
 
 /**
  * The index of the one constructor call in [render] that takes two Strings, the summary's text and
- * its description, or null unless there is exactly one.
+ * its description, or null unless there is exactly one. Null too unless the object it builds was
+ * made by the instruction right before it and nothing reads the text's register after it, so the
+ * extension's answer reaches that component and nothing else.
  */
 internal fun reactionCountCall(render: Method): Int? {
     val code = render.implementation?.instructions?.toList() ?: return null
-    return code.indices.filter { index ->
+    val call = code.indices.filter { index ->
         val call = code[index]
         (call.opcode == Opcode.INVOKE_DIRECT || call.opcode == Opcode.INVOKE_DIRECT_RANGE) &&
             ((call as ReferenceInstruction).reference as? MethodReference)?.let {
                 it.name == "<init>" && it.parameterTypes.map(CharSequence::toString) == listOf(STRING, STRING)
             } == true
-    }.singleOrNull()
+    }.singleOrNull() ?: return null
+    val made = code.getOrNull(call - 1)
+    val type = ((code[call] as ReferenceInstruction).reference as MethodReference).definingClass
+    if (made?.opcode != Opcode.NEW_INSTANCE || (made as ReferenceInstruction).reference.toString() != type) return null
+    val text = code[call].callRegisters()[1]
+    if (call + 1 < code.size && text in RegisterLiveness.of(render).liveInto(call + 1)) return null
+    return call
 }
 
 /**
@@ -159,7 +168,8 @@ internal fun BytecodePatchContext.hideReactionCount() {
         "$PATCH: expected one method naming $FEEDBACK_HEADER, found ${renders.size}",
     )
     val call = reactionCountCall(render) ?: throw PatchException(
-        "$PATCH: ${render.definingClass}->${render.name} doesn't build exactly one component from two Strings",
+        "$PATCH: ${render.definingClass}->${render.name} doesn't build exactly one component from two Strings " +
+            "right after making it, with the text read nowhere after",
     )
     mutableClassDefBy(render.definingClass).findMutableMethodOf(render).askAboutCountAt(call)
 }
