@@ -98,7 +98,7 @@ public final class PinchZoom {
     static volatile Snapshots snapshots = PinchZoom::snapshot;
     static volatile Places places = PinchZoom::mediaUnder;
 
-    /** The gesture took the second finger, so every later event of it becomes a cancel. */
+    /** The gesture took the second finger, so every later event Facebook gets of it is a cancel. */
     private static boolean swallowing;
     /** A story zoom: Facebook gets none of the gesture until the zoom ends, then a cancel. */
     private static boolean holding;
@@ -118,7 +118,7 @@ public final class PinchZoom {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "pinch", failure);
             // The layer goes, but a gesture already taken stays a cancel to its end, so Facebook
-            // never sees the middle of a gesture whose start it was told was called off.
+            // never sees the middle of a gesture it was kept from.
             drop();
             holding = false;
             if (swallowing && event != null) event.setAction(MotionEvent.ACTION_CANCEL);
@@ -150,7 +150,7 @@ public final class PinchZoom {
             if (holding) {
                 Zoom live = zoom;
                 if (swallowing && live != null && !live.settling && !live.blank) return true;
-                // The zoom ended with this event, or its copy never came: Facebook's held finger
+                // The zoom ended with this event, or its copy came back empty: Facebook's held finger
                 // lets go as a cancel, and the rest of the gesture stays one.
                 holding = false;
             }
