@@ -733,9 +733,11 @@ public final class PinchZoom {
         /**
          * The fingers lifted and the zoom stays. A back callback above Facebook's takes Back where the
          * window hands it to callbacks, and the layer takes focus, so Back reaches it where it comes
-         * as a key.
+         * as a key. Parking a kept zoom again changes nothing: a second callback would outlive it and
+         * eat Back, and the layer would be remembered as the focus to give back.
          */
         void park() {
+            if (parked) return;
             parked = true;
             focusedBefore = root.findFocus();
             layer.setFocusable(true);

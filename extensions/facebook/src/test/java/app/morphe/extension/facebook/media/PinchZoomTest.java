@@ -921,6 +921,9 @@ public class PinchZoomTest {
         OnBackInvokedCallback top = topBackCallback();
         assertNotNull("the kept zoom registered no back callback", zoom.backCallback);
         assertSame("the kept zoom's back callback isn't the one Back goes to", zoom.backCallback, top);
+        zoom.park();
+        assertSame("parking the kept zoom again changed its back callback", top, zoom.backCallback);
+        assertSame("parking the kept zoom again put another callback on top", top, topBackCallback());
         top.onBackInvoked();
         assertTrue("Back didn't let go of the kept zoom", zoom.settling);
         assertEquals("Back went on to the screen under the kept zoom", 0, screen.backs);
@@ -938,6 +941,7 @@ public class PinchZoomTest {
         openProfile();
         PinchZoom.Zoom zoom = keptZoom();
         BackCounter screen = (BackCounter) activity;
+        assertNotSame("a window with callbacks off took the kept zoom's back callback", zoom.backCallback, topBackCallback());
         back(decor());
         assertTrue("Back didn't let go of the kept zoom", zoom.settling);
         assertEquals("Back went on to the screen under the kept zoom", 0, screen.backs);
