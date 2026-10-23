@@ -16,6 +16,7 @@ Changes in each Hushfacebook version, newest first.
 * **Facebook:** With Debug logging on, Marketplace's report reads a whole page of search results again. Pages of 27 and 48 listings carried ads nested deeper than the report would follow, so it stopped early and called them incomplete. It follows more than twice as deep and reads four times as much of a page now, and when it does have to stop, it says whether the page was too deep or too big. Checked in tests, and on an emulator where both pages now read in full.
 * **Facebook:** With `Don't save search history` on, a search no longer sits at the top of search's Recent list until Facebook restarts. It already stayed out of your saved history, but Facebook still kept it in Recent for the rest of that session. Checked in tests, not yet on a phone.
 * **Facebook:** `Hide the reaction preview on posts` takes away the number next to the reaction faces as well, and the "Name and 55 others" line where Facebook shows that instead. Only the faces went before, so a lone "56" stayed behind. TalkBack still reads the count (issue #158). Checked in tests, not yet on a phone.
+* **Tooling:** A focused test run that names fixture tests after `:patches:fixtureTest` runs them again. Those filters used to be dropped, and the run passed without running a single fixture test.
 
 ### Changed
 
