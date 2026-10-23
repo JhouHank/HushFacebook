@@ -378,6 +378,11 @@ final class FeedPages {
                         L10n.t("With Pinch to zoom on, the photo or story stays zoomed when you let go, and a story "
                                 + "stays paused. Drag with one finger or pinch again. Tap or press Back when you're done."))
                         .needs(Settings.PINCH_TO_ZOOM));
+                stories.addPreference(toggle(context, Settings.PINCH_TO_ZOOM_DOUBLE_TAP,
+                        L10n.t("With Pinch to zoom on, double tap a photo on a profile to zoom in where you tapped, "
+                                + "and double tap again to put it back. It skips stories and any photo that opens "
+                                + "when you tap it, so it works on few photos."))
+                        .needs(Settings.PINCH_TO_ZOOM));
             }
         }
     }

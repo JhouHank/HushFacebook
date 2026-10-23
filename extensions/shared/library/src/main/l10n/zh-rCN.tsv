@@ -1610,6 +1610,10 @@ Pinch a story or a photo on someone's profile to zoom in. It goes back when you 
 Stay zoomed	保持放大
 # context: summary of that switch; "Pinch to zoom" is the label of the switch above it, so use its translation; "Back" is the phone's Back button
 With Pinch to zoom on, the photo or story stays zoomed when you let go, and a story stays paused. Drag with one finger or pinch again. Tap or press Back when you're done.	开启双指缩放后，松开手指时照片或快拍会保持放大，快拍也会保持暂停。单指拖动或再次双指缩放。看完后轻点屏幕或按返回键。
+# context: switch title under Stories, right below Stay zoomed; two quick taps on a photo zoom it in where you tapped
+Double tap to zoom	双击缩放
+# context: summary of that switch; "Pinch to zoom" is the label of the switch two rows above it, so use its translation; a story is the full-screen picture or video someone shares for a day
+With Pinch to zoom on, double tap a photo on a profile to zoom in where you tapped, and double tap again to put it back. It skips stories and any photo that opens when you tap it, so it works on few photos.	开启双指缩放后，双击个人主页上的照片会以点按处为中心放大，再双击一次恢复。快拍和轻点就会打开的照片不受支持，所以只对少数照片有效。
 No ads downloaded in advance	不提前下载广告
 No ad tracking	不进行广告跟踪
 No Facebook ads in other apps	其他应用中没有 Facebook 广告

@@ -169,6 +169,7 @@ public final class SettingsBackup {
             Settings.UPLOAD_STORIES_IN_HD,
             Settings.PINCH_TO_ZOOM,
             Settings.PINCH_TO_ZOOM_KEEP,
+            Settings.PINCH_TO_ZOOM_DOUBLE_TAP,
             Settings.HIDE_SPONSORED_REELS,
             Settings.HIDE_SPONSORED_SEARCH_RESULTS,
             Settings.HIDE_SPONSORED_PROFILE_POSTS,
