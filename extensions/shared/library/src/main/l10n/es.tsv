@@ -1795,3 +1795,21 @@ What you search for isn't added to your Facebook search history. Searches alread
 Hide the audio line on reels	Ocultar la línea de audio en los reels
 # context: summary of that switch; "Original audio" is Facebook's own label, so use the wording Facebook shows in this language
 Takes the line with the reel's sound, "Original audio" or a song, off the bottom of reels. Other info stays. A change shows from the next reel.	Quita de la parte inferior de los reels la línea con el sonido del reel, «Audio original» o una canción. El resto de la información se queda. Un cambio se ve a partir del siguiente reel.
+# context: title of the row on the Appearance page, with AMOLED in the build, that takes a color code for dark mode's backgrounds; also its dialog's title
+Background color	Color de fondo
+# context: text in that row's dialog above the field; %1$s is the lightest gray code it takes, %2$s the color code the patch wrote, both like #0D1117; keep #RRGGBB and #0D1117 as they are
+A color code (#RRGGBB) for dark mode's backgrounds, like #0D1117. Grays up to about %1$s work. Leave it blank for %2$s, the color Hushfacebook was patched with.	Un código de color (#RRGGBB) para los fondos del modo oscuro, como #0D1117. Funcionan los grises hasta aproximadamente %1$s. Déjalo vacío para usar %2$s, el color con el que se parcheó Hushfacebook.
+# context: summary of that row while it's blank; %1$s is the color code the patch wrote, like #0D1117
+Uses %1$s, the color Hushfacebook was patched with. Type a color code to change it.	Usa %1$s, el color con el que se parcheó Hushfacebook. Escribe un código de color para cambiarlo.
+# context: summary of that row with a color saved; %1$s is that color code, like #0D1117
+Dark mode's backgrounds use %1$s. Restart Facebook to see the change.	Los fondos del modo oscuro usan %1$s. Reinicia Facebook para ver el cambio.
+# context: shown when Save is tapped on that row with text that isn't a color code; %1$s is what was typed; keep #RRGGBB and #0D1117 as they are
+"%1$s" isn't a color. Type a six-digit color code (#RRGGBB), like #0D1117, or leave it blank for the color Hushfacebook was patched with.	“%1$s” no es un color. Escribe un código de color de seis dígitos (#RRGGBB), como #0D1117, o déjalo vacío para usar el color con el que se parcheó Hushfacebook.
+# context: shown when Save is tapped on that row with an eight-digit code that isn't fully opaque; %1$s is what was typed; keep #RRGGBB and #0D1117 as they are
+%1$s is see-through. Type a solid six-digit color code (#RRGGBB), like #0D1117.	%1$s es transparente. Escribe un código de color sólido de seis dígitos (#RRGGBB), como #0D1117.
+# context: shown when Save is tapped on that row with a color too light for Facebook's white text; %1$s is what was typed, %2$s the lightest gray code it takes
+%1$s is too light for Facebook's text to stay readable. Pick a darker color. Grays up to about %2$s work.	%1$s es demasiado claro para que el texto de Facebook siga siendo legible. Elige un color más oscuro. Funcionan los grises hasta aproximadamente %2$s.
+# context: import preview sentence: the file sets AMOLED's Background color row back to blank; "AMOLED black theme" is the patch's name, keep it as translated for that patch
+If your patched Facebook includes the AMOLED black theme, dark mode's backgrounds will be the color it was patched with.	Si tu Facebook parcheado incluye el tema negro AMOLED, los fondos del modo oscuro serán del color con el que se parcheó.
+# context: import preview sentence: the file sets AMOLED's Background color row; %1$s is a color code like #0D1117; "AMOLED black theme" is the patch's name, keep it as translated for that patch
+If your patched Facebook includes the AMOLED black theme, dark mode's backgrounds will be %1$s.	Si tu Facebook parcheado incluye el tema negro AMOLED, los fondos del modo oscuro serán %1$s.

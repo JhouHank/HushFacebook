@@ -61,6 +61,8 @@ import app.morphe.extension.facebook.menu.MenuTiles;
 import app.morphe.extension.facebook.misc.ShareSheetItems;
 import app.morphe.extension.facebook.misc.TextSize;
 import app.morphe.extension.facebook.theme.AccentColor;
+import app.morphe.extension.facebook.theme.AmoledBackground;
+import app.morphe.extension.facebook.theme.AmoledTheme;
 import app.morphe.extension.facebook.navigation.HiddenTabs;
 import app.morphe.extension.facebook.navigation.FeedsSubtab;
 import app.morphe.extension.facebook.navigation.StartTab;
@@ -74,6 +76,7 @@ import app.morphe.extension.facebook.settings.ValueRows.CommentOrderRow;
 import app.morphe.extension.facebook.settings.ValueRows.LockAfterRow;
 import app.morphe.extension.facebook.settings.ValueRows.SeenKeepRow;
 import app.morphe.extension.facebook.settings.ValueRows.AccentRow;
+import app.morphe.extension.facebook.settings.ValueRows.BackgroundRow;
 import app.morphe.extension.facebook.settings.ValueRows.ReactionCeilingRow;
 import app.morphe.extension.facebook.settings.ValueRows.TextSizeRow;
 import app.morphe.extension.facebook.settings.ValueRows.DownloadActionRow;
@@ -1560,6 +1563,58 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
         return L10n.f("Links, buttons, switches and the selected tab use %1$s instead of Facebook's blue. Restart Facebook "
                 + "to see the change. If the Material You theme is added, it takes over.",
                 accentLabel(accent));
+    }
+
+    /**
+     * AMOLED's Background color (#214): a color code dark mode's backgrounds take in place of the
+     * one the patch wrote, read as Facebook starts. Save turns down a color {@link AmoledBackground}
+     * refuses with the dialog still open, and what's saved is the code in capitals.
+     */
+    BackgroundRow backgroundRow(Context context) {
+        BackgroundRow row = new BackgroundRow(context);
+        row.setKey(Settings.AMOLED_BACKGROUND.key);
+        String title = L10n.t("Background color");
+        row.setTitle(title);
+        row.setDialogTitle(title);
+        row.setDialogMessage(L10n.f("A color code (#RRGGBB) for dark mode's backgrounds, like #0D1117. Grays up to about %1$s "
+                + "work. Leave it blank for %2$s, the color Hushfacebook was patched with.",
+                AmoledBackground.LIGHTEST_ADMITTED_GREY, L10n.isolate(patchedBackground())));
+        row.setPositiveButtonText(L10n.t("Save"));
+        // Android's own Cancel follows the activity's language, as the folder row's did.
+        row.setNegativeButtonText(L10n.t("Cancel"));
+        EditText field = row.getEditText();
+        keepEditorInDialog(field, false);
+        field.setHint("#0D1117");
+        row.setText(Settings.AMOLED_BACKGROUND.savedValue());
+        row.refused = why -> show(new AlertDialog.Builder(row.getContext())
+                .setTitle(title)
+                .setMessage(why)
+                .setPositiveButton(L10n.t("OK"), null));
+        row.setOnPreferenceChangeListener((preference, typed) -> {
+            String raw = typed == null ? "" : typed.toString();
+            String clean = AmoledBackground.stored(raw);
+            if (clean == null) return false;
+            if (clean.equals(raw)) return true;
+            // Keeps the code as it's saved in place of what was typed, as the folder row does.
+            ((BackgroundRow) preference).setText(clean);
+            return false;
+        });
+        return row;
+    }
+
+    /** The color the patch wrote, as {@code #RRGGBB}. */
+    static String patchedBackground() {
+        return String.format(Locale.ROOT, "#%06X", AmoledTheme.backgroundColour() & 0xFFFFFF);
+    }
+
+    /** What the Background color row says for [text], the code typed there. One it refuses keeps the patch's color, as Facebook does. */
+    static String backgroundSummary(String text) {
+        String stored = AmoledBackground.stored(text);
+        if (stored == null || stored.isEmpty() || stored.equals(patchedBackground())) {
+            return L10n.f("Uses %1$s, the color Hushfacebook was patched with. Type a color code to change it.",
+                    L10n.isolate(patchedBackground()));
+        }
+        return L10n.f("Dark mode's backgrounds use %1$s. Restart Facebook to see the change.", L10n.isolate(stored));
     }
 
     /**

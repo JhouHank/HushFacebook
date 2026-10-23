@@ -188,6 +188,8 @@ final class HushfacebookPages {
                             + "switch. Restart Facebook to see the change.")));
         }
         if (build.contains(PatchFamily.AMOLED_THEME)) {
+            // Read once as Facebook starts (#214). Material You recolours the same greys, so it has no row there.
+            if (!build.contains(PatchFamily.MATERIAL_YOU_THEME)) appearance.addPreference(page.backgroundRow(context));
             // Colours Facebook asks for as each screen builds, so a change shows fully after a restart.
             appearance.addPreference(toggle(context, Settings.AMOLED_FLAT_CARDS,
                     L10n.t("Cards and menus take the page's own color instead of the near black that sets them apart. "
@@ -246,7 +248,7 @@ final class HushfacebookPages {
             }
             if (build.contains(PatchFamily.AMOLED_THEME)) {
                 patched.addPreference(mark(info(context, L10n.t(PatchFamily.AMOLED_THEME.staysWhilePaused),
-                        amoledSummary(AmoledTheme.backgroundColour())), SettingsIcons.MOON));
+                        amoledSummary(AmoledTheme.background())), SettingsIcons.MOON));
             }
             if (build.contains(PatchFamily.MATERIAL_YOU_THEME)) {
                 patched.addPreference(mark(info(context, L10n.t(PatchFamily.MATERIAL_YOU_THEME.staysWhilePaused),

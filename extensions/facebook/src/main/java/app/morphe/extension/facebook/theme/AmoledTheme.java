@@ -21,6 +21,8 @@ import java.util.Set;
 
 import app.morphe.extension.facebook.settings.FamilyNames;
 import app.morphe.extension.facebook.settings.Settings;
+import app.morphe.extension.facebook.settings.SettingsStatus;
+import app.morphe.extension.shared.Logger;
 import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 
@@ -47,11 +49,17 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * leave Facebook's text under 4.5:1, gets smaller steps in the same order ({@link #lightestStep},
  * {@link #scaled}), and its text and icon roles come back just light enough ({@link #foreground}).
  *
+ * <p>The Background color row in Hushfacebook's settings swaps that colour once Facebook is running
+ * (issue #214, {@link #load}). The patch wrote its colour into resources and code, so route three
+ * reads {@link #PAGE} where the patch wrote one, {@link AmoledResources} gives the resources the
+ * row's colour as each activity is created, and route one and the colour resource reads take the
+ * patch's colour ({@link #written}) wherever it still comes through as the row's.
+ *
  * <p>{@link #apply} runs for each colour on each layout pass. Thus it makes no object and writes no
  * log. The one thing it adds is a count in Hook status, a hash lookup and an increment once the
  * first call has made the family's entry, which is what shows a report that the theme ran at all.
  * The colour resource reads ({@link #getColor(Context, int)} and the rest) run as often and add no
- * count: in dark mode they cost one compare and a volatile read.
+ * count: in dark mode they cost two compares and a volatile read.
  */
 public final class AmoledTheme {
 
@@ -252,8 +260,28 @@ public final class AmoledTheme {
     /** Opaque black, what route two writes over a dark grey unless the patch asks for another colour. */
     private static final int BLACK = 0xFF000000;
 
-    /** What a background turns into: {@link #backgroundColour} as the patch filled it in. */
-    private static int background = backgroundColour();
+    /**
+     * The colour the patch wrote over Facebook's dark greys, in its resources (route two) and its
+     * code (route three): {@link #backgroundColour} as the patch filled it in.
+     */
+    private static int written = backgroundColour();
+
+    /**
+     * What a background turns into: {@link #written}, unless the Background color row asked for
+     * another colour ({@link #load}).
+     */
+    private static int background = written;
+
+    /**
+     * Route three's colour. Each dark grey Facebook writes in its code reads this field where the
+     * patch once wrote its colour, so the Background color row reaches them too (issue #214). It's
+     * {@link #written} until {@link #load} reads the row, so a class Facebook sets up before that
+     * keeps the patch's colour.
+     */
+    public static volatile int PAGE = written;
+
+    /** {@link #PAGE} as the long a {@code const-wide/32} gave, sign extended the same way. */
+    public static volatile long PAGE_WIDE = written;
 
     /**
      * How far above the background its lightest surface sits: {@link #lightestStep} as the patch
@@ -300,6 +328,13 @@ public final class AmoledTheme {
      */
     public static int apply(int color, Object token) {
         HookStatus.invoked(FamilyNames.AMOLED_THEME);
+        // A background whose resource still holds the patch's colour, read past AmoledResources'
+        // table, takes the row's (#214). Before the grey test: the patch's colour needn't be grey.
+        // Not when the patch wrote black: Facebook's own black reads the same, and stays black.
+        if (color == written && written != BLACK && background != written && token instanceof Enum && DarkMode.on()
+                && BACKGROUND_TOKENS.contains(((Enum<?>) token).name())) {
+            return background;
+        }
         if (!isDarkNeutral(color, MAX_RAISED_CHANNEL)) {
             if ((color >>> 24) < NEW_NOTIFICATION_ALPHA) {
                 return token instanceof Enum && DarkMode.on() ? unreadRow(color, ((Enum<?>) token).name()) : color;
@@ -515,8 +550,8 @@ public final class AmoledTheme {
         return page > 0 ? page : id;
     }
 
-    /** {@link #PAGE_COLOUR}'s id, looked up once. */
-    private static int pageColour(Context context) {
+    /** {@link #PAGE_COLOUR}'s id, looked up once: -1 when the build has none. */
+    static int pageColour(Context context) {
         int id = pageColourId;
         if (id != 0) return id;
         id = context.getResources().getIdentifier(PAGE_COLOUR, "color", context.getPackageName());
@@ -590,18 +625,18 @@ public final class AmoledTheme {
      * the black stands.
      */
     public static int getColor(Context context, int id) {
-        return lightMode(context.getColor(id), id);
+        return resourceColour(context.getColor(id), id);
     }
 
     /** The same for {@code Resources.getColor(int)}. */
     @SuppressWarnings("deprecation")
     public static int getColor(Resources resources, int id) {
-        return lightMode(resources.getColor(id), id);
+        return resourceColour(resources.getColor(id), id);
     }
 
     /** The same for {@code Resources.getColor(int, Theme)}. */
     public static int getColor(Resources resources, int id, @Nullable Resources.Theme theme) {
-        return lightMode(resources.getColor(id, theme), id);
+        return resourceColour(resources.getColor(id, theme), id);
     }
 
     /**
@@ -610,12 +645,32 @@ public final class AmoledTheme {
      */
     public static int getColor(TypedArray array, int index, int fallback) {
         int color = array.getColor(index, fallback);
-        return color == background && !DarkMode.on() ? lightMode(color, array.getResourceId(index, 0)) : color;
+        if (color != background && color != written) return color;
+        // In dark mode only the patch's colour under the row's needs the id.
+        if (DarkMode.on() && (color != written || background == written)) return color;
+        return resourceColour(color, array.getResourceId(index, 0));
     }
 
-    /** Facebook's own colour for resource {@code id} when route two wrote {@code color} there in light mode. */
+    /**
+     * Resource {@code id}'s colour as it should read: Facebook's own in light mode where route two
+     * wrote {@code color} there ({@link #lightMode}), and in dark mode the Background color row's
+     * where the resource still holds the patch's colour, as resources AmoledResources' table hasn't
+     * reached do (issue #214).
+     */
+    static int resourceColour(int color, int id) {
+        if (color != background && color != written) return color;
+        if (!DarkMode.on()) return lightMode(color, id);
+        return color == written && background != written && (AmoledResources.wrote(id) || (id != 0 && id == pageColourId))
+                ? background
+                : color;
+    }
+
+    /**
+     * Facebook's own colour for resource {@code id} when route two wrote {@code color} there in light
+     * mode: the patch's colour, or the row's that AmoledResources gives the same resource.
+     */
     static int lightMode(int color, int id) {
-        if (color != background || DarkMode.on()) return color;
+        if ((color != background && color != written) || DarkMode.on()) return color;
         int at = Arrays.binarySearch(rewrittenIds, id);
         return at >= 0 ? facebookColours[at] : color;
     }
@@ -645,8 +700,50 @@ public final class AmoledTheme {
         return LIGHTEST_STEP;
     }
 
-    /** The background colour in use: {@link #backgroundColour} as the patch filled it in. */
-    static int background() {
+    /**
+     * Reads the Background color row (issue #214), once, as Facebook's application starts: the patch
+     * calls this right after the extension gets its context, before Facebook sets itself up. A blank
+     * row, a paused Facebook, a colour the row's rule refuses and a build with Material You keep the
+     * patch's colour. Material You recolours the same greys, and its resources aren't this table's.
+     */
+    public static void load() {
+        try {
+            if (!Utils.settingsReady() || SettingsStatus.materialYouTheme()) return;
+            String text = Settings.AMOLED_BACKGROUND.get();
+            String stored = AmoledBackground.stored(text);
+            if (stored == null) {
+                Logger.printInfo(() -> "AMOLED: Background color " + text + " can't be used, so the patch's colour stays");
+                return;
+            }
+            Integer colour = AmoledBackground.colour(stored);
+            if (stored.isEmpty() || colour == null || colour == written) return;
+            use(colour, AmoledBackground.lightestStep(colour));
+            Logger.printDebug(() -> "AMOLED: Background color " + stored + " in place of the patch's");
+        } catch (Throwable failure) {
+            // Throwable, as in every hook: this runs as the application starts.
+            Logger.printException(() -> "AMOLED: could not read the Background color row", failure);
+        }
+    }
+
+    /**
+     * Puts the Background color row's {@code colour} in use for every route, with its
+     * {@link #lightestStep}, over the patch's {@link #written}. Package-visible for tests.
+     */
+    static void use(int colour, int lightest) {
+        background = colour;
+        step = lightest;
+        textSurface = textSurface(colour, lightest);
+        PAGE = colour;
+        PAGE_WIDE = colour;
+    }
+
+    /** The colour the patch wrote, which the Background color row can stand in for. */
+    static int written() {
+        return written;
+    }
+
+    /** The background colour in use: the Background color row's, or {@link #backgroundColour} as the patch filled it in. */
+    public static int background() {
         return background;
     }
 
@@ -655,11 +752,13 @@ public final class AmoledTheme {
         useBackground(colour, LIGHTEST_STEP);
     }
 
-    /** Package-visible for tests: a background colour and its {@link #lightestStep}, as the patch fills them. */
+    /**
+     * Package-visible for tests: a background colour and its {@link #lightestStep}, as the patch fills
+     * them, so it's {@link #written} too and no row stands in for it.
+     */
     static void useBackground(int colour, int lightest) {
-        background = colour;
-        step = lightest;
-        textSurface = textSurface(colour, lightest);
+        written = colour;
+        use(colour, lightest);
     }
 
     /** {@code base} with each channel of {@code step} added, as far as white. Both are opaque. */

@@ -1790,3 +1790,21 @@ What you search for isn't added to your Facebook search history. Searches alread
 Hide the audio line on reels	隐藏 Reels 上的音频行
 # context: summary of that switch; "Original audio" is Facebook's own label, so use the wording Facebook shows in this language
 Takes the line with the reel's sound, "Original audio" or a song, off the bottom of reels. Other info stays. A change shows from the next reel.	去掉 Reels 底部显示声音的那一行（“原创音频”或歌曲）。其他信息保留。更改会从下一个 Reels 开始显示。
+# context: title of the row on the Appearance page, with AMOLED in the build, that takes a color code for dark mode's backgrounds; also its dialog's title
+Background color	背景颜色
+# context: text in that row's dialog above the field; %1$s is the lightest gray code it takes, %2$s the color code the patch wrote, both like #0D1117; keep #RRGGBB and #0D1117 as they are
+A color code (#RRGGBB) for dark mode's backgrounds, like #0D1117. Grays up to about %1$s work. Leave it blank for %2$s, the color Hushfacebook was patched with.	深色模式背景的颜色代码（#RRGGBB），例如 #0D1117。最浅可用到约 %1$s 的灰色。留空则使用 %2$s，即修补 Hushfacebook 时设定的颜色。
+# context: summary of that row while it's blank; %1$s is the color code the patch wrote, like #0D1117
+Uses %1$s, the color Hushfacebook was patched with. Type a color code to change it.	使用 %1$s，即修补 Hushfacebook 时设定的颜色。输入颜色代码即可更改。
+# context: summary of that row with a color saved; %1$s is that color code, like #0D1117
+Dark mode's backgrounds use %1$s. Restart Facebook to see the change.	深色模式背景使用 %1$s。重启 Facebook 后可看到更改。
+# context: shown when Save is tapped on that row with text that isn't a color code; %1$s is what was typed; keep #RRGGBB and #0D1117 as they are
+"%1$s" isn't a color. Type a six-digit color code (#RRGGBB), like #0D1117, or leave it blank for the color Hushfacebook was patched with.	“%1$s”不是颜色。请输入六位颜色代码（#RRGGBB），例如 #0D1117，或留空以使用修补 Hushfacebook 时设定的颜色。
+# context: shown when Save is tapped on that row with an eight-digit code that isn't fully opaque; %1$s is what was typed; keep #RRGGBB and #0D1117 as they are
+%1$s is see-through. Type a solid six-digit color code (#RRGGBB), like #0D1117.	%1$s 是半透明的。请输入不透明的六位颜色代码（#RRGGBB），例如 #0D1117。
+# context: shown when Save is tapped on that row with a color too light for Facebook's white text; %1$s is what was typed, %2$s the lightest gray code it takes
+%1$s is too light for Facebook's text to stay readable. Pick a darker color. Grays up to about %2$s work.	%1$s 太浅，Facebook 的文字会难以看清。请选择更深的颜色。最浅可用到约 %2$s 的灰色。
+# context: import preview sentence: the file sets AMOLED's Background color row back to blank; "AMOLED black theme" is the patch's name, keep it as translated for that patch
+If your patched Facebook includes the AMOLED black theme, dark mode's backgrounds will be the color it was patched with.	如果你修补的 Facebook 包含“AMOLED 纯黑主题”，深色模式背景将使用修补时设定的颜色。
+# context: import preview sentence: the file sets AMOLED's Background color row; %1$s is a color code like #0D1117; "AMOLED black theme" is the patch's name, keep it as translated for that patch
+If your patched Facebook includes the AMOLED black theme, dark mode's backgrounds will be %1$s.	如果你修补的 Facebook 包含“AMOLED 纯黑主题”，深色模式背景将变为 %1$s。

@@ -966,6 +966,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/theme/AmoledBackground.java",
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/theme/AmoledResources.java"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook, for issue #214: the AMOLED theme's Background color row, which changes the dark background after patching. AmoledBackground is the patch's Background colour option rule in Java, so the row takes the colours the option takes and gives each the same surfaces. AmoledResources gives each activity's resources a colour table for the colour resources the patch wrote its background over, listed by the patch, through a ResourcesLoader on the Resources Accent color's route five keeps for the same assets, so views inflated from layout XML take the row's colour too."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/misc/Screenshots.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/misc/screenshots/AllowScreenshotsAnchors.kt",
         "patches/src/main/kotlin/app/morphe/patches/facebook/misc/screenshots/AllowScreenshotsPatch.kt"
