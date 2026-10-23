@@ -35,6 +35,7 @@ import java.util.WeakHashMap
  */
 
 internal const val DARK_COLOR_SCHEME = "Lcom/facebook/mig/scheme/schemes/DarkColorScheme;"
+internal const val LIGHT_COLOR_SCHEME = "Lcom/facebook/mig/scheme/schemes/LightColorScheme;"
 internal const val FDS_COLOR_SCHEME = "Lcom/facebook/mig/scheme/schemes/fds/FdsColorScheme;"
 internal const val STATUS_BAR_UTIL = "Lcom/facebook/navigation/statusbar/StatusBarUtil;"
 internal const val SET_STATUS_BAR_COLOR = "Landroid/view/Window;->setStatusBarColor(I)V"
@@ -156,6 +157,29 @@ internal object DarkSchemeResolveFingerprint : Fingerprint(
         opcode(Opcode.MOVE_RESULT),
         opcode(Opcode.RETURN),
     ),
+)
+
+/**
+ * The Mig light scheme's resolver, for the Light background color row (#214): the dark one's shape
+ * on the light scheme's class. Its sibling that takes an Integer has the same shape and asks the
+ * scheme through the interface, so the call has to be on the token's own type.
+ */
+internal object LightSchemeResolveFingerprint : Fingerprint(
+    definingClass = LIGHT_COLOR_SCHEME,
+    returnType = "I",
+    parameters = listOf("L"),
+    filters = listOf(
+        methodCall(opcode = Opcode.INVOKE_INTERFACE, returnType = "I"),
+        opcode(Opcode.MOVE_RESULT),
+        opcode(Opcode.RETURN),
+    ),
+    custom = { method, _ ->
+        val token = method.parameterTypes.singleOrNull()?.toString()
+        method.implementation?.instructions?.any { instruction ->
+            instruction.opcode == Opcode.INVOKE_INTERFACE &&
+                ((instruction as ReferenceInstruction).reference as MethodReference).definingClass == token
+        } == true
+    },
 )
 
 /**
