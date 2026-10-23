@@ -187,6 +187,7 @@ public final class SettingsBackup {
             Settings.HIDE_REEL_AUDIO_LINE,
             Settings.FEED_VIDEOS_ALONE,
             Settings.DONT_SEND_REEL_WATCH_HISTORY,
+            Settings.NEWEST_REELS_FIRST,
             Settings.HOLD_ANALYTICS_UPLOADS,
             Settings.HOLD_CAMERA_ROLL_PROCESSING,
             Settings.ALLOW_SCREENSHOTS,

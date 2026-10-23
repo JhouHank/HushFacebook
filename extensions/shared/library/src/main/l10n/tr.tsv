@@ -354,6 +354,10 @@ Hide read receipts	Okundu bilgisini gizle
 People you chat with in Facebook's own chats can't see that you've read their messages. The chat can stay unread on this phone.	Facebook'un kendi sohbetlerinde konuştuğunuz kişiler mesajlarını okuduğunuzu göremez. Sohbet bu telefonda okunmamış kalabilir.
 Facebook can't tell when you take a screenshot or record your screen, so it can't react.	Facebook ekran görüntüsü aldığınızı veya ekranı kaydettiğinizi fark etmez, bu yüzden tepki veremez.
 Stops sending Facebook your list of watched reels. It uses the list to rank your feed, so reels you've watched may come back.	Facebook'a izlediğiniz reellerin listesini göndermeyi bırakır. Facebook bu listeyi akışınızı sıralamak için kullanır, bu yüzden izlediğiniz reeller geri gelebilir.
+# context: switch title under Reels and Watch; the Reels tab shows the most recently posted reels before older ones
+Newest reels first	Önce en yeni reels
+# context: summary of that switch; "loaded" means the reels the app has already downloaded in the background, "placed" means reels already lined up as the next ones
+The Reels tab plays the newest posted of the reels Facebook has loaded for you first, instead of its own pick. It can't fetch newer ones, and reels already placed stay put. Off by default, since it hasn't been tried on a real account yet.	Reels sekmesi, Facebook'un senin için yüklediği reels videoları arasından en son paylaşılanları kendi seçimi yerine önce oynatır. Daha yenilerini getiremez ve sıraya girmiş reels videoları yerinde kalır. Henüz gerçek bir hesapta denenmediği için varsayılan olarak kapalı.
 # context: what stays in while Hushfacebook is paused, shown before the patch's name in brackets; the patch raises the app's version number so Google Play never offers an update
 Meta's apps can install beside this one	Meta uygulamaları bunun yanına kurulabilir
 Messenger, Facebook Lite, Business Suite and Workplace can install next to this Facebook. Their shared permissions no longer clash.	Messenger, Facebook Lite, Business Suite ve Workplace bu Facebook'un yanına kurulabilir. Ortak izinleri artık çakışmaz.

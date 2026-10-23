@@ -143,6 +143,7 @@ import app.morphe.extension.facebook.reels.FeedVideoAloneForTests;
 import app.morphe.extension.facebook.reels.ReelCleanMode;
 import app.morphe.extension.facebook.reels.ReelDeclutter;
 import app.morphe.extension.facebook.reels.ReelLoopForTests;
+import app.morphe.extension.facebook.reels.NewestReelsForTests;
 import app.morphe.extension.facebook.reels.ReelMidCardsForTests;
 import app.morphe.extension.facebook.reels.ReelPrompts;
 import app.morphe.extension.facebook.reels.SeenStateSendForTests;
@@ -574,6 +575,8 @@ public class PausedHooksTest {
         probes.put(PatchFamily.REEL_PROMPTS, Collections.singletonList(() -> !ReelPrompts.keep(true)));
         // The Reels batcher's send of the reels you watched never reaches its executor.
         probes.put(PatchFamily.REEL_WATCH_HISTORY, Collections.singletonList(SeenStateSendForTests::heldBack));
+        // A Reels rerank that put an older reel first hands the newer one the first slot.
+        probes.put(PatchFamily.NEWEST_REELS_FIRST, Collections.singletonList(NewestReelsForTests::putsTheNewestFirst));
         // A double tap on a reel finds no handler and no heart, the reel like helper finds no key and
         // sends no like from a double tap, and a feed attachment leaves its double tap unhandled.
         probes.put(PatchFamily.DOUBLE_TAP_LIKE, Arrays.asList(

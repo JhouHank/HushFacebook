@@ -109,6 +109,8 @@ public enum PatchFamily {
             Settings.HIDE_REEL_PROMPTS),
     REEL_WATCH_HISTORY(FamilyNames.REEL_WATCH_HISTORY, "reelWatchHistory", null,
             Settings.DONT_SEND_REEL_WATCH_HISTORY),
+    NEWEST_REELS_FIRST(FamilyNames.NEWEST_REELS_FIRST, "newestReelsFirst", null,
+            Settings.NEWEST_REELS_FIRST),
     DOUBLE_TAP_LIKE(FamilyNames.DOUBLE_TAP_LIKE, "doubleTapLike", null,
             Settings.TURN_OFF_DOUBLE_TAP_LIKE),
     REEL_GESTURES(FamilyNames.REEL_GESTURES, "reelGestures", null,

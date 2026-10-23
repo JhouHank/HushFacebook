@@ -102,6 +102,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean newestReelsFirst() {
+        return false;
+    }
+
     public static boolean doubleTapLike() {
         return false;
     }

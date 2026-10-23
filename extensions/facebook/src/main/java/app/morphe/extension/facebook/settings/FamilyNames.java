@@ -50,6 +50,7 @@ public final class FamilyNames {
     public static final String REEL_DECLUTTER = "Clean up Reels";
     public static final String REEL_PROMPTS = "Hide reel interest prompts";
     public static final String REEL_WATCH_HISTORY = "Don't send reel watch history";
+    public static final String NEWEST_REELS_FIRST = "Newest reels first";
     public static final String DOUBLE_TAP_LIKE = "Turn off double tap to like";
     public static final String REEL_GESTURES = "Open comments with a gesture";
     public static final String KEEP_REEL_SPEED = "Keep the reel speed";

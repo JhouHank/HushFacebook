@@ -105,6 +105,7 @@ import app.morphe.extension.facebook.reels.ReelHold;
 import app.morphe.extension.facebook.reels.ReelHoldForTests;
 import app.morphe.extension.facebook.reels.ReelCleanMode;
 import app.morphe.extension.facebook.reels.ReelDeclutter;
+import app.morphe.extension.facebook.reels.NewestReelsForTests;
 import app.morphe.extension.facebook.reels.ReelMidCardsForTests;
 import app.morphe.extension.facebook.reels.SeenStateSendForTests;
 import app.morphe.extension.facebook.search.MetaAiSearchForTests;
@@ -252,6 +253,7 @@ public class ColdStartHooksTest {
         assertFalse("a Threads card read before the context came off", ReelMidCardsForTests.dropsAThreadsCard());
         assertFalse("a reel made before the context started in Clean mode", ReelCleanMode.startClean(false));
         assertFalse("a batch of watched reels sent before the context was held back", SeenStateSendForTests.heldBack());
+        assertFalse("a Reels rerank before the context put the newest first", NewestReelsForTests.putsTheNewestFirst());
         assertFalse("an analytics upload before the context was held back", AnalyticsUploads.holdXAnalyticsUpload());
         assertNull("a game's ad before the context was answered with no ad",
                 GameAds.heldPromise("{\"type\":\"loadadasync\",\"content\":{\"promiseID\":\"1\"}}"));

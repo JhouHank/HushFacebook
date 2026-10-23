@@ -520,6 +520,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_dont_send_reel_watch_history", FALSE);
 
     /**
+     * The Reels tab's next reel, picked from what Facebook has loaded ({@link
+     * app.morphe.extension.facebook.reels.NewestReels}): the newest posted first instead of
+     * Facebook's ranking. Starts off. Reels already placed stay where they are.
+     */
+    public static final BooleanSetting NEWEST_REELS_FIRST =
+            new BooleanSetting("hushfacebook_newest_reels_first", FALSE);
+
+    /**
      * Facebook's own analytics uploads ({@link app.morphe.extension.facebook.misc.AnalyticsUploads}):
      * the XAnalytics event uploader and the Papaya on-device learning jobs. Starts off.
      * The uploader is resumed as Facebook starts, so a change shows fully after a restart.

@@ -2459,6 +2459,42 @@
       "options": []
     },
     {
+      "name": "Newest reels first",
+      "description": "Plays the newest posted of the reels Facebook has loaded for you first in the Reels tab, instead of Facebook's own pick. It can't fetch newer reels. Starts off. Turn it on in Hushfacebook settings > Reels and Watch.",
+      "category": "Reels",
+      "use": true,
+      "dependencies": [
+        "Hushfacebook settings"
+      ],
+      "compatiblePackages": {
+        "com.facebook.katana": [
+          "584.0.0.51.56"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Facebook",
+          "packageName": "com.facebook.katana",
+          "description": null,
+          "appIconColor": 550655,
+          "signatures": [
+            "911d604446084ca7f4760b775bfc160fa8702441240a7258645d7a72c4312d27",
+            "e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1"
+          ],
+          "targets": [
+            {
+              "version": "584.0.0.51.56",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 475817393
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Open Messenger from the top bar",
       "description": "Makes the Messenger icon at the top of Facebook open the Messenger app instead of Facebook's own Chats, if you'd rather chat in Messenger. Without Messenger installed, Chats opens as before. Starts off. Turn it on in Hushfacebook settings > Chats. Also carries Leave calls and chats to Messenger, a separate switch that starts off and leaves calls and chat notifications to Messenger while it's installed and enabled. Restart Facebook after changing the switch or whether Messenger is installed or enabled, so call routing updates.",
       "category": "Chats",

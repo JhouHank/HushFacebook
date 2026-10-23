@@ -265,6 +265,14 @@ public final class PostDetails {
         return value instanceof String ? (String) value : null;
     }
 
+    /**
+     * When the tree [edge] holds in its [field] was posted, in seconds, or 0 when it doesn't say.
+     * Public for Newest reels first, which reads a reel edge's node this way.
+     */
+    public static long postedSecondsOf(Object edge, int field) {
+        return time(tree(edge, field), CREATION_TIME);
+    }
+
     private static long time(Object model, int field) {
         if (!isLiveTree(model)) return 0;
         Object value = call(model, "getTimeValue", field);
