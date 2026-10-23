@@ -40,7 +40,8 @@ import app.morphe.extension.shared.settings.PauseForTests;
  * A reel's caption draws its last line whole (#96, #212). The page copies the S22's Reels tab on
  * 584 as dumpsys has it (2026-10-23): the footer row 0,0-1080,978, its column 0,760-945,944 holding
  * one block at 0,-17-945,201, the action buttons beside it, and the scrubber's time label elsewhere
- * in the same LithoView. Only that row is unclipped, and only while it's on screen.
+ * in the same LithoView. Only that row is unclipped, and only while it's on screen. The other
+ * footer layout (row 0,0-1080,1898, column 0,0-945,1864, block 0,1663-945,1881) gets the same.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30, qualifiers = "w384dp-h823dp-xxhdpi")
@@ -101,6 +102,42 @@ public class CaptionRoomTest {
         assertTrue(page.getClipChildren());
         assertEquals(17, CaptionRoom.hangsBelow(row, column, 36));
         assertTrue(reported(CaptionRoom.UNCLIPPED));
+    }
+
+    @Test
+    public void unclipsTheFooterLaidOutAsTallAsTheReel() {
+        ComponentHost tall = new ComponentHost(activity);
+        place(page, tall, 0, 0, 1080, 1898);
+        ComponentHost reelColumn = new ComponentHost(activity);
+        place(tall, reelColumn, 0, 0, 945, 1864);
+        place(reelColumn, new ComponentHost(activity), 0, 0, 945, 1680);
+        ComponentHost held = new ComponentHost(activity);
+        place(reelColumn, held, 0, 1663, 945, 1881);
+        place(held, new ComponentHost(activity), 0, 0, 945, 17);
+        place(held, new View(activity), 34, 152, 911, 214);
+        place(tall, new ComponentHost(activity), 945, 920, 1080, 1864);
+        layOut();
+
+        CaptionRoom.mounted(label);
+
+        assertFalse(tall.getClipChildren());
+        assertEquals(17, CaptionRoom.hangsBelow(tall, reelColumn, 36));
+    }
+
+    @Test
+    public void leavesTheActionButtonsWhoseLabelHangsOntoTheNextButton() {
+        block(column, -17, 201);
+        ComponentHost first = (ComponentHost) actions.getChildAt(0);
+        place(first, new ComponentHost(activity), 0, 0, 135, 113);
+        place(first, new ComponentHost(activity), 0, 106, 135, 183);
+        place(actions, new ComponentHost(activity), 0, 174, 135, 348);
+        layOut();
+
+        CaptionRoom.mounted(label);
+
+        assertFalse(row.getClipChildren());
+        assertTrue(actions.getClipChildren());
+        assertEquals(0, CaptionRoom.hangsBelow(actions, first, 36));
     }
 
     @Test

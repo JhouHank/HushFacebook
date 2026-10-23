@@ -28,14 +28,20 @@ import app.morphe.extension.shared.settings.Setting;
  * holding that column clips it to the column's own bounds, so the caption's last 6dp never draw
  * and its letters lose their bottoms (y, g, p, Bengali vowel signs), on Facebook as it ships too,
  * and more with a taller font. The S22 tree (dumpsys, 2026-10-23): row 0,0-1080,978, column
- * 0,760-945,944, block 0,-17-945,201 with the caption's text at 160-209 of it.
+ * 0,760-945,944, block 0,-17-945,201 with the caption's text at 160-209 of it. Some reels lay the
+ * footer out another way, the blank host inside the block and the block at the foot of a column as
+ * tall as the reel, next to the player's overlay: row 0,0-1080,1898, column 0,0-945,1864, block
+ * 0,1663-945,1881. The caption's last 17px are cut the same.
  *
  * <p>The row lines the column up with the action buttons and leaves a strip under both where
  * nothing draws, so the row is left unclipped and the descenders draw over that strip. A row is
- * unclipped only when it and its child column are Litho hosts, the column holds one host that hangs
- * past both of its ends by at most {@link #MAX_HANG_DP} and no further sideways, and the row has
- * room for what hangs below. When Litho takes the row off the screen it's clipped again, so a host
- * Litho hands to something else comes back as Facebook left it.
+ * unclipped only when it and its child column are Litho hosts, everything in the column that hangs
+ * past it is a host that hangs past its top or bottom by at most {@link #MAX_HANG_DP} and not past
+ * its sides, something hangs below, and the row has room for what hangs where none of its other
+ * children draw. The action buttons' own column has a label hanging 9px onto the next button, so
+ * it stays clipped (S22, 2026-10-23: six dumps, only the footer rows pass). When Litho takes the row
+ * off the screen it's clipped again, so a host Litho hands to something else comes back as Facebook
+ * left it.
  *
  * <p>The scrubber runs a light mount as it takes a reel ({@link
  * app.morphe.extension.facebook.media.ProgressBar#mounts}), whatever the progress bar switches say,
@@ -168,22 +174,43 @@ public final class CaptionRoom {
     }
 
     /**
-     * How far the one block in [column] hangs below it, when [row] should draw that: both are Litho
-     * hosts, the block hangs past both of the column's ends by at most [most] pixels and not past its
-     * sides, and the row has room above and below the column for it. Zero otherwise.
+     * How far what [column] holds hangs below it, when [row] should draw that: both are Litho hosts,
+     * each view that hangs past the column is a host hanging past its top or bottom by at most [most]
+     * pixels and not past its sides, something hangs below, and the row has room above and below the
+     * column for it that no other child of the row covers. Zero otherwise.
      */
     static int hangsBelow(ViewGroup row, View column, int most) {
         if (!isHost(row) || !isHost(column) || column.getVisibility() != View.VISIBLE) return 0;
         ViewGroup holder = (ViewGroup) column;
-        if (holder.getChildCount() != 1) return 0;
-        View block = holder.getChildAt(0);
-        if (!isHost(block)) return 0;
-        int above = -block.getTop();
-        int below = block.getBottom() - holder.getHeight();
-        if (above <= 0 || below <= 0 || above > most || below > most) return 0;
-        if (block.getLeft() < 0 || block.getRight() > holder.getWidth()) return 0;
-        if (column.getTop() - above < 0 || column.getBottom() + below > row.getHeight()) return 0;
+        int above = 0;
+        int below = 0;
+        for (int i = 0; i < holder.getChildCount(); i++) {
+            View block = holder.getChildAt(i);
+            if (block.getVisibility() != View.VISIBLE) continue;
+            int over = -block.getTop();
+            int under = block.getBottom() - holder.getHeight();
+            if (over <= 0 && under <= 0) continue;
+            if (!isHost(block) || over > most || under > most) return 0;
+            if (block.getLeft() < 0 || block.getRight() > holder.getWidth()) return 0;
+            above = Math.max(above, over);
+            below = Math.max(below, under);
+        }
+        if (below <= 0) return 0;
+        int top = column.getTop() - above;
+        int bottom = column.getBottom() + below;
+        if (top < 0 || bottom > row.getHeight()) return 0;
+        for (int i = 0; i < row.getChildCount(); i++) {
+            View other = row.getChildAt(i);
+            if (other == column || other.getVisibility() != View.VISIBLE) continue;
+            if (other.getLeft() >= column.getRight() || other.getRight() <= column.getLeft()) continue;
+            if (crosses(other, top, column.getTop()) || crosses(other, column.getBottom(), bottom)) return 0;
+        }
         return below;
+    }
+
+    /** Whether [view] reaches into the band from [top] to [bottom] of its parent. */
+    private static boolean crosses(View view, int top, int bottom) {
+        return top < bottom && view.getTop() < bottom && top < view.getBottom();
     }
 
     private static boolean isHost(View view) {
