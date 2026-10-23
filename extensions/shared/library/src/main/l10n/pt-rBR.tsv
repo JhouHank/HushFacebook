@@ -1503,6 +1503,10 @@ Videos you post to your Story ask Facebook for its high upload quality instead o
 Pinch to zoom	Pinçar para dar zoom
 # context: summary of that switch; "let go" means lifting your fingers off the screen
 Pinch a story or a photo on someone's profile to zoom in. It goes back when you let go.	Faça o movimento de pinça em um story ou em uma foto no perfil de alguém para dar zoom. Volta ao normal quando você solta.
+# context: switch title under Stories, right below Pinch to zoom; the zoomed picture stays zoomed after the fingers lift
+Stay zoomed	Manter o zoom
+# context: summary of that switch; "Pinch to zoom" is the label of the switch above it, so use its translation; "Back" is the phone's Back button
+With Pinch to zoom on, the photo or story stays zoomed when you let go, and a story stays paused. Drag with one finger or pinch again. Tap or press Back when you're done.	Com Pinçar para dar zoom ativado, a foto ou o story continua ampliado quando você solta, e o story fica pausado. Arraste com um dedo ou faça a pinça de novo. Toque ou aperte Voltar quando terminar.
 No ads downloaded in advance	Sem anúncios baixados antes da hora
 No ad tracking	Sem rastreamento de anúncios
 No Facebook ads in other apps	Sem anúncios do Facebook em outros apps

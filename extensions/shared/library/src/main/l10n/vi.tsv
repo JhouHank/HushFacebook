@@ -1611,6 +1611,10 @@ Videos you post to your Story ask Facebook for its high upload quality instead o
 Pinch to zoom	Chụm để thu phóng
 # context: summary of that switch; "let go" means lifting your fingers off the screen
 Pinch a story or a photo on someone's profile to zoom in. It goes back when you let go.	Dùng hai ngón tay để phóng to tin hoặc ảnh trên trang cá nhân của ai đó. Ảnh trở lại như cũ khi bạn thả tay.
+# context: switch title under Stories, right below Pinch to zoom; the zoomed picture stays zoomed after the fingers lift
+Stay zoomed	Giữ thu phóng
+# context: summary of that switch; "Pinch to zoom" is the label of the switch above it, so use its translation; "Back" is the phone's Back button
+With Pinch to zoom on, the photo or story stays zoomed when you let go, and a story stays paused. Drag with one finger or pinch again. Tap or press Back when you're done.	Khi bật Chụm để thu phóng, ảnh hoặc tin vẫn được phóng to khi bạn thả tay, và tin sẽ tạm dừng. Kéo bằng một ngón tay hoặc chụm lại lần nữa. Chạm hoặc nhấn Quay lại khi xong.
 No ads downloaded in advance	Không có quảng cáo tải trước
 No ad tracking	Không theo dõi quảng cáo
 No Facebook ads in other apps	Không có quảng cáo của Facebook trong ứng dụng khác

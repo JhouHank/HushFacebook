@@ -374,6 +374,10 @@ final class FeedPages {
                 // Asked as each second finger lands, so a change shows from the next pinch.
                 stories.addPreference(toggle(context, Settings.PINCH_TO_ZOOM,
                         L10n.t("Pinch a story or a photo on someone's profile to zoom in. It goes back when you let go.")));
+                stories.addPreference(toggle(context, Settings.PINCH_TO_ZOOM_KEEP,
+                        L10n.t("With Pinch to zoom on, the photo or story stays zoomed when you let go, and a story "
+                                + "stays paused. Drag with one finger or pinch again. Tap or press Back when you're done."))
+                        .needs(Settings.PINCH_TO_ZOOM));
             }
         }
     }

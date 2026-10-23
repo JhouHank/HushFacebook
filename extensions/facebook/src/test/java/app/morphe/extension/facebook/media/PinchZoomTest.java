@@ -17,9 +17,12 @@ import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -33,9 +36,12 @@ import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+import app.morphe.extension.facebook.reels.PostLongPress;
 import app.morphe.extension.facebook.settings.Settings;
 import app.morphe.extension.shared.SettingsContextRule;
 import app.morphe.extension.shared.diagnostics.HookStatus;
@@ -51,11 +57,16 @@ import static org.robolectric.Shadows.shadowOf;
  * until the zoom ends, then a cancel. One finger, a pinch over something that isn't
  * media, an icon-sized picture, a photo outside both a profile and the story viewer (the news
  * feed's, which Facebook zooms itself), the switch off or Hushfacebook paused all leave every event
- * as Facebook handed it over.
+ * as Facebook handed it over. With Stay zoomed on, a zoom stays when the fingers lift, a touch on it
+ * steers it unseen by Facebook, and a tap, a pinch back to 1x, Back or the window losing focus lets
+ * it go. A cancelled touch keeps it, and Long press opens comments leaves a press on it alone.
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 30)
 public class PinchZoomTest {
+    /** What Long press opens comments counts when a press is held to the long-press time. */
+    private static final String TIMED = "feed press held to the time";
+
     @Rule public final SettingsContextRule settingsContext = new SettingsContextRule();
 
     private Activity activity;
@@ -70,7 +81,7 @@ public class PinchZoomTest {
         HookStatus.clear();
         PinchZoom.resetForTests();
         Settings.PINCH_TO_ZOOM.save(true);
-        activity = Robolectric.buildActivity(Activity.class).setup().get();
+        activity = Robolectric.buildActivity(BackCounter.class).setup().get();
         FrameLayout content = new FrameLayout(activity);
         photo = new ImageView(activity);
         photo.setImageDrawable(new ColorDrawable(Color.RED));
@@ -104,7 +115,68 @@ public class PinchZoomTest {
         PauseForTests.resume();
         PinchZoom.resetForTests();
         Settings.PINCH_TO_ZOOM.resetToDefault();
+        Settings.PINCH_TO_ZOOM_KEEP.resetToDefault();
+        Settings.LONG_PRESS_OPENS_COMMENTS.resetToDefault();
         HookStatus.clear();
+    }
+
+    /** A screen that counts the Back presses reaching it, each of which closes a screen in Facebook. */
+    public static class BackCounter extends Activity {
+        int backs;
+
+        @Override
+        public void onBackPressed() {
+            backs++;
+        }
+    }
+
+    /**
+     * A story viewer whose touches go through the hook first, as FbFragmentActivity's do, noting the
+     * actions of the ones Facebook gets.
+     */
+    public static class HookedViewer extends com.facebook.stories.viewer.activity.StoryViewerActivity {
+        final List<Integer> handed = new ArrayList<>();
+        int backs;
+
+        @Override
+        public boolean dispatchTouchEvent(MotionEvent event) {
+            if (PinchZoom.touch(this, event)) return true;
+            handed.add(event.getActionMasked());
+            return true;
+        }
+
+        @Override
+        public void onBackPressed() {
+            backs++;
+        }
+    }
+
+    private static void back(View root) {
+        root.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK));
+        root.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK));
+    }
+
+    /** As the window gaining or losing focus tells its views. */
+    private static void windowFocus(View root, boolean focused) throws ReflectiveOperationException {
+        Method dispatch = ViewTreeObserver.class.getDeclaredMethod("dispatchOnWindowFocusChange", boolean.class);
+        dispatch.setAccessible(true);
+        dispatch.invoke(root.getViewTreeObserver(), focused);
+    }
+
+    /** With Stay zoomed on, pinches the profile photo to twice its size and lifts both fingers. */
+    private PinchZoom.Zoom keptZoom() {
+        Settings.PINCH_TO_ZOOM_KEEP.save(true);
+        touch(event(MotionEvent.ACTION_DOWN, new float[][] {{250, 300}}));
+        touch(event(pointer(MotionEvent.ACTION_POINTER_DOWN, 1), new float[][] {{250, 300}, {350, 300}}));
+        PinchZoom.Zoom zoom = PinchZoom.zoom();
+        assertNotNull("no zoom started", zoom);
+        touch(event(MotionEvent.ACTION_MOVE, new float[][] {{200, 300}, {400, 300}}));
+        touch(event(pointer(MotionEvent.ACTION_POINTER_UP, 1), new float[][] {{200, 300}, {400, 300}}));
+        assertEquals(MotionEvent.ACTION_CANCEL, touch(event(MotionEvent.ACTION_UP, new float[][] {{200, 300}})));
+        assertTrue("the zoom wasn't kept", zoom.parked);
+        // A frame lays the layer out on a phone. Keys only reach a view that has been.
+        layOut(activity);
+        return zoom;
     }
 
     private static void layOut(Activity screen) {
@@ -675,5 +747,270 @@ public class PinchZoomTest {
         assertEquals(MotionEvent.ACTION_POINTER_DOWN,
                 touch(event(pointer(MotionEvent.ACTION_POINTER_DOWN, 1), new float[][] {{250, 300}, {350, 300}})));
         assertNull(PinchZoom.zoom());
+    }
+
+    @Test
+    public void stayZoomedStartsOff() {
+        assertFalse(Settings.PINCH_TO_ZOOM_KEEP.defaultValue);
+    }
+
+    /**
+     * With Stay zoomed on, one finger left drags the copy, and the zoom stays when it lifts. A touch
+     * on the kept zoom then drags or pinches it, none of it reaching Facebook, and a tap lets it go.
+     */
+    @Test
+    public void withStayZoomedTheZoomStaysUntilATap() {
+        Settings.PINCH_TO_ZOOM_KEEP.save(true);
+        touch(event(MotionEvent.ACTION_DOWN, new float[][] {{250, 300}}));
+        touch(event(pointer(MotionEvent.ACTION_POINTER_DOWN, 1), new float[][] {{250, 300}, {350, 300}}));
+        PinchZoom.Zoom zoom = PinchZoom.zoom();
+        assertNotNull(zoom);
+        touch(event(MotionEvent.ACTION_MOVE, new float[][] {{200, 300}, {400, 300}}));
+        assertEquals(2f, zoom.copy.getScaleX(), 0.01f);
+
+        // One finger lifts: the zoom carries on, and the finger left drags it.
+        assertEquals(MotionEvent.ACTION_CANCEL,
+                touch(event(pointer(MotionEvent.ACTION_POINTER_UP, 1), new float[][] {{200, 300}, {400, 300}})));
+        assertFalse("one finger lifting ended the zoom", zoom.settling);
+        float cornerX = drawnX(zoom.copy, 0f);
+        float cornerY = drawnY(zoom.copy, 0f);
+        assertEquals(MotionEvent.ACTION_CANCEL, touch(event(MotionEvent.ACTION_MOVE, new float[][] {{260, 340}})));
+        assertEquals("one finger zoomed", 2f, zoom.copy.getScaleX(), 0.01f);
+        assertEquals("one finger didn't drag the copy", cornerX + 60f, drawnX(zoom.copy, 0f), 0.01f);
+        assertEquals("one finger didn't drag the copy", cornerY + 40f, drawnY(zoom.copy, 0f), 0.01f);
+
+        // The last finger lifts and the zoom stays, holding focus so Back reaches it.
+        assertEquals(MotionEvent.ACTION_CANCEL, touch(event(MotionEvent.ACTION_UP, new float[][] {{260, 340}})));
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(1));
+        assertSame("the zoom went when the fingers lifted", zoom, PinchZoom.zoom());
+        assertTrue(zoom.shown());
+        assertTrue(zoom.parked);
+        assertFalse(zoom.settling);
+        assertFalse(PinchZoom.active());
+        assertTrue("the kept zoom can't take Back", zoom.layer.isFocused());
+
+        // A drag on it moves it, and Facebook gets none of the touch.
+        cornerX = drawnX(zoom.copy, 0f);
+        cornerY = drawnY(zoom.copy, 0f);
+        assertTrue("a touch on the kept zoom reached Facebook",
+                PinchZoom.touch(activity, event(MotionEvent.ACTION_DOWN, new float[][] {{500, 800}})));
+        assertTrue(PinchZoom.touch(activity, event(MotionEvent.ACTION_MOVE, new float[][] {{450, 700}})));
+        assertTrue(PinchZoom.touch(activity, event(MotionEvent.ACTION_UP, new float[][] {{450, 700}})));
+        assertEquals("a drag didn't move the kept zoom", cornerX - 50f, drawnX(zoom.copy, 0f), 0.01f);
+        assertEquals("a drag didn't move the kept zoom", cornerY - 100f, drawnY(zoom.copy, 0f), 0.01f);
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(1));
+        assertTrue("a drag let go of the kept zoom", zoom.parked);
+        assertTrue(zoom.shown());
+
+        // Two fingers pinch it further, from the scale it kept.
+        assertTrue(PinchZoom.touch(activity, event(MotionEvent.ACTION_DOWN, new float[][] {{300, 300}})));
+        assertTrue(PinchZoom.touch(activity, event(pointer(MotionEvent.ACTION_POINTER_DOWN, 1),
+                new float[][] {{300, 300}, {400, 300}})));
+        assertTrue(PinchZoom.touch(activity, event(MotionEvent.ACTION_MOVE, new float[][] {{250, 300}, {450, 300}})));
+        assertEquals(PinchZoom.MOST, zoom.copy.getScaleX(), 0.01f);
+        assertTrue(PinchZoom.touch(activity, event(pointer(MotionEvent.ACTION_POINTER_UP, 1),
+                new float[][] {{250, 300}, {450, 300}})));
+        assertTrue(PinchZoom.touch(activity, event(MotionEvent.ACTION_UP, new float[][] {{250, 300}})));
+        assertTrue("a pinch let go of the kept zoom", zoom.parked);
+
+        // A tap lets it go, and Facebook doesn't get that tap either.
+        assertTrue(PinchZoom.touch(activity, event(MotionEvent.ACTION_DOWN, new float[][] {{500, 800}})));
+        assertTrue("the tap that let go reached Facebook",
+                PinchZoom.touch(activity, event(MotionEvent.ACTION_UP, new float[][] {{500, 800}})));
+        assertTrue("a tap didn't let go", zoom.settling);
+        assertFalse(zoom.parked);
+        assertFalse("the zoom kept focus after it let go", zoom.layer.isFocused());
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(1));
+        assertNull(PinchZoom.zoom());
+        assertFalse(zoom.shown());
+
+        // The next tap is Facebook's.
+        assertEquals(MotionEvent.ACTION_DOWN, touch(event(MotionEvent.ACTION_DOWN, new float[][] {{500, 800}})));
+        assertEquals(MotionEvent.ACTION_UP, touch(event(MotionEvent.ACTION_UP, new float[][] {{500, 800}})));
+    }
+
+    @Test
+    public void aKeptZoomPinchedBackToItsSizeLetsGo() {
+        PinchZoom.Zoom zoom = keptZoom();
+        assertTrue(PinchZoom.touch(activity, event(MotionEvent.ACTION_DOWN, new float[][] {{200, 300}})));
+        assertTrue(PinchZoom.touch(activity, event(pointer(MotionEvent.ACTION_POINTER_DOWN, 1),
+                new float[][] {{200, 300}, {400, 300}})));
+        assertTrue(PinchZoom.touch(activity, event(MotionEvent.ACTION_MOVE, new float[][] {{250, 300}, {350, 300}})));
+        assertEquals(1f, zoom.copy.getScaleX(), 0.01f);
+        assertTrue(PinchZoom.touch(activity, event(pointer(MotionEvent.ACTION_POINTER_UP, 1),
+                new float[][] {{250, 300}, {350, 300}})));
+        assertTrue("the lift reached Facebook",
+                PinchZoom.touch(activity, event(MotionEvent.ACTION_UP, new float[][] {{250, 300}})));
+        assertTrue("a pinch back to 1x kept the zoom", zoom.settling);
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(1));
+        assertNull(PinchZoom.zoom());
+    }
+
+    @Test
+    public void aZoomThatEndsAboutItsSizeIsntKept() {
+        Settings.PINCH_TO_ZOOM_KEEP.save(true);
+        touch(event(MotionEvent.ACTION_DOWN, new float[][] {{250, 300}}));
+        touch(event(pointer(MotionEvent.ACTION_POINTER_DOWN, 1), new float[][] {{250, 300}, {350, 300}}));
+        PinchZoom.Zoom zoom = PinchZoom.zoom();
+        touch(event(MotionEvent.ACTION_MOVE, new float[][] {{248, 300}, {352, 300}}));
+        assertEquals(1.04f, zoom.copy.getScaleX(), 0.001f);
+        touch(event(pointer(MotionEvent.ACTION_POINTER_UP, 1), new float[][] {{248, 300}, {352, 300}}));
+        touch(event(MotionEvent.ACTION_UP, new float[][] {{248, 300}}));
+        assertFalse("a zoom near 1x was kept", zoom.parked);
+        assertTrue(zoom.settling);
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(1));
+        assertNull(PinchZoom.zoom());
+    }
+
+    /** Back lets go of a kept zoom and goes no further, and once it's gone Back is Facebook's again. */
+    @Test
+    public void backLetsGoOfAKeptZoom() {
+        PinchZoom.Zoom zoom = keptZoom();
+        BackCounter screen = (BackCounter) activity;
+        back(decor());
+        assertTrue("Back didn't let go of the kept zoom", zoom.settling);
+        assertEquals("Back went on to the screen under the kept zoom", 0, screen.backs);
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(1));
+        assertNull(PinchZoom.zoom());
+        back(decor());
+        assertEquals("Back didn't reach the screen once the zoom went", 1, screen.backs);
+    }
+
+    /**
+     * With gesture navigation the system cancels the edge swipe before it sends Back. The cancel ends
+     * that touch and keeps the zoom, so the Back after it lets go of the zoom and closes nothing.
+     */
+    @Test
+    public void aCancelledTouchLeavesTheZoomForTheBackAfterIt() {
+        PinchZoom.Zoom zoom = keptZoom();
+        BackCounter screen = (BackCounter) activity;
+        assertTrue(PinchZoom.touch(activity, event(MotionEvent.ACTION_DOWN, new float[][] {{2, 900}})));
+        assertTrue(PinchZoom.touch(activity, event(MotionEvent.ACTION_MOVE, new float[][] {{80, 900}})));
+        assertTrue("the cancel reached Facebook",
+                PinchZoom.touch(activity, event(MotionEvent.ACTION_CANCEL, new float[][] {{80, 900}})));
+        assertTrue("a cancelled touch let go of the kept zoom", zoom.parked);
+        assertTrue("the kept zoom lost focus to a cancel", zoom.layer.isFocused());
+        back(decor());
+        assertTrue("Back didn't let go of the kept zoom", zoom.settling);
+        assertEquals("Back went on to the screen under the kept zoom", 0, screen.backs);
+    }
+
+    @Test
+    public void aKeptZoomCoversOnlyItsOwnWindow() {
+        View root = decor();
+        assertFalse(PinchZoom.covers(root));
+        keptZoom();
+        assertTrue("a kept zoom doesn't cover its window", PinchZoom.covers(root));
+        assertFalse(PinchZoom.covers(null));
+        assertFalse("a kept zoom covers another window", PinchZoom.covers(storyViewer().getWindow().getDecorView()));
+        back(root);
+        assertFalse("a zoom springing back still covers its window", PinchZoom.covers(root));
+    }
+
+    /**
+     * Long press opens comments times a press in the same touch dispatch and may run first. A press
+     * held on a kept zoom is the zoom's, so it isn't timed, and once the zoom goes the same press is.
+     */
+    @Test
+    public void aPressHeldOnAKeptZoomOpensNothingUnderIt() {
+        Settings.LONG_PRESS_OPENS_COMMENTS.save(true);
+        keptZoom();
+        long held = ViewConfiguration.getLongPressTimeout() + 50L;
+        PostLongPress.touch(activity, event(MotionEvent.ACTION_DOWN, new float[][] {{300, 900}}));
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(held));
+        assertFalse("a press on the kept zoom was timed", String.join("\n", HookStatus.report()).contains(TIMED));
+        PostLongPress.touch(activity, event(MotionEvent.ACTION_UP, new float[][] {{300, 900}}));
+
+        back(decor());
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(1));
+        assertNull(PinchZoom.zoom());
+        PostLongPress.touch(activity, event(MotionEvent.ACTION_DOWN, new float[][] {{300, 900}}));
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(held));
+        assertTrue("with the zoom gone the press wasn't timed", String.join("\n", HookStatus.report()).contains(TIMED));
+        PostLongPress.touch(activity, event(MotionEvent.ACTION_UP, new float[][] {{300, 900}}));
+    }
+
+    @Test
+    public void theWindowLosingFocusLetsGoOfAKeptZoom() throws ReflectiveOperationException {
+        PinchZoom.Zoom zoom = keptZoom();
+        windowFocus(decor(), true);
+        assertTrue("the window gaining focus let go", zoom.parked);
+        windowFocus(decor(), false);
+        assertTrue("the window losing focus didn't let go", zoom.settling);
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(1));
+        assertNull(PinchZoom.zoom());
+    }
+
+    @Test
+    public void aTouchOnAnotherScreenLetsGoOfAKeptZoom() {
+        PinchZoom.Zoom zoom = keptZoom();
+        Activity other = storyViewer();
+        MotionEvent down = event(MotionEvent.ACTION_DOWN, new float[][] {{500, 700}});
+        assertFalse("a touch on another screen was kept from Facebook", PinchZoom.touch(other, down));
+        assertEquals(MotionEvent.ACTION_DOWN, down.getActionMasked());
+        assertNull(PinchZoom.zoom());
+        assertFalse(zoom.shown());
+    }
+
+    /**
+     * A kept story zoom keeps Facebook's first finger held, so the story stays paused. A touch on it
+     * steers it unseen, and the tap that lets it go reaches Facebook as a cancel, so the story plays
+     * on from there without skipping ahead.
+     */
+    @Test
+    public void inTheStoryViewerAKeptZoomHoldsTheStoryUntilATap() {
+        Settings.PINCH_TO_ZOOM_KEEP.save(true);
+        Activity viewer = storyViewer();
+        assertFalse(PinchZoom.touch(viewer, event(MotionEvent.ACTION_DOWN, new float[][] {{500, 700}})));
+        assertTrue(PinchZoom.touch(viewer, event(pointer(MotionEvent.ACTION_POINTER_DOWN, 1),
+                new float[][] {{500, 700}, {600, 700}})));
+        PinchZoom.Zoom zoom = PinchZoom.zoom();
+        assertNotNull(zoom);
+        assertTrue(PinchZoom.touch(viewer, event(MotionEvent.ACTION_MOVE, new float[][] {{450, 700}, {650, 700}})));
+        assertTrue("one finger lifting reached Facebook", PinchZoom.touch(viewer, event(
+                pointer(MotionEvent.ACTION_POINTER_UP, 1), new float[][] {{450, 700}, {650, 700}})));
+        assertTrue("the lift reached Facebook",
+                PinchZoom.touch(viewer, event(MotionEvent.ACTION_UP, new float[][] {{450, 700}})));
+        assertTrue(zoom.parked);
+
+        assertTrue(PinchZoom.touch(viewer, event(MotionEvent.ACTION_DOWN, new float[][] {{300, 300}})));
+        assertTrue(PinchZoom.touch(viewer, event(MotionEvent.ACTION_MOVE, new float[][] {{200, 200}})));
+        assertTrue(PinchZoom.touch(viewer, event(MotionEvent.ACTION_UP, new float[][] {{200, 200}})));
+        assertTrue("a drag let go of the kept story", zoom.parked);
+
+        assertTrue(PinchZoom.touch(viewer, event(MotionEvent.ACTION_DOWN, new float[][] {{300, 300}})));
+        MotionEvent up = event(MotionEvent.ACTION_UP, new float[][] {{300, 300}});
+        assertFalse("the tap that let go was kept from Facebook", PinchZoom.touch(viewer, up));
+        assertEquals("the story took the tap that let go", MotionEvent.ACTION_CANCEL, up.getActionMasked());
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(1));
+        assertNull(PinchZoom.zoom());
+
+        MotionEvent tap = event(MotionEvent.ACTION_DOWN, new float[][] {{500, 700}});
+        assertFalse(PinchZoom.touch(viewer, tap));
+        assertEquals(MotionEvent.ACTION_DOWN, tap.getActionMasked());
+    }
+
+    /** Back on a kept story zoom lets Facebook's held finger go with a cancel of its own, and doesn't close the story. */
+    @Test
+    public void backOnAKeptStoryLetsFacebooksFingerGo() {
+        Settings.PINCH_TO_ZOOM_KEEP.save(true);
+        HookedViewer viewer = (HookedViewer) storyViewer(HookedViewer.class);
+        View root = viewer.getWindow().getDecorView();
+        root.dispatchTouchEvent(event(MotionEvent.ACTION_DOWN, new float[][] {{500, 700}}));
+        root.dispatchTouchEvent(event(pointer(MotionEvent.ACTION_POINTER_DOWN, 1), new float[][] {{500, 700}, {600, 700}}));
+        root.dispatchTouchEvent(event(MotionEvent.ACTION_MOVE, new float[][] {{450, 700}, {650, 700}}));
+        root.dispatchTouchEvent(event(pointer(MotionEvent.ACTION_POINTER_UP, 1), new float[][] {{450, 700}, {650, 700}}));
+        root.dispatchTouchEvent(event(MotionEvent.ACTION_UP, new float[][] {{450, 700}}));
+        assertEquals("Facebook saw more than the first finger", Arrays.asList(MotionEvent.ACTION_DOWN), viewer.handed);
+        PinchZoom.Zoom zoom = PinchZoom.zoom();
+        assertNotNull(zoom);
+        assertTrue(zoom.parked);
+        layOut(viewer);
+
+        back(root);
+        assertTrue("Back didn't let go of the kept story", zoom.settling);
+        assertEquals("Back closed the story under the kept zoom", 0, viewer.backs);
+        assertEquals("Facebook's held finger never let go",
+                Arrays.asList(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_CANCEL), viewer.handed);
     }
 }

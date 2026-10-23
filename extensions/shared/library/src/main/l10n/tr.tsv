@@ -1611,6 +1611,10 @@ Videos you post to your Story ask Facebook for its high upload quality instead o
 Pinch to zoom	Yakınlaştırmak için kıstır
 # context: summary of that switch; "let go" means lifting your fingers off the screen
 Pinch a story or a photo on someone's profile to zoom in. It goes back when you let go.	Bir hikayeyi veya birinin profilindeki bir fotoğrafı iki parmakla açarak yakınlaştır. Bıraktığında eski haline döner.
+# context: switch title under Stories, right below Pinch to zoom; the zoomed picture stays zoomed after the fingers lift
+Stay zoomed	Yakınlaştırılmış kalsın
+# context: summary of that switch; "Pinch to zoom" is the label of the switch above it, so use its translation; "Back" is the phone's Back button
+With Pinch to zoom on, the photo or story stays zoomed when you let go, and a story stays paused. Drag with one finger or pinch again. Tap or press Back when you're done.	Yakınlaştırmak için kıstır açıkken fotoğraf veya hikaye bıraktığında yakınlaştırılmış kalır ve hikaye duraklatılmış olarak bekler. Tek parmakla kaydır veya yeniden kıstır. İşin bitince dokun veya Geri'ye bas.
 No ads downloaded in advance	Önceden indirilen reklam yok
 No ad tracking	Reklam takibi yok
 No Facebook ads in other apps	Diğer uygulamalarda Facebook reklamı yok

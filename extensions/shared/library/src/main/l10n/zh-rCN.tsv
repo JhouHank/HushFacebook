@@ -1606,6 +1606,10 @@ Videos you post to your Story ask Facebook for its high upload quality instead o
 Pinch to zoom	双指缩放
 # context: summary of that switch; "let go" means lifting your fingers off the screen
 Pinch a story or a photo on someone's profile to zoom in. It goes back when you let go.	在快拍或别人个人主页上的照片上用双指张开即可放大。松开手指后恢复原样。
+# context: switch title under Stories, right below Pinch to zoom; the zoomed picture stays zoomed after the fingers lift
+Stay zoomed	保持放大
+# context: summary of that switch; "Pinch to zoom" is the label of the switch above it, so use its translation; "Back" is the phone's Back button
+With Pinch to zoom on, the photo or story stays zoomed when you let go, and a story stays paused. Drag with one finger or pinch again. Tap or press Back when you're done.	开启双指缩放后，松开手指时照片或快拍会保持放大，快拍也会保持暂停。单指拖动或再次双指缩放。看完后轻点屏幕或按返回键。
 No ads downloaded in advance	不提前下载广告
 No ad tracking	不进行广告跟踪
 No Facebook ads in other apps	其他应用中没有 Facebook 广告

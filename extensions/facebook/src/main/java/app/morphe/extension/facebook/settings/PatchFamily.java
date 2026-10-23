@@ -86,7 +86,7 @@ public enum PatchFamily {
     STORY_UPLOAD_HD(FamilyNames.STORY_UPLOAD_HD, "storyUploadHd", null,
             Settings.UPLOAD_STORIES_IN_HD),
     PINCH_TO_ZOOM(FamilyNames.PINCH_TO_ZOOM, "pinchToZoom", null,
-            Settings.PINCH_TO_ZOOM),
+            Settings.PINCH_TO_ZOOM, Settings.PINCH_TO_ZOOM_KEEP),
     SPONSORED_REELS(FamilyNames.SPONSORED_REELS, "sponsoredReels", "Part of the Reels ad blocking",
             Settings.HIDE_SPONSORED_REELS),
     SPONSORED_SEARCH(FamilyNames.SPONSORED_SEARCH, "sponsoredSearch", null,

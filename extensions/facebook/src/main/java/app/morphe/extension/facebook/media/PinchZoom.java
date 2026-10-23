@@ -14,12 +14,17 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
+import android.view.InputDevice;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.PixelCopy;
 import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -64,6 +69,14 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * <p>The copy is read from the window's last frame, which holds a playing video as well as a photo
  * (a SurfaceView's from its own surface), so a video zooms on the frame it showed when the fingers
  * landed.
+ *
+ * <p>With Stay zoomed on (#220), dropping to one finger drags the copy instead of ending the zoom,
+ * and a zoom past {@link #KEPT_LEAST} stays where the fingers left it when they all lift. A touch
+ * on it then steers it, one finger dragging and two pinching, and Facebook gets none of that touch.
+ * It springs back on a tap, on a touch that ends it near 1x, on Back (the layer takes focus while
+ * kept, and 584 hands Back to the focused view as a key, having no back callback), or when the
+ * window loses focus. A story's held finger stays held while it's kept, so the story stays paused,
+ * and lets go as a cancel when the zoom does.
  */
 public final class PinchZoom {
     private static final String FAMILY = FamilyNames.PINCH_TO_ZOOM;
@@ -73,6 +86,8 @@ public final class PinchZoom {
     static final float SCRIM = 0.75f;
     /** How long the spring back takes, before the system's animation scale. */
     static final long SETTLE_MILLIS = 200;
+    /** With Stay zoomed on, a zoom no bigger than this when the fingers lift springs back anyway. */
+    static final float KEPT_LEAST = 1.05f;
     /** A view smaller than this many dp either way, an icon or a button, isn't zoomed. */
     static final int SMALLEST_DP = 64;
     /** The story viewer's activity, a kept class name. 584 opens it as one of its subclasses too ({@link #storyViewer}). */
@@ -102,6 +117,8 @@ public final class PinchZoom {
     private static boolean swallowing;
     /** A story zoom: Facebook gets none of the gesture until the zoom ends, then a cancel. */
     private static boolean holding;
+    /** This touch landed on a kept zoom and steers it, so Facebook gets none of it. */
+    private static boolean steering;
     @Nullable private static Zoom zoom;
 
     private PinchZoom() {
@@ -121,7 +138,7 @@ public final class PinchZoom {
             // never sees the middle of a gesture it was kept from.
             drop();
             holding = false;
-            if (swallowing && event != null) event.setAction(MotionEvent.ACTION_CANCEL);
+            if ((swallowing || steering) && event != null) event.setAction(MotionEvent.ACTION_CANCEL);
             return false;
         }
     }
@@ -139,16 +156,34 @@ public final class PinchZoom {
     static boolean handle(Activity activity, MotionEvent event) {
         int action = event.getActionMasked();
         if (action == MotionEvent.ACTION_DOWN) {
+            steering = false;
+            Zoom kept = zoom;
+            if (kept != null && kept.parked && !kept.settling) {
+                Window window = activity.getWindow();
+                if (window != null && window.getDecorView() == kept.root) {
+                    steering = true;
+                    kept.steer(event);
+                    return true;
+                }
+                release();
+            }
             // A new gesture. A layer still springing back from the last one goes at once.
             drop();
             swallowing = false;
             holding = false;
             return false;
         }
+        if (steering) return steer(event, action);
         if (swallowing) {
             follow(event, action);
+            Zoom live = zoom;
+            if (live != null && live.parked) {
+                // Kept: a story's held finger stays held, so the story stays paused under it.
+                if (holding) return true;
+                event.setAction(MotionEvent.ACTION_CANCEL);
+                return false;
+            }
             if (holding) {
-                Zoom live = zoom;
                 if (swallowing && live != null && !live.settling && !live.blank) return true;
                 // The zoom ended with this event, or its copy came back empty: Facebook's held finger
                 // lets go as a cancel, and the rest of the gesture stays one.
@@ -171,6 +206,7 @@ public final class PinchZoom {
         if (area == null) return false;
         HookStatus.bound(FAMILY, "pinch");
         Zoom started = new Zoom((ViewGroup) root, area, event);
+        started.keep = Settings.PINCH_TO_ZOOM_KEEP.get();
         zoom = started;
         swallowing = true;
         holding = storyViewer(activity);
@@ -187,10 +223,19 @@ public final class PinchZoom {
         return holding;
     }
 
-    /** One event of a gesture this took: the zoom follows the fingers until fewer than two are down. */
+    /**
+     * One event of a gesture this took: the zoom follows the fingers until fewer than two are down,
+     * or with Stay zoomed on until they all lift, and stays when that leaves it zoomed.
+     */
     private static void follow(MotionEvent event, int action) {
         Zoom live = zoom;
-        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+        if (action == MotionEvent.ACTION_UP) {
+            swallowing = false;
+            if (live != null && live.keepable()) live.park();
+            else settle();
+            return;
+        }
+        if (action == MotionEvent.ACTION_CANCEL) {
             swallowing = false;
             settle();
             return;
@@ -201,8 +246,73 @@ public final class PinchZoom {
         } else if (action == MotionEvent.ACTION_POINTER_DOWN) {
             live.rebase(event, -1);
         } else if (action == MotionEvent.ACTION_POINTER_UP) {
-            if (event.getPointerCount() <= 2) settle();
+            if (event.getPointerCount() <= 2 && !live.keep) settle();
             else live.rebase(event, event.getActionIndex());
+        }
+    }
+
+    /**
+     * One event of a touch on a kept zoom, none of which Facebook gets: one finger drags it, two
+     * pinch it, and a tap or a lift near 1x lets it go. A cancel ends the touch and keeps the zoom.
+     */
+    private static boolean steer(MotionEvent event, int action) {
+        Zoom kept = zoom;
+        boolean ends = action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL;
+        if (kept == null || kept.settling || !kept.parked) {
+            // It went mid touch. Facebook never saw this touch start, so it sees none of the rest.
+            if (ends) steering = false;
+            return true;
+        }
+        if (ends) {
+            steering = false;
+            // With gesture navigation the system cancels an edge swipe before it sends Back, and
+            // Back has to find the zoom still up, or it goes on to close Facebook's screen.
+            if (action == MotionEvent.ACTION_CANCEL) return true;
+            boolean tapped = !kept.moved && !kept.pinched;
+            if (tapped || kept.scale <= KEPT_LEAST) return letGo(event);
+            return true;
+        }
+        if (action == MotionEvent.ACTION_MOVE) {
+            kept.drag(event);
+        } else if (action == MotionEvent.ACTION_POINTER_DOWN) {
+            kept.pinched = true;
+            kept.rebase(event, -1);
+        } else if (action == MotionEvent.ACTION_POINTER_UP) {
+            kept.rebase(event, event.getActionIndex());
+        }
+        return true;
+    }
+
+    /** A kept zoom springs back, and a story's held finger lets go with [event], a cancel to Facebook. */
+    private static boolean letGo(MotionEvent event) {
+        settle();
+        if (!holding) return true;
+        holding = false;
+        event.setAction(MotionEvent.ACTION_CANCEL);
+        return false;
+    }
+
+    /**
+     * A kept zoom springs back outside a touch, on Back or when the window loses focus, and a story's
+     * held finger lets go with a cancel of its own, so the story plays on.
+     */
+    static void release() {
+        Zoom kept = zoom;
+        if (kept == null || !kept.parked || kept.settling) return;
+        kept.settle();
+        if (!holding) return;
+        holding = false;
+        // The cancel comes back through touch(), which hands it on unless a steering touch would take it.
+        boolean steered = steering;
+        steering = false;
+        long now = SystemClock.uptimeMillis();
+        MotionEvent cancel = MotionEvent.obtain(now, now, MotionEvent.ACTION_CANCEL, 0f, 0f, 0);
+        cancel.setSource(InputDevice.SOURCE_TOUCHSCREEN);
+        try {
+            kept.root.dispatchTouchEvent(cancel);
+        } finally {
+            cancel.recycle();
+            steering = steered;
         }
     }
 
@@ -425,6 +535,16 @@ public final class PinchZoom {
         return swallowing;
     }
 
+    /**
+     * Whether a zoom is up over the window whose top view is [root]. The other hooks in Facebook's
+     * touch dispatch may run before this one, and a touch there is the zoom's, not the screen's
+     * under it. Never throws.
+     */
+    public static boolean covers(@Nullable View root) {
+        Zoom live = zoom;
+        return root != null && live != null && !live.settling && live.root == root;
+    }
+
     @Nullable
     static Zoom zoom() {
         return zoom;
@@ -434,6 +554,7 @@ public final class PinchZoom {
         drop();
         swallowing = false;
         holding = false;
+        steering = false;
         profiles.clear();
         snapshots = PinchZoom::snapshot;
         places = PinchZoom::mediaUnder;
@@ -454,6 +575,17 @@ public final class PinchZoom {
         boolean settling;
         /** The copy came back empty, so nothing shows and a story isn't held for it. */
         boolean blank;
+        /** Stay zoomed was on when the zoom started. */
+        boolean keep;
+        /** The fingers lifted and the zoom stayed. */
+        boolean parked;
+        /** Where a touch on the kept zoom landed, and whether it has since dragged or pinched. */
+        private float downX;
+        private float downY;
+        boolean moved;
+        boolean pinched;
+        /** What had focus before the kept zoom took it for Back. */
+        @Nullable private View focusedBefore;
         float scale = 1f;
         private float baseScale = 1f;
         private float startSpan;
@@ -479,6 +611,24 @@ public final class PinchZoom {
                 } catch (Throwable failure) {
                     HookStatus.threw(FAMILY, "pinch", failure);
                 }
+            }
+        };
+        /** Back while kept lets go of the zoom and goes no further. */
+        final View.OnKeyListener back = (view, code, key) -> {
+            if (code != KeyEvent.KEYCODE_BACK) return false;
+            try {
+                if (key.getAction() == KeyEvent.ACTION_UP && !key.isCanceled() && zoom == this) release();
+            } catch (Throwable failure) {
+                HookStatus.threw(FAMILY, "pinch back", failure);
+            }
+            return true;
+        };
+        /** The window losing focus, to the shade, another app or a dialog, lets go of a kept zoom. */
+        final ViewTreeObserver.OnWindowFocusChangeListener focusLost = hasFocus -> {
+            try {
+                if (!hasFocus && zoom == this) release();
+            } catch (Throwable failure) {
+                HookStatus.threw(FAMILY, "pinch", failure);
             }
         };
 
@@ -562,10 +712,59 @@ public final class PinchZoom {
             scrim.setAlpha(SCRIM * Math.min(1f, (scale - 1f) / (MOST - 1f) * 3f));
         }
 
+        /** With Stay zoomed on, whether the zoom stays when the fingers lift: it shows, zoomed past {@link PinchZoom#KEPT_LEAST}. */
+        boolean keepable() {
+            return keep && !settling && !blank && shown() && scale > KEPT_LEAST;
+        }
+
+        /** The fingers lifted and the zoom stays. The layer takes focus, so Back reaches it as a key. */
+        void park() {
+            parked = true;
+            focusedBefore = root.findFocus();
+            layer.setFocusable(true);
+            layer.setFocusableInTouchMode(true);
+            layer.setOnKeyListener(back);
+            layer.requestFocus();
+            root.getViewTreeObserver().addOnWindowFocusChangeListener(focusLost);
+        }
+
+        /** No longer kept: Back and focus go back to Facebook's views. */
+        private void unpark() {
+            if (!parked) return;
+            parked = false;
+            layer.setOnKeyListener(null);
+            ViewTreeObserver observer = root.getViewTreeObserver();
+            if (observer.isAlive()) observer.removeOnWindowFocusChangeListener(focusLost);
+            layer.setFocusableInTouchMode(false);
+            layer.setFocusable(false);
+            View before = focusedBefore;
+            focusedBefore = null;
+            if (before != null && before.isAttachedToWindow()) before.requestFocus();
+        }
+
+        /** A touch landed on the kept zoom, and steers it from here. */
+        void steer(MotionEvent event) {
+            downX = event.getX();
+            downY = event.getY();
+            moved = false;
+            pinched = false;
+            rebase(event, -1);
+        }
+
+        /** A move of a touch on the kept zoom, which stops counting as a tap once past the touch slop. */
+        void drag(MotionEvent event) {
+            if (!moved) {
+                int slop = ViewConfiguration.get(root.getContext()).getScaledTouchSlop();
+                moved = Math.hypot(event.getX() - downX, event.getY() - downY) > slop;
+            }
+            move(event, -1);
+        }
+
         /** Springs back to where the photo sits, then takes the layer away. */
         void settle() {
             if (settling) return;
             settling = true;
+            unpark();
             scale = 1f;
             if (layer.getParent() == null) {
                 if (zoom == this) zoom = null;
@@ -588,6 +787,7 @@ public final class PinchZoom {
         /** Takes the layer away now and lets go of the copy. */
         void remove() {
             settling = true;
+            unpark();
             root.removeOnAttachStateChangeListener(detached);
             copy.animate().cancel();
             scrim.animate().cancel();
