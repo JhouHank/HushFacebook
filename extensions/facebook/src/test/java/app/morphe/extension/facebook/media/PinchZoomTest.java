@@ -47,7 +47,8 @@ import static org.robolectric.Shadows.shadowOf;
 /**
  * A second finger over a photo in a profile starts a zoom on a copy of it, the pinch scales and
  * drags the copy, and it springs back once fewer than two fingers are down. Every event from that
- * second finger on reaches Facebook as a cancel. One finger, a pinch over something that isn't
+ * second finger on reaches Facebook as a cancel; in the story viewer Facebook gets none of them
+ * until the zoom ends, then a cancel. One finger, a pinch over something that isn't
  * media, an icon-sized picture, a photo outside both a profile and the story viewer (the news
  * feed's, which Facebook zooms itself), the switch off or Hushfacebook paused all leave every event
  * as Facebook handed it over.
@@ -148,10 +149,23 @@ public class PinchZoomTest {
         return action | (index << MotionEvent.ACTION_POINTER_INDEX_SHIFT);
     }
 
-    /** Hands [event] to the hook and gives back the action Facebook would see. */
+    /** Hands [event] to the hook and gives back the action Facebook would see. A profile's events all reach it. */
     private int touch(MotionEvent event) {
-        PinchZoom.touch(activity, event);
+        assertFalse("an event outside the story viewer was kept from Facebook", PinchZoom.touch(activity, event));
         return event.getActionMasked();
+    }
+
+    /** The story viewer showing one story card the size of the screen. */
+    private static Activity storyViewer() {
+        Activity viewer = Robolectric.buildActivity(
+                com.facebook.stories.viewer.activity.StoryViewerActivity.class).setup().get();
+        FrameLayout card = new FrameLayout(viewer);
+        ImageView story = new ImageView(viewer);
+        story.setImageDrawable(new ColorDrawable(Color.GREEN));
+        card.addView(story, new FrameLayout.LayoutParams(1080, 1500));
+        viewer.setContentView(card);
+        layOut(viewer);
+        return viewer;
     }
 
     private ViewGroup decor() {
@@ -521,16 +535,87 @@ public class PinchZoomTest {
     @Test
     public void inTheStoryViewerAStoryZoomsWithNoProfile() {
         PinchZoom.resetForTests();
-        Activity viewer = Robolectric.buildActivity(
-                com.facebook.stories.viewer.activity.StoryViewerActivity.class).setup().get();
-        FrameLayout card = new FrameLayout(viewer);
-        ImageView story = new ImageView(viewer);
-        story.setImageDrawable(new ColorDrawable(Color.GREEN));
-        card.addView(story, new FrameLayout.LayoutParams(1080, 1500));
-        viewer.setContentView(card);
-        layOut(viewer);
-        assertSame(story, PinchZoom.mediaUnder(viewer, viewer.getWindow().getDecorView(), 540, 700));
+        Activity viewer = storyViewer();
+        ViewGroup card = (ViewGroup) ((ViewGroup) viewer.findViewById(android.R.id.content)).getChildAt(0);
+        assertSame(card.getChildAt(0), PinchZoom.mediaUnder(viewer, viewer.getWindow().getDecorView(), 540, 700));
         assertNull("an activity that isn't the story viewer counted", PinchZoom.mediaUnder(activity, decor(), 300, 300));
+    }
+
+    /**
+     * In the story viewer Facebook gets nothing of a zoom, so to it the first finger is still held,
+     * its own hold that keeps the story paused. The event that ends the zoom reaches it as a cancel,
+     * which a story doesn't take as a tap, and the next tap is Facebook's again.
+     */
+    @Test
+    public void inTheStoryViewerFacebookHoldsTheFirstFingerUntilTheZoomEnds() {
+        Activity viewer = storyViewer();
+        MotionEvent down = event(MotionEvent.ACTION_DOWN, new float[][] {{500, 700}});
+        assertFalse("the first finger was kept from Facebook", PinchZoom.touch(viewer, down));
+        assertEquals(MotionEvent.ACTION_DOWN, down.getActionMasked());
+        MotionEvent second = event(pointer(MotionEvent.ACTION_POINTER_DOWN, 1), new float[][] {{500, 700}, {600, 700}});
+        assertTrue("the second finger reached Facebook", PinchZoom.touch(viewer, second));
+        PinchZoom.Zoom zoom = PinchZoom.zoom();
+        assertNotNull("no zoom started", zoom);
+        assertTrue("the copy isn't over the window", zoom.shown());
+
+        MotionEvent spread = event(MotionEvent.ACTION_MOVE, new float[][] {{450, 700}, {650, 700}});
+        assertTrue("a move reached Facebook", PinchZoom.touch(viewer, spread));
+        assertEquals(2f, zoom.copy.getScaleX(), 0.01f);
+        // A third finger landing and lifting doesn't end the zoom, and Facebook sees neither.
+        assertTrue("a third finger reached Facebook", PinchZoom.touch(viewer, event(
+                pointer(MotionEvent.ACTION_POINTER_DOWN, 2), new float[][] {{450, 700}, {650, 700}, {550, 900}})));
+        assertTrue("a third finger's lift reached Facebook", PinchZoom.touch(viewer, event(
+                pointer(MotionEvent.ACTION_POINTER_UP, 2), new float[][] {{450, 700}, {650, 700}, {550, 900}})));
+        assertTrue("the zoom ended with two fingers still down", zoom.shown());
+
+        // Down to one finger: the zoom ends, and Facebook's held finger lets go as a cancel.
+        MotionEvent lift = event(pointer(MotionEvent.ACTION_POINTER_UP, 1), new float[][] {{450, 700}, {650, 700}});
+        assertFalse("the zoom's end was kept from Facebook", PinchZoom.touch(viewer, lift));
+        assertEquals(MotionEvent.ACTION_CANCEL, lift.getActionMasked());
+        // The last finger's own moves and lift stay cancels, so the story doesn't skip ahead.
+        MotionEvent move = event(MotionEvent.ACTION_MOVE, new float[][] {{460, 700}});
+        assertFalse(PinchZoom.touch(viewer, move));
+        assertEquals(MotionEvent.ACTION_CANCEL, move.getActionMasked());
+        MotionEvent up = event(MotionEvent.ACTION_UP, new float[][] {{460, 700}});
+        assertFalse(PinchZoom.touch(viewer, up));
+        assertEquals(MotionEvent.ACTION_CANCEL, up.getActionMasked());
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(1));
+        assertNull(PinchZoom.zoom());
+        assertFalse(PinchZoom.active());
+
+        // The next tap is Facebook's.
+        MotionEvent tap = event(MotionEvent.ACTION_DOWN, new float[][] {{500, 700}});
+        assertFalse(PinchZoom.touch(viewer, tap));
+        assertEquals(MotionEvent.ACTION_DOWN, tap.getActionMasked());
+        MotionEvent tapUp = event(MotionEvent.ACTION_UP, new float[][] {{500, 700}});
+        assertFalse(PinchZoom.touch(viewer, tapUp));
+        assertEquals(MotionEvent.ACTION_UP, tapUp.getActionMasked());
+    }
+
+    /**
+     * A story zoom whose copy never came, or that the system calls off, lets go of Facebook's held
+     * finger at once, as a cancel.
+     */
+    @Test
+    public void inTheStoryViewerAZoomThatEndsEarlyLetsGoAsACancel() {
+        Activity viewer = storyViewer();
+        noCopy = true;
+        PinchZoom.touch(viewer, event(MotionEvent.ACTION_DOWN, new float[][] {{500, 700}}));
+        PinchZoom.touch(viewer, event(pointer(MotionEvent.ACTION_POINTER_DOWN, 1), new float[][] {{500, 700}, {600, 700}}));
+        MotionEvent move = event(MotionEvent.ACTION_MOVE, new float[][] {{450, 700}, {650, 700}});
+        assertFalse("a move with no copy shown was kept from Facebook", PinchZoom.touch(viewer, move));
+        assertEquals(MotionEvent.ACTION_CANCEL, move.getActionMasked());
+        MotionEvent after = event(MotionEvent.ACTION_MOVE, new float[][] {{440, 700}, {660, 700}});
+        assertFalse(PinchZoom.touch(viewer, after));
+        assertEquals(MotionEvent.ACTION_CANCEL, after.getActionMasked());
+
+        noCopy = false;
+        PinchZoom.touch(viewer, event(MotionEvent.ACTION_DOWN, new float[][] {{500, 700}}));
+        assertTrue(PinchZoom.touch(viewer, event(pointer(MotionEvent.ACTION_POINTER_DOWN, 1), new float[][] {{500, 700}, {600, 700}})));
+        MotionEvent called = event(MotionEvent.ACTION_CANCEL, new float[][] {{500, 700}, {600, 700}});
+        assertFalse("the system's cancel was kept from Facebook", PinchZoom.touch(viewer, called));
+        assertEquals(MotionEvent.ACTION_CANCEL, called.getActionMasked());
+        assertFalse(PinchZoom.active());
     }
 
     /**

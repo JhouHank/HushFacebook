@@ -13,13 +13,17 @@ import app.morphe.patches.facebook.media.taptoplay.touchDispatches
 import app.morphe.patches.facebook.misc.extension.SETTINGS_STATUS
 import app.morphe.patches.facebook.misc.extension.localRegisterCount
 import app.morphe.patches.shared.compat.AppCompatibilities
+import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.builder.BuilderOffsetInstruction
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -27,7 +31,8 @@ import org.junit.Test
  * Pinch to zoom's two hooks on every Facebook build the bundle declares: FbFragmentActivity's one
  * touch dispatch and ProfileFragment's one onViewCreated(View, Bundle). Then the patch itself, run
  * on those classes, with each call first and reading the registers the method keeps its arguments
- * in. Reads the fixture bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
+ * in, and the touch call's yes returning true ahead of Facebook's own code. Reads the fixture
+ * bundles from HUSHFACEBOOK_FIXTURE_DIR and skips without it.
  */
 class PinchToZoomFixtureTest {
     private val Instruction.call: MethodReference?
@@ -62,14 +67,28 @@ class PinchToZoomFixtureTest {
                         it.parameterTypes.map(CharSequence::toString) == method.parameterTypes.map(CharSequence::toString)
                 }
 
-                // Every touch goes to the extension with the screen and the event, and on unchanged.
-                val dispatch = patched(touchDispatches(activity).single())
+                // Every touch goes to the extension with the screen and the event. A yes returns
+                // true there, in v0, which nothing holds yet; a no goes on to Facebook's own first
+                // instruction, which hands the event on.
+                val original = touchDispatches(activity).single()
+                val dispatch = patched(original)
                 val touch = dispatch.implementation!!.instructions.toList()
                 assertEquals("$name: the pinch hook", PINCH_TOUCH, touch[0].call.toString())
                 assertEquals("$name: the pinch hook's registers",
                     listOf(dispatch.localRegisterCount(), dispatch.localRegisterCount() + 1), touch[0].registers())
+                assertTrue("$name: no local to borrow", dispatch.localRegisterCount() >= 1)
+                assertEquals("$name: the answer", Opcode.MOVE_RESULT, touch[1].opcode)
+                assertEquals("$name: the answer's register", 0, (touch[1] as OneRegisterInstruction).registerA)
+                assertEquals("$name: the yes test", Opcode.IF_EQZ, touch[2].opcode)
+                assertEquals("$name: the yes test's register", 0, (touch[2] as OneRegisterInstruction).registerA)
+                assertSame("$name: a no doesn't go on to Facebook's code", touch[4],
+                    (touch[2] as BuilderOffsetInstruction).target.location.instruction)
+                assertEquals("$name: a yes doesn't return", Opcode.RETURN, touch[3].opcode)
+                assertEquals("$name: a yes doesn't return the answer", 0, (touch[3] as OneRegisterInstruction).registerA)
+                assertEquals("$name: dispatchTouchEvent lost its own code",
+                    original.implementation!!.instructions.map { it.opcode }, touch.drop(4).map { it.opcode })
                 assertTrue("$name: dispatchTouchEvent still hands the event on",
-                    touch.drop(1).any { it.call?.name == "dispatchTouchEvent" })
+                    touch.drop(4).any { it.call?.name == "dispatchTouchEvent" })
 
                 // The profile's root view, p1, goes to the extension before the fragment builds on it.
                 val created = patched(profileViewCreated(fragment).single())

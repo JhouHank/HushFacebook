@@ -51,10 +51,15 @@ import app.morphe.extension.shared.diagnostics.HookStatus;
  * a drawable mounted straight into the host, so a host that draws no text counts as a photo, the way
  * PostLongPress reads one.
  *
- * <p>From the second finger on, every event of the gesture reaches Facebook as a cancel, so the first
- * finger's tap, hold or swipe never fires: a story doesn't skip ahead or stay paused, and a photo
- * doesn't open. Facebook's own pinch in a story (clear mode) doesn't see this one either. Without two
- * fingers over a zoomable view, nothing changes and Facebook gets every event as it was.
+ * <p>On a profile, from the second finger on every event of the gesture reaches Facebook as a cancel,
+ * so the first finger's tap, hold or swipe never fires and a photo doesn't open. In the story viewer
+ * Facebook sees nothing of the gesture while the zoom lasts, so to it the first finger is still held
+ * where it was, its own hold that keeps the story paused, and the event that ends the zoom reaches it
+ * as a cancel, so the story carries on from there without skipping ahead. A cancel straight away
+ * would let the story play on under the zoom, and close the viewer when the last one ran out. On a
+ * profile a hold that long could open a menu, so it gets the cancel at once. Facebook's own pinch in
+ * a story (clear mode) doesn't see this one either way. Without two fingers over a zoomable view,
+ * nothing changes and Facebook gets every event as it was.
  *
  * <p>The copy is read from the window's last frame, which holds a playing video as well as a photo
  * (a SurfaceView's from its own surface), so a video zooms on the frame it showed when the fingers
@@ -95,22 +100,29 @@ public final class PinchZoom {
 
     /** The gesture took the second finger, so every later event of it becomes a cancel. */
     private static boolean swallowing;
+    /** A story zoom: Facebook gets none of the gesture until the zoom ends, then a cancel. */
+    private static boolean holding;
     @Nullable private static Zoom zoom;
 
     private PinchZoom() {
     }
 
-    /** Injection point, first thing in FbFragmentActivity.dispatchTouchEvent. */
-    public static void touch(@Nullable Activity activity, @Nullable MotionEvent event) {
+    /**
+     * Injection point, first thing in FbFragmentActivity.dispatchTouchEvent. True keeps [event] from
+     * Facebook, and the dispatch returns true without handing it on.
+     */
+    public static boolean touch(@Nullable Activity activity, @Nullable MotionEvent event) {
         try {
-            if (activity == null || event == null) return;
-            handle(activity, event);
+            if (activity == null || event == null) return false;
+            return handle(activity, event);
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, "pinch", failure);
             // The layer goes, but a gesture already taken stays a cancel to its end, so Facebook
             // never sees the middle of a gesture whose start it was told was called off.
             drop();
+            holding = false;
             if (swallowing && event != null) event.setAction(MotionEvent.ACTION_CANCEL);
+            return false;
         }
     }
 
@@ -123,36 +135,46 @@ public final class PinchZoom {
         }
     }
 
-    static void handle(Activity activity, MotionEvent event) {
+    /** True when Facebook shouldn't get [event] at all. */
+    static boolean handle(Activity activity, MotionEvent event) {
         int action = event.getActionMasked();
         if (action == MotionEvent.ACTION_DOWN) {
             // A new gesture. A layer still springing back from the last one goes at once.
             drop();
             swallowing = false;
-            return;
+            holding = false;
+            return false;
         }
         if (swallowing) {
             follow(event, action);
+            if (holding) {
+                Zoom live = zoom;
+                if (swallowing && live != null && !live.settling && !live.blank) return true;
+                // The zoom ended with this event, or its copy never came: Facebook's held finger
+                // lets go as a cancel, and the rest of the gesture stays one.
+                holding = false;
+            }
             event.setAction(MotionEvent.ACTION_CANCEL);
-            return;
+            return false;
         }
-        if (action != MotionEvent.ACTION_POINTER_DOWN || event.getPointerCount() != 2) return;
-        if (!Utils.settingsReady() || !Settings.PINCH_TO_ZOOM.get()) return;
+        if (action != MotionEvent.ACTION_POINTER_DOWN || event.getPointerCount() != 2) return false;
+        if (!Utils.settingsReady() || !Settings.PINCH_TO_ZOOM.get()) return false;
         HookStatus.invoked(FAMILY);
         Window window = activity.getWindow();
         View root = window == null ? null : window.getDecorView();
-        if (!(root instanceof ViewGroup)) return;
+        if (!(root instanceof ViewGroup)) return false;
         float x = (event.getX(0) + event.getX(1)) / 2f;
         float y = (event.getY(0) + event.getY(1)) / 2f;
         View target = places.target(activity, root, x, y);
-        if (target == null) return;
+        if (target == null) return false;
         Rect area = area(root, target);
-        if (area == null) return;
+        if (area == null) return false;
         HookStatus.bound(FAMILY, "pinch");
         Zoom started = new Zoom((ViewGroup) root, area, event);
         zoom = started;
         swallowing = true;
-        event.setAction(MotionEvent.ACTION_CANCEL);
+        holding = STORY_VIEWER.equals(activity.getClass().getName());
+        if (!holding) event.setAction(MotionEvent.ACTION_CANCEL);
         snapshots.take(activity, target, area, copy -> {
             try {
                 if (zoom == started) started.show(copy);
@@ -162,6 +184,7 @@ public final class PinchZoom {
                 started.remove();
             }
         });
+        return holding;
     }
 
     /** One event of a gesture this took: the zoom follows the fingers until fewer than two are down. */
@@ -398,6 +421,7 @@ public final class PinchZoom {
     static void resetForTests() {
         drop();
         swallowing = false;
+        holding = false;
         profiles.clear();
         snapshots = PinchZoom::snapshot;
         places = PinchZoom::mediaUnder;
@@ -416,6 +440,8 @@ public final class PinchZoom {
         private final float originX;
         private final float originY;
         boolean settling;
+        /** The copy came back empty, so nothing shows and a story isn't held for it. */
+        boolean blank;
         float scale = 1f;
         private float baseScale = 1f;
         private float startSpan;
@@ -435,6 +461,7 @@ public final class PinchZoom {
                     if (zoom == Zoom.this) {
                         zoom = null;
                         swallowing = false;
+                        holding = false;
                     }
                     remove();
                 } catch (Throwable failure) {
@@ -475,6 +502,7 @@ public final class PinchZoom {
 
         /** The copy arrived: the layer goes over the window. With no copy there's nothing to show. */
         void show(@Nullable Bitmap picture) {
+            if (picture == null) blank = true;
             if (picture == null || settling) return;
             copy.setImageBitmap(picture);
             root.addView(layer, new ViewGroup.LayoutParams(
