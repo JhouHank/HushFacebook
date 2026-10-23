@@ -61,14 +61,23 @@ public final class CaptionRoom {
     private static final Map<View, Boolean> watched = new WeakHashMap<>();
     /** The rows unclipped here, each clipped again when it leaves the window. */
     private static final Map<View, Boolean> unclipped = new WeakHashMap<>();
+    /** The labels mounted off the window, waiting to attach. */
+    private static final Map<View, Boolean> waiting = new WeakHashMap<>();
 
     private CaptionRoom() {
     }
 
-    /** From the scrubber's light mount, with its time label. */
+    /**
+     * From the scrubber's light mount, with its time label. The first reel's mount runs before the
+     * scrubber joins the page, so a label off the window is looked at again when it attaches.
+     */
     public static void mounted(@Nullable View label) {
         try {
             if (label == null || !Utils.settingsReady() || Setting.isPaused()) return;
+            if (!label.isAttachedToWindow()) {
+                afterAttach(label);
+                return;
+            }
             View page = pageOf(label);
             if (page == null) return;
             HookStatus.invoked(FAMILY);
@@ -77,6 +86,23 @@ public final class CaptionRoom {
         } catch (Throwable failure) {
             HookStatus.threw(FAMILY, HOOK, failure);
         }
+    }
+
+    /** Runs {@link #mounted} again once [label] attaches, with one wait per label. */
+    private static void afterAttach(View label) {
+        if (waiting.put(label, Boolean.TRUE) != null) return;
+        label.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+            @Override
+            public void onViewAttachedToWindow(View view) {
+                view.removeOnAttachStateChangeListener(this);
+                waiting.remove(view);
+                mounted(view);
+            }
+
+            @Override
+            public void onViewDetachedFromWindow(View view) {
+            }
+        });
     }
 
     /** [view]'s nearest LithoView ancestor, or null. */
@@ -180,9 +206,10 @@ public final class CaptionRoom {
         });
     }
 
-    /** Forgets every watched page and unclipped row, for tests. */
+    /** Forgets every watched page, unclipped row and waiting label, for tests. */
     static void reset() {
         watched.clear();
         unclipped.clear();
+        waiting.clear();
     }
 }

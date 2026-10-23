@@ -115,6 +115,24 @@ public class CaptionRoomTest {
     }
 
     @Test
+    public void waitsForALabelMountedBeforeItJoinsThePage() {
+        block(column, -17, 201);
+        FrameLayout scrubber = new FrameLayout(activity);
+        View early = new FrameLayout(activity);
+        place(scrubber, early, 0, 918, 291, 1080);
+
+        CaptionRoom.mounted(early);
+        CaptionRoom.mounted(early);
+        assertTrue(row.getClipChildren());
+
+        place(page, scrubber, 0, 893, 1080, 1973);
+        layOut();
+
+        assertFalse(row.getClipChildren());
+        assertTrue(reported(CaptionRoom.UNCLIPPED));
+    }
+
+    @Test
     public void clipsTheRowAgainWhenItLeavesTheScreen() {
         block(column, -17, 201);
         layOut();
