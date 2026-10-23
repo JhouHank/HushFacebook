@@ -480,6 +480,10 @@ Comments show their replies right away, so there's no View replies to tap.	Yorum
 Load whole reply threads	Yanıt dizilerini tamamen yükle
 # context: summary of that switch; View more replies is the row Facebook shows under an open thread that has more replies to load
 An open reply thread keeps loading as you scroll, so there's no View more replies to tap.	Açık bir yanıt dizisi sen kaydırdıkça yüklenmeye devam eder, daha fazla yanıt için dokunman gerekmez.
+# context: switch title under Comments; View more replies is the row under an open reply thread that loads more replies, and this makes the whole row take the tap instead of only its words
+Tap anywhere on View more replies	Daha fazla yanıt gör satırının her yerine dokun
+# context: summary of that switch
+The whole View more replies row opens the replies, not just its words.	Daha fazla yanıt gör satırının tamamı yanıtları açar, yalnızca yazısı değil.
 Hide related groups	İlgili grupları gizle
 A group post's comments end without the Related groups list and its Join buttons.	Bir grup gönderisinin yorumları, İlgili gruplar listesi ve Katıl düğmeleri olmadan biter.
 # context: row title under Comments that opens Facebook's own settings; reaction counts are the numbers next to the reactions on a post

@@ -480,6 +480,10 @@ Comments show their replies right away, so there's no View replies to tap.	Los c
 Load whole reply threads	Cargar hilos de respuestas completos
 # context: summary of that switch; View more replies is the row Facebook shows under an open thread that has more replies to load
 An open reply thread keeps loading as you scroll, so there's no View more replies to tap.	Un hilo de respuestas abierto sigue cargando mientras te desplazas, sin tener que tocar para ver más respuestas.
+# context: switch title under Comments; View more replies is the row under an open reply thread that loads more replies, and this makes the whole row take the tap instead of only its words
+Tap anywhere on View more replies	Tocar en cualquier parte de Ver más respuestas
+# context: summary of that switch
+The whole View more replies row opens the replies, not just its words.	Toda la fila Ver más respuestas abre las respuestas, no solo su texto.
 Hide related groups	Ocultar grupos relacionados
 A group post's comments end without the Related groups list and its Join buttons.	Los comentarios de una publicación de grupo terminan sin la lista Grupos relacionados ni sus botones Unirse.
 # context: row title under Comments that opens Facebook's own settings; reaction counts are the numbers next to the reactions on a post

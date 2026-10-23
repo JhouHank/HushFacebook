@@ -751,7 +751,8 @@ public class PausedHooksTest {
                 () -> MetaAiSummaries.holds(MetaAiSummaries.POST_SUMMARY)));
         // The comment box's check answers no for its GIF and sticker buttons, a long press on Like
         // returns before the reaction picker opens, a comment starts with its replies open, an open
-        // thread's replies page on as they're scrolled, and the
+        // thread's replies page on as they're scrolled, a View more replies row takes a tap anywhere
+        // on it, and the
         // check under a post's comments answers no for Related groups. A comment linking to a shop,
         // and one holding a phrase from the hide list, are left out of the comment section.
         probes.put(PatchFamily.COMMENT_SHEET_OPTIONS, Arrays.asList(
@@ -760,6 +761,7 @@ public class PausedHooksTest {
                 CommentSheetOptions::skipReactionPicker,
                 () -> CommentSheetOptions.openReplyThreads(false),
                 () -> CommentSheetOptions.loadWholeReplyThreads(false),
+                () -> !CommentSheetOptions.viewMoreRepliesTextOnly(true),
                 () -> CommentSheetOptions.holdsBottomContent(CommentSheetOptions.RELATED_GROUPS),
                 () -> CommentSheetOptions.hidesComment(new GraphQLComment("https://s.shopee.vn/9zKs")),
                 () -> CommentSheetOptions.hidesComment(new GraphQLComment("Big SPOILER inside")),

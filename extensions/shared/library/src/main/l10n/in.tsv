@@ -480,6 +480,10 @@ Comments show their replies right away, so there's no View replies to tap.	Komen
 Load whole reply threads	Muat utas balasan lengkap
 # context: summary of that switch; View more replies is the row Facebook shows under an open thread that has more replies to load
 An open reply thread keeps loading as you scroll, so there's no View more replies to tap.	Utas balasan yang terbuka terus dimuat saat kamu menggulir, tanpa perlu mengetuk untuk melihat balasan lainnya.
+# context: switch title under Comments; View more replies is the row under an open reply thread that loads more replies, and this makes the whole row take the tap instead of only its words
+Tap anywhere on View more replies	Ketuk di mana saja pada Lihat balasan lainnya
+# context: summary of that switch
+The whole View more replies row opens the replies, not just its words.	Seluruh baris Lihat balasan lainnya membuka balasan, bukan hanya teksnya.
 Hide related groups	Sembunyikan grup terkait
 A group post's comments end without the Related groups list and its Join buttons.	Komentar postingan grup berakhir tanpa daftar Grup terkait dan tombol Gabung-nya.
 # context: row title under Comments that opens Facebook's own settings; reaction counts are the numbers next to the reactions on a post

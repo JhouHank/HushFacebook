@@ -750,6 +750,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_load_whole_reply_threads", FALSE);
 
     /**
+     * A tap anywhere on a View more replies row opens the replies, not only a tap on its words
+     * ({@link app.morphe.extension.facebook.comments.CommentSheetOptions}, #219). Off by default.
+     * A change shows on the next rows drawn.
+     */
+    public static final BooleanSetting TAP_ANYWHERE_ON_VIEW_MORE_REPLIES =
+            new BooleanSetting("hushfacebook_tap_anywhere_on_view_more_replies", FALSE);
+
+    /**
      * A group post's comments end without the Related groups list and its Join buttons
      * ({@link app.morphe.extension.facebook.comments.CommentSheetOptions}, #101). Off by default. A
      * change shows on the next comments opened.
