@@ -69,8 +69,8 @@ public final class SearchHistory {
 
     /**
      * The hook in place of Facebook's put of {@code list}, the Recent list with the new search at
-     * its top, into {@code recent} under {@code filter}. While Don't save search history is on, the list stays as
-     * it was; otherwise, and for a throw, Facebook's put runs.
+     * its top, into {@code recent} under {@code filter}. While Don't save search history is on,
+     * the list stays as it was; otherwise, and for a throw, Facebook's put runs.
      */
     public static void keepRecent(Map<Object, Object> recent, Object filter, Object list) {
         try {

@@ -21,6 +21,7 @@ import app.morphe.patches.facebook.misc.extension.patchLog
 import app.morphe.patches.facebook.misc.extension.requireStatusMethod
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.ControlFlow
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
 import com.android.tools.smali.dexlib2.iface.Method
@@ -46,7 +47,7 @@ private const val MAP = "Ljava/util/Map;"
 private const val MAP_PUT = "$MAP->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"
 
 /** How far before the put the load of its map may sit. */
-private const val MAP_LOAD_REACH = 4
+internal const val MAP_LOAD_REACH = 4
 
 /**
  * Don't save search history (#196).
@@ -153,10 +154,13 @@ internal fun skipRegister(save: Method): Int {
 /**
  * Where [save] puts the Recent list into its own class's map: the one `Map.put` whose map register
  * was last loaded, at most [MAP_LOAD_REACH] instructions before, from a Map field of [save]'s class,
- * and whose answer nothing reads. Null unless there's exactly one.
+ * with no jump or handler landing in between, and whose answer nothing reads. Null unless there's
+ * exactly one.
  */
 internal fun recentListPut(save: Method): Int? {
     val instructions = save.implementation?.instructions?.toList() ?: return null
+    val flow = ControlFlow.of(save)
+    val landings = instructions.indices.flatMap { from -> flow.normal[from].filter { it != from + 1 } + flow.exceptional[from] }.toSet()
     val puts = instructions.indices.filter { index ->
         val put = instructions[index]
         if (put.opcode != Opcode.INVOKE_INTERFACE && put.opcode != Opcode.INVOKE_INTERFACE_RANGE) return@filter false
@@ -165,8 +169,12 @@ internal fun recentListPut(save: Method): Int? {
         val map = callRegisters(put).first()
         val load = (index - 1 downTo maxOf(0, index - MAP_LOAD_REACH)).firstOrNull { before ->
             val instruction = instructions[before]
-            instruction.opcode.setsRegister() && (instruction as? OneRegisterInstruction)?.registerA == map
+            val target = (instruction as? OneRegisterInstruction)?.registerA
+            instruction.opcode.setsRegister() && target != null &&
+                (target == map || (instruction.opcode.setsWideRegister() && target + 1 == map))
         } ?: return@filter false
+        // Code reaching the put by a jump past the load may hold another map in that register.
+        if ((load + 1..index).any { it in landings }) return@filter false
         val field = (instructions[load] as? ReferenceInstruction)?.reference as? FieldReference
         instructions[load].opcode == Opcode.IGET_OBJECT && field != null &&
             field.definingClass == save.definingClass && field.type == MAP

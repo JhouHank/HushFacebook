@@ -93,6 +93,8 @@ class DontSaveSearchHistoryFixtureTest {
         assertEquals("$where gains two instructions", original.size + 2, patched.size)
         val kept = patched[put + 2]
         assertEquals("$where: the put goes to the extension", KEEP_RECENT, (kept as ReferenceInstruction).reference.toString())
+        assertEquals("$where: in the put's own call form",
+            if (original[put] is RegisterRangeInstruction) Opcode.INVOKE_STATIC_RANGE else Opcode.INVOKE_STATIC, kept.opcode)
         assertEquals("$where: with the put's own registers", callRegisters(original[put]), callRegisters(kept))
         assertEquals("$where: the extension is asked first", Opcode.INVOKE_STATIC_RANGE, patched[0].opcode)
         assertEquals("$where: the extension is asked first", SKIP_SAVE, (patched[0] as ReferenceInstruction).reference.toString())

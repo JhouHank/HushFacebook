@@ -18,9 +18,11 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction10x
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction11x
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction21t
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction22c
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction35c
 import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction3rc
+import com.android.tools.smali.dexlib2.immutable.instruction.ImmutableInstruction51l
 import com.android.tools.smali.dexlib2.immutable.reference.ImmutableFieldReference
 import com.android.tools.smali.dexlib2.immutable.reference.ImmutableMethodReference
 import org.junit.Assert.assertEquals
@@ -98,6 +100,18 @@ class DontSaveSearchHistoryShapesTest {
         assertNull("two puts, so neither is known to be the Recent list's",
             recentListPut(save(loadMap(2), putInto(2), loadMap(3), putInto(3))))
         assertNull("no put at all", recentListPut(save(loadMap(2))))
+        assertNull("a wide write over the map register after the load",
+            recentListPut(save(loadMap(2), ImmutableInstruction51l(Opcode.CONST_WIDE, 1, 0L), putInto(2))))
+        // if-eqz (two code units) jumps over the load (two more) straight to the put, at address 4.
+        assertNull("a jump that lands between the load and the put",
+            recentListPut(save(ImmutableInstruction21t(Opcode.IF_EQZ, 0, 4), loadMap(2), putInto(2))))
+    }
+
+    @Test
+    fun `a map loaded as far back as the reach allows is still found`() {
+        val nop = ImmutableInstruction10x(Opcode.NOP)
+        val filler = Array(MAP_LOAD_REACH - 1) { nop }
+        assertEquals(MAP_LOAD_REACH, recentListPut(save(loadMap(2), *filler, putInto(2))))
     }
 
     @Test
