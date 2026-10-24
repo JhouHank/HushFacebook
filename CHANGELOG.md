@@ -2,6 +2,12 @@
 
 Changes in each Hushfacebook version, newest first.
 
+## Unreleased
+
+### Fixed
+
+* **Facebook:** Prevent a startup crash with `Newest reels first` when a reel's details haven't loaded yet (Refs #234).
+
 ## 0.18.0 (2026-10-24)
 
 * **Facebook:** Patching on a phone takes about a minute now, down from three. Reels get a 10 second skip when you double tap either edge, and a tap shows their controls without pausing. Hold a feed video for 2x, pinch a story or a profile photo to zoom, and pick your own background color for dark or light mode. You can also put your own words or a picture at the top of Home, save a GIF from a comment, and hide profile notes or the Related posts list. Reel captions keep the bottoms of their letters again too.
