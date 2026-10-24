@@ -1065,13 +1065,14 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/misc/HeaderPicture.java",
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/misc/HeaderText.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/misc/headertext/HomeHeaderTextPatch.kt"
       ],
       "origin": "original",
       "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
       "license": "GPL-3.0-only",
-      "changes": "Written for Hushfacebook, for issue #230: Home header text. The hook sits at the same site Unlock app icons uses, right after the Home header's builder loads Facebook's stock wordmark, and hands the logo to HeaderText. That swaps the wordmark for a drawable that draws the saved words at the wordmark's height, in bold sans serif, through the color filter the header gives its wordmark, so the words follow Facebook's light and dark colors. A pre-draw listener puts the words back when Facebook loads its wordmark again, and the picked app icon steps aside while there are words."
+      "changes": "Written for Hushfacebook, for issue #230: Home header text. The hook sits at the same site Unlock app icons uses, right after the Home header's builder loads Facebook's stock wordmark, and hands the logo to HeaderText. That swaps the wordmark for a drawable that draws the saved words at the wordmark's height, in bold sans serif, through the color filter the header gives its wordmark, so the words follow Facebook's light and dark colors. A picture picked in the settings is shrunk to at most 1024 by 256 pixels with ImageDecoder, kept as a PNG in Facebook's files by HeaderPicture, and drawn at the wordmark's height in its own colors in place of the words. A pre-draw listener puts the words or the picture back when Facebook loads its wordmark again, and the picked app icon steps aside while there are either."
     },
     {
       "paths": [

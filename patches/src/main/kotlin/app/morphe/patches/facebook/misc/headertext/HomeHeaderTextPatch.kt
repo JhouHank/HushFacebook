@@ -32,9 +32,9 @@ internal const val DRESS_HEADER = "$EXTENSION_PACKAGE/misc/HeaderText;->dress(La
 val homeHeaderTextPatch = bytecodePatch(
     // The README table check reads this literal; PATCH carries the same text for the messages.
     name = "Home header text",
-    description = "Shows your own words at the top of Home instead of the Facebook logo, in Facebook's own colors " +
-        "for light and dark mode. Type them in Hushfacebook settings > Appearance > Home header text. " +
-        "Blank keeps Facebook's logo.",
+    description = "Shows your own words or picture at the top of Home instead of the Facebook logo. Words take " +
+        "Facebook's own colors for light and dark mode. Type them in Hushfacebook settings > Appearance > Home " +
+        "header text, or pick a picture under Home header picture. Blank keeps Facebook's logo.",
 ) {
     category("Theme")
     dependsOn(settingsPatch, facebookExtensionPatch)

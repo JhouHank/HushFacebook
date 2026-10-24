@@ -282,7 +282,8 @@ public final class HushfacebookPreferenceFragment extends AbstractPreferenceFrag
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (SettingsBackupPreference.onResult(this, requestCode, resultCode, data)) return;
-        FontFilePreference.onResult(this, requestCode, resultCode, data);
+        if (FontFilePreference.onResult(this, requestCode, resultCode, data)) return;
+        HeaderPicturePreference.onResult(this, requestCode, resultCode, data);
     }
 
     /** Shows what the switches are saved as, after an import wrote them. */

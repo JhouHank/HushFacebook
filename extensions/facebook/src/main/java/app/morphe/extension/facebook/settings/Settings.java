@@ -1829,6 +1829,17 @@ public class Settings extends BaseSettings {
             new StringSetting("hushfacebook_header_text", "", true);
 
     /**
+     * The name of a picture of your own for the top of Home, which takes the place of
+     * {@link #HEADER_TEXT}'s words and Facebook's wordmark ({@link
+     * app.morphe.extension.facebook.misc.HeaderPicture}, #230). Empty keeps the words or the
+     * wordmark, and so does a paused Facebook. Only the settings screen writes it, after the shrunk
+     * copy has been written to Facebook's files. It isn't a switch, and a settings file leaves it out:
+     * the picture can't travel in one, and the name alone would point at nothing on another phone.
+     */
+    public static final StringSetting HEADER_PICTURE =
+            new StringSetting("hushfacebook_header_picture", "");
+
+    /**
      * The strip some posts carry ("Are you interested in this post?", "Show less", who recently
      * commented, follow and chat suggestions) goes, and so does the room kept for it
      * ({@link app.morphe.extension.facebook.feed.PostPrompts}). A change shows on the posts drawn

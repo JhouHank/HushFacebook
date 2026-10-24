@@ -31,6 +31,9 @@ import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 import org.robolectric.annotation.GraphicsMode;
 
+import java.io.File;
+import java.nio.file.Files;
+
 import app.morphe.extension.facebook.settings.PatchFamily;
 import app.morphe.extension.facebook.settings.PatchFamilyForTests;
 import app.morphe.extension.facebook.settings.Settings;
@@ -55,6 +58,10 @@ public class HeaderTextTest {
         PauseForTests.resume();
         PatchFamilyForTests.reset();
         Settings.HEADER_TEXT.resetToDefault();
+        Settings.HEADER_PICTURE.resetToDefault();
+        HeaderPicture.forget();
+        File picture = HeaderPicture.file(RuntimeEnvironment.getApplication());
+        if (picture.exists()) assertTrue(picture.delete());
         Settings.UNLOCK_APP_ICONS.resetToDefault();
         Settings.USE_APP_ICON_IN_HEADER.resetToDefault();
         HookStatus.clear();
@@ -204,5 +211,87 @@ public class HeaderTextTest {
         assertTrue(HeaderText.isClean(""));
         assertFalse(HeaderText.isClean(" Home"));
         assertFalse(HeaderText.isClean(null));
+    }
+
+    /** A picture picked in the settings, its copy in Facebook's files: [width] by [height], all [color]. */
+    private static void pictureSaved(int width, int height, int color) throws Exception {
+        Files.write(HeaderPicture.file(RuntimeEnvironment.getApplication()).toPath(),
+                HeaderPictureTest.picture(width, height, color, Bitmap.CompressFormat.PNG));
+        HeaderPicture.forget();
+        Settings.HEADER_PICTURE.save("logo.png");
+    }
+
+    @Test
+    public void aSavedPictureTakesTheWordmarksPlaceInItsOwnColors() throws Exception {
+        Drawable[] stock = new Drawable[1];
+        ImageView logo = header(stock);
+        pictureSaved(200, 100, Color.RED);
+        Settings.HEADER_TEXT.save("Home");
+
+        HeaderText.dress(logo);
+
+        assertTrue("the picture wins over the words", logo.getDrawable() instanceof HeaderText.PictureMark);
+        Drawable mark = logo.getDrawable();
+        assertEquals("the wordmark's height", 24, mark.getIntrinsicHeight());
+        assertEquals("its shape kept", 48, mark.getIntrinsicWidth());
+        assertEquals(ImageView.ScaleType.CENTER_INSIDE, logo.getScaleType());
+
+        // Dark mode colors the wordmark through the header's color filter, which would paint the
+        // picture one color.
+        logo.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
+        Bitmap drawn = Bitmap.createBitmap(48, 24, Bitmap.Config.ARGB_8888);
+        mark.setBounds(0, 0, 48, 24);
+        mark.draw(new Canvas(drawn));
+        assertEquals("its own color", Color.RED, drawn.getPixel(24, 12));
+    }
+
+    @Test
+    public void aWidePictureGetsSmallerAndComesBackAfterAReload() throws Exception {
+        Drawable[] stock = new Drawable[1];
+        ImageView logo = header(stock);
+        pictureSaved(2000, 100, Color.BLUE);
+        HeaderText.dress(logo);
+        Drawable mark = logo.getDrawable();
+        int widest = Math.round(logo.getResources().getDisplayMetrics().widthPixels * 0.55f);
+        assertTrue("narrow enough for the header: " + mark.getIntrinsicWidth(), mark.getIntrinsicWidth() <= widest);
+        assertTrue("and lower to keep its shape", mark.getIntrinsicHeight() < 24);
+
+        // A theme change runs Facebook's stock load again.
+        logo.setImageDrawable(stock[0]);
+        logo.setScaleType(ImageView.ScaleType.MATRIX);
+        assertTrue("that draw is skipped", logo.getViewTreeObserver().dispatchOnPreDraw());
+        assertTrue("the picture came back", logo.getDrawable() instanceof HeaderText.PictureMark);
+        assertEquals("the same size", mark.getIntrinsicWidth(), logo.getDrawable().getIntrinsicWidth());
+        assertEquals(ImageView.ScaleType.CENTER_INSIDE, logo.getScaleType());
+    }
+
+    @Test
+    public void pauseOrAMissingCopyKeepsTheWordsOrTheWordmark() throws Exception {
+        Drawable[] stock = new Drawable[1];
+        ImageView logo = header(stock);
+        pictureSaved(60, 20, Color.RED);
+        PauseForTests.pause(HushfacebookPause.Reason.SWITCH);
+        HeaderText.dress(logo);
+        assertSame("paused", stock[0], logo.getDrawable());
+        PauseForTests.resume();
+
+        assertTrue(HeaderPicture.file(RuntimeEnvironment.getApplication()).delete());
+        HeaderText.dress(logo);
+        assertSame("no copy and no words", stock[0], logo.getDrawable());
+
+        Settings.HEADER_TEXT.save("Home");
+        HeaderText.dress(logo);
+        assertTrue("no copy, so the words", logo.getDrawable() instanceof HeaderText.TextMark);
+    }
+
+    @Test
+    public void aPictureKeepsThePickedAppIconOutOnlyWhileItsCopyIsThere() throws Exception {
+        pictureSaved(60, 20, Color.RED);
+        PatchFamilyForTests.carry(PatchFamily.APP_ICONS);
+        assertFalse("without the patch, a picture steps nothing aside", HeaderText.replacesLogo());
+        PatchFamilyForTests.carry(PatchFamily.APP_ICONS, PatchFamily.HEADER_TEXT);
+        assertTrue(HeaderText.replacesLogo());
+        assertTrue(HeaderPicture.file(RuntimeEnvironment.getApplication()).delete());
+        assertFalse("the copy is gone", HeaderText.replacesLogo());
     }
 }

@@ -5,12 +5,14 @@
 package app.morphe.extension.facebook.misc;
 
 import android.content.res.ColorStateList;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.view.View;
@@ -30,10 +32,12 @@ import app.morphe.extension.shared.Utils;
 import app.morphe.extension.shared.diagnostics.HookStatus;
 
 /**
- * Home header text (#230): words of your own at the top of Home in place of Facebook's wordmark.
- * The header calls {@link #dress} right after Facebook loads its wordmark. The text is drawn at the
- * wordmark's height and takes the same theme color Facebook gives the wordmark, so it follows dark
- * mode. Blank text, Pause and every failure leave Facebook's wordmark alone.
+ * Home header text (#230): words of your own, or a picture of your own ({@link HeaderPicture}), at
+ * the top of Home in place of Facebook's wordmark. The header calls {@link #dress} right after
+ * Facebook loads its wordmark. The text is drawn at the wordmark's height and takes the same theme
+ * color Facebook gives the wordmark, so it follows dark mode. A picture is drawn at that height in
+ * its own colors, and takes the place of the words when both are saved. Blank text with no picture,
+ * Pause and every failure leave Facebook's wordmark alone.
  */
 public final class HeaderText {
     /** The most characters the header takes. */
@@ -52,18 +56,24 @@ public final class HeaderText {
     }
 
     /**
-     * Puts the saved text in place of the wordmark Facebook just loaded into [logo], and puts it back
-     * whenever Facebook loads its wordmark again. Never throws.
+     * Puts the saved picture, or else the saved text, in place of the wordmark Facebook just loaded
+     * into [logo], and puts it back whenever Facebook loads its wordmark again. Never throws.
      */
     public static void dress(@Nullable View logo) {
         try {
             HookStatus.invoked(FamilyNames.HEADER_TEXT);
             if (!(logo instanceof ImageView) || !Utils.settingsReady()) return;
+            ImageView image = (ImageView) logo;
+            Bitmap picture = HeaderPicture.load(image.getContext());
+            if (picture != null) {
+                image.getViewTreeObserver().addOnPreDrawListener(new Keeper(image, put(image, picture, -1)));
+                Logger.printDebug(() -> "Header picture: put a " + picture.getWidth() + "x" + picture.getHeight()
+                        + " picture at the top of Home");
+                return;
+            }
             String text = clean(Settings.HEADER_TEXT.get());
             if (text.isEmpty()) return;
-            ImageView image = (ImageView) logo;
-            Keeper keeper = new Keeper(image, put(image, text, null));
-            image.getViewTreeObserver().addOnPreDrawListener(keeper);
+            image.getViewTreeObserver().addOnPreDrawListener(new Keeper(image, put(image, text, -1)));
             Logger.printDebug(() -> "Header text: put " + text.length() + " characters at the top of Home");
         } catch (Throwable failure) {
             HookStatus.threw(FamilyNames.HEADER_TEXT, "header text", failure);
@@ -72,13 +82,13 @@ public final class HeaderText {
     }
 
     /**
-     * Whether the text takes the header's place, so the picked app icon stays out of it: the patch is
-     * in this build and text is saved. Never throws.
+     * Whether a picture or text takes the header's place, so the picked app icon stays out of it: the
+     * patch is in this build and a picture's copy or text is saved. Never throws.
      */
     public static boolean replacesLogo() {
         try {
             return Utils.settingsReady() && PatchFamily.HEADER_TEXT.inBuild()
-                    && !clean(Settings.HEADER_TEXT.get()).isEmpty();
+                    && (!clean(Settings.HEADER_TEXT.get()).isEmpty() || HeaderPicture.chosen(Utils.getContext()));
         } catch (Throwable failure) {
             Logger.printException(() -> "Header text: could not read the header text", failure);
             return false;
@@ -124,33 +134,55 @@ public final class HeaderText {
         return typed != null && clean(typed).equals(typed);
     }
 
-    /** Swaps [image]'s drawable for the text, sized from the wordmark's height or [previous]'s. */
-    private static TextMark put(ImageView image, String text, @Nullable TextMark previous) {
+    /** Swaps [image]'s drawable for the text, sized from the wordmark's height or [previous]. */
+    private static TextMark put(ImageView image, String text, int previous) {
+        TextMark mark = new TextMark(text, height(image, previous), maxWidth(image));
+        show(image, mark);
+        return mark;
+    }
+
+    /** Swaps [image]'s drawable for the picture, sized from the wordmark's height or [previous]. */
+    private static PictureMark put(ImageView image, Bitmap picture, int previous) {
+        PictureMark mark = new PictureMark(picture, height(image, previous), maxWidth(image));
+        show(image, mark);
+        return mark;
+    }
+
+    private static void show(ImageView image, Drawable mark) {
+        image.setImageDrawable(mark);
+        image.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+    }
+
+    /**
+     * The height the header's wordmark takes: its own, else [previous] (the height the last mark was
+     * given, -1 for none), else the view's, else {@link #FALLBACK_HEIGHT_DP}.
+     */
+    private static int height(ImageView image, int previous) {
         Drawable wordmark = image.getDrawable();
         int height = wordmark == null ? -1 : wordmark.getIntrinsicHeight();
-        if (height <= 0 && previous != null) height = previous.getIntrinsicHeight();
+        if (height <= 0) height = previous;
         if (height <= 0) height = image.getMeasuredHeight() - image.getPaddingTop() - image.getPaddingBottom();
         if (height <= 0 && image.getLayoutParams() != null && image.getLayoutParams().height > 0) {
             height = image.getLayoutParams().height - image.getPaddingTop() - image.getPaddingBottom();
         }
         float density = image.getResources().getDisplayMetrics().density;
         if (height <= 0) height = Math.round(FALLBACK_HEIGHT_DP * density);
-        int maxWidth = Math.round(image.getResources().getDisplayMetrics().widthPixels * MAX_WIDTH_SHARE);
-        TextMark mark = new TextMark(text, height, maxWidth);
-        image.setImageDrawable(mark);
-        image.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        return mark;
+        return height;
+    }
+
+    private static int maxWidth(ImageView image) {
+        return Math.round(image.getResources().getDisplayMetrics().widthPixels * MAX_WIDTH_SHARE);
     }
 
     /**
      * Facebook loads its wordmark again on its own (a theme change reloads it), so before each draw
-     * the header gets the text back if its wordmark came back. Holds the header weakly.
+     * the header gets the picture or text back if its wordmark came back. Holds the header weakly.
      */
     private static final class Keeper implements ViewTreeObserver.OnPreDrawListener {
         private final WeakReference<ImageView> header;
-        private TextMark mark;
+        private Drawable mark;
 
-        Keeper(ImageView image, TextMark mark) {
+        Keeper(ImageView image, Drawable mark) {
             this.header = new WeakReference<>(image);
             this.mark = mark;
         }
@@ -160,15 +192,96 @@ public final class HeaderText {
             ImageView image = header.get();
             if (image == null || image.getDrawable() == mark) return true;
             try {
-                mark = put(image, mark.text, mark);
-                Logger.printDebug(() -> "Header text: Facebook loaded its wordmark again, put the text back");
-                // This pass would draw Facebook's wordmark, so the next one draws the text.
+                if (mark instanceof PictureMark) {
+                    PictureMark picture = (PictureMark) mark;
+                    mark = put(image, picture.picture, picture.slot);
+                } else {
+                    TextMark text = (TextMark) mark;
+                    mark = put(image, text.text, text.getIntrinsicHeight());
+                }
+                Logger.printDebug(() -> "Header text: Facebook loaded its wordmark again, put yours back");
+                // This pass would draw Facebook's wordmark, so the next one draws yours.
                 return false;
             } catch (Throwable failure) {
                 HookStatus.threw(FamilyNames.HEADER_TEXT, "header text again", failure);
-                Logger.printException(() -> "Header text: could not put the text back", failure);
+                Logger.printException(() -> "Header text: could not put yours back", failure);
                 return true;
             }
+        }
+    }
+
+    /**
+     * The picture as a drawable at the wordmark's height, its shape kept. A picture wider than
+     * {@link #MAX_WIDTH_SHARE} of the screen gets smaller. It keeps its own colors, so the color
+     * filter and tint the header gives its wordmark don't reach it.
+     */
+    static final class PictureMark extends Drawable {
+        final Bitmap picture;
+        /** The wordmark's height, which the picture fills unless it's too wide. */
+        final int slot;
+        private final int width;
+        private final int height;
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+        private final RectF place = new RectF();
+
+        PictureMark(Bitmap picture, int slot, int maxWidth) {
+            this.picture = picture;
+            this.slot = slot;
+            int wide = Math.max(1, Math.round(picture.getWidth() * slot / (float) picture.getHeight()));
+            int high = slot;
+            if (maxWidth > 0 && wide > maxWidth) {
+                high = Math.max(1, Math.round(high * maxWidth / (float) wide));
+                wide = maxWidth;
+            }
+            width = wide;
+            height = high;
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas) {
+            Rect bounds = getBounds();
+            float scale = Math.min(bounds.width() / (float) picture.getWidth(),
+                    bounds.height() / (float) picture.getHeight());
+            float halfWidth = picture.getWidth() * scale / 2f;
+            float halfHeight = picture.getHeight() * scale / 2f;
+            place.set(bounds.exactCenterX() - halfWidth, bounds.exactCenterY() - halfHeight,
+                    bounds.exactCenterX() + halfWidth, bounds.exactCenterY() + halfHeight);
+            canvas.drawBitmap(picture, null, place, paint);
+        }
+
+        @Override
+        public int getIntrinsicWidth() {
+            return width;
+        }
+
+        @Override
+        public int getIntrinsicHeight() {
+            return height;
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+            paint.setAlpha(alpha);
+            invalidateSelf();
+        }
+
+        @Override
+        public int getAlpha() {
+            return paint.getAlpha();
+        }
+
+        /** The header's wordmark color would paint the whole picture one color, so it's left out. */
+        @Override
+        public void setColorFilter(@Nullable ColorFilter colorFilter) {
+        }
+
+        @Override
+        public void setTintList(@Nullable ColorStateList tint) {
+        }
+
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSLUCENT;
         }
     }
 
