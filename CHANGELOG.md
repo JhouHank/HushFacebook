@@ -32,6 +32,7 @@ Changes in each Hushfacebook version, newest first.
 * **Tooling:** A focused test run that names fixture tests after `:patches:fixtureTest` runs them again. Those filters used to be dropped, and the run passed without running a single fixture test.
 * **Facebook:** The `Mark as seen button` also shows when Facebook opens a story in one of its other story screens. Facebook 584 has three more besides the usual one, and the button only looked for that one. Checked in tests.
 * **Facebook:** A copy of Facebook made with `Clone app` could close right after it opened when the regular Facebook was installed beside it. It was asking the regular app for a saved value instead of asking itself, and Android doesn't let one app into the other's storage like that, so it closed the copy. Now every one of those requests goes to the copy's own storage (issue #16). Checked on an emulator.
+* **Facebook:** With `Material You theme` on in dark mode, the sheet that slides up when you tap the arrow beside your name in the Menu, the one for switching profiles, takes the theme's colors now. It stayed Facebook's own flat gray while the Menu behind it turned blue-gray. That sheet's gray comes with the screen from Facebook's server, paired with a light one, so no theme color ever reached it. A dark gray there now becomes the theme's gray at the same brightness, and the AMOLED theme keeps the sheet as it was (issue #37). Checked on an emulator, where the sheet went from #1F1F20 to the theme's #1E1F25.
 
 ### Changed
 
