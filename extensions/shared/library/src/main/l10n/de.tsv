@@ -1875,3 +1875,15 @@ If your patched Facebook includes the AMOLED black theme, light mode's backgroun
 Hide "Related posts" under posts	„Ähnliche Beiträge“ unter Beiträgen ausblenden
 # context: summary of that switch; "Related posts" is that heading, and Meta AI writes the titles in the list
 Hides the "Related posts" list Facebook adds under some posts, with its titles written by Meta AI. The post and its comments stay.	Blendet die Liste „Ähnliche Beiträge“ aus, die Facebook unter manchen Beiträgen anhängt, samt ihren von Meta AI geschriebenen Titeln. Der Beitrag und seine Kommentare bleiben.
+# context: title of the row on the Appearance page that takes your own words for the top of Home in place of Facebook's logo; also its dialog's title and the patch's name; Home is Facebook's home feed tab
+Home header text	Kopfzeilentext der Startseite
+# context: message in that row's dialog; %1$d is the most characters allowed, 30
+Your own words at the top of Home instead of the Facebook logo, up to %1$d characters. They take Facebook's colors in light and dark mode. Leave it blank for Facebook's logo.	Deine eigenen Worte oben auf der Startseite statt des Facebook-Logos, bis zu %1$d Zeichen. Sie übernehmen Facebooks Farben im hellen und dunklen Modus. Lass das Feld leer für Facebooks Logo.
+# context: summary of that row while it's blank
+Facebook's logo stays at the top of Home. Type your own words to show them there.	Oben auf der Startseite bleibt Facebooks Logo. Gib eigene Worte ein, um sie dort anzuzeigen.
+# context: summary of that row; %1$s is the saved words
+The top of Home says %1$s. Restart Facebook to see the change.	Oben auf der Startseite steht %1$s. Starte Facebook neu, um die Änderung zu sehen.
+# context: import preview sentence: the file sets the Home header text row back to blank
+The top of Home will show Facebook's own logo.	Oben auf der Startseite wird Facebooks eigenes Logo angezeigt.
+# context: import preview sentence: the file sets the Home header text row; %1$s is the saved words; "Home header text" is the patch's name, keep it as translated for that patch
+If your patched Facebook includes Home header text, the top of Home will say %1$s.	Wenn dein gepatchtes Facebook den Kopfzeilentext der Startseite enthält, steht oben auf der Startseite %1$s.

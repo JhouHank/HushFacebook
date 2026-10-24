@@ -1811,6 +1811,15 @@ public class Settings extends BaseSettings {
             new StringSetting("hushfacebook_amoled_light_background", "", true);
 
     /**
+     * Words of your own at the top of Home in place of Facebook's wordmark, with the Home header text
+     * patch in the build ({@link app.morphe.extension.facebook.misc.HeaderText}, #230). Blank keeps
+     * the wordmark, and so does a paused Facebook. Facebook builds the header once, so a change brings
+     * up the restart row. Not a switch.
+     */
+    public static final StringSetting HEADER_TEXT =
+            new StringSetting("hushfacebook_header_text", "", true);
+
+    /**
      * The strip some posts carry ("Are you interested in this post?", "Show less", who recently
      * commented, follow and chat suggestions) goes, and so does the room kept for it
      * ({@link app.morphe.extension.facebook.feed.PostPrompts}). A change shows on the posts drawn

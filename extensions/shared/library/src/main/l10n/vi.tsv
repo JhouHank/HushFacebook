@@ -1875,3 +1875,15 @@ If your patched Facebook includes the AMOLED black theme, light mode's backgroun
 Hide "Related posts" under posts	Ẩn "Bài viết liên quan" bên dưới bài viết
 # context: summary of that switch; "Related posts" is that heading, and Meta AI writes the titles in the list
 Hides the "Related posts" list Facebook adds under some posts, with its titles written by Meta AI. The post and its comments stay.	Ẩn danh sách "Bài viết liên quan" mà Facebook thêm bên dưới một số bài viết, với tiêu đề do Meta AI viết. Bài viết và bình luận của nó vẫn còn.
+# context: title of the row on the Appearance page that takes your own words for the top of Home in place of Facebook's logo; also its dialog's title and the patch's name; Home is Facebook's home feed tab
+Home header text	Chữ tiêu đề Trang chủ
+# context: message in that row's dialog; %1$d is the most characters allowed, 30
+Your own words at the top of Home instead of the Facebook logo, up to %1$d characters. They take Facebook's colors in light and dark mode. Leave it blank for Facebook's logo.	Chữ của riêng bạn ở đầu Trang chủ thay cho logo Facebook, tối đa %1$d ký tự. Chữ dùng màu của Facebook ở chế độ sáng và tối. Để trống để giữ logo Facebook.
+# context: summary of that row while it's blank
+Facebook's logo stays at the top of Home. Type your own words to show them there.	Logo Facebook vẫn ở đầu Trang chủ. Nhập chữ của riêng bạn để hiện ở đó.
+# context: summary of that row; %1$s is the saved words
+The top of Home says %1$s. Restart Facebook to see the change.	Đầu Trang chủ hiện %1$s. Khởi động lại Facebook để thấy thay đổi.
+# context: import preview sentence: the file sets the Home header text row back to blank
+The top of Home will show Facebook's own logo.	Đầu Trang chủ sẽ hiện logo của chính Facebook.
+# context: import preview sentence: the file sets the Home header text row; %1$s is the saved words; "Home header text" is the patch's name, keep it as translated for that patch
+If your patched Facebook includes Home header text, the top of Home will say %1$s.	Nếu Facebook đã vá của bạn có Chữ tiêu đề Trang chủ, đầu Trang chủ sẽ hiện %1$s.

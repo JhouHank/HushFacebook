@@ -2186,6 +2186,43 @@
       "options": []
     },
     {
+      "name": "Home header text",
+      "description": "Shows your own words at the top of Home instead of the Facebook logo, in Facebook's own colors for light and dark mode. Type them in Hushfacebook settings > Appearance > Home header text. Blank keeps Facebook's logo.",
+      "category": "Theme",
+      "use": true,
+      "dependencies": [
+        "BytecodePatch",
+        "Hushfacebook settings"
+      ],
+      "compatiblePackages": {
+        "com.facebook.katana": [
+          "584.0.0.51.56"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Facebook",
+          "packageName": "com.facebook.katana",
+          "description": null,
+          "appIconColor": 550655,
+          "signatures": [
+            "911d604446084ca7f4760b775bfc160fa8702441240a7258645d7a72c4312d27",
+            "e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1"
+          ],
+          "targets": [
+            {
+              "version": "584.0.0.51.56",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 475817393
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Hushfacebook in the Menu",
       "description": "Adds a Hushfacebook settings row to Facebook's Menu, at the end of Settings and privacy, so the settings are easy to find. A Saved row joins it while the Saved shortcut switch is on, a Watch history row while the Watch history shortcut switch is, and a Free stuff row, Marketplace's free listings, while the Free stuff shortcut switch under Marketplace is. On by default. Turn it off with Settings row in Menu in Hushfacebook settings > Menu, unless it's the last way into the settings still on.",
       "category": "Settings",

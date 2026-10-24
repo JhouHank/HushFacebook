@@ -228,6 +228,10 @@ final class HushfacebookPages {
                     .needs(Settings.UNLOCK_APP_ICONS));
             appearance.addPreference(AppIconScreen.row(context));
         }
+        if (build.contains(PatchFamily.HEADER_TEXT)) {
+            // Facebook builds the Home header once, so a change waits for a restart.
+            appearance.addPreference(HushfacebookPreferenceFragment.headerTextRow(context));
+        }
     }
 
     /** Set when you patched: what the patches picked in Morphe Manager do, which no switch changes. */

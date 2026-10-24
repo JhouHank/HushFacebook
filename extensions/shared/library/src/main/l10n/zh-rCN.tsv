@@ -1870,3 +1870,15 @@ If your patched Facebook includes the AMOLED black theme, light mode's backgroun
 Hide "Related posts" under posts	隐藏帖子下方的“相关帖子”
 # context: summary of that switch; "Related posts" is that heading, and Meta AI writes the titles in the list
 Hides the "Related posts" list Facebook adds under some posts, with its titles written by Meta AI. The post and its comments stay.	隐藏 Facebook 在部分帖子下方添加的“相关帖子”列表及其由 Meta AI 撰写的标题。帖子及其评论保留。
+# context: title of the row on the Appearance page that takes your own words for the top of Home in place of Facebook's logo; also its dialog's title and the patch's name; Home is Facebook's home feed tab
+Home header text	主页顶部文字
+# context: message in that row's dialog; %1$d is the most characters allowed, 30
+Your own words at the top of Home instead of the Facebook logo, up to %1$d characters. They take Facebook's colors in light and dark mode. Leave it blank for Facebook's logo.	在主页顶部显示你自己的文字来代替 Facebook 标志，最多 %1$d 个字符。文字会在浅色和深色模式下使用 Facebook 的颜色。留空则显示 Facebook 标志。
+# context: summary of that row while it's blank
+Facebook's logo stays at the top of Home. Type your own words to show them there.	主页顶部保留 Facebook 标志。输入你自己的文字即可显示在那里。
+# context: summary of that row; %1$s is the saved words
+The top of Home says %1$s. Restart Facebook to see the change.	主页顶部显示 %1$s。重启 Facebook 后可看到更改。
+# context: import preview sentence: the file sets the Home header text row back to blank
+The top of Home will show Facebook's own logo.	主页顶部将显示 Facebook 自己的标志。
+# context: import preview sentence: the file sets the Home header text row; %1$s is the saved words; "Home header text" is the patch's name, keep it as translated for that patch
+If your patched Facebook includes Home header text, the top of Home will say %1$s.	如果你修补的 Facebook 包含“主页顶部文字”，主页顶部将显示 %1$s。

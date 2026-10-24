@@ -222,6 +222,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean headerText() {
+        return false;
+    }
+
     public static boolean turnOffScreenTransitions() {
         return false;
     }
