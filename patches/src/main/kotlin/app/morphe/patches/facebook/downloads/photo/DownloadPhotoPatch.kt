@@ -18,6 +18,7 @@ import app.morphe.patches.facebook.misc.extension.enableStatus
 import app.morphe.patches.facebook.misc.extension.facebookExtensionPatch
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
+import app.morphe.util.classDefForEachReferencing
 
 /** The extension call that adds Save photo to a post's menu once Facebook has filled it. */
 internal const val ADD_PHOTO_ITEM = "Lapp/morphe/extension/facebook/download/PhotoMenuItem;->add(" +
@@ -89,8 +90,9 @@ internal fun BytecodePatchContext.postMenuPhotoItem(): () -> Unit {
 internal fun BytecodePatchContext.unlockPhotoSave() {
     val gated = mutableListOf<Pair<String, String>>()
     val actions = mutableListOf<Pair<String, String>>()
-    classDefForEach { classDef ->
-        if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEach
+    // A gate calls getBooleanValue, and the action answers the menu listener.
+    classDefForEachReferencing(types = listOf(MENU_LISTENER), names = listOf("getBooleanValue")) { classDef ->
+        if (classDef.type.startsWith(EXTENSION_CLASSES)) return@classDefForEachReferencing
         classDef.methods.forEach { method ->
             if (photoDownloadGates(method).isNotEmpty()) gated += classDef.type to method.name
             if (isSavePhotoAction(method)) actions += classDef.type to method.name

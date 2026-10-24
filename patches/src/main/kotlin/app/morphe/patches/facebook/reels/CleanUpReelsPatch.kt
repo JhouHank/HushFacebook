@@ -25,6 +25,7 @@ import app.morphe.patches.facebook.misc.extension.requireLocals
 import app.morphe.patches.facebook.misc.settings.settingsPatch
 import app.morphe.patches.shared.compat.AppCompatibilities
 import app.morphe.util.addInstructionsAtControlFlowLabel
+import app.morphe.util.classDefForEachReferencing
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
@@ -213,7 +214,9 @@ private fun BytecodePatchContext.hideFollowButtons() {
     val getter = found.getter ?: throw PatchException("$PATCH: ${found.problem}")
 
     val readers = mutableListOf<Method>()
-    classDefForEach { classDef -> classDef.methods.filterTo(readers) { calls(it, getter) } }
+    classDefForEachReferencing(types = listOf(getter.definingClass)) { classDef ->
+        classDef.methods.filterTo(readers) { calls(it, getter) }
+    }
     followReaderProblem(readers, dumper)?.let { throw PatchException("$PATCH: $it") }
 
     val author = authorRow(readers, dumper)
