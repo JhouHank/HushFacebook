@@ -60,6 +60,7 @@ import app.morphe.extension.facebook.feed.FeedFilter;
 import app.morphe.extension.facebook.feed.SeenPostsForTests;
 import app.morphe.extension.facebook.feed.FeedGuardForTests;
 import app.morphe.extension.facebook.feed.ProfileSuggestionsForTests;
+import app.morphe.extension.facebook.feed.RelatedPosts;
 import app.morphe.extension.facebook.feed.ReturnRefresh;
 import app.morphe.extension.facebook.feed.TypedFeedUnit;
 import app.morphe.extension.facebook.font.OwnFont;
@@ -344,6 +345,7 @@ public class ColdStartHooksTest {
                 DefaultCommentOrderForTests.picksInTheMenu());
         assertFalse("a comment summary held before the context said yes",
                 MetaAiSummaries.holds(MetaAiSummaries.SHEET_SUMMARY));
+        assertFalse("a Related posts list held before the context said yes", RelatedPosts.holds(RelatedPosts.PLUGIN));
         assertFalse("a comment box drawn before the context lost its GIF button",
                 CommentSheetOptions.holdsButton(CommentSheetOptions.GIF_BUTTON));
         assertFalse("a long press on Like before the context kept the reaction picker closed",

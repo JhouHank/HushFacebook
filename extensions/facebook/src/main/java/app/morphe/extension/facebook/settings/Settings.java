@@ -124,6 +124,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_notification_post_footer", FALSE);
 
     /**
+     * The Related posts list under a post's buttons, with Meta AI's titles (#231). It's a plugin of the
+     * socket under the buttons, never a feed unit, so that socket's check gets a no for it
+     * ({@link app.morphe.extension.facebook.feed.RelatedPosts}). Asked as each post is drawn.
+     */
+    public static final BooleanSetting HIDE_RELATED_POSTS =
+            new BooleanSetting("hushfacebook_hide_related_posts", FALSE);
+
+    /**
      * The "Want to see more posts from friends? Find friends" card where the feed runs out of friends'
      * posts (#187). It's a part of the end of feed section, never a feed unit, so the section is told
      * it has no card ({@link app.morphe.extension.facebook.feed.FindFriendsCard}).

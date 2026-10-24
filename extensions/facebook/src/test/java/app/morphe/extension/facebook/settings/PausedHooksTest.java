@@ -86,6 +86,7 @@ import app.morphe.extension.facebook.feed.NotificationFooter;
 import app.morphe.extension.facebook.feed.PostDates;
 import app.morphe.extension.facebook.feed.PostPrompts;
 import app.morphe.extension.facebook.feed.ProfileSuggestionsForTests;
+import app.morphe.extension.facebook.feed.RelatedPosts;
 import app.morphe.extension.facebook.misc.AppLockForTests;
 import app.morphe.extension.facebook.feed.TypedFeedUnit;
 import app.morphe.extension.facebook.font.OwnFont;
@@ -379,7 +380,9 @@ public class PausedHooksTest {
                 // The end of the feed is built without its Find friends card.
                 () -> FindFriendsCard.unit("card") == null,
                 // The search screen draws its For you section as an empty row.
-                PreSearchSectionsForTests::drawsForYouEmpty));
+                PreSearchSectionsForTests::drawsForYouEmpty,
+                // The socket under a post's buttons gets a no for the Related posts list.
+                () -> RelatedPosts.holds(RelatedPosts.PLUGIN)));
         // Each of the feed's two Stories tray adapters, and the composer row's, new to the hook,
         // counts no rows.
         probes.put(PatchFamily.STORIES_TRAY, Arrays.asList(

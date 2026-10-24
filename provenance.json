@@ -657,6 +657,15 @@
     },
     {
       "paths": [
+        "patches/src/main/kotlin/app/morphe/patches/facebook/feed/suggested/RelatedPosts.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: the Related posts list under a post's buttons. In Facebook 584 it is InlineRelatedPostsPlugin, a plugin of the socket that names itself FeedStoryBelowUFIFooterSocket, and the socket's static name table names it along with the Meta AI comment summary. The patch finds that table and the socket's per-plugin check the way Hide Meta AI comment summaries does, and goes first in the check with the plugin's name from the table. The extension answers no for the Related posts plugin while the switch is on, so the socket moves on to its next plugin."
+    },
+    {
+      "paths": [
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/postprompts/PostCounts.kt"
       ],
       "origin": "original",

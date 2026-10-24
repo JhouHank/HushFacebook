@@ -1871,3 +1871,7 @@ Light mode's backgrounds use %1$s. Restart Facebook to see the change.	Los fondo
 If your patched Facebook includes the AMOLED black theme, light mode's backgrounds will be Facebook's own white.	Si tu Facebook parcheado incluye el tema negro AMOLED, los fondos del modo claro usarán el blanco de Facebook.
 # context: import preview sentence: the file sets AMOLED's Light background color row; %1$s is a color code like #FFF8E7; "AMOLED black theme" is the patch's name, keep it as translated for that patch
 If your patched Facebook includes the AMOLED black theme, light mode's backgrounds will be %1$s.	Si tu Facebook parcheado incluye el tema negro AMOLED, los fondos del modo claro serán %1$s.
+# context: switch title under News feed, part of Hide suggested and promoted posts; "Related posts" is the heading Facebook shows over a list under a post
+Hide "Related posts" under posts	Ocultar «Publicaciones relacionadas» debajo de las publicaciones
+# context: summary of that switch; "Related posts" is that heading, and Meta AI writes the titles in the list
+Hides the "Related posts" list Facebook adds under some posts, with its titles written by Meta AI. The post and its comments stay.	Oculta la lista «Publicaciones relacionadas» que Facebook añade debajo de algunas publicaciones, con títulos escritos por Meta AI. La publicación y sus comentarios se quedan.

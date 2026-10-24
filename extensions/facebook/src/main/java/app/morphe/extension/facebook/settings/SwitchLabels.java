@@ -34,6 +34,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_FEED_FRIEND_REQUESTS) return L10n.t("Hide friend requests in the feed");
         if (setting == Settings.HIDE_FRIENDS_LOCATIONS) return L10n.t("Hide friends' locations");
         if (setting == Settings.HIDE_NOTIFICATION_POST_FOOTER) return L10n.t("Hide more posts under notification posts");
+        if (setting == Settings.HIDE_RELATED_POSTS) return L10n.t("Hide \"Related posts\" under posts");
         if (setting == Settings.HIDE_FIND_FRIENDS_CARD) return L10n.t("Hide the Find friends card");
         if (setting == Settings.HIDE_SEARCH_FOR_YOU) return L10n.t("Hide For you in search");
         if (setting == Settings.HIDE_SEARCH_PEOPLE_YOU_MAY_KNOW) return L10n.t("Hide \"People you may know\" in search");
