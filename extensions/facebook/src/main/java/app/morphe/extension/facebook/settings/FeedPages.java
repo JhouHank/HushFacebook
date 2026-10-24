@@ -108,6 +108,7 @@ final class FeedPages {
                 || build.contains(PatchFamily.RETURN_REFRESH)
                 || build.contains(PatchFamily.AI_DETECTED_POSTS)
                 || build.contains(PatchFamily.SPONSORED_PROFILE_POSTS)
+                || build.contains(PatchFamily.PROFILE_NOTES)
                 || build.contains(PatchFamily.AFFILIATE_LINKS)
                 || build.contains(PatchFamily.POST_WORDS)
                 || build.contains(PatchFamily.POST_PROMPTS)
@@ -127,6 +128,12 @@ final class FeedPages {
             if (build.contains(PatchFamily.SPONSORED_PROFILE_POSTS)) {
                 feed.addPreference(toggle(context, Settings.HIDE_SPONSORED_PROFILE_POSTS,
                         L10n.t("Hides ads between posts on someone's profile or a Page. Their own posts stay.")));
+            }
+            // Read each time Facebook lays a profile out, so a change shows on the next profile opened.
+            if (build.contains(PatchFamily.PROFILE_NOTES)) {
+                feed.addPreference(toggle(context, Settings.HIDE_PROFILE_NOTES,
+                        L10n.t("Hides the note bubble that sits on profile pictures. Applies the next time you open a "
+                                + "profile.")));
             }
             // One switch covers the cards on reels and in the comment sheet too.
             if (build.contains(PatchFamily.AFFILIATE_LINKS)) {

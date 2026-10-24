@@ -522,6 +522,10 @@ Hides ads between your search results. The results you searched for stay.	Oculta
 Hide sponsored profile posts	Ocultar publicaciones publicitarias en perfiles
 # context: summary of that switch; Page is Facebook's name for a business or public figure's page
 Hides ads between posts on someone's profile or a Page. Their own posts stay.	Oculta los anuncios entre las publicaciones del perfil de alguien o de una página. Sus propias publicaciones se quedan.
+# context: switch title under News feed; a note is the short text bubble (or a 'Drop a thought' prompt) Facebook shows over a person's profile picture
+Hide profile notes	Ocultar notas del perfil
+# context: summary of that switch
+Hides the note bubble that sits on profile pictures. Applies the next time you open a profile.	Oculta la burbuja de nota que aparece sobre las fotos de perfil. Se aplica la próxima vez que abras un perfil.
 # context: what stays in while Hushfacebook is paused, followed by the patch name in brackets; the row in Facebook's own Menu that opens Hushfacebook settings
 # context: a short message when the Hushfacebook row in Facebook's Menu couldn't open the settings
 Hushfacebook settings can't open here. Long-press the Facebook logo instead.	La configuración de Hushfacebook no se puede abrir aquí. Mantén pulsado el logotipo de Facebook.

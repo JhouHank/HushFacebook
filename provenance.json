@@ -603,6 +603,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/profile/ProfileNotes.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/profile/HideProfileNotesPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: the note bubble on profile pictures. Facebook 584 lays the top of a profile out with Bloks, and its two Bloks node classes are the only concrete classes keeping their attributes in an instance SparseArray that implement getBoolean, getId, getInt, getLong, getString and put under those names. Their child getters are their instance methods taking an int and answering a List, and the main node's layout getter wraps a lone child in Collections.singletonList. The patch hands every list they return to the extension, which leaves out a node whose own string attributes name com.bloks.www.bloks.profile.note. (the bubble's tap action) or com.bloks.www.bloks.profile.async.fetch.note_bubble (the action that loads its content)."
+    },
+    {
+      "paths": [
         "patches/src/main/kotlin/app/morphe/patches/facebook/feed/suggested/ProfileSuggestionAnchors.kt"
       ],
       "origin": "original",

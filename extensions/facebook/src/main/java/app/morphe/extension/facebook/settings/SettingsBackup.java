@@ -173,6 +173,7 @@ public final class SettingsBackup {
             Settings.HIDE_SPONSORED_REELS,
             Settings.HIDE_SPONSORED_SEARCH_RESULTS,
             Settings.HIDE_SPONSORED_PROFILE_POSTS,
+            Settings.HIDE_PROFILE_NOTES,
             Settings.HIDE_SPONSORED_MARKETPLACE_LISTINGS,
             Settings.SHOW_SELLER_VIEW_PROFILE,
             Settings.BLOCK_GAME_ADS,

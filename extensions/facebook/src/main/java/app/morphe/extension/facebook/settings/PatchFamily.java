@@ -93,6 +93,8 @@ public enum PatchFamily {
             Settings.HIDE_SPONSORED_SEARCH_RESULTS),
     SPONSORED_PROFILE_POSTS(FamilyNames.SPONSORED_PROFILE_POSTS, "sponsoredProfilePosts", null,
             Settings.HIDE_SPONSORED_PROFILE_POSTS),
+    PROFILE_NOTES(FamilyNames.PROFILE_NOTES, "profileNotes", null,
+            Settings.HIDE_PROFILE_NOTES),
     SPONSORED_MARKETPLACE(FamilyNames.SPONSORED_MARKETPLACE, "sponsoredMarketplace", null,
             Settings.HIDE_SPONSORED_MARKETPLACE_LISTINGS),
     GAME_ADS(FamilyNames.GAME_ADS, "gameAds", null,

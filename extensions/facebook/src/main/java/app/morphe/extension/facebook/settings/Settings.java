@@ -362,6 +362,14 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_sponsored_profile_posts", TRUE);
 
     /**
+     * The note bubble on a profile picture, left out of the profile's Bloks layout ({@link
+     * app.morphe.extension.facebook.profile.ProfileNotes}). Starts off. Read each time Facebook
+     * lays the profile out, so a change shows the next time a profile opens.
+     */
+    public static final BooleanSetting HIDE_PROFILE_NOTES =
+            new BooleanSetting("hushfacebook_hide_profile_notes", FALSE);
+
+    /**
      * The ads and boosted listings of Marketplace's feed: its query asks the server to skip them,
      * and its ads-only queries aren't sent.
      */

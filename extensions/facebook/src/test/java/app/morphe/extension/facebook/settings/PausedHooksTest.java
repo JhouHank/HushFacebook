@@ -133,6 +133,7 @@ import app.morphe.extension.facebook.navigation.ReelsTabForTests;
 import app.morphe.extension.facebook.navigation.TabBadgesForTests;
 import app.morphe.extension.facebook.navigation.StartTabRouteForTests;
 import app.morphe.extension.facebook.notifications.NotificationKindsForTests;
+import app.morphe.extension.facebook.profile.ProfileNotesForTests;
 import app.morphe.extension.facebook.reels.DoubleTapLike;
 import app.morphe.extension.facebook.reels.OriginalAudio;
 import app.morphe.extension.facebook.reels.ReelGesturesForTests;
@@ -512,6 +513,8 @@ public class PausedHooksTest {
         // A timeline story with sponsored data isn't drawn on a profile.
         probes.put(PatchFamily.SPONSORED_PROFILE_POSTS,
                 Collections.singletonList(ProfileAdFilterForTests::hidesASponsoredStory));
+        // The note bubble over a profile picture is left out of its Bloks children.
+        probes.put(PatchFamily.PROFILE_NOTES, Collections.singletonList(ProfileNotesForTests::hidesANote));
         // Marketplace's feed query asks to skip its ads, an ads-only query isn't sent, and a search
         // answer loses its ad.
         probes.put(PatchFamily.SPONSORED_MARKETPLACE, Arrays.asList(

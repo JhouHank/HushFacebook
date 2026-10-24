@@ -522,6 +522,10 @@ Hides ads between your search results. The results you searched for stay.	隐藏
 Hide sponsored profile posts	隐藏个人主页上的赞助帖子
 # context: summary of that switch; Page is Facebook's name for a business or public figure's page
 Hides ads between posts on someone's profile or a Page. Their own posts stay.	隐藏某人的个人主页或公共主页上帖子之间的广告。他们自己的帖子保留。
+# context: switch title under News feed; a note is the short text bubble (or a 'Drop a thought' prompt) Facebook shows over a person's profile picture
+Hide profile notes	隐藏个人主页上的便签
+# context: summary of that switch
+Hides the note bubble that sits on profile pictures. Applies the next time you open a profile.	隐藏头像上的便签气泡。下次打开个人主页时生效。
 # context: what stays in while Hushfacebook is paused, followed by the patch name in brackets; the row in Facebook's own Menu that opens Hushfacebook settings
 # context: a short message when the Hushfacebook row in Facebook's Menu couldn't open the settings
 Hushfacebook settings can't open here. Long-press the Facebook logo instead.	Hushfacebook 设置无法在这里打开。请改为长按 Facebook 徽标。

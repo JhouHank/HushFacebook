@@ -82,6 +82,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean profileNotes() {
+        return false;
+    }
+
     public static boolean sponsoredMarketplace() {
         return false;
     }

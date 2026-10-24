@@ -22,6 +22,7 @@ final class SwitchLabels {
         if (setting == Settings.HIDE_SPONSORED_POSTS) return L10n.t("Hide sponsored posts");
         if (setting == Settings.HIDE_PROMOTED_POSTS) return L10n.t("Hide promoted posts");
         if (setting == Settings.HIDE_SPONSORED_PROFILE_POSTS) return L10n.t("Hide sponsored profile posts");
+        if (setting == Settings.HIDE_PROFILE_NOTES) return L10n.t("Hide profile notes");
         if (setting == Settings.HIDE_AFFILIATE_LINKS) return L10n.t("Hide affiliate product links");
         if (setting == Settings.HIDE_SUGGESTED_POSTS) return L10n.t("Hide page suggestions and Facebook's own promos");
         if (setting == Settings.HIDE_SUGGESTED_FOR_YOU) return L10n.t("Hide \"Suggested for you\" posts");
