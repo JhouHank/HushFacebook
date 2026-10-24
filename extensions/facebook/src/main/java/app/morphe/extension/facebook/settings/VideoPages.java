@@ -323,7 +323,8 @@ final class VideoPages {
             if (build.contains(PatchFamily.PHOTO_DOWNLOAD)) {
                 downloads.addPreference(toggle(context, Settings.DOWNLOAD_PHOTOS,
                         L10n.t("Shows Save photo on every photo you open, even where saving is turned off, and saves the biggest "
-                                + "size. Off or paused, Facebook decides again.")));
+                                + "size. Off or paused, Facebook decides again.")
+                                + " " + L10n.t("A GIF comment gets Save GIF when you long-press it.")));
                 downloads.addPreference(toggle(context, Settings.POST_MENU_PHOTO_SAVE,
                         L10n.t("With Save any photo on, a post with photos gets Save photo in its three-dot menu too. A post with several saves each one, one after another.")));
             }

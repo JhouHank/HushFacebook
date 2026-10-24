@@ -680,7 +680,7 @@
     },
     {
       "name": "Download any photo",
-      "description": "Shows Save photo on every photo you open, even where the poster turned saving off, and saves the largest size so you get the best copy. On by default. Turn it off in Hushfacebook settings > Downloads.",
+      "description": "Shows Save photo on every photo you open, even where the poster turned saving off, and saves the largest size so you get the best copy. A GIF comment gets Save GIF when you long-press it. On by default. Turn it off in Hushfacebook settings > Downloads.",
       "category": "Downloads",
       "use": true,
       "dependencies": [

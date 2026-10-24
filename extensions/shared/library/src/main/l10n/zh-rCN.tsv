@@ -1146,6 +1146,12 @@ Save photo	保存照片
 Save all photos	保存所有照片
 # context: short message shown when the photos of a post could not start saving
 Couldn't save this post's photos. Try again in a moment.	无法保存此帖子的照片。请稍后重试。
+# context: row in a comment's long-press sheet that saves the GIF the comment holds; keep it short like Save photo
+Save GIF	保存 GIF
+# context: message after a tap on Save GIF when the save didn't start
+Couldn't save this GIF. Try again in a moment.	无法保存此 GIF。请稍后重试。
+# context: sentence added after the summary of the Save any photo switch; Save GIF is the row's name, keep it as translated for that row
+A GIF comment gets Save GIF when you long-press it.	长按 GIF 评论即可看到“保存 GIF”。
 Couldn't save this story's photo. Try again in a moment.	无法保存此快拍的照片。请稍后重试。
 Too many saves at once. Try again when one finishes.	同时保存的数量太多。请等其中一个完成后再试。
 # context: settings switch under Block Instant Games ads that makes a game's rewarded ad count as watched

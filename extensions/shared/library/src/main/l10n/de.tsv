@@ -1150,6 +1150,12 @@ Save photo	Foto speichern
 Save all photos	Alle Fotos speichern
 # context: short message shown when the photos of a post could not start saving
 Couldn't save this post's photos. Try again in a moment.	Die Fotos dieses Beitrags ließen sich nicht speichern. Versuche es gleich noch einmal.
+# context: row in a comment's long-press sheet that saves the GIF the comment holds; keep it short like Save photo
+Save GIF	GIF speichern
+# context: message after a tap on Save GIF when the save didn't start
+Couldn't save this GIF. Try again in a moment.	Das GIF ließ sich nicht speichern. Versuche es gleich noch einmal.
+# context: sentence added after the summary of the Save any photo switch; Save GIF is the row's name, keep it as translated for that row
+A GIF comment gets Save GIF when you long-press it.	Hältst du einen GIF-Kommentar gedrückt, erscheint GIF speichern.
 Couldn't save this story's photo. Try again in a moment.	Das Foto dieser Story ließ sich nicht speichern. Versuche es gleich noch einmal.
 Too many saves at once. Try again when one finishes.	Zu viele Speichervorgänge gleichzeitig. Versuche es erneut, wenn einer fertig ist.
 # context: settings switch under Block Instant Games ads that makes a game's rewarded ad count as watched
