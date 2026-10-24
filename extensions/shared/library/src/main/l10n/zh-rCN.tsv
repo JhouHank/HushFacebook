@@ -449,6 +449,14 @@ Hide the Muse card	隐藏 Muse 卡片
 The Muse card, Meta's ad for its AI agent app, leaves the top of Facebook's Menu.	Muse 卡片（Meta 为其 AI 智能体应用做的广告）将从 Facebook 菜单顶部消失。
 # context: summary of that switch; the section links to Meta's other apps and shows ads for its devices
 The Also from Meta section leaves Facebook's Menu, with its links to Meta's other apps and its ads for Meta's devices. Your own shortcuts stay.	“Meta 旗下更多产品”部分将从 Facebook 菜单中消失，包括指向 Meta 其他应用的链接和 Meta 设备的广告。你自己的快捷方式保留。
+# context: switch title under Menu; Help and support is the name of a section in Facebook's own Menu
+Hide Help and support	隐藏“帮助和支持”
+# context: summary of that switch; Settings and privacy is Facebook's own Menu section
+The Help and support section leaves Facebook's Menu, header and all. Settings and privacy stays.	“帮助和支持”部分连同标题从 Facebook 菜单中消失。“设置和隐私”保留。
+# context: switch title under Menu; Settings and privacy is a section of Facebook's own Menu that folds and unfolds when its header is tapped
+Keep Settings and privacy expanded	保持“设置和隐私”展开
+# context: summary of that switch
+Settings and privacy in Facebook's Menu stays open, so its rows show without a tap.	Facebook 菜单中的“设置和隐私”保持展开，无需点按即可看到其中各项。
 # context: section title for the search settings, named like Facebook's own search
 Search	搜索
 # context: switch title under Search; Meta AI is Meta's assistant and keeps its name

@@ -449,6 +449,14 @@ Hide the Muse card	Sembunyikan kartu Muse
 The Muse card, Meta's ad for its AI agent app, leaves the top of Facebook's Menu.	Kartu Muse, iklan Meta untuk aplikasi agen AI-nya, hilang dari bagian atas Menu Facebook.
 # context: summary of that switch; the section links to Meta's other apps and shows ads for its devices
 The Also from Meta section leaves Facebook's Menu, with its links to Meta's other apps and its ads for Meta's devices. Your own shortcuts stay.	Bagian “Juga dari Meta” hilang dari Menu Facebook, beserta tautannya ke aplikasi Meta lainnya dan iklannya untuk perangkat Meta. Pintasanmu sendiri tetap ada.
+# context: switch title under Menu; Help and support is the name of a section in Facebook's own Menu
+Hide Help and support	Sembunyikan “Bantuan & dukungan”
+# context: summary of that switch; Settings and privacy is Facebook's own Menu section
+The Help and support section leaves Facebook's Menu, header and all. Settings and privacy stays.	Bagian “Bantuan & dukungan” hilang dari Menu Facebook, beserta judulnya. “Pengaturan dan privasi” tetap ada.
+# context: switch title under Menu; Settings and privacy is a section of Facebook's own Menu that folds and unfolds when its header is tapped
+Keep Settings and privacy expanded	Biarkan “Pengaturan dan privasi” terbuka
+# context: summary of that switch
+Settings and privacy in Facebook's Menu stays open, so its rows show without a tap.	“Pengaturan dan privasi” tetap terbuka di Menu Facebook, jadi barisnya terlihat tanpa perlu diketuk.
 # context: section title for the search settings, named like Facebook's own search
 Search	Pencarian
 # context: switch title under Search; Meta AI is Meta's assistant and keeps its name

@@ -381,6 +381,8 @@ public class ColdStartHooksTest {
         assertFalse("a profile built before the context lost People you may know",
                 ProfileSuggestionsForTests.hidesTheCarousel());
         assertFalse("a Menu built before the context lost Also from Meta", MenuSectionsForTests.hidesServerAlsoFromMeta());
+        assertFalse("a Menu built before the context lost Help and support", MenuSectionsForTests.hidesHelp());
+        assertFalse("a Menu built before the context kept Settings and privacy open", MenuSectionsForTests.keepsSettingsOpen());
         assertTrue("a Menu list built before the context changed", MenuSettingsRow.withRow(Collections.emptyList()).isEmpty());
         assertTrue("an Edits flag read before the context lost its yes", MetaUpsells.editsHeader(true));
         assertTrue("a feed request made before the context stopped asking for the Edits pill", MetaUpsells.fetchEditsPill(true));

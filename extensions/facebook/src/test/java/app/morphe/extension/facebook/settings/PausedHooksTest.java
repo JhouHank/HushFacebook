@@ -811,14 +811,17 @@ public class PausedHooksTest {
                 MessengerHandoffForTests::dropsARing,
                 MessengerHandoffForTests::dropsAMessage,
                 MessengerHandoffForTests::dropsAChatPush));
-        // The Menu's Upgrades and Also from Meta groups build nothing, in the section Facebook
-        // draws and in the one carrying what the server sends, and the side panel and the Menu page
-        // get Facebook's own Menu instead of the Bloks one.
+        // The Menu's Upgrades, Also from Meta and Help and support groups build nothing, in the
+        // section Facebook draws and in the one carrying what the server sends, Settings and privacy
+        // builds open, and the side panel and the Menu page get Facebook's own Menu instead of the
+        // Bloks one.
         probes.put(PatchFamily.MENU_PROMOTIONS, Arrays.asList(
                 MenuSectionsForTests::hidesUpgrades,
                 MenuSectionsForTests::hidesAlsoFromMeta,
                 MenuSectionsForTests::hidesServerUpgrades,
                 MenuSectionsForTests::hidesServerAlsoFromMeta,
+                MenuSectionsForTests::hidesHelp,
+                MenuSectionsForTests::keepsSettingsOpen,
                 () -> !MenuPanel.bloksPanel(true),
                 () -> !MenuPanel.bloksMenu(true)));
         // Edits' header flag and both shapes of its pill request, the Threads cross-posting

@@ -202,6 +202,8 @@ final class SwitchLabels {
         if (setting == Settings.CLOSE_WHEN_LEFT) return L10n.t("Close Facebook when you leave it");
         if (setting == Settings.HIDE_MENU_UPGRADES) return L10n.t("Hide Upgrades");
         if (setting == Settings.HIDE_MENU_ALSO_FROM_META) return L10n.t("Hide Also from Meta");
+        if (setting == Settings.HIDE_MENU_HELP) return L10n.t("Hide Help and support");
+        if (setting == Settings.KEEP_MENU_SETTINGS_EXPANDED) return L10n.t("Keep Settings and privacy expanded");
         if (setting == Settings.HIDE_MENU_MUSE) return L10n.t("Hide the Muse card");
         if (setting == Settings.HIDE_MENU_META_AI) return L10n.t("Hide the Meta AI shortcut");
         if (setting == Settings.HIDE_EDITS_UPSELLS) return L10n.t("Hide Edits promotions");

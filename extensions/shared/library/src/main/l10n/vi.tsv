@@ -449,6 +449,14 @@ Hide the Muse card	Ẩn thẻ Muse
 The Muse card, Meta's ad for its AI agent app, leaves the top of Facebook's Menu.	Thẻ Muse, quảng cáo của Meta cho ứng dụng tác tử AI của họ, biến mất khỏi đầu Menu của Facebook.
 # context: summary of that switch; the section links to Meta's other apps and shows ads for its devices
 The Also from Meta section leaves Facebook's Menu, with its links to Meta's other apps and its ads for Meta's devices. Your own shortcuts stay.	Mục "Cũng từ Meta" biến mất khỏi Menu của Facebook, cùng các liên kết đến ứng dụng khác của Meta và quảng cáo thiết bị của Meta. Lối tắt của bạn vẫn giữ nguyên.
+# context: switch title under Menu; Help and support is the name of a section in Facebook's own Menu
+Hide Help and support	Ẩn "Trợ giúp & hỗ trợ"
+# context: summary of that switch; Settings and privacy is Facebook's own Menu section
+The Help and support section leaves Facebook's Menu, header and all. Settings and privacy stays.	Mục Trợ giúp & hỗ trợ biến mất khỏi Menu của Facebook, cả tiêu đề. Cài đặt & quyền riêng tư vẫn giữ nguyên.
+# context: switch title under Menu; Settings and privacy is a section of Facebook's own Menu that folds and unfolds when its header is tapped
+Keep Settings and privacy expanded	Luôn mở rộng Cài đặt & quyền riêng tư
+# context: summary of that switch
+Settings and privacy in Facebook's Menu stays open, so its rows show without a tap.	Cài đặt & quyền riêng tư luôn mở trong Menu của Facebook, nên các dòng trong đó hiện ra mà không cần chạm.
 # context: section title for the search settings, named like Facebook's own search
 Search	Tìm kiếm
 # context: switch title under Search; Meta AI is Meta's assistant and keeps its name

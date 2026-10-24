@@ -449,6 +449,14 @@ Hide the Muse card	Ocultar la tarjeta de Muse
 The Muse card, Meta's ad for its AI agent app, leaves the top of Facebook's Menu.	La tarjeta de Muse, el anuncio de Meta para su app de agente de IA, desaparece de la parte superior del menú de Facebook.
 # context: summary of that switch; the section links to Meta's other apps and shows ads for its devices
 The Also from Meta section leaves Facebook's Menu, with its links to Meta's other apps and its ads for Meta's devices. Your own shortcuts stay.	La sección “También de Meta” desaparece del menú de Facebook, con sus enlaces a las otras apps de Meta y sus anuncios de dispositivos de Meta. Tus propios accesos directos se quedan.
+# context: switch title under Menu; Help and support is the name of a section in Facebook's own Menu
+Hide Help and support	Ocultar “Ayuda y soporte técnico”
+# context: summary of that switch; Settings and privacy is Facebook's own Menu section
+The Help and support section leaves Facebook's Menu, header and all. Settings and privacy stays.	La sección “Ayuda y soporte técnico” desaparece del menú de Facebook, con su encabezado. “Configuración y privacidad” se queda.
+# context: switch title under Menu; Settings and privacy is a section of Facebook's own Menu that folds and unfolds when its header is tapped
+Keep Settings and privacy expanded	Mantener abierta “Configuración y privacidad”
+# context: summary of that switch
+Settings and privacy in Facebook's Menu stays open, so its rows show without a tap.	“Configuración y privacidad” se queda abierta en el menú de Facebook, así sus filas se ven sin tocar nada.
 # context: section title for the search settings, named like Facebook's own search
 Search	Búsqueda
 # context: switch title under Search; Meta AI is Meta's assistant and keeps its name

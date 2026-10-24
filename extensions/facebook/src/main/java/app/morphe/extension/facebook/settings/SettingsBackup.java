@@ -331,6 +331,8 @@ public final class SettingsBackup {
             Settings.LEAVE_CALLS_AND_CHATS_TO_MESSENGER,
             Settings.HIDE_MENU_UPGRADES,
             Settings.HIDE_MENU_ALSO_FROM_META,
+            Settings.HIDE_MENU_HELP,
+            Settings.KEEP_MENU_SETTINGS_EXPANDED,
             Settings.HIDE_MENU_MUSE,
             Settings.HIDE_MENU_META_AI,
             Settings.HIDE_EDITS_UPSELLS,

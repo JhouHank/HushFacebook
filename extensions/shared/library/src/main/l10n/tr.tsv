@@ -449,6 +449,14 @@ Hide the Muse card	Muse kartını gizle
 The Muse card, Meta's ad for its AI agent app, leaves the top of Facebook's Menu.	Muse kartı, Meta'nın yapay zekâ asistanı uygulamasının reklamı, Facebook menüsünün üstünden kalkar.
 # context: summary of that switch; the section links to Meta's other apps and shows ads for its devices
 The Also from Meta section leaves Facebook's Menu, with its links to Meta's other apps and its ads for Meta's devices. Your own shortcuts stay.	“Meta'dan diğerleri” bölümü, Meta'nın diğer uygulamalarına giden bağlantıları ve Meta cihazlarının reklamlarıyla birlikte Facebook menüsünden kalkar. Kendi kısayolların yerinde kalır.
+# context: switch title under Menu; Help and support is the name of a section in Facebook's own Menu
+Hide Help and support	“Yardım ve destek” bölümünü gizle
+# context: summary of that switch; Settings and privacy is Facebook's own Menu section
+The Help and support section leaves Facebook's Menu, header and all. Settings and privacy stays.	“Yardım ve destek” bölümü başlığıyla birlikte Facebook menüsünden kalkar. “Ayarlar ve gizlilik” yerinde kalır.
+# context: switch title under Menu; Settings and privacy is a section of Facebook's own Menu that folds and unfolds when its header is tapped
+Keep Settings and privacy expanded	“Ayarlar ve gizlilik” açık kalsın
+# context: summary of that switch
+Settings and privacy in Facebook's Menu stays open, so its rows show without a tap.	“Ayarlar ve gizlilik” Facebook menüsünde açık kalır, böylece satırları dokunmadan görünür.
 # context: section title for the search settings, named like Facebook's own search
 Search	Arama
 # context: switch title under Search; Meta AI is Meta's assistant and keeps its name

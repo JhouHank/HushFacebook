@@ -1131,6 +1131,21 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_menu_also_from_meta", TRUE, true);
 
     /**
+     * The Help and support section of Facebook's Menu, the group Facebook types HELP, with its
+     * header and rows (issue #224). Off until it's turned on. Like Upgrades, it waits for a restart.
+     */
+    public static final BooleanSetting HIDE_MENU_HELP =
+            new BooleanSetting("hushfacebook_hide_menu_help", FALSE, true);
+
+    /**
+     * Keeps the Settings and privacy section of Facebook's Menu, the group Facebook types SETTINGS,
+     * open under its header instead of folded up, so its rows show without a tap (issue #224). Off
+     * until it's turned on. A Menu already built keeps its own state, so it waits for a restart.
+     */
+    public static final BooleanSetting KEEP_MENU_SETTINGS_EXPANDED =
+            new BooleanSetting("hushfacebook_keep_menu_settings_expanded", FALSE, true);
+
+    /**
      * The Muse card in Facebook's Menu, Meta's ad for its AI agent app, which reads as dismissed
      * the way Facebook's own Dismiss leaves it.
      */
