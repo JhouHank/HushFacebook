@@ -113,6 +113,7 @@ import app.morphe.extension.facebook.search.MetaAiSearchForTests;
 import app.morphe.extension.facebook.search.SearchHistory;
 import app.morphe.extension.facebook.stories.StoryAdvance;
 import app.morphe.extension.facebook.stories.StorySeenForTests;
+import app.morphe.extension.facebook.stories.StoryMusic;
 import app.morphe.extension.facebook.stories.StoryUpload;
 import app.morphe.extension.facebook.stories.SuggestedStoriesForTests;
 import app.morphe.extension.shared.Utils;
@@ -316,6 +317,7 @@ public class ColdStartHooksTest {
         assertFalse("a story viewed before the context got the Mark as seen button", StorySeenForTests.pointsTheButton());
         assertEquals("a Story upload asked for high quality before the context said yes",
                 "standard", StoryUpload.quality("standard"));
+        assertEquals("a photo's song picked before the context got the longer clip", 15000, StoryMusic.clipLength(15000));
         assertFalse("a story that finished before the context played again", StoryAdvance.loop());
         assertFalse(PlayerSourcesForTests.recordsAPlayer());
         assertFalse("a post menu built before the context got the video item", VideoMenuItemForTests.addsAnItem());

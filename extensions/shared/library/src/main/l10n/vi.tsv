@@ -1611,6 +1611,10 @@ Shows a small button at the left edge of a reel or video that has the window rea
 Upload Stories in HD	Tải tin lên ở chất lượng HD
 # context: summary of that switch; standard is the normal upload quality, high the better one
 Videos you post to your Story ask Facebook for its high upload quality instead of standard. Applies to the next Story you post.	Video bạn đăng lên tin sẽ yêu cầu Facebook dùng chất lượng tải lên cao thay vì tiêu chuẩn. Áp dụng từ tin tiếp theo bạn đăng.
+# context: switch title under Stories; a photo story is a still picture posted to your own Story, and a song added to it plays while the picture shows
+Longer music on photo stories	Nhạc dài hơn trên tin ảnh
+# context: summary of that switch; 15 seconds is how long Facebook lets the song on a photo play, and the song's length can be shorter than 30
+A song you add to a photo for your Story plays for up to 30 seconds instead of 15. Applies to the next song you pick.	Bài hát bạn thêm vào ảnh cho tin của mình sẽ phát tối đa 30 giây thay vì 15 giây. Áp dụng từ bài hát tiếp theo bạn chọn.
 # context: switch title under Stories; two fingers spread apart on a story or a profile photo make it bigger
 Pinch to zoom	Chụm để thu phóng
 # context: summary of that switch; "let go" means lifting your fingers off the screen

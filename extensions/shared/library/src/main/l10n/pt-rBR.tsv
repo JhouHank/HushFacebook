@@ -1501,6 +1501,10 @@ Shows a small button at the left edge of a reel or video that has the window rea
 Upload Stories in HD	Enviar Stories em HD
 # context: summary of that switch; standard is the normal upload quality, high the better one
 Videos you post to your Story ask Facebook for its high upload quality instead of standard. Applies to the next Story you post.	Vídeos que você posta no seu Story pedem ao Facebook a qualidade de envio alta em vez da padrão. Vale a partir do próximo Story que você postar.
+# context: switch title under Stories; a photo story is a still picture posted to your own Story, and a song added to it plays while the picture shows
+Longer music on photo stories	Música mais longa em Stories com foto
+# context: summary of that switch; 15 seconds is how long Facebook lets the song on a photo play, and the song's length can be shorter than 30
+A song you add to a photo for your Story plays for up to 30 seconds instead of 15. Applies to the next song you pick.	A música que você adiciona a uma foto do seu Story toca por até 30 segundos em vez de 15. Vale a partir da próxima música que você escolher.
 # context: switch title under Stories; two fingers spread apart on a story or a profile photo make it bigger
 Pinch to zoom	Pinçar para dar zoom
 # context: summary of that switch; "let go" means lifting your fingers off the screen

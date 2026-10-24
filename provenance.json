@@ -890,6 +890,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/stories/StoryMusic.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/stories/music/LongerStoryMusicPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: Longer music on photo stories, for issue #156, from Facebook 584. The Story composer's music clip length is the one static method taking FbUserSession and the composer state, answering an int, that asks the composer configuration for its FeedAttachmentConfig and holds 30000 and 15000. For a photo it returns a MobileConfig double turned into an int when that is above zero, else 15000. The patch asks the extension right before both of those returns, into the returned register, and leaves the rest of the method alone. The extension answers at least 30000 while its switch is on."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/reels/DoubleTapLike.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/reels/doubletap/DoubleTapAnchors.kt",
         "patches/src/main/kotlin/app/morphe/patches/facebook/reels/doubletap/TurnOffDoubleTapLikePatch.kt"

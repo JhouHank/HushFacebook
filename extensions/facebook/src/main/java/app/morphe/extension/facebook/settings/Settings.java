@@ -349,6 +349,14 @@ public class Settings extends BaseSettings {
     public static final BooleanSetting UPLOAD_STORIES_IN_HD =
             new BooleanSetting("hushfacebook_upload_stories_in_hd", FALSE);
 
+    /**
+     * A song added to a photo for your Story gets a clip of at least 30 seconds instead of
+     * Facebook's 15 ({@link app.morphe.extension.facebook.stories.StoryMusic}, #156). Starts off.
+     * Read each time a song is picked.
+     */
+    public static final BooleanSetting LONGER_STORY_MUSIC =
+            new BooleanSetting("hushfacebook_longer_story_music", FALSE);
+
     /** The two page filters that take server-inlined ads out of Reels and Watch. */
     public static final BooleanSetting HIDE_SPONSORED_REELS =
             new BooleanSetting("hushfacebook_hide_sponsored_reels", TRUE);

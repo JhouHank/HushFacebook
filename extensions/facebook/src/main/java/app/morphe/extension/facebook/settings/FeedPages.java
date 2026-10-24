@@ -326,7 +326,7 @@ final class FeedPages {
         if (build.contains(PatchFamily.SPONSORED_STORIES) || build.contains(PatchFamily.SUGGESTED_STORIES)
                 || build.contains(PatchFamily.STORY_AUTO_ADVANCE) || build.contains(PatchFamily.STORY_SEEN)
                 || build.contains(PatchFamily.STORY_DOWNLOAD) || build.contains(PatchFamily.STORY_UPLOAD_HD)
-                || build.contains(PatchFamily.PINCH_TO_ZOOM)) {
+                || build.contains(PatchFamily.STORY_MUSIC_LENGTH) || build.contains(PatchFamily.PINCH_TO_ZOOM)) {
             PreferenceCategory stories = category(screen, L10n.t("Stories"));
             if (build.contains(PatchFamily.SPONSORED_STORIES)) {
                 stories.addPreference(toggle(context, Settings.HIDE_SPONSORED_STORIES,
@@ -376,6 +376,12 @@ final class FeedPages {
                 stories.addPreference(toggle(context, Settings.UPLOAD_STORIES_IN_HD,
                         L10n.t("Videos you post to your Story ask Facebook for its high upload quality instead of "
                                 + "standard. Applies to the next Story you post.")));
+            }
+            if (build.contains(PatchFamily.STORY_MUSIC_LENGTH)) {
+                // Read each time a song is picked, so a change applies from the next one.
+                stories.addPreference(toggle(context, Settings.LONGER_STORY_MUSIC,
+                        L10n.t("A song you add to a photo for your Story plays for up to 30 seconds instead of 15. "
+                                + "Applies to the next song you pick.")));
             }
             if (build.contains(PatchFamily.PINCH_TO_ZOOM)) {
                 // Asked as each second finger lands, so a change shows from the next pinch.

@@ -66,6 +66,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean storyMusicLength() {
+        return false;
+    }
+
     public static boolean pinchToZoom() {
         return false;
     }
