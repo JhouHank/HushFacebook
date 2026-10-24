@@ -33,6 +33,7 @@ Changes in each Hushfacebook version, newest first.
 
 ### Changed
 
+* **Use the system font:** Patching got faster. The patch used to read through Facebook's code four separate times to find the places it changes, and it built the full name of every call and field along the way. It now makes one pass and only builds a name when the class matches one it cares about. On Facebook 584 with the recommended patches, `Use the system font` went from about 5.9 seconds to 1.5, and the whole patch from 51 seconds to 45 on a desktop. It still changes the same places in Facebook (issue #216, reported by @AbdulrahmanAlamodi).
 * **Tooling:** A push or a fixture check with a morphe-desktop CLI on the wrong patcher stops right away now. The 0.17.0 push ran its whole 17-minute gate with an old 1.18.1 CLI still set in the shell and only failed at the last step, because a bundle built on the 2.0 patcher won't load in a 1.x CLI. `scripts/pre-push.ps1` and `scripts/verify-all-patches.ps1` read which patcher the jar carries before anything heavy runs, and the message names the jar, both versions and, when it applies, the newer jar your user settings already point to.
 
 ## 0.17.0 (2026-10-22)
