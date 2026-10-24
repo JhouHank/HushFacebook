@@ -109,6 +109,18 @@ internal object BoxDecorationBorderFingerprint : Fingerprint(
     strings = listOf(BOX_DECORATION_BORDER_ERROR),
 )
 
+internal const val NATIVE_TEMPLATE_BOX = "NTBox3Builder#build"
+
+/**
+ * Native Templates' component builder (584 `LX/4Kb;->D9f(LX/3tD;LX/5en;LX/4Km;)LX/3T3;`): the
+ * method that builds each node of a native template by its kind, such as the Menu's profile card,
+ * and traces a box as [NATIVE_TEMPLATE_BOX]. It and its child builder set a box's server colour
+ * with Litho's backgroundColor ([hookNativeTemplateBackgrounds]).
+ */
+internal object NativeTemplateBuilderFingerprint : Fingerprint(
+    strings = listOf(NATIVE_TEMPLATE_BOX),
+)
+
 /**
  * The Data mode banner of Facebook Flex, issue #86: the one method that logs both of its own steps,
  * as it starts and when the banner's wrapper isn't there. It paints the wrapper with a card's token.

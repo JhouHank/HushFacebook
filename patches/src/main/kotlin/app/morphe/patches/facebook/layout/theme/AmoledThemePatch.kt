@@ -31,6 +31,7 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import app.morphe.patches.facebook.ads.affiliate.writesRegister
 import app.morphe.util.addInstructionsAtControlFlowLabel
 import app.morphe.util.returnEarly
+import app.morphe.util.superclassChain
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
@@ -702,6 +703,21 @@ val amoledThemePatch = bytecodePatch(
         // as ints on props, past every route.
         hookReactColours()
 
+        // The fill of each Bloks box and native template box, the server colours that say they're a
+        // background: in light mode Settings' page and the Menu's profile card take the Light
+        // background color (#214), where parseColor can't tell a white page from a white label.
+        // Accent color hooks the same box builder.
+        try {
+            hookBloksFills(AMOLED_BLOKS_FILL)
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. Light background color leaves server screens like Settings white.")
+        }
+        try {
+            hookNativeTemplateBackgrounds()
+        } catch (moved: PatchException) {
+            patchLog.warning("${moved.message}. Light background color leaves native template cards like the Menu's profile card white.")
+        }
+
         // The older comment row's time, whose slot drew blank on a black sheet (#138). Material You
         // calls the same hook and finds it in place.
         try {
@@ -743,6 +759,73 @@ internal const val FLEX_BANNER = "Lapp/morphe/extension/facebook/theme/AmoledThe
 
 /** Gets a colour Facebook writes on its dark branch only, for Black cards (#191). Gives the colour to paint. */
 internal const val AMOLED_DARK_BRANCH = "Lapp/morphe/extension/facebook/theme/AmoledTheme;->darkBranch(I)I"
+
+/** Gets a Bloks box's fill, for the Light background color row (#214). Gives the colour to fill with. */
+internal const val AMOLED_BLOKS_FILL = "Lapp/morphe/extension/facebook/theme/AmoledTheme;->bloksFill(I)I"
+
+private const val COLOR_DRAWABLE_INIT = "Landroid/graphics/drawable/ColorDrawable;-><init>(I)V"
+
+/**
+ * Native Templates' backgrounds (#214). The Menu's profile card is a native template, whose box
+ * hands its server colour to Litho's backgroundColor (584 `LX/3T3;->A1H(I)V`) and never reaches the
+ * box builder ([hookBloksFills]). [NativeTemplateBuilderFingerprint]'s builder and the child builder
+ * it calls with its own parameters (584 `LX/4Kd;->A00`) each set a background colour that way, and
+ * each of those colours goes through [target] just before the call.
+ */
+internal fun BytecodePatchContext.hookNativeTemplateBackgrounds(target: String = AMOLED_BLOKS_FILL) {
+    val builder = NativeTemplateBuilderFingerprint.method
+    val parameters = builder.parameterTypes.map(CharSequence::toString)
+    val children = builder.implementation!!.instructions
+        .filter { it.opcode == Opcode.INVOKE_STATIC || it.opcode == Opcode.INVOKE_STATIC_RANGE }
+        .mapNotNull { (it as ReferenceInstruction).reference as? MethodReference }
+        .filter { it.returnType == builder.returnType && it.parameterTypes.map(CharSequence::toString) == parameters }
+        .distinctBy { it.toString() }
+        .map { child ->
+            mutableClassDefBy(child.definingClass).methods.single { method ->
+                method.name == child.name && method.returnType == child.returnType &&
+                    method.parameterTypes.map(CharSequence::toString) == parameters
+            }
+        }
+    val hooked = (listOf(builder) + children).sumOf { hookBackgroundColours(it, target) }
+    if (hooked == 0) throw PatchException("Native Templates' builders set no background colour")
+}
+
+/**
+ * Sends each colour [method] hands Litho's backgroundColor ([isBackgroundColour]) through [target]
+ * just before the call, at the call's label, so a jump to the call takes the colour through too.
+ * Gives how many calls it hooked. Last first, as each insert moves the later indices.
+ */
+private fun BytecodePatchContext.hookBackgroundColours(method: MutableMethod, target: String): Int {
+    val sites = method.implementation!!.instructions.withIndex().mapNotNull { (index, instruction) ->
+        if (instruction.opcode != Opcode.INVOKE_VIRTUAL) return@mapNotNull null
+        val call = (instruction as ReferenceInstruction).reference as MethodReference
+        if (!isBackgroundColour(call)) null else index to (instruction as FiveRegisterInstruction).registerD
+    }
+    sites.asReversed().forEach { (index, colour) ->
+        method.addInstructionsAtControlFlowLabel(
+            index,
+            """
+                invoke-static/range { v$colour .. v$colour }, $target
+                move-result v$colour
+            """,
+        )
+    }
+    return sites.size
+}
+
+/**
+ * Litho's backgroundColor (584 `LX/3T3;->A1H(I)V`, and `A1J` for the pressed state's): an `(I)V`
+ * method of the builder, or a class above it, that wraps its int in a ColorDrawable.
+ */
+private fun BytecodePatchContext.isBackgroundColour(call: MethodReference): Boolean {
+    if (call.returnType != "V" || call.parameterTypes.map(CharSequence::toString) != listOf("I")) return false
+    val method = superclassChain(call.definingClass).firstNotNullOfOrNull { type ->
+        classDefByOrNull(type)?.methods?.firstOrNull { it.name == call.name && it.parameterTypes.map(CharSequence::toString) == listOf("I") }
+    } ?: return false
+    return method.implementation?.instructions?.any {
+        ((it as? ReferenceInstruction)?.reference as? MethodReference)?.toString() == COLOR_DRAWABLE_INIT
+    } == true
+}
 
 /** The FDS token the Data mode banner paints its wrapper with. */
 private const val CARD_BACKGROUND = "CARD_BACKGROUND"

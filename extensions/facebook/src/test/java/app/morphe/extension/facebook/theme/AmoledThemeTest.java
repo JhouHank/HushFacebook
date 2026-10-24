@@ -875,4 +875,47 @@ public class AmoledThemeTest {
         assertEquals("dark mode", 0xFFFFFFFF, AmoledTheme.applyLight(0xFFFFFFFF, Mig.SURFACE));
         assertEquals("dark mode's text", 0xFF65686C, AmoledTheme.applyLight(0xFF65686C, Mig.SECONDARY));
     }
+
+    /**
+     * Issue #214's server screens: Settings' page and the Menu's profile card are Bloks boxes whose
+     * white fill the server sends, and a React screen's backgrounds come from its JavaScript. Both
+     * are backgrounds only, so in light mode their whites and light greys take the Light background
+     * color as route one's surfaces do.
+     */
+    @Test
+    public void serverBackgroundsTakeTheLightBackgroundColour() {
+        DarkMode.answer(false);
+        AmoledTheme.useLight(CREAM);
+
+        assertEquals("Settings' page", CREAM, AmoledTheme.bloksFill(0xFFFFFFFF));
+        assertEquals("the search box", 0xFFF0EBDD, AmoledTheme.bloksFill(0xFFF0F2F5));
+        assertEquals("a grey button", 0xFFE2DED1, AmoledTheme.bloksFill(0xFFE2E5E9));
+        assertEquals("a React page", CREAM, AmoledTheme.react(0xFFFFFFFF));
+        assertEquals("a React chip", 0xFFF0EBDD, AmoledTheme.react(0xFFF0F2F5));
+        assertEquals("a React page, as ReactColours paints it", CREAM, ReactColours.background(0xFFFFFFFF, true, false));
+    }
+
+    /** The mutation controls for server backgrounds: blank, dark mode and every other colour are as they came. */
+    @Test
+    public void serverBackgroundsAreStockWithoutTheRowAndForTheRest() {
+        DarkMode.answer(false);
+        AmoledTheme.useLight(0);
+        assertEquals("a blank row", 0xFFFFFFFF, AmoledTheme.bloksFill(0xFFFFFFFF));
+        assertEquals("a blank row's React page", 0xFFFFFFFF, AmoledTheme.react(0xFFFFFFFF));
+        assertEquals("a blank row, as ReactColours paints it", 0xFFFFFFFF, ReactColours.background(0xFFFFFFFF, true, false));
+
+        AmoledTheme.useLight(CREAM);
+        assertEquals("a blue button", 0xFF0866FF, AmoledTheme.bloksFill(0xFF0866FF));
+        assertEquals("the Video tab's dark grey", 0xFF252728, AmoledTheme.bloksFill(0xFF252728));
+        assertEquals("the Video tab's React strip", 0xFF252728, AmoledTheme.react(0xFF252728));
+        assertEquals("a pale blue box", 0xFFE7F3FF, AmoledTheme.bloksFill(0xFFE7F3FF));
+        assertEquals("a translucent white", 0x80FFFFFF, AmoledTheme.bloksFill(0x80FFFFFF));
+        assertEquals("a fill the row already gave", CREAM, AmoledTheme.bloksFill(CREAM));
+        assertEquals("server text keeps its white", 0xFFFFFFFF, AmoledTheme.parseColor("#FFFFFF"));
+
+        DarkMode.answer(true);
+        assertEquals("dark mode's white box", 0xFFFFFFFF, AmoledTheme.bloksFill(0xFFFFFFFF));
+        assertEquals("dark mode's grey box", 0xFF333334, AmoledTheme.bloksFill(0xFF333334));
+        assertEquals("dark mode's React strip", BLACK, AmoledTheme.react(0xFF252728));
+    }
 }

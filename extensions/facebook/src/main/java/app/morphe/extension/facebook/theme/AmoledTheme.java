@@ -750,11 +750,28 @@ public final class AmoledTheme {
     /**
      * A background a React Native screen sets on a view (ReactColours), such as the strip behind
      * Marketplace home's chips. It comes from the screen's JavaScript with no token, so it takes
-     * route four's rule.
+     * route four's rule. Only backgrounds come here, so in light mode with the Light background
+     * color row set a white or light grey one takes the row's colour as route one's surfaces do
+     * ({@link #lightSurface}, issue #214).
      */
     static int react(int color) {
         HookStatus.invoked(FamilyNames.AMOLED_THEME);
+        if (lightBackground != 0 && !DarkMode.on()) return lightSurface(color);
         return withoutToken(color);
+    }
+
+    /**
+     * Route four for the fill of a Bloks box (582 {@code LX/4Nl;}) or a native template's box (the
+     * Menu's profile card), a server colour that comes with its role (issue #214).
+     * {@link #parseColor} can't tell a white page from the white label on a blue button, so it
+     * leaves light mode alone. A box's fill is always a background, so with the
+     * Light background color row set and Facebook in light mode a white or light grey one takes the
+     * row's colour as route one's surfaces do ({@link #lightSurface}). Unset, or in dark mode, where
+     * {@link #parseColor} has already answered for it, the fill comes back as it came.
+     */
+    public static int bloksFill(int color) {
+        HookStatus.invoked(FamilyNames.AMOLED_THEME);
+        return lightBackground == 0 || DarkMode.on() ? color : lightSurface(color);
     }
 
     /**
