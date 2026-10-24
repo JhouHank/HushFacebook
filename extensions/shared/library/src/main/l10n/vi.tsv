@@ -1796,7 +1796,7 @@ Hides the People you may know row Facebook shows when you open search. Your rece
 # context: switch title under Search; on, what the user searches for isn't added to their Facebook search history
 Don't save search history	Không lưu lịch sử tìm kiếm
 # context: summary of that switch; searches already in the history are the user's own past searches, which stay until the user deletes them
-What you search for isn't added to your Facebook search history. Searches already there stay until you delete them.	Những gì bạn tìm kiếm sẽ không được thêm vào lịch sử tìm kiếm Facebook của bạn. Các tìm kiếm đã có sẵn vẫn giữ lại cho đến khi bạn xóa.
+What you search for, and the pages and profiles you open from a search, aren't added to your Facebook search history. Searches already there stay until you delete them.	Những gì bạn tìm kiếm, cùng các trang và trang cá nhân bạn mở từ một lần tìm kiếm, sẽ không được thêm vào lịch sử tìm kiếm Facebook của bạn. Các tìm kiếm đã có sẵn vẫn giữ lại cho đến khi bạn xóa.
 # context: switch title under Reels and Watch; the audio line is the scrolling line at the bottom of a reel naming its sound, like "Name · Original audio" or a song title
 Hide the audio line on reels	Ẩn dòng âm thanh trên reel
 # context: summary of that switch; "Original audio" is Facebook's own label, so use the wording Facebook shows in this language

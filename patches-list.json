@@ -607,7 +607,7 @@
     },
     {
       "name": "Don't save search history",
-      "description": "Stops Facebook from adding what you search for to your search history, so there's nothing to clear by hand. Searches already there stay until you delete them. Starts off. Turn it on in Hushfacebook settings > Search.",
+      "description": "Stops Facebook from adding what you search for, and the pages and profiles you open from a search, to your search history, so there's nothing to clear by hand. Searches already there stay until you delete them. Starts off. Turn it on in Hushfacebook settings > Search.",
       "category": "Privacy",
       "use": true,
       "dependencies": [
