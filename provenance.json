@@ -919,6 +919,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/reels/DoubleTapSkip.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/reels/doubletapskip/DoubleTapSkipPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: Double tap to skip, for issue #225, from Facebook 584. Facebook's players carry a double-tap skip of their own, a Kotlin lambda found by its kept captured names $edgeWidthPercent, $skipDuration and $videoDurationInMs and its invoke taking a MotionEvent and the view, which seeks on a double tap at the left or right edge only when one MobileConfig boolean is on. The patch takes that flag's id from the lambda's one read, finds every read of the id in the classes naming MobileConfigUnsafeContext (the lambda and the player builders that pick the skip and the edge from it), refuses when a load of the id isn't a read it knows, and hands each answer to the extension right after its move-result. The extension answers yes while its switch is on and Facebook's own answer otherwise."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/media/ReelSpeed.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/media/reelspeed/KeepReelSpeedPatch.kt",
         "patches/src/main/kotlin/app/morphe/patches/facebook/media/reelspeed/ReelSpeedAnchors.kt"

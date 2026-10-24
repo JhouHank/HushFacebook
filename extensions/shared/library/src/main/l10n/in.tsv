@@ -805,6 +805,10 @@ Saving... To cancel, open Downloads in Hushfacebook settings.	Menyimpan… Untuk
 Turn off double tap to like	Matikan ketuk dua kali untuk menyukai
 # context: summary of that switch; Like is the name of Facebook's own button, as Facebook shows it in this language
 A double tap on a reel or video no longer likes it or shows a heart. A single tap and the Like button work as before.	Mengetuk dua kali reel atau video tidak lagi menyukainya atau menampilkan hati. Satu ketukan dan tombol Suka tetap berfungsi seperti biasa.
+# context: switch title under Reels and Watch; on, a double tap on the left or right edge of a reel or a video skips back or forward in it
+Double tap to skip	Ketuk dua kali untuk melompat
+# context: summary of that switch; the edge is about a fifth of the player's width, and 30 seconds is the whole length of the reel or video
+A double tap on the left or right edge of a reel or video skips back or forward 10 seconds, or 5 on one under 30 seconds. A double tap in the middle works as before.	Mengetuk dua kali tepi kiri atau kanan reel atau video akan mundur atau maju 10 detik, atau 5 detik jika kurang dari 30 detik. Ketuk dua kali di tengah tetap berfungsi seperti biasa.
 Keep the reel speed	Pertahankan kecepatan reel
 # context: summary of that switch
 A playback speed you pick in a reel's menu stays for the next reels, after a restart too, until you pick another. Off, every reel starts at normal speed.	Kecepatan pemutaran yang kamu pilih di menu reel tetap dipakai untuk reel berikutnya, juga setelah dimulai ulang, sampai kamu memilih yang lain. Jika mati, setiap reel dimulai dengan kecepatan normal.

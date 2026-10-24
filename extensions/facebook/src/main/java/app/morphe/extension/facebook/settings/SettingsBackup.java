@@ -212,6 +212,7 @@ public final class SettingsBackup {
             Settings.HIDE_READ_RECEIPTS,
             Settings.ORIGINAL_CHAT_MEDIA,
             Settings.TURN_OFF_DOUBLE_TAP_LIKE,
+            Settings.DOUBLE_TAP_SKIP,
             Settings.DOUBLE_TAP_OPENS_COMMENTS,
             Settings.LONG_PRESS_OPENS_COMMENTS,
             Settings.KEEP_REEL_SPEED,

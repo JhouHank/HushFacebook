@@ -679,6 +679,42 @@
       "options": []
     },
     {
+      "name": "Double tap to skip",
+      "description": "A double tap on the left or right edge of a reel or video skips back or forward 10 seconds, or 5 on one under 30 seconds. Starts off. Turn it on in Hushfacebook settings > Reels and Watch.",
+      "category": "Reels",
+      "use": true,
+      "dependencies": [
+        "Hushfacebook settings"
+      ],
+      "compatiblePackages": {
+        "com.facebook.katana": [
+          "584.0.0.51.56"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Facebook",
+          "packageName": "com.facebook.katana",
+          "description": null,
+          "appIconColor": 550655,
+          "signatures": [
+            "911d604446084ca7f4760b775bfc160fa8702441240a7258645d7a72c4312d27",
+            "e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1"
+          ],
+          "targets": [
+            {
+              "version": "584.0.0.51.56",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 475817393
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Download any photo",
       "description": "Shows Save photo on every photo you open, even where the poster turned saving off, and saves the largest size so you get the best copy. A GIF comment gets Save GIF when you long-press it. On by default. Turn it off in Hushfacebook settings > Downloads.",
       "category": "Downloads",

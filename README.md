@@ -172,6 +172,7 @@ Each row says what the patch does, how its switch starts and which settings page
 | `Tag suggestions only after @` | Stops Facebook offering people to tag while you type ordinary words in posts and comments, so names don't pop up in your way. Typing @ still brings up the list. Starts off. Turn it on in Hushfacebook settings > Writing. |
 | `Tap to play` | Videos, reels, stories and music wait for your tap instead of starting by themselves, so nothing plays until you want it to. Starts off. Turn it on in Hushfacebook settings > Playback. |
 | `Turn off double tap to like` | Stops a double tap on a reel or video from liking it, so you don't like things by accident. A single tap still plays or pauses, and the Like button still works. Starts off. Turn it on in Hushfacebook settings > Reels and Watch. |
+| `Double tap to skip` | A double tap on the left or right edge of a reel or video skips back or forward 10 seconds, or 5 on one under 30 seconds. Starts off. Turn it on in Hushfacebook settings > Reels and Watch. |
 | `Open comments with a gesture` | Open a reel's comments with a double tap or a long press, on the sheet the Comment button opens, instead of liking or holding, and a feed post's with a long press on its photo or name line. Starts off. Turn it on in Hushfacebook settings > Reels and Watch. |
 | `Turn off haptics` | Stops the short vibrations Facebook plays when you tap and swipe in it, if you find them distracting. Your keyboard and your phone's own vibrations stay. Starts off. Turn it on in Hushfacebook settings > Appearance. |
 | `Turn off HDR brightness` | Stops HDR videos and photos from turning your screen up to full brightness, which can be harsh in the dark. They keep their resolution. Starts off. Turn it on in Hushfacebook settings > Playback. |
@@ -283,7 +284,7 @@ A few rows hand a link to another app instead of going online themselves. **Send
 | Minimum Android version | Android 11 |
 | Download | [APKMirror](https://www.apkmirror.com/apk/facebook-2/facebook/) |
 
-There are 99 patches for `com.facebook.katana`, and a release only goes out once every one of them has applied to that build. Older Facebook versions like 583 and 582 aren't supported any more, so update Facebook before you patch. When a newer stable Facebook comes out, Hushfacebook moves to it and drops the one before. Meta's builds for Android 9 and 8 can't be patched at all, since their code sits in a compressed archive the patcher can't read.
+There are 100 patches for `com.facebook.katana`, and a release only goes out once every one of them has applied to that build. Older Facebook versions like 583 and 582 aren't supported any more, so update Facebook before you patch. When a newer stable Facebook comes out, Hushfacebook moves to it and drops the one before. Meta's builds for Android 9 and 8 can't be patched at all, since their code sits in a compressed archive the patcher can't read.
 
 SHA-256 of the .apkm file the patches are checked against:
 

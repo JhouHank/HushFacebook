@@ -802,6 +802,10 @@ Saving... To cancel, open Downloads in Hushfacebook settings.	正在保存……
 Turn off double tap to like	关闭双击点赞
 # context: summary of that switch; Like is the name of Facebook's own button, as Facebook shows it in this language
 A double tap on a reel or video no longer likes it or shows a heart. A single tap and the Like button work as before.	双击 Reels 或视频不再点赞，也不会显示爱心。单击和“赞”按钮照常使用。
+# context: switch title under Reels and Watch; on, a double tap on the left or right edge of a reel or a video skips back or forward in it
+Double tap to skip	双击快进快退
+# context: summary of that switch; the edge is about a fifth of the player's width, and 30 seconds is the whole length of the reel or video
+A double tap on the left or right edge of a reel or video skips back or forward 10 seconds, or 5 on one under 30 seconds. A double tap in the middle works as before.	双击 Reels 或视频的左边缘或右边缘可后退或快进 10 秒，不到 30 秒的视频为 5 秒。双击中间照常使用。
 Keep the reel speed	保持 Reels 播放速度
 # context: summary of that switch
 A playback speed you pick in a reel's menu stays for the next reels, after a restart too, until you pick another. Off, every reel starts at normal speed.	你在 Reels 菜单中选择的播放速度会保留给后面的 Reels，重启后也一样，直到你选择其他速度。关闭后，每个 Reels 都以正常速度开始。

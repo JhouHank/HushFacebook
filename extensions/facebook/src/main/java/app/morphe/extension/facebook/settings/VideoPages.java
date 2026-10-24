@@ -172,6 +172,12 @@ final class VideoPages {
                     L10n.t("A double tap on a reel or video no longer likes it or shows a heart. A single tap and the Like "
                             + "button work as before.")));
         }
+        if (build.contains(PatchFamily.DOUBLE_TAP_SKIP)) {
+            // Read as each player is set up, so a change shows on the next reel or video.
+            reels.addPreference(toggle(context, Settings.DOUBLE_TAP_SKIP,
+                    L10n.t("A double tap on the left or right edge of a reel or video skips back or forward 10 seconds, "
+                            + "or 5 on one under 30 seconds. A double tap in the middle works as before.")));
+        }
         if (build.contains(PatchFamily.REEL_GESTURES)) {
             reels.addPreference(toggle(context, Settings.DOUBLE_TAP_OPENS_COMMENTS,
                     L10n.t("A double tap on a reel opens its comments instead of liking it. Turn off double tap to like "

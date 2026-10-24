@@ -805,6 +805,10 @@ Saving... To cancel, open Downloads in Hushfacebook settings.	Đang lưu... Đ�
 Turn off double tap to like	Tắt nhấn đúp để thích
 # context: summary of that switch; Like is the name of Facebook's own button, as Facebook shows it in this language
 A double tap on a reel or video no longer likes it or shows a heart. A single tap and the Like button work as before.	Nhấn đúp vào reel hoặc video không còn thích hay hiện trái tim. Nhấn một lần và nút Thích vẫn hoạt động như trước.
+# context: switch title under Reels and Watch; on, a double tap on the left or right edge of a reel or a video skips back or forward in it
+Double tap to skip	Nhấn đúp để tua
+# context: summary of that switch; the edge is about a fifth of the player's width, and 30 seconds is the whole length of the reel or video
+A double tap on the left or right edge of a reel or video skips back or forward 10 seconds, or 5 on one under 30 seconds. A double tap in the middle works as before.	Nhấn đúp vào cạnh trái hoặc phải của reel hoặc video sẽ tua lùi hoặc tới 10 giây, hoặc 5 giây với video dưới 30 giây. Nhấn đúp ở giữa vẫn hoạt động như trước.
 Keep the reel speed	Giữ tốc độ reel
 # context: summary of that switch
 A playback speed you pick in a reel's menu stays for the next reels, after a restart too, until you pick another. Off, every reel starts at normal speed.	Tốc độ phát bạn chọn trong menu của reel được giữ cho các reel tiếp theo, kể cả sau khi khởi động lại, đến khi bạn chọn tốc độ khác. Khi tắt, mọi reel bắt đầu ở tốc độ bình thường.

@@ -117,6 +117,8 @@ public enum PatchFamily {
             Settings.NEWEST_REELS_FIRST),
     DOUBLE_TAP_LIKE(FamilyNames.DOUBLE_TAP_LIKE, "doubleTapLike", null,
             Settings.TURN_OFF_DOUBLE_TAP_LIKE),
+    DOUBLE_TAP_SKIP(FamilyNames.DOUBLE_TAP_SKIP, "doubleTapSkip", null,
+            Settings.DOUBLE_TAP_SKIP),
     REEL_GESTURES(FamilyNames.REEL_GESTURES, "reelGestures", null,
             Settings.DOUBLE_TAP_OPENS_COMMENTS, Settings.LONG_PRESS_OPENS_COMMENTS),
     KEEP_REEL_SPEED(FamilyNames.KEEP_REEL_SPEED, "keepReelSpeed", null,

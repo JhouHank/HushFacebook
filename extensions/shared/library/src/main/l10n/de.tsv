@@ -805,6 +805,10 @@ Saving... To cancel, open Downloads in Hushfacebook settings.	Wird gespeichert �
 Turn off double tap to like	Doppeltippen zum Liken ausschalten
 # context: summary of that switch; Like is the name of Facebook's own button, as Facebook shows it in this language
 A double tap on a reel or video no longer likes it or shows a heart. A single tap and the Like button work as before.	Doppeltippen auf ein Reel oder Video markiert es nicht mehr mit „Gefällt mir“ und zeigt kein Herz. Einmal tippen und der „Gefällt mir“-Button funktionieren wie bisher.
+# context: switch title under Reels and Watch; on, a double tap on the left or right edge of a reel or a video skips back or forward in it
+Double tap to skip	Doppeltippen zum Springen
+# context: summary of that switch; the edge is about a fifth of the player's width, and 30 seconds is the whole length of the reel or video
+A double tap on the left or right edge of a reel or video skips back or forward 10 seconds, or 5 on one under 30 seconds. A double tap in the middle works as before.	Doppeltippen am linken oder rechten Rand eines Reels oder Videos springt 10 Sekunden zurück oder vor, bei einem unter 30 Sekunden 5. Doppeltippen in der Mitte funktioniert wie bisher.
 Keep the reel speed	Reel-Geschwindigkeit beibehalten
 # context: summary of that switch
 A playback speed you pick in a reel's menu stays for the next reels, after a restart too, until you pick another. Off, every reel starts at normal speed.	Eine Wiedergabegeschwindigkeit, die du im Menü eines Reels wählst, bleibt für die nächsten Reels, auch nach einem Neustart, bis du eine andere wählst. Aus startet jedes Reel mit normaler Geschwindigkeit.

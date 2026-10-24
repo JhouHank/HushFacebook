@@ -671,6 +671,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_turn_off_double_tap_like", FALSE);
 
     /**
+     * Facebook's own double-tap skip on reels and videos, which a server test keeps off for most
+     * accounts: a double tap on the left or right edge skips back or forward 10 seconds, or 5 on a
+     * video under 30 seconds ({@link app.morphe.extension.facebook.reels.DoubleTapSkip}, #225).
+     * Starts off. Read as each player is set up and on each double tap.
+     */
+    public static final BooleanSetting DOUBLE_TAP_SKIP =
+            new BooleanSetting("hushfacebook_double_tap_skip", FALSE);
+
+    /**
      * A double tap on a reel opens its comments, on the sheet the Comment button opens, in place of
      * liking it ({@link app.morphe.extension.facebook.reels.ReelGestures}, #179). Turn off double
      * tap to like stays the stronger switch: with it on, the double tap does nothing, as before.

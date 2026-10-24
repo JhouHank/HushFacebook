@@ -118,6 +118,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean doubleTapSkip() {
+        return false;
+    }
+
     public static boolean reelGestures() {
         return false;
     }

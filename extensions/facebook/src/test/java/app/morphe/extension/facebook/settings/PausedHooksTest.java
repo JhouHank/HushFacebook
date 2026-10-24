@@ -136,6 +136,7 @@ import app.morphe.extension.facebook.navigation.StartTabRouteForTests;
 import app.morphe.extension.facebook.notifications.NotificationKindsForTests;
 import app.morphe.extension.facebook.profile.ProfileNotesForTests;
 import app.morphe.extension.facebook.reels.DoubleTapLike;
+import app.morphe.extension.facebook.reels.DoubleTapSkip;
 import app.morphe.extension.facebook.reels.OriginalAudio;
 import app.morphe.extension.facebook.reels.ReelGesturesForTests;
 import app.morphe.extension.facebook.reels.ReelHold;
@@ -597,6 +598,8 @@ public class PausedHooksTest {
                 () -> DoubleTapLike.likeKey("reel") == null,
                 () -> DoubleTapLike.holdBackLike("DOUBLE_TAP"),
                 DoubleTapLike::holdBackTap));
+        // Facebook's double-tap skip test, read as off, is answered on.
+        probes.put(PatchFamily.DOUBLE_TAP_SKIP, Collections.singletonList(() -> DoubleTapSkip.flag(false)));
         // A double tap on a reel opens its comments in place of a like, a long press does too, and neither
         // a heart plays nor a like from a double tap is sent while the first switch is on.
         probes.put(PatchFamily.REEL_GESTURES, Arrays.asList(
