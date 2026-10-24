@@ -22,7 +22,7 @@ Each row in the [patch table](#patches) says how its switch starts. The ad filte
 
 This project has no connection to Meta or to the Morphe project. Neither endorses it, and neither wrote it.
 
-The latest release is [v0.17.0](https://github.com/SysAdminDoc/Hushfacebook/releases/tag/v0.17.0), with 95 patches. It includes all changes since v0.16.1, among them the move to Facebook 584 and Morphe's 2.0 patcher (update Morphe Manager to 2.0.0 or newer first), a switch that closes Facebook when you leave it and a patch that keeps feed videos muted, as the [changelog](CHANGELOG.md) describes.
+The latest release is [v0.18.0](https://github.com/SysAdminDoc/Hushfacebook/releases/tag/v0.18.0), with 102 patches. It includes all changes since v0.17.0, among them patching that takes about a minute on a phone, a 10 second double tap skip on reels, pinch to zoom on stories and profile photos, and your own background colors and Home header, as the [changelog](CHANGELOG.md) describes.
 
 [Add to Morphe](https://morphe.software/add-source?github=SysAdminDoc%2FHushfacebook) | [Download a release](https://github.com/SysAdminDoc/Hushfacebook/releases/latest) | [Browse the patches](#patches)
 
