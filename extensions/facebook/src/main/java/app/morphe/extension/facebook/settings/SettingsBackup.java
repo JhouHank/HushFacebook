@@ -222,6 +222,7 @@ public final class SettingsBackup {
             Settings.SLOWER_REEL_SPEEDS,
             Settings.HOLD_REEL_FOR_2X,
             Settings.HOLD_REEL_RIGHT_EDGE,
+            Settings.HOLD_FEED_VIDEO_FOR_2X,
             Settings.DEFAULT_COMMENT_ORDER,
             Settings.HIDE_META_AI_SUMMARIES,
             Settings.LIKE_ONLY,

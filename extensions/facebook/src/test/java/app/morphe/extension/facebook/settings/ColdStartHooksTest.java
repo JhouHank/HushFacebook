@@ -106,6 +106,7 @@ import app.morphe.extension.facebook.notifications.NotificationKindsForTests;
 import app.morphe.extension.facebook.profile.ProfileNotesForTests;
 import app.morphe.extension.facebook.reels.DoubleTapLike;
 import app.morphe.extension.facebook.reels.DoubleTapSkip;
+import app.morphe.extension.facebook.reels.FeedVideoHoldForTests;
 import app.morphe.extension.facebook.reels.ReelHold;
 import app.morphe.extension.facebook.reels.ReelHoldForTests;
 import app.morphe.extension.facebook.reels.ReelCleanMode;
@@ -325,6 +326,7 @@ public class ColdStartHooksTest {
             return true;
         });
         assertFalse("a lift's speed before the context was changed", ReelHoldForTests.putsBackTheSpeedBeforeAHold());
+        assertFalse("a finger on a feed video before the context started a hold", FeedVideoHoldForTests.startsTiming());
         assertFalse("stories viewed before the context were kept off their viewer lists", StorySeenForTests.holdsABatch());
         assertFalse("a marked story viewed before the context went out alone", StorySeenForTests.sendsOnlyTheMarked());
         assertFalse("a story viewed before the context got the Mark as seen button", StorySeenForTests.pointsTheButton());

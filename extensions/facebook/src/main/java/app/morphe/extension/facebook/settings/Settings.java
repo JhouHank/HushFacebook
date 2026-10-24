@@ -750,6 +750,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hold_reel_right_edge", FALSE);
 
     /**
+     * A video playing in a feed, Home's or Watch's, plays at double speed while you hold it and goes
+     * back to its speed when you let go ({@link app.morphe.extension.facebook.reels.FeedVideoHold}).
+     * Works without {@link #HOLD_REEL_FOR_2X}. Starts off. Off or paused, a hold on a feed video is
+     * Facebook's.
+     */
+    public static final BooleanSetting HOLD_FEED_VIDEO_FOR_2X =
+            new BooleanSetting("hushfacebook_hold_feed_video_for_2x", FALSE);
+
+    /**
      * Comment sheets ask for the order in {@link #COMMENT_ORDER} where Facebook's servers would
      * choose one, and an order picked in a post's comments stays for that post until Facebook
      * restarts ({@link app.morphe.extension.facebook.comments.DefaultCommentOrder}). A request that

@@ -816,6 +816,10 @@ Holding a reel plays it at double speed until you let go, in place of Facebook's
 Only on the right edge	仅限右侧边缘
 # context: summary of that switch; the right third is the right-hand third of the reel's width, the long-press menu is Facebook's menu on a long press
 With the switch above on, only a hold on the right third of a reel plays it at double speed. Hold anywhere else and Facebook's long-press menu opens.	开启上面的开关后，只有按住 Reels 右侧三分之一才会以两倍速播放。按住其他位置则打开 Facebook 的长按菜单。
+# context: label of a switch under Hold a reel for 2x; a feed video is a video playing in Home's feed or in Watch, not a reel
+Hold a feed video for 2x	按住动态消息视频以 2 倍速播放
+# context: summary of that switch; Watch is Facebook's video tab, keep its name; the switches above are Hold a reel for 2x and Only on the right edge
+Holding a video in the feed or in Watch plays it at double speed until you let go. It works without the switches above.	按住动态消息或 Watch 中的视频会以两倍速播放，直到你松手。无需开启上面的开关。
 Default playback quality	默认播放画质
 Play videos, reels and stories at the quality below. A quality picked in a video's own menu still wins.	以下面的画质播放视频、Reels 和快拍。在视频自带菜单中选择的画质仍然优先。
 Playback quality	播放画质

@@ -140,6 +140,7 @@ import app.morphe.extension.facebook.reels.DoubleTapLike;
 import app.morphe.extension.facebook.reels.DoubleTapSkip;
 import app.morphe.extension.facebook.reels.OriginalAudio;
 import app.morphe.extension.facebook.reels.ReelGesturesForTests;
+import app.morphe.extension.facebook.reels.FeedVideoHoldForTests;
 import app.morphe.extension.facebook.reels.ReelHold;
 import app.morphe.extension.facebook.reels.ReelHoldForTests;
 import app.morphe.extension.facebook.reels.FeedVideoAlone;
@@ -627,7 +628,9 @@ public class PausedHooksTest {
                     ReelHold.held();
                     return ReelHold.release(false);
                 }),
-                ReelHoldForTests::putsBackTheSpeedBeforeAHold));
+                ReelHoldForTests::putsBackTheSpeedBeforeAHold,
+                // With Hold a feed video for 2x on, a finger down starts timing a hold.
+                FeedVideoHoldForTests::startsTiming));
         // A speed picked on a reel is set on the next reel the viewer starts, and one picked on a
         // feed video on the next feed video.
         probes.put(PatchFamily.KEEP_REEL_SPEED, Arrays.asList(ReelSpeedForTests::keepsAPickedSpeed,
