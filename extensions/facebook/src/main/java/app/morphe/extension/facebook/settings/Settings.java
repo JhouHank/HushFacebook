@@ -528,6 +528,16 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_hide_slow_connection_message", FALSE);
 
     /**
+     * The tiles in the feed's Reels row play their reel from the start to its end instead of the
+     * short clip Facebook picks, which is often one second played over and over
+     * ({@link app.morphe.extension.facebook.reels.ReelDeclutter#allowsPreviewClip} and
+     * {@link app.morphe.extension.facebook.reels.ReelDeclutter#previewClipEnd}, #228). Off by
+     * default. A change shows on tiles the row draws after it.
+     */
+    public static final BooleanSetting PLAY_FEED_REELS_WHOLE =
+            new BooleanSetting("hushfacebook_play_feed_reels_whole", FALSE);
+
+    /**
      * A video tapped in the feed opens in the full-screen player on its own, with no reels to swipe
      * to after it ({@link app.morphe.extension.facebook.reels.FeedVideoAlone}, #161). The player's
      * reels feed is told nothing more came. The Reels tab keeps scrolling. Off until it's turned on,

@@ -151,6 +151,10 @@ final class VideoPages {
                     L10n.t("A video you tap in the feed opens full screen by itself, with no reels to swipe to after it. "
                             + "The Reels tab keeps scrolling. Off by default, since it hasn't been tried on a real "
                             + "account yet.")));
+            // Asked as each tile of the feed's Reels row is drawn, so a change shows on the next tiles.
+            reels.addPreference(toggle(context, Settings.PLAY_FEED_REELS_WHOLE,
+                    L10n.t("The reels in your feed's Reels row play from the start and keep going, instead of "
+                            + "repeating a second or two. Tiles drawn after a change pick it up.")));
         }
         if (build.contains(PatchFamily.REEL_WATCH_HISTORY)) {
             reels.addPreference(toggle(context, Settings.DONT_SEND_REEL_WATCH_HISTORY,

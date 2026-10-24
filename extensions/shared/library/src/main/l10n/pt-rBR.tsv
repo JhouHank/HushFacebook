@@ -1707,6 +1707,10 @@ Takes the line with the reel's sound, "Original audio" or a song, off the bottom
 Hide the slow connection message	Ocultar o aviso de conexão lenta
 # context: summary of that switch; "This is taking a while" is Facebook's own message, so use the wording Facebook shows in this language
 Stops the "This is taking a while" message about your network connection when a video or GIF is slow to load. It keeps loading as before.	Tira a mensagem "Isso está demorando um pouco" sobre a sua conexão de rede quando um vídeo ou GIF demora para carregar. Ele continua carregando normalmente.
+# context: switch title under Reels and Watch; the Reels row is the strip of reel tiles Facebook shows between posts in the news feed, each tile playing a short clip of its reel over and over
+Play whole reels in the feed's Reels row	Reproduzir reels inteiros na fileira de Reels do feed
+# context: summary of that switch; a tile is one reel's box in that row
+The reels in your feed's Reels row play from the start and keep going, instead of repeating a second or two. Tiles drawn after a change pick it up.	Os reels da fileira de Reels do seu feed tocam desde o começo e continuam, em vez de repetir um ou dois segundos. Os quadros que aparecem depois de uma mudança já seguem a nova opção.
 # context: title of the row on the Appearance page, with AMOLED in the build, that takes a color code for dark mode's backgrounds; also its dialog's title
 Background color	Cor de fundo
 # context: text in that row's dialog above the field; %1$s is the lightest gray code it takes, %2$s the color code the patch wrote, both like #0D1117; keep #RRGGBB and #0D1117 as they are
