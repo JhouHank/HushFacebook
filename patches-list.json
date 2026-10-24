@@ -3336,6 +3336,42 @@
       "options": []
     },
     {
+      "name": "Tap shows the controls",
+      "description": "A tap on a playing reel shows its controls and lets it keep playing, so you can skip or mute without stopping it. The button in the middle still pauses. Starts off. Turn it on in Hushfacebook settings > Reels and Watch.",
+      "category": "Reels",
+      "use": true,
+      "dependencies": [
+        "Hushfacebook settings"
+      ],
+      "compatiblePackages": {
+        "com.facebook.katana": [
+          "584.0.0.51.56"
+        ]
+      },
+      "compatibility": [
+        {
+          "name": "Facebook",
+          "packageName": "com.facebook.katana",
+          "description": null,
+          "appIconColor": 550655,
+          "signatures": [
+            "911d604446084ca7f4760b775bfc160fa8702441240a7258645d7a72c4312d27",
+            "e3f9e1e0cf99d0e56a055ba65e241b3399f7cea524326b0cdd6ec1327ed0fdc1"
+          ],
+          "targets": [
+            {
+              "version": "584.0.0.51.56",
+              "experimental": false,
+              "versionCodes": {
+                "ARM64_V8A": 475817393
+              }
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Tap to play",
       "description": "Videos, reels, stories and music wait for your tap instead of starting by themselves, so nothing plays until you want it to. Starts off. Turn it on in Hushfacebook settings > Playback.",
       "category": "Playback",

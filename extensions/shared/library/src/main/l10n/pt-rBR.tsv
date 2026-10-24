@@ -695,6 +695,10 @@ A double tap on a reel or video no longer likes it or shows a heart. A single ta
 Double tap to skip	Toque duplo para pular
 # context: summary of that switch; the edge is about a fifth of the player's width, and 30 seconds is the whole length of the reel or video
 A double tap on the left or right edge of a reel or video skips back or forward 10 seconds, or 5 on one under 30 seconds. A double tap in the middle works as before.	Tocar duas vezes na borda esquerda ou direita de um reel ou vídeo volta ou avança 10 segundos, ou 5 se ele tiver menos de 30 segundos. Tocar duas vezes no meio funciona como antes.
+# context: switch title under Reels and Watch; on, a tap on a playing reel shows its controls without pausing it
+Tap shows the controls	Tocar mostra os controles
+# context: summary of that switch; the button in the middle is the play and pause button in the reel's controls
+A tap on a playing reel shows its controls while it keeps playing, and a second tap hides them. The button in the middle still pauses.	Um toque em um reel que está tocando mostra os controles sem parar o reel, e um segundo toque os esconde. O botão do meio continua pausando.
 Keep the reel speed	Manter a velocidade dos reels
 # context: summary of that switch
 A playback speed you pick in a reel's menu stays for the next reels, after a restart too, until you pick another. Off, every reel starts at normal speed.	A velocidade de reprodução que você escolhe no menu de um reel continua nos próximos reels, mesmo depois de reiniciar, até você escolher outra. Desativado, cada reel começa na velocidade normal.

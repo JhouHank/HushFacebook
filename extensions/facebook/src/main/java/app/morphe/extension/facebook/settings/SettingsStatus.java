@@ -122,6 +122,10 @@ public final class SettingsStatus {
         return false;
     }
 
+    public static boolean tapShowsControls() {
+        return false;
+    }
+
     public static boolean reelGestures() {
         return false;
     }

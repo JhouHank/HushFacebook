@@ -152,6 +152,7 @@ import app.morphe.extension.facebook.reels.NewestReelsForTests;
 import app.morphe.extension.facebook.reels.ReelMidCardsForTests;
 import app.morphe.extension.facebook.reels.ReelPrompts;
 import app.morphe.extension.facebook.reels.SeenStateSendForTests;
+import app.morphe.extension.facebook.reels.TapShowsControls;
 import app.morphe.extension.facebook.search.MetaAiSearchForTests;
 import app.morphe.extension.facebook.search.PreSearchSectionsForTests;
 import app.morphe.extension.facebook.search.SearchHistory;
@@ -606,6 +607,11 @@ public class PausedHooksTest {
                 DoubleTapLike::holdBackTap));
         // Facebook's double-tap skip test, read as off, is answered on.
         probes.put(PatchFamily.DOUBLE_TAP_SKIP, Collections.singletonList(() -> DoubleTapSkip.flag(false)));
+        // A reel tap gets the controls in place of the pause, they stay up longer, and the unified player hides them.
+        probes.put(PatchFamily.TAP_SHOWS_CONTROLS, Arrays.asList(
+                () -> TapShowsControls.showControls(false),
+                () -> TapShowsControls.hideDelay(1000L) != 1000L,
+                () -> !TapShowsControls.skipHide(true)));
         // A double tap on a reel opens its comments in place of a like, a long press does too, and neither
         // a heart plays nor a like from a double tap is sent while the first switch is on.
         probes.put(PatchFamily.REEL_GESTURES, Arrays.asList(

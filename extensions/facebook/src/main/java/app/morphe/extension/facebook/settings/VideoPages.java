@@ -178,6 +178,12 @@ final class VideoPages {
                     L10n.t("A double tap on the left or right edge of a reel or video skips back or forward 10 seconds, "
                             + "or 5 on one under 30 seconds. A double tap in the middle works as before.")));
         }
+        if (build.contains(PatchFamily.TAP_SHOWS_CONTROLS)) {
+            // Read on each tap, so a change shows on the next one.
+            reels.addPreference(toggle(context, Settings.TAP_SHOWS_CONTROLS,
+                    L10n.t("A tap on a playing reel shows its controls while it keeps playing, and a second tap hides "
+                            + "them. The button in the middle still pauses.")));
+        }
         if (build.contains(PatchFamily.REEL_GESTURES)) {
             reels.addPreference(toggle(context, Settings.DOUBLE_TAP_OPENS_COMMENTS,
                     L10n.t("A double tap on a reel opens its comments instead of liking it. Turn off double tap to like "

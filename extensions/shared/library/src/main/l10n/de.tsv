@@ -809,6 +809,10 @@ A double tap on a reel or video no longer likes it or shows a heart. A single ta
 Double tap to skip	Doppeltippen zum Springen
 # context: summary of that switch; the edge is about a fifth of the player's width, and 30 seconds is the whole length of the reel or video
 A double tap on the left or right edge of a reel or video skips back or forward 10 seconds, or 5 on one under 30 seconds. A double tap in the middle works as before.	Doppeltippen am linken oder rechten Rand eines Reels oder Videos springt 10 Sekunden zurück oder vor, bei einem unter 30 Sekunden 5. Doppeltippen in der Mitte funktioniert wie bisher.
+# context: switch title under Reels and Watch; on, a tap on a playing reel shows its controls without pausing it
+Tap shows the controls	Tippen zeigt die Steuerung
+# context: summary of that switch; the button in the middle is the play and pause button in the reel's controls
+A tap on a playing reel shows its controls while it keeps playing, and a second tap hides them. The button in the middle still pauses.	Ein Tippen auf ein laufendes Reel zeigt seine Steuerung, während es weiterläuft, und ein zweites Tippen blendet sie wieder aus. Die Taste in der Mitte pausiert weiterhin.
 Keep the reel speed	Reel-Geschwindigkeit beibehalten
 # context: summary of that switch
 A playback speed you pick in a reel's menu stays for the next reels, after a restart too, until you pick another. Off, every reel starts at normal speed.	Eine Wiedergabegeschwindigkeit, die du im Menü eines Reels wählst, bleibt für die nächsten Reels, auch nach einem Neustart, bis du eine andere wählst. Aus startet jedes Reel mit normaler Geschwindigkeit.

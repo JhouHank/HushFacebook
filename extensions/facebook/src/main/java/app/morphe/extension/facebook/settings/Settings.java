@@ -688,6 +688,15 @@ public class Settings extends BaseSettings {
             new BooleanSetting("hushfacebook_double_tap_skip", FALSE);
 
     /**
+     * A tap on a playing reel shows its controls and lets it play on, Facebook's own answer to a
+     * tap that it ships off, with the controls kept up three seconds in place of one
+     * ({@link app.morphe.extension.facebook.reels.TapShowsControls}, #225). The button in the middle
+     * still pauses. Starts off. Read on each tap.
+     */
+    public static final BooleanSetting TAP_SHOWS_CONTROLS =
+            new BooleanSetting("hushfacebook_tap_shows_controls", FALSE);
+
+    /**
      * A double tap on a reel opens its comments, on the sheet the Comment button opens, in place of
      * liking it ({@link app.morphe.extension.facebook.reels.ReelGestures}, #179). Turn off double
      * tap to like stays the stronger switch: with it on, the double tap does nothing, as before.

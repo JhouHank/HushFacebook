@@ -938,6 +938,16 @@
     },
     {
       "paths": [
+        "extensions/facebook/src/main/java/app/morphe/extension/facebook/reels/TapShowsControls.java",
+        "patches/src/main/kotlin/app/morphe/patches/facebook/reels/tapcontrols/TapShowsControlsPatch.kt"
+      ],
+      "origin": "original",
+      "upstream": "https://github.com/SysAdminDoc/Hushfacebook",
+      "license": "GPL-3.0-only",
+      "changes": "Written for Hushfacebook: Tap shows the controls, for issue #225, from Facebook 584. Facebook's reel tap handler, found as the one method holding both the tap_to_show_player_control and reels_controls_tap_unmute log names, holds a dormant answer to a tap that shows the controls with a pause button and lets the reel play on, behind one config boolean Facebook ships off. The patch finds that boolean as the interface read guarded by an if-eqz and an if-ne landing on the same label, hands it to the extension after its move-result, and passes both of Facebook's waits before the controls hide (the unified player's int read in the handler, and the wide constant the controls' controller posts with its hide runnable next to announceControlsShowingForScreenReaders) through the extension too. The unified reel player skips posting any hide, through a static boolean check right before the handler's int read, so that check's answer goes through the extension as well. It refuses when a site isn't found exactly once or a branch lands inside it. The extension answers yes, a 3 second wait and no skip while its switch is on, and Facebook's own answers otherwise."
+    },
+    {
+      "paths": [
         "extensions/facebook/src/main/java/app/morphe/extension/facebook/media/ReelSpeed.java",
         "patches/src/main/kotlin/app/morphe/patches/facebook/media/reelspeed/KeepReelSpeedPatch.kt",
         "patches/src/main/kotlin/app/morphe/patches/facebook/media/reelspeed/ReelSpeedAnchors.kt"
